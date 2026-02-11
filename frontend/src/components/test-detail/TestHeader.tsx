@@ -161,7 +161,7 @@ export function TestHeader({
           {canRun && !isRunning && (
             <button
               onClick={onSchedule}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               Schedule
             </button>
@@ -171,7 +171,7 @@ export function TestHeader({
             <button
               onClick={onCancelRun}
               disabled={isCancellingRun}
-              className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-destructive disabled:opacity-50"
+              className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
             >
               {isCancellingRun ? 'Cancelling...' : 'Cancel Run'}
             </button>
@@ -199,7 +199,7 @@ export function TestHeader({
           {canDelete && (
             <button
               onClick={onDelete}
-              className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-destructive"
+              className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90"
             >
               Delete Test
             </button>

@@ -392,7 +392,7 @@ export function SettingsTab({
  toast.error('Failed to fetch Slack channels');
  }
  }}
- className="rounded-md bg-[#4A154B] px-4 py-2 text-sm font-medium text-white hover:bg-[#611f64]"
+ className="rounded-md bg-[#4A154B] px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-[#611f64]"
  >
  Add Slack Alert
  </button>

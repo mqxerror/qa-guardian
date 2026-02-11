@@ -1,57 +1,47 @@
-// QA Guardian Frontend - Updated for DAST
-// Feature #452: Cleaned up unused imports after AICommandPalette extraction
+// QA Guardian Frontend
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RoleProtectedRoute } from './components/RoleProtectedRoute';
 import { RouteErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary';
-// Feature #412: AIInsightsHub deleted - child pages promoted to /ai/* routes
 import { MCPHub, MCPHubIndex } from './components/MCPHub';
-import { QAChatWidget } from './components/QAChatWidget';
-// Feature #452: AICommandPalette extracted to ./components/AICommandPalette.tsx
-import { AICommandPalette } from './components/AICommandPalette';
 import { useToastStore } from './stores/toastStore';
-// Feature #105: Removed dead imports (recharts, jsPDF) - these are lazy-loaded in extracted pages
-// Feature #1357: Extracted pages for code quality compliance (400 line limit)
+
+// Feature #619: Lazy-load large widgets that aren't needed on initial page load
+// QAChatWidget (709 lines) loads when user interacts with chat
+// AICommandPalette (873 lines) loads when user presses Ctrl+K
+const QAChatWidget = lazy(() => import('./components/QAChatWidget'));
+const AICommandPalette = lazy(() => import('./components/AICommandPalette'));
+
 // Eager imports: most-visited pages loaded in the main bundle
 import { NotFoundPage } from './pages/NotFoundPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
-import { ResetPasswordPage } from './pages/ResetPasswordPage';
 
 // Lazy imports: all other pages loaded on-demand via code splitting
+// Feature #620: ForgotPasswordPage and ResetPasswordPage lazy-loaded (rarely-used auth recovery flows)
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })));
 const ProjectsPage = lazy(() => import('./pages/ProjectsPage').then(m => ({ default: m.ProjectsPage })));
 const CreateOrganizationPage = lazy(() => import('./pages/CreateOrganizationPage').then(m => ({ default: m.CreateOrganizationPage })));
 const AcceptInvitationPage = lazy(() => import('./pages/AcceptInvitationPage').then(m => ({ default: m.AcceptInvitationPage })));
 const SchedulesPage = lazy(() => import('./pages/SchedulesPage').then(m => ({ default: m.SchedulesPage })));
 const ScheduleDetailsPage = lazy(() => import('./pages/ScheduleDetailsPage').then(m => ({ default: m.ScheduleDetailsPage })));
-// Feature #411: AIActionPage removed - dead demo page with mock data
-// Feature #513: Prefixed with underscore - pages exist but routes moved to SettingsPage tabs
-const _BillingPage = lazy(() => import('./pages/BillingPage').then(m => ({ default: m.BillingPage })));
-const _ApiKeysPage = lazy(() => import('./pages/ApiKeysPage').then(m => ({ default: m.ApiKeysPage })));
 const MCPToolsPage = lazy(() => import('./pages/MCPToolsPage').then(m => ({ default: m.MCPToolsPage })));
 const PublicStatusPage = lazy(() => import('./pages/PublicStatusPage').then(m => ({ default: m.PublicStatusPage })));
 const SharedTestRunPage = lazy(() => import('./pages/SharedTestRunPage'));
-// Feature #513: Prefixed with underscore - pages exist but routes moved to SettingsPage tabs
-const _OrganizationMembersPage = lazy(() => import('./pages/OrganizationMembersPage').then(m => ({ default: m.OrganizationMembersPage })));
-const _AuditLogsPage = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })));
-const _WebhookConfigurationPage = lazy(() => import('./pages/WebhookConfigurationPage').then(m => ({ default: m.WebhookConfigurationPage })));
-const WebhookIntegrationGuidesPage = lazy(() => import('./pages/WebhookIntegrationGuidesPage').then(m => ({ default: m.WebhookIntegrationGuidesPage }))); // Feature #323
+const WebhookIntegrationGuidesPage = lazy(() => import('./pages/WebhookIntegrationGuidesPage').then(m => ({ default: m.WebhookIntegrationGuidesPage })));
 const DASTComparisonPage = lazy(() => import('./pages/DASTComparisonPage').then(m => ({ default: m.DASTComparisonPage })));
 const DASTGraphQLPage = lazy(() => import('./pages/DASTGraphQLPage').then(m => ({ default: m.DASTGraphQLPage })));
 const TrivyDependencyScanPage = lazy(() => import('./pages/TrivyDependencyScanPage').then(m => ({ default: m.TrivyDependencyScanPage })));
 const NpmAuditPage = lazy(() => import('./pages/NpmAuditPage').then(m => ({ default: m.NpmAuditPage })));
 const CVEDatabasePage = lazy(() => import('./pages/CVEDatabasePage').then(m => ({ default: m.CVEDatabasePage })));
 const LicenseCompliancePage = lazy(() => import('./pages/LicenseCompliancePage').then(m => ({ default: m.LicenseCompliancePage })));
-// Feature #268: SBOM Generation Page
 const SbomPage = lazy(() => import('./pages/SbomPage').then(m => ({ default: m.SbomPage })));
 const ContainerScanPage = lazy(() => import('./pages/ContainerScanPage').then(m => ({ default: m.ContainerScanPage })));
-// Feature #270: Upgrade Recommendations Page
 const UpgradeRecommendationsPage = lazy(() => import('./pages/UpgradeRecommendationsPage').then(m => ({ default: m.UpgradeRecommendationsPage })));
-// Feature #271: Dependency Tree Visualization
 const DependencyTreePage = lazy(() => import('./pages/DependencyTreePage').then(m => ({ default: m.DependencyTreePage })));
 const DependencyPolicyPage = lazy(() => import('./pages/DependencyPolicyPage').then(m => ({ default: m.DependencyPolicyPage })));
 const AutoPRPage = lazy(() => import('./pages/AutoPRPage').then(m => ({ default: m.AutoPRPage })));
@@ -60,37 +50,22 @@ const MultiLanguageDependencyPage = lazy(() => import('./pages/MultiLanguageDepe
 const VulnerabilityHistoryPage = lazy(() => import('./pages/VulnerabilityHistoryPage').then(m => ({ default: m.VulnerabilityHistoryPage })));
 const ExploitabilityAnalysisPage = lazy(() => import('./pages/ExploitabilityAnalysisPage').then(m => ({ default: m.ExploitabilityAnalysisPage })));
 const ScanCachingPage = lazy(() => import('./pages/ScanCachingPage').then(m => ({ default: m.ScanCachingPage })));
-// Feature #412: KieAIProviderPage content moved to SettingsPage AI tab
-// Feature #412: AnthropicProviderPage content moved to SettingsPage AI tab
 const DependencyAlertsPage = lazy(() => import('./pages/DependencyAlertsPage').then(m => ({ default: m.DependencyAlertsPage })));
 const MCPChatPage = lazy(() => import('./pages/MCPChatPage').then(m => ({ default: m.MCPChatPage })));
-// Feature #411: AIRunComparisonPage removed - dead demo page with mock data
 const MCPAnalyticsPage = lazy(() => import('./pages/MCPAnalyticsPage').then(m => ({ default: m.MCPAnalyticsPage })));
 const MCPPlaygroundPage = lazy(() => import('./pages/MCPPlaygroundPage').then(m => ({ default: m.MCPPlaygroundPage })));
 const SecurityDashboardPage = lazy(() => import('./pages/SecurityDashboardPage').then(m => ({ default: m.SecurityDashboardPage })));
-// Feature #411: OrganizationInsightsPage removed - dead demo page with mock data
-// Feature #411: BestPracticesPage removed - dead demo page with mock data
 const TestImprovementAnalyzerPage = lazy(() => import('./pages/TestImprovementAnalyzerPage').then(m => ({ default: m.TestImprovementAnalyzerPage })));
-// Feature #411: IndustryBenchmarkPage removed - dead demo page with mock data
 const ReleaseNotesPage = lazy(() => import('./pages/ReleaseNotesPage').then(m => ({ default: m.ReleaseNotesPage })));
-// Feature #411: PersonalizedInsightsPage removed - dead demo page with mock data
-// Feature #411: TeamSkillGapsPage removed - dead demo page with mock data
-// Feature #411: AILearningPage removed - dead demo page with mock data
 const TestDocumentationPage = lazy(() => import('./pages/TestDocumentationPage').then(m => ({ default: m.TestDocumentationPage })));
 const ProviderHealthPage = lazy(() => import('./pages/ProviderHealthPage').then(m => ({ default: m.ProviderHealthPage })));
-// Feature #412: AICostTrackingPage merged into AIAnalyticsPage
-// Feature #412: AIUsageAnalyticsDashboard merged into AIAnalyticsPage
 const AIAnalyticsPage = lazy(() => import('./pages/AIAnalyticsPage').then(m => ({ default: m.AIAnalyticsPage })));
-// Feature #411: AIThinkingDemoPage removed - dead demo page with mock data
-// Feature #411: AIConfidenceDemoPage removed - dead demo page with mock data
 const FlakyTestsDashboardPage = lazy(() => import('./pages/FlakyTestsDashboardPage').then(m => ({ default: m.FlakyTestsDashboardPage })));
 const VisualReviewPage = lazy(() => import('./pages/VisualReviewPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
 const MonitoringPage = lazy(() => import('./pages/MonitoringPage').then(m => ({ default: m.MonitoringPage })));
 const AIRouterPage = lazy(() => import('./pages/AIRouterPage').then(m => ({ default: m.AIRouterPage })));
 const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage').then(m => ({ default: m.ProjectDetailPage })));
-// Feature #513: Prefixed with underscore - page exists but route moved to SettingsPage
-const _OrganizationSettingsPage = lazy(() => import('./pages/OrganizationSettingsPage'));
 const TestSuitePage = lazy(() => import('./pages/TestSuitePage').then(m => ({ default: m.TestSuitePage })));
 const TestDetailPage = lazy(() => import('./pages/TestDetailPage').then(m => ({ default: m.TestDetailPage })));
 const TestRunResultPage = lazy(() => import('./pages/TestRunResultPage'));
@@ -103,91 +78,12 @@ const SuiteRunHistoryPage = lazy(() => import('./pages/SuiteRunHistoryPage').the
 const ProjectRunHistoryPage = lazy(() => import('./pages/ProjectRunHistoryPage').then(m => ({ default: m.ProjectRunHistoryPage })));
 const RunHistoryPage = lazy(() => import('./pages/RunHistoryPage').then(m => ({ default: m.RunHistoryPage })));
 const ServicesPage = lazy(() => import('./pages/ServicesPage').then(m => ({ default: m.ServicesPage })));
-const OpenAPITestGeneratorPage = lazy(() => import('./pages/OpenAPITestGeneratorPage').then(m => ({ default: m.OpenAPITestGeneratorPage }))); // Feature #324
-const QuickTestPage = lazy(() => import('./pages/QuickTestPage').then(m => ({ default: m.QuickTestPage }))); // Feature #425
-const CompareQuickTestPage = lazy(() => import('./pages/CompareQuickTestPage').then(m => ({ default: m.CompareQuickTestPage }))); // Feature #473
+const OpenAPITestGeneratorPage = lazy(() => import('./pages/OpenAPITestGeneratorPage').then(m => ({ default: m.OpenAPITestGeneratorPage })));
+const QuickTestPage = lazy(() => import('./pages/QuickTestPage').then(m => ({ default: m.QuickTestPage })));
+const CompareQuickTestPage = lazy(() => import('./pages/CompareQuickTestPage').then(m => ({ default: m.CompareQuickTestPage })));
 
-// Feature #432: Loading fallback for lazy-loaded pages using proper skeleton
 import { PageSkeleton } from './components/ui/Skeleton';
 const PageLoader = () => <PageSkeleton />;
-
-// Feature #756: DASTComparisonPage extracted to ./pages/DASTComparisonPage.tsx
-// Feature #758: DASTGraphQLPage extracted to ./pages/DASTGraphQLPage.tsx
-
-// DASTGraphQLPage removed (~520 lines) - now imported from ./pages/DASTGraphQLPage.tsx
-// TrivyDependencyScanPage removed (~1060 lines) - now imported from ./pages/TrivyDependencyScanPage.tsx
-
-// Feature #759-767: TrivyDependencyScanPage extracted to ./pages/TrivyDependencyScanPage.tsx
-
-
-// Feature #761: NpmAuditPage extracted to ./pages/NpmAuditPage.tsx (~618 lines)
-
-
-// Feature #762: CVEDatabasePage extracted to ./pages/CVEDatabasePage.tsx (~620 lines)
-
-
-// Feature #763: LicenseCompliancePage extracted to ./pages/LicenseCompliancePage.tsx (~760 lines)
-
-
-// Feature #764: ContainerScanPage extracted to ./pages/ContainerScanPage.tsx (~580 lines)
-
-// Feature #770: DependencyPolicyPage extracted to ./pages/DependencyPolicyPage.tsx (~695 lines)
-
-// Feature #771: AutoPRPage extracted to ./pages/AutoPRPage.tsx (~545 lines)
-
-// Feature #772: DependencyAgePage extracted to ./pages/DependencyAgePage.tsx (~438 lines)
-
-// Feature #773: MultiLanguageDependencyPage extracted to ./pages/MultiLanguageDependencyPage.tsx (~480 lines)
-
-// Feature #774: VulnerabilityHistoryPage extracted to ./pages/VulnerabilityHistoryPage.tsx (~437 lines)
-
-// Feature #775: ExploitabilityAnalysisPage extracted to ./pages/ExploitabilityAnalysisPage.tsx (~418 lines)
-
-// Feature #776: ScanCachingPage extracted to ./pages/ScanCachingPage.tsx (~438 lines)
-
-// Feature #1321: KieAIProviderPage extracted to ./pages/KieAIProviderPage.tsx (~455 lines)
-
-// Feature #1322: AnthropicProviderPage extracted to ./pages/AnthropicProviderPage.tsx (~420 lines)
-
-
-// AIRouterPage EXTRACTED to ./pages/AIRouterPage.tsx (~6,684 lines)
-// Feature #1441: Split App.tsx into logical modules
-// Types moved: AIRouterConfig, RetryAttempt, RetryStats, AIFeatureType, FeatureTimeout,
-// AIModelType, FeatureModelConfig, ModelUsageStats, TimeoutEvent, TimeoutStats,
-// RateLimitStrategy, ProviderRateLimitConfig, ProviderRateLimitStatus, QueuedRequest,
-// RateLimitEvent, RateLimitAlert, FallbackTrigger, FallbackRule, FallbackTestResult,
-// FallbackStats, AIBudgetConfig, AISpendingData, BudgetAlert, CostAlertThreshold,
-// AlertNotificationConfig, CostAlertNotification, CostReductionSuggestion, AICacheConfig,
-// CacheEntry, CacheStats, CacheEvent, RouterStats, CircuitBreakerState, ProviderSwitchLog,
-// ActiveProviderState, ProviderChangeLog, ProviderSwitchResult, APIKeyConfig,
-// APIKeyAuditLog, KeyTestResult
-
-
-// Feature #1326: AIUsageAnalyticsDashboard extracted to ./pages/AIUsageAnalyticsDashboard.tsx (~518 lines)
-
-
-// Feature #767: DependencyAlertsPage extracted to ./pages/DependencyAlertsPage.tsx (~550 lines)
-
-// Feature #1282: AI Action with Pre-filled Parameters
-// AIActionPage extracted to ./pages/AIActionPage.tsx (Feature #1357)
-// Interface AIActionParams moved to AIActionPage.tsx
-
-
-// Feature #1421: AISuggestionsSidebar removed - dead code cleanup
-// The component and interfaces (AISuggestion, PageContext, AISuggestionsSidebar) were removed
-// as the feature was disabled in Feature #1420
-
-
-// Feature #1280: AIThinkingDemoPage, AIThinkingIndicator, AIThinkingSpinner extracted to ./pages/AIThinkingDemoPage.tsx (~352 lines)
-
-
-
-// Feature #1279: AIConfidenceDemoPage, AIConfidenceIndicator, AIConfidenceBadge, AIConfidenceCard extracted to ./pages/AIConfidenceDemoPage.tsx (~406 lines)
-
-// Feature #1247: QA Chat Interface - Control QA Guardian through conversation
-
-// QAChatWidget EXTRACTED to ./components/QAChatWidget.tsx (~936 lines)
-// Feature #1441: Split App.tsx into logical modules
 
 function ToastContainer() {
   const { toasts, removeToast } = useToastStore();
@@ -211,7 +107,7 @@ function ToastContainer() {
             'bg-primary'
           }`}
         >
-          {/* Icon based on type - decorative, hidden from screen readers */}
+          {/* Icon based on type */}
           {t.type === 'success' && (
             <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -252,10 +148,13 @@ function App() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <ToastContainer />
-      <QAChatWidget />
-      <AICommandPalette />
-      {/* Feature #1420: AI Suggestions sidebar removed */}
-      {/* Feature #101: RouteErrorBoundary catches render errors and React Query errors */}
+      {/* Feature #619: Lazy-loaded widgets with Suspense - no fallback needed since they're hidden by default */}
+      <Suspense fallback={null}>
+        <QAChatWidget />
+      </Suspense>
+      <Suspense fallback={null}>
+        <AICommandPalette />
+      </Suspense>
       <RouteErrorBoundary>
       <Suspense fallback={<PageLoader />}>
       <Routes>
@@ -268,11 +167,9 @@ function App() {
         <Route path="/organizations/new" element={<CreateOrganizationPage />} />
         <Route path="/invitations/:inviteId" element={<AcceptInvitationPage />} />
         <Route path="/status/:slug" element={<PublicStatusPage />} />
-        {/* Feature #2002: Shareable link for test run results */}
         <Route path="/shared/run/:token" element={<SharedTestRunPage />} />
 
         {/* Protected routes - require authentication */}
-        {/* Feature #450: Dashboard routes wrapped with PageErrorBoundary */}
         <Route
           path="/dashboard"
           element={
@@ -283,8 +180,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #425: Quick Test - instant URL analysis */}
-        {/* Feature #450: Quick Test wrapped with PageErrorBoundary */}
         <Route
           path="/quick-test"
           element={
@@ -295,7 +190,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #473: Comparative Quick Test - side-by-side URL comparison */}
         <Route
           path="/quick-test/compare"
           element={
@@ -306,7 +200,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #450: Project routes wrapped with PageErrorBoundary */}
         <Route
           path="/projects"
           element={
@@ -327,7 +220,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #1852: Project run history page */}
         <Route
           path="/projects/:projectId/runs"
           element={
@@ -338,7 +230,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #1855: Global run history page (accessible from sidebar) */}
         <Route
           path="/run-history"
           element={
@@ -359,7 +250,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #1851: Suite run history page */}
         <Route
           path="/suites/:suiteId/runs"
           element={
@@ -380,7 +270,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #1823: Test run result detail page */}
         <Route
           path="/runs/:runId"
           element={
@@ -391,7 +280,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #450: Schedules routes wrapped with PageErrorBoundary */}
         <Route
           path="/schedules"
           element={
@@ -412,7 +300,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #450: Analytics routes wrapped with PageErrorBoundary */}
         <Route
           path="/analytics"
           element={
@@ -433,7 +320,8 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #450: Security routes wrapped with PageErrorBoundary */}
+
+        {/* Security routes */}
         <Route
           path="/security"
           element={
@@ -504,7 +392,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #268: SBOM Generation Page */}
         <Route
           path="/security/sbom"
           element={
@@ -525,7 +412,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #270: Upgrade Recommendations Page */}
         <Route
           path="/security/upgrade-recommendations"
           element={
@@ -536,7 +422,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #271: Dependency Tree Visualization */}
         <Route
           path="/security/dependency-tree"
           element={
@@ -627,10 +512,10 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #412: AI provider pages removed - content moved to /settings?tab=ai-config */}
+
+        {/* AI routes */}
         <Route path="/ai/kie-provider" element={<Navigate to="/settings?tab=ai-config" replace />} />
         <Route path="/ai/anthropic-provider" element={<Navigate to="/settings?tab=ai-config" replace />} />
-        {/* Feature #450: AI routes wrapped with PageErrorBoundary */}
         <Route
           path="/ai/router"
           element={
@@ -651,7 +536,6 @@ function App() {
             </RoleProtectedRoute>
           }
         />
-        {/* Feature #412: /ai/costs and /ai/analytics merged into single AIAnalyticsPage */}
         <Route path="/ai/costs" element={<Navigate to="/ai/analytics" replace />} />
         <Route
           path="/ai/analytics"
@@ -683,7 +567,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #324: OpenAPI/Swagger to Playwright test generation */}
         <Route
           path="/ai/openapi-generator"
           element={
@@ -694,7 +577,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #450: Monitoring routes wrapped with PageErrorBoundary */}
         <Route
           path="/monitoring"
           element={
@@ -705,7 +587,8 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Feature #412: AIInsightsHub wrapper deleted - child pages promoted to direct /ai/* routes */}
+
+        {/* AI Insights redirects */}
         <Route path="/ai-insights" element={<Navigate to="/ai/flaky-tests" replace />} />
         <Route path="/ai-insights/flaky-tests" element={<Navigate to="/ai/flaky-tests" replace />} />
         <Route path="/ai-insights/test-analyzer" element={<Navigate to="/ai/test-analyzer" replace />} />
@@ -752,8 +635,7 @@ function App() {
           }
         />
 
-        {/* Feature #1832: Unified Settings page with tabbed layout */}
-        {/* Feature #450: Settings routes wrapped with PageErrorBoundary */}
+        {/* Settings */}
         <Route
           path="/settings"
           element={
@@ -765,17 +647,16 @@ function App() {
           }
         />
 
-        {/* Legacy admin routes - redirect to unified Settings page with appropriate tab */}
+        {/* Legacy admin routes - redirect to unified Settings page */}
         <Route path="/organization/settings" element={<Navigate to="/settings?tab=general" replace />} />
         <Route path="/organization/members" element={<Navigate to="/settings?tab=team" replace />} />
         <Route path="/organization/billing" element={<Navigate to="/settings?tab=billing" replace />} />
         <Route path="/organization/api-keys" element={<Navigate to="/settings?tab=api-keys" replace />} />
         <Route path="/organization/webhooks" element={<Navigate to="/settings?tab=webhooks" replace />} />
-        {/* Feature #323: Webhook integration guides for n8n/Zapier/Make */}
         <Route path="/webhooks/integration-guides" element={<ProtectedRoute><PageErrorBoundary><WebhookIntegrationGuidesPage /></PageErrorBoundary></ProtectedRoute>} />
         <Route path="/organization/audit-logs" element={<Navigate to="/settings?tab=audit-logs" replace />} />
-        {/* Feature #1365: MCP Hub - consolidated MCP tools under /mcp */}
-        {/* Feature #450: MCP Hub routes wrapped with PageErrorBoundary */}
+
+        {/* MCP Hub */}
         <Route
           path="/mcp"
           element={
@@ -792,48 +673,31 @@ function App() {
           <Route path="chat" element={<MCPChatPage />} />
           <Route path="agent-workspace" element={<AIAgentWorkspacePage />} />
           <Route path="analytics" element={<MCPAnalyticsPage />} />
-          {/* Feature #1442: production-risk removed - redirect to tools */}
           <Route path="production-risk" element={<Navigate to="/mcp/tools" replace />} />
-          {/* Feature #1443: tech-debt removed - redirect to tools */}
           <Route path="tech-debt" element={<Navigate to="/mcp/tools" replace />} />
-          {/* Feature #1444: test-discovery removed - redirect to tools */}
           <Route path="test-discovery" element={<Navigate to="/mcp/tools" replace />} />
-          {/* Feature #1441: documentation route removed - redirect to tools */}
           <Route path="documentation" element={<Navigate to="/mcp/tools" replace />} />
-          {/* Feature #1441: release-notes route removed - redirect to tools */}
           <Route path="release-notes" element={<Navigate to="/mcp/tools" replace />} />
-          {/* Feature #1410: schedule route removed - redirect to tools */}
           <Route path="schedule" element={<Navigate to="/mcp/tools" replace />} />
-          {/* Feature #1408: team route removed - redirect to tools */}
           <Route path="team" element={<Navigate to="/mcp/tools" replace />} />
         </Route>
+
         {/* Legacy MCP routes - redirect to new hub paths */}
         <Route path="/organization/mcp-tools" element={<Navigate to="/mcp/tools" replace />} />
         <Route path="/organization/mcp-playground" element={<Navigate to="/mcp/playground" replace />} />
         <Route path="/organization/mcp-analytics" element={<Navigate to="/mcp/analytics" replace />} />
         <Route path="/organization/mcp-chat" element={<Navigate to="/mcp/chat" replace />} />
-        {/* Feature #1442: production-risk removed */}
         <Route path="/organization/mcp-production-risk" element={<Navigate to="/mcp/tools" replace />} />
-        {/* Feature #1443: tech-debt removed */}
         <Route path="/organization/mcp-tech-debt" element={<Navigate to="/mcp/tools" replace />} />
-        {/* Feature #1444: test-discovery removed */}
         <Route path="/organization/mcp-test-discovery" element={<Navigate to="/mcp/tools" replace />} />
-        {/* Feature #413: documentation and release-notes tabs removed - redirect to tools */}
         <Route path="/organization/mcp-documentation" element={<Navigate to="/mcp/tools" replace />} />
         <Route path="/organization/mcp-release-notes" element={<Navigate to="/mcp/tools" replace />} />
         <Route path="/mcp/documentation" element={<Navigate to="/mcp/tools" replace />} />
         <Route path="/mcp/release-notes" element={<Navigate to="/mcp/tools" replace />} />
-        {/* Feature #1410: schedule-optimizer redirect updated to tools */}
         <Route path="/organization/mcp-schedule-optimizer" element={<Navigate to="/mcp/tools" replace />} />
-        {/* Feature #1408: team-insights redirect updated to tools */}
         <Route path="/organization/mcp-team-insights" element={<Navigate to="/mcp/tools" replace />} />
-        {/* Feature #411: AI Run Comparison route removed - dead demo page */}
-        {/* Feature #411: AI Confidence Demo route removed - dead demo page */}
-        {/* Feature #411: AI Thinking Demo route removed - dead demo page */}
-        {/* Feature #411: AI Action route removed - dead demo page */}
 
-        {/* Feature #1732: Comprehensive Report View */}
-        {/* Feature #450: Reports routes wrapped with PageErrorBoundary */}
+        {/* Reports */}
         <Route
           path="/reports/:reportId"
           element={
@@ -845,7 +709,7 @@ function App() {
           }
         />
 
-        {/* Feature #2128: Platform Services Dashboard */}
+        {/* Platform Services */}
         <Route
           path="/services"
           element={

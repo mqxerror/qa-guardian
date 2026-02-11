@@ -2,11 +2,13 @@
  * CreateCheckModal Component
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
  * Feature #127: Mobile responsive design audit and fixes
+ * Feature #635: Migrated to Modal/ModalBody/ModalFooter
  *
  * Handles creating and editing uptime checks with smart defaults and presets
  */
 
 import { useState, useEffect } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 import { MonitoringLocation, MonitoringLocationInfo, UptimeAssertion, UptimeCheck } from '../types';
 import { toast } from '../../../stores/toastStore';
 
@@ -252,17 +254,14 @@ export default function CreateCheckModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-check-title"
-        className="w-full max-w-md rounded-lg bg-card p-4 sm:p-6 shadow-xl mx-4 max-h-[90vh] overflow-y-auto"
-      >
-        <h2 id="create-check-title" className="text-lg font-semibold text-foreground mb-4">
-          {editingCheck ? 'Edit Uptime Check' : 'Create Uptime Check'}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={editingCheck ? 'Edit Uptime Check' : 'Create Uptime Check'}
+      size="md"
+    >
+      <form id="create-check-form" onSubmit={handleSubmit}>
+        <ModalBody className="space-y-4">
           {/* URL Input - Primary field */}
           <div>
             <label htmlFor="check-url" className="block text-sm font-medium text-foreground mb-1">URL to Monitor</label>
@@ -629,25 +628,25 @@ export default function CreateCheckModal({
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !formUrl || formLocations.length === 0}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {isSubmitting ? (editingCheck ? 'Updating...' : 'Creating...') : (editingCheck ? 'Update Check' : 'Create Check')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="create-check-form"
+            disabled={isSubmitting || !formUrl || formLocations.length === 0}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {isSubmitting ? (editingCheck ? 'Updating...' : 'Creating...') : (editingCheck ? 'Update Check' : 'Create Check')}
+          </button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }

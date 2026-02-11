@@ -653,7 +653,7 @@ export function CVEDatabasePage() {
  href={vuln.nvdUrl}
  target="_blank"
  rel="noopener noreferrer"
- className="px-3 py-1.5 bg-primary text-primary-foreground rounded text-sm hover:bg-primary"
+ className="px-3 py-1.5 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90"
  >
  🏛️ View NVD Details
  </a>

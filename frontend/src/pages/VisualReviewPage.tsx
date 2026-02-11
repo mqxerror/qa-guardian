@@ -523,7 +523,7 @@ Respond in this JSON format:
  <button
  onClick={() => setShowBatchRejectModal(true)}
  disabled={selectedChanges.size === 0}
- className="inline-flex items-center gap-2 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-destructive disabled:opacity-50 disabled:cursor-not-allowed"
+ className="inline-flex items-center gap-2 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
  >
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1032,7 +1032,7 @@ Respond in this JSON format:
  <button
  onClick={handleBatchReject}
  disabled={batchRejectMutation.isPending}
- className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-destructive disabled:opacity-50"
+ className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
  >
  {batchRejectMutation.isPending ? (
  <span className="flex items-center gap-2">

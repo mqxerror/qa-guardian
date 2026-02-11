@@ -131,7 +131,7 @@ export function HumanReviewPanel({
  <button
  onClick={() => onBatchReview('reject')}
  disabled={isApproving}
- className="rounded-md bg-destructive px-3 py-1 text-xs font-medium text-destructive-foreground hover:bg-destructive disabled:opacity-50 flex items-center gap-1"
+ className="rounded-md bg-destructive px-3 py-1 text-xs font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 flex items-center gap-1"
  >
  ✗ Batch Reject ({selectedForReview.size})
  </button>
@@ -168,7 +168,7 @@ export function HumanReviewPanel({
  <button
  onClick={() => onReviewTest(test.id, 'reject')}
  disabled={isApproving}
- className="rounded-md bg-destructive px-3 py-1 text-xs font-medium text-destructive-foreground hover:bg-destructive disabled:opacity-50"
+ className="rounded-md bg-destructive px-3 py-1 text-xs font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
  >
  ✗ Reject
  </button>

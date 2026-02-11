@@ -157,7 +157,7 @@ export function AIFallbackRulesPanel({
           </div>
           <button
             onClick={createFallbackRule}
-            className="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-primary"
+            className="px-3 py-1 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90"
           >
             + Add Rule
           </button>
@@ -217,7 +217,7 @@ export function AIFallbackRulesPanel({
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                        rule.enabled ? 'bg-primary text-white' : 'bg-muted text-foreground'
+                        rule.enabled ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
                       }`}>
                         #{rule.priority}
                       </div>
@@ -329,7 +329,7 @@ export function AIFallbackRulesPanel({
                 disabled={isTestingFallback}
                 className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
                   isTestingFallback && testingFallbackTrigger === trigger
-                    ? 'bg-primary text-white animate-pulse'
+                    ? 'bg-primary text-primary-foreground animate-pulse'
                     : 'bg-card border hover:border-primary/40 hover:bg-primary/5'
                 } disabled:opacity-50`}
               >
@@ -649,7 +649,7 @@ export function AIFallbackRulesPanel({
                   </button>
                   <button
                     onClick={() => setShowFallbackRuleModal(false)}
-                    className="px-4 py-2 bg-primary text-white rounded hover:bg-primary"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
                   >
                     Save Changes
                   </button>

@@ -484,7 +484,7 @@ function CurrentBaselineDisplay({
  onSetSelectedMergeBranch(branch.branch);
  onSetShowMergeBaselineModal(true);
  }}
- className="px-3 py-1 text-xs font-medium rounded bg-primary text-primary-foreground hover:bg-primary transition-colors"
+ className="px-3 py-1 text-xs font-medium rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
  >
  Adopt Baseline
  </button>

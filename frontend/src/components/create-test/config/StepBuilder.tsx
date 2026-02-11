@@ -8,7 +8,8 @@
  */
 
 // Feature #513: Removed unused useRef - drag handles use event handlers directly
-import React, { useState, useCallback } from 'react';
+// Feature #622: Added React.memo to StepRow for performance optimization
+import React, { useState, useCallback, memo } from 'react';
 
 /**
  * Available step action types
@@ -146,8 +147,9 @@ export interface StepBuilderProps {
 
 /**
  * Single step row component
+ * Feature #622: React.memo for performance optimization during drag operations
  */
-const StepRow: React.FC<{
+interface StepRowProps {
  step: Step;
  index: number;
  onUpdate: (id: string, updates: Partial<Step>) => void;
@@ -157,7 +159,9 @@ const StepRow: React.FC<{
  onDragEnd: () => void;
  isDragging: boolean;
  isDropTarget: boolean;
-}> = ({
+}
+
+const StepRow = memo<StepRowProps>(function StepRow({
  step,
  index,
  onUpdate,
@@ -167,7 +171,7 @@ const StepRow: React.FC<{
  onDragEnd,
  isDragging,
  isDropTarget,
-}) => {
+}) {
  const config = ACTION_CONFIG[step.action];
 
  return (
@@ -248,7 +252,8 @@ const StepRow: React.FC<{
  </button>
  </div>
  );
-};
+});
+StepRow.displayName = 'StepRow';
 
 /**
  * StepBuilder - Structured test step builder with drag-drop support

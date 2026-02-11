@@ -54,7 +54,7 @@ export function PreCommitHookSection({ projectId, secretPatterns }: PreCommitHoo
  <a
  href={`/api/v1/projects/${projectId}/sast/gitleaks/pre-commit/download?format=pre-commit&mode=fail`}
  download=".pre-commit-config.yaml"
- className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-success text-white hover:bg-success"
+ className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-success text-success-foreground hover:bg-success"
  >
  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -64,7 +64,7 @@ export function PreCommitHookSection({ projectId, secretPatterns }: PreCommitHoo
  <a
  href={`/api/v1/projects/${projectId}/sast/gitleaks/pre-commit/download?format=pre-commit&mode=warn`}
  download=".pre-commit-config.yaml"
- className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-warning text-white hover:bg-warning"
+ className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-warning text-warning-foreground hover:bg-warning"
  >
  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -89,7 +89,7 @@ export function PreCommitHookSection({ projectId, secretPatterns }: PreCommitHoo
  <a
  href={`/api/v1/projects/${projectId}/sast/gitleaks/pre-commit/download?format=git-hook&mode=fail`}
  download="pre-commit"
- className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-success text-white hover:bg-success"
+ className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-success text-success-foreground hover:bg-success"
  >
  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -99,7 +99,7 @@ export function PreCommitHookSection({ projectId, secretPatterns }: PreCommitHoo
  <a
  href={`/api/v1/projects/${projectId}/sast/gitleaks/pre-commit/download?format=git-hook&mode=warn`}
  download="pre-commit"
- className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-warning text-white hover:bg-warning"
+ className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-warning text-warning-foreground hover:bg-warning"
  >
  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />

@@ -238,7 +238,7 @@ function RunHistorySectionInner({
  <button
  onClick={onCompareRuns}
  disabled={isComparing}
- className="rounded-md bg-primary px-3 py-1 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
+ className="rounded-md bg-primary px-3 py-1 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
  >
  {isComparing ? 'Comparing...' : <><BarChart3 className="h-4 w-4 inline mr-1" /> Compare Selected</>}
  </button>

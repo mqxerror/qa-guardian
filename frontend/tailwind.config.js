@@ -63,6 +63,22 @@ export default {
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
+  			},
+  			// Feature #613: Method colors for CustomTestWizard
+  			'method-ai': {
+  				DEFAULT: 'hsl(var(--method-ai))',
+  				foreground: 'hsl(var(--method-ai-foreground))',
+  				muted: 'hsl(var(--method-ai-muted))'
+  			},
+  			'method-manual': {
+  				DEFAULT: 'hsl(var(--method-manual))',
+  				foreground: 'hsl(var(--method-manual-foreground))',
+  				muted: 'hsl(var(--method-manual-muted))'
+  			},
+  			'method-record': {
+  				DEFAULT: 'hsl(var(--method-record))',
+  				foreground: 'hsl(var(--method-record-foreground))',
+  				muted: 'hsl(var(--method-record-muted))'
   			}
   		},
   		borderRadius: {

@@ -451,7 +451,7 @@ function CheckDetailPanel({
  >
  Incidents
  {incidentData && incidentData.total_incidents > 0 && (
- <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] text-xs rounded-full bg-destructive text-white">
+ <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] text-xs rounded-full bg-destructive text-destructive-foreground">
  {incidentData.total_incidents}
  </span>
  )}

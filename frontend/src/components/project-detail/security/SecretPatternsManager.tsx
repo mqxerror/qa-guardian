@@ -74,7 +74,7 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  </div>
  <button
  onClick={() => setShowAddSecretPatternModal(true)}
- className="flex items-center gap-2 rounded-md bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-accent/90"
+ className="flex items-center gap-2 rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"
  >
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -301,7 +301,7 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  <button
  onClick={handleAddSecretPattern}
  disabled={isAddingPattern || !newPatternName.trim() || !newPatternRegex.trim()}
- className="px-4 py-2 rounded-md bg-accent text-white hover:bg-accent/90 disabled:opacity-50"
+ className="px-4 py-2 rounded-md bg-accent text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
  >
  {isAddingPattern ? 'Adding...' : 'Add Pattern'}
  </button>

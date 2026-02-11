@@ -21,8 +21,9 @@ export type { GeneratedTestPreview, ScreenshotElement, ScreenshotTestStep, Scree
 // AI generation mode types
 export type AIGenMode = 'text' | 'screenshot' | 'user-story' | 'gherkin' | 'wizard' | 'openapi';
 
-// Wizard step type
-export type WizardStep = 1 | 2 | 3;
+// AI wizard step type (numeric for 3-step AI generation wizard)
+// Note: create-test/types.ts has a string-based WizardStep for different flow
+export type AIWizardStep = 1 | 2 | 3;
 
 // Annotation types for screenshot
 export type AnnotationType = 'click' | 'type' | 'expect';
@@ -142,8 +143,8 @@ export interface UseAIGenerationStateReturn {
   setAIGenMode: (mode: AIGenMode) => void;
 
   // Wizard state
-  wizardStep: WizardStep;
-  setWizardStep: (step: WizardStep) => void;
+  wizardStep: AIWizardStep;
+  setWizardStep: (step: AIWizardStep) => void;
   wizardTestDescription: string;
   setWizardTestDescription: (desc: string) => void;
   wizardTargetUrl: string;
@@ -268,7 +269,7 @@ export function useAIGenerationState(): UseAIGenerationStateReturn {
   const [aiGenMode, setAIGenMode] = useState<AIGenMode>('text');
 
   // Wizard state
-  const [wizardStep, setWizardStep] = useState<WizardStep>(1);
+  const [wizardStep, setWizardStep] = useState<AIWizardStep>(1);
   const [wizardTestDescription, setWizardTestDescription] = useState('');
   const [wizardTargetUrl, setWizardTargetUrl] = useState('');
   const [wizardGeneratedCode, setWizardGeneratedCode] = useState('');

@@ -147,7 +147,7 @@ export const EditModal: React.FC<EditModalProps> = ({
           <button
             onClick={handleSave}
             disabled={!editTestType || !editUrl}
-            className="flex-1 px-4 py-2 bg-primary hover:bg-primary disabled:bg-muted text-primary-foreground rounded-lg disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-muted text-primary-foreground rounded-lg disabled:cursor-not-allowed"
           >
             Save Changes
           </button>

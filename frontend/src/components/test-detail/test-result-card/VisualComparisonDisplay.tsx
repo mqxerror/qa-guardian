@@ -171,7 +171,7 @@ export function VisualComparisonDisplay({
  </button>
  <button
  onClick={() => onRejectChanges(result.test_id)}
- className="px-3 py-1.5 text-xs font-medium bg-destructive text-primary-foreground rounded hover:bg-destructive"
+ className="px-3 py-1.5 text-xs font-medium bg-destructive text-destructive-foreground rounded hover:bg-destructive/90"
  >
  ✗ Reject Changes
  </button>

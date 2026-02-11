@@ -48,7 +48,7 @@ export interface UseVisualTestStateReturn {
   visualContainerRefs: React.MutableRefObject<Record<string, HTMLDivElement | null>>;
 
   // Visual video states (Feature #1880)
-  visualVideoRef: React.RefObject<HTMLVideoElement | null>;
+  visualVideoRef: React.RefObject<HTMLVideoElement>;
   visualVideoCurrentTime: number;
   setVisualVideoCurrentTime: React.Dispatch<React.SetStateAction<number>>;
   isVisualVideoPlaying: boolean;
@@ -97,7 +97,7 @@ export function useVisualTestState({
   const visualContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Visual video states (Feature #1880)
-  const visualVideoRef = useRef<HTMLVideoElement | null>(null);
+  const visualVideoRef = useRef<HTMLVideoElement>(null!);
   const [visualVideoCurrentTime, setVisualVideoCurrentTime] = useState(0);
   const [isVisualVideoPlaying, setIsVisualVideoPlaying] = useState(false);
   const [visualVideoExpanded, setVisualVideoExpanded] = useState(false);

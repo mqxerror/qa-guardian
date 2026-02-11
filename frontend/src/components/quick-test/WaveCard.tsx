@@ -10,6 +10,7 @@
  * - API Discovery details for Wave 6
  */
 
+import { memo } from 'react';
 import {
   Monitor,
   Smartphone,
@@ -160,7 +161,7 @@ function getWaveSubtitle(status: WaveData['status'], duration?: number): string 
 // Component
 // ============================================================
 
-export function WaveCard({
+export const WaveCard = memo(function WaveCard({
   wave,
   onToggleExpand,
   onScreenshotClick,
@@ -238,6 +239,7 @@ export function WaveCard({
       )}
     </WaveProgressCard>
   );
-}
+});
+WaveCard.displayName = 'WaveCard';
 
 export default WaveCard;

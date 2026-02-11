@@ -385,7 +385,7 @@ export function AITestReviewPage() {
                       <button
                         onClick={() => handleReject(selectedTest.id)}
                         disabled={isSubmitting}
-                        className="flex-1 px-4 py-2 rounded-lg bg-destructive hover:bg-destructive text-primary-foreground font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 px-4 py-2 rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                       >
                         {isSubmitting ? (
                           <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">

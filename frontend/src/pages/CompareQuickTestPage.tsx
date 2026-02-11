@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useSocketStore } from '../stores/socketStore';
 import { useAuthStore } from '../stores/authStore';
+import { getInitialWaveStates, WAVE_DEFINITIONS } from '../constants/waves';
 import {
   PageHeader,
   AnimatedCard,
@@ -98,86 +99,13 @@ interface ScoreDelta {
 }
 
 // ============================================================
-// Constants
+// Constants - Feature #612: Centralized to constants/waves.ts
 // ============================================================
 
-const INITIAL_WAVES: WaveState[] = [
-  {
-    wave: 1,
-    name: 'Health Check',
-    status: 'waiting',
-    steps: [
-      { name: 'DNS Resolution', status: 'pending' },
-      { name: 'HTTP Request', status: 'pending' },
-      { name: 'SSL Certificate', status: 'pending' },
-      { name: 'Response Time', status: 'pending' },
-    ],
-  },
-  {
-    wave: 2,
-    name: 'Visual + Performance',
-    status: 'waiting',
-    steps: [
-      { name: 'Desktop Screenshot', status: 'pending' },
-      { name: 'Mobile Screenshot', status: 'pending' },
-      { name: 'Core Web Vitals', status: 'pending' },
-      { name: 'Performance Score', status: 'pending' },
-    ],
-  },
-  {
-    wave: 3,
-    name: 'Security Scan',
-    status: 'waiting',
-    steps: [
-      { name: 'Security Headers', status: 'pending' },
-      { name: 'Cookie Audit', status: 'pending' },
-      { name: 'Mixed Content', status: 'pending' },
-      { name: 'Exposed Paths', status: 'pending' },
-    ],
-  },
-  {
-    wave: 4,
-    name: 'AI Analysis',
-    status: 'waiting',
-    steps: [
-      { name: 'Test Suggestions', status: 'pending' },
-      { name: 'UX Issues', status: 'pending' },
-      { name: 'Accessibility', status: 'pending' },
-      { name: 'Summary', status: 'pending' },
-    ],
-  },
-  {
-    wave: 5,
-    name: 'Accessibility',
-    status: 'waiting',
-    steps: [
-      { name: 'WCAG 2.1 AA Scan', status: 'pending' },
-      { name: 'Critical Violations', status: 'pending' },
-      { name: 'Serious Violations', status: 'pending' },
-      { name: 'Minor Violations', status: 'pending' },
-    ],
-  },
-  {
-    wave: 6,
-    name: 'API Discovery',
-    status: 'waiting',
-    steps: [
-      { name: 'OpenAPI Spec Detection', status: 'pending' },
-      { name: 'Common API Paths', status: 'pending' },
-      { name: 'Endpoint Health', status: 'pending' },
-      { name: 'Auth Protection', status: 'pending' },
-    ],
-  },
-];
-
-const WAVE_ICONS: Record<number, React.ElementType> = {
-  1: Globe,
-  2: Gauge,
-  3: Shield,
-  4: Brain,
-  5: Accessibility,
-  6: Network,
-};
+// Build WAVE_ICONS from centralized WAVE_DEFINITIONS
+const WAVE_ICONS: Record<number, React.ElementType> = Object.fromEntries(
+  WAVE_DEFINITIONS.map(def => [def.wave, def.icon])
+);
 
 // ============================================================
 // Helper Functions
@@ -210,11 +138,9 @@ function getDeltaIcon(delta: number) {
   return <Minus className="w-4 h-4" />;
 }
 
+// Feature #612: Use centralized getInitialWaveStates() for fresh wave array
 function cloneWaves(): WaveState[] {
-  return INITIAL_WAVES.map(w => ({
-    ...w,
-    steps: w.steps.map(s => ({ ...s })),
-  }));
+  return getInitialWaveStates() as WaveState[];
 }
 
 // ============================================================

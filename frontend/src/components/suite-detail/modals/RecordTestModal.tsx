@@ -435,7 +435,7 @@ export function RecordTestModal({
                           <div className="flex gap-2 justify-center">
                             <button
                               onClick={onRetryConnection}
-                              className="px-3 py-1.5 text-xs rounded-md bg-primary hover:bg-primary text-primary-foreground transition-colors"
+                              className="px-3 py-1.5 text-xs rounded-md bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
                             >
                               🔄 Retry
                             </button>

@@ -608,7 +608,7 @@ export function AICachePanel({
               </button>
               <button
                 onClick={clearCache}
-                className="px-4 py-2 bg-destructive text-white rounded hover:bg-destructive"
+                className="px-4 py-2 bg-destructive text-destructive-foreground rounded hover:bg-destructive/90"
               >
                 Clear Cache
               </button>

@@ -452,7 +452,7 @@ export default function VisualTab({
  <button
  onClick={() => handleRejectBaseline(result.test_id, idx)}
  disabled={isApprovalLoading}
- className="px-3 py-1.5 text-sm bg-destructive text-primary-foreground rounded-lg hover:bg-destructive disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+ className="px-3 py-1.5 text-sm bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
  >
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -584,7 +584,7 @@ export default function VisualTab({
  </button>
  <button
  onClick={() => handleRejectBaseline(result.test_id, idx, vp.viewportId)}
- className="px-2 py-1 text-xs bg-destructive text-primary-foreground rounded hover:bg-destructive transition-colors"
+ className="px-2 py-1 text-xs bg-destructive text-destructive-foreground rounded hover:bg-destructive/90 transition-colors"
  title={`Reject ${vp.viewportLabel} baseline`}
  >
  ✗ Reject

@@ -12,3 +12,4 @@
 export * from './validation';
 export * from './timeouts';
 export * from './thresholds';
+export * from './waves';

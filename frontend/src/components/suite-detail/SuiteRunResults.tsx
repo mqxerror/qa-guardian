@@ -259,7 +259,7 @@ export function SuiteRunResults({
  <button
  onClick={onCancelSuiteRun}
  disabled={isCancellingSuite}
- className="rounded-md bg-destructive px-3 py-1 text-sm font-medium text-destructive-foreground hover:bg-destructive disabled:opacity-50"
+ className="rounded-md bg-destructive px-3 py-1 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
  >
  {isCancellingSuite ? 'Cancelling...' : 'Cancel'}
  </button>

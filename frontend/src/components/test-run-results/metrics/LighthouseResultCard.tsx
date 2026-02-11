@@ -148,7 +148,7 @@ export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
  <div className="flex items-center gap-2">
  <button
  onClick={() => exportLighthousePDF(lighthouse, result.test_name, lighthouse.url)}
- className="px-3 py-1.5 text-sm bg-destructive text-primary-foreground rounded-lg hover:bg-destructive transition-colors flex items-center gap-1.5"
+ className="px-3 py-1.5 text-sm bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors flex items-center gap-1.5"
  >
  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />

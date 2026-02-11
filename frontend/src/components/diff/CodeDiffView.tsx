@@ -278,7 +278,7 @@ export function CodeDiffView({
  <button
  type="button"
  onClick={handleRejectAll}
- className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-destructive text-white hover:bg-destructive transition-colors"
+ className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
  >
  <span>✗</span>
  Reject All

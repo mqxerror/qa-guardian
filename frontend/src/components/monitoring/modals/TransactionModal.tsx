@@ -2,11 +2,13 @@
  * TransactionModal Component
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
  * Feature #127: Mobile responsive design audit and fixes
+ * Feature #635: Migrated to Modal/ModalBody/ModalFooter
  *
  * Handles creating multi-step transaction monitors
  */
 
 import { useState, useEffect } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 import { TransactionStepAssertion, TransactionCheck, TransactionStepInput } from '../types';
 import { toast } from '../../../stores/toastStore';
 
@@ -170,15 +172,9 @@ export default function TransactionModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-transaction-title"
-        className="w-full max-w-2xl rounded-lg bg-card p-4 sm:p-6 shadow-xl mx-4 max-h-[90vh] overflow-y-auto"
-      >
-        <h2 id="create-transaction-title" className="text-lg font-semibold text-foreground mb-4">Create Transaction</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal isOpen onClose={onClose} title="Create Transaction" size="lg">
+      <form id="transaction-form" onSubmit={handleSubmit}>
+        <ModalBody className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Name</label>
@@ -386,24 +382,25 @@ export default function TransactionModal({
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Creating...' : 'Create Transaction'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="transaction-form"
+            disabled={isSubmitting}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {isSubmitting ? 'Creating...' : 'Create Transaction'}
+          </button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }

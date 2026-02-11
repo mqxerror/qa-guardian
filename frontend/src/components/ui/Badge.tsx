@@ -83,8 +83,8 @@ const colorClasses: Record<BadgeColor, string> = {
  green: 'bg-success/15 text-success',
  blue: 'bg-primary/15 text-primary',
  indigo: 'bg-accent/15 text-accent',
- purple: 'bg-purple-500/15 text-purple-400',
- pink: 'bg-pink-500/15 text-pink-400', // Intentional: no semantic equivalent, used for visual variety
+ purple: 'bg-method-ai/15 text-method-ai', // Feature #614: Uses method-ai semantic token
+ pink: 'bg-method-record/15 text-method-record', // Feature #614: Uses method-record semantic token
  gray: 'bg-muted text-foreground',
  teal: 'bg-info/15 text-info',
  emerald: 'bg-success/15 text-success',
@@ -208,9 +208,9 @@ export type BadgeProps =
 // BADGE COMPONENT
 // =============================================================================
 
-// Feature #521: Source badge color mapping
+// Feature #521: Source badge color mapping - Feature #614: Use semantic tokens
 const sourceColors: Record<SourceType, string> = {
- vision: 'bg-purple-500/15 text-purple-400',
+ vision: 'bg-method-ai/15 text-method-ai',
  metrics: 'bg-info/15 text-info',
 };
 

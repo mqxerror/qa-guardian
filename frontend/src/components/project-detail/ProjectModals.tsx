@@ -247,7 +247,7 @@ export function ProjectModals({
  <button
  onClick={handleDeleteProject}
  disabled={isDeleting}
- className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive disabled:opacity-50"
+ className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
  >
  {isDeleting ? 'Deleting...' : 'Delete Project'}
  </button>
@@ -810,7 +810,7 @@ export function ProjectModals({
  <button
  onClick={handleHealWithVision}
  disabled={isHealingWithVision || isSubmittingSelector}
- className="w-full flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+ className="w-full flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
  >
  {isHealingWithVision ? (
  <>
@@ -988,7 +988,7 @@ export function ProjectModals({
  <button
  onClick={handleAcceptHealed}
  disabled={isSubmittingSelector}
- className="rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success disabled:opacity-50"
+ className="rounded-md bg-success px-4 py-2 text-sm font-medium text-success-foreground hover:bg-success disabled:opacity-50"
  >
  {isSubmittingSelector ? 'Accepting...' : 'Accept Healed'}
  </button>

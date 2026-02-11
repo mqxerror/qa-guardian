@@ -11,7 +11,7 @@
  * - FID threshold
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 
 /**
  * Device preset options
@@ -96,59 +96,69 @@ const DEVICE_PRESETS: { value: DevicePreset; label: string; description: string;
 
 /**
  * Form field component
+ * Feature #622: React.memo for performance optimization
  */
-const FormField: React.FC<{
+interface FormFieldProps {
  label: string;
  required?: boolean;
  children: React.ReactNode;
  hint?: string;
  error?: string;
-}> = ({ label, required, children, hint, error }) => (
- <div className="space-y-1">
- <label className="block text-sm font-medium text-foreground">
- {label}
- {required && <span className="text-destructive ml-1">*</span>}
- </label>
- {children}
- {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
- {error && <p className="text-xs text-destructive">{error}</p>}
- </div>
-);
+}
+
+const FormField = memo<FormFieldProps>(function FormField({ label, required, children, hint, error }) {
+ return (
+   <div className="space-y-1">
+     <label className="block text-sm font-medium text-foreground">
+       {label}
+       {required && <span className="text-destructive ml-1">*</span>}
+     </label>
+     {children}
+     {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
+     {error && <p className="text-xs text-destructive">{error}</p>}
+   </div>
+ );
+});
+FormField.displayName = 'FormField';
 
 /**
  * Threshold indicator component
+ * Feature #622: React.memo for performance optimization
  */
-const ThresholdIndicator: React.FC<{
+interface ThresholdIndicatorProps {
  value: number;
  goodMax: number;
  poorMin: number;
  unit?: string;
-}> = ({ value, goodMax, poorMin, unit = '' }) => {
+}
+
+const ThresholdIndicator = memo<ThresholdIndicatorProps>(function ThresholdIndicator({ value, goodMax, poorMin, unit = '' }) {
  const level = value <= goodMax ? 'good' : value >= poorMin ? 'poor' : 'needs-improvement';
  const colors = {
- good: 'bg-success',
- 'needs-improvement': 'bg-warning',
- poor: 'bg-destructive',
+   good: 'bg-success',
+   'needs-improvement': 'bg-warning',
+   poor: 'bg-destructive',
  };
  const labels = {
- good: 'Good',
- 'needs-improvement': 'Needs Improvement',
- poor: 'Poor',
+   good: 'Good',
+   'needs-improvement': 'Needs Improvement',
+   poor: 'Poor',
  };
 
  return (
- <div className="flex items-center gap-2 mt-1">
- <div className={`w-2 h-2 rounded-full ${colors[level]}`} />
- <span className={`text-xs ${
- level === 'good' ? 'text-success' :
- level === 'poor' ? 'text-destructive' :
- 'text-warning'
- }`}>
- {labels[level]} ({value}{unit})
- </span>
- </div>
+   <div className="flex items-center gap-2 mt-1">
+     <div className={`w-2 h-2 rounded-full ${colors[level]}`} />
+     <span className={`text-xs ${
+       level === 'good' ? 'text-success' :
+       level === 'poor' ? 'text-destructive' :
+       'text-warning'
+     }`}>
+       {labels[level]} ({value}{unit})
+     </span>
+   </div>
  );
-};
+});
+ThresholdIndicator.displayName = 'ThresholdIndicator';
 
 /**
  * PerformanceConfig - Configuration form for Lighthouse/Performance tests

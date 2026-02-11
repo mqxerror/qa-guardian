@@ -318,7 +318,7 @@ export function TeamTab() {
               <button
                 onClick={handleRemoveMember}
                 disabled={isRemoving}
-                className="px-4 py-2 bg-destructive text-white rounded-md hover:bg-destructive disabled:opacity-50"
+                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 disabled:opacity-50"
               >
                 {isRemoving ? 'Removing...' : 'Remove'}
               </button>

@@ -48,7 +48,7 @@ export function CustomRulesManager(props: CustomRulesManagerProps) {
  </div>
  <button
  onClick={() => setShowAddCustomRuleModal(true)}
- className="flex items-center gap-2 rounded-md bg-warning px-3 py-2 text-sm font-medium text-white hover:bg-warning/90"
+ className="flex items-center gap-2 rounded-md bg-warning px-3 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90"
  >
  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -197,7 +197,7 @@ export function CustomRulesManager(props: CustomRulesManagerProps) {
  <button
  onClick={handleAddCustomRule}
  disabled={isAddingCustomRule || !newCustomRuleName.trim() || !newCustomRuleYaml.trim()}
- className="px-4 py-2 rounded-md bg-warning text-white hover:bg-warning/90 disabled:opacity-50"
+ className="px-4 py-2 rounded-md bg-warning text-warning-foreground hover:bg-warning/90 disabled:opacity-50"
  >
  {isAddingCustomRule ? 'Adding...' : 'Add Rule'}
  </button>

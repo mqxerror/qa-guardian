@@ -317,7 +317,7 @@ export function AIAPIKeyManager({
         </div>
         <button
           onClick={openAddKeyModal}
-          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary flex items-center gap-2"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 flex items-center gap-2"
         >
           <span>➕</span> Add API Key
         </button>
@@ -520,7 +520,7 @@ export function AIAPIKeyManager({
                     <button
                       onClick={() => startZeroDowntimeRotation(primaryKey.id, standbyKeys[0].id)}
                       disabled={rotatingKeys.has(primaryKey.id) || rotatingKeys.has(standbyKeys[0].id)}
-                      className="px-4 py-2 bg-gradient-to-r from-primary to-warning text-white rounded-lg hover:from-primary hover:to-warning disabled:opacity-50 flex items-center gap-2"
+                      className="px-4 py-2 bg-gradient-to-r from-primary to-warning text-primary-foreground rounded-lg hover:from-primary hover:to-warning disabled:opacity-50 flex items-center gap-2"
                     >
                       {rotatingKeys.has(primaryKey.id) ? (
                         <>
@@ -679,7 +679,7 @@ export function AIAPIKeyManager({
               </button>
               <button
                 onClick={keyModalMode === 'add' ? addNewApiKey : rotateApiKey}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
               >
                 {keyModalMode === 'add' ? 'Add Key' : 'Rotate Key'}
               </button>

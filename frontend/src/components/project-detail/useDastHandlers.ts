@@ -103,13 +103,79 @@ export function useDastHandlers({
     updateDastConfigMutation.mutate(updates);
   }, [updateDastConfigMutation]);
 
+  // Feature #624: useMutation for triggering DAST scan with polling
+  const triggerDastScanMutation = useMutation({
+    mutationFn: async (params: { targetUrl: string; scanProfile: string }) => {
+      const response = await fetch(`/api/v1/projects/${projectId}/dast/scans`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(params),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to start DAST scan');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast.success('DAST scan started');
+      // Poll for scan completion
+      const pollScan = async (scanId: string) => {
+        try {
+          const scanResponse = await fetch(`/api/v1/projects/${projectId}/dast/scans/${scanId}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+          if (scanResponse.ok) {
+            const scanData = await scanResponse.json();
+            if (scanData.scan.status === 'completed' || scanData.scan.status === 'failed') {
+              // Invalidate queries to refresh scans list
+              queryClient.invalidateQueries({ queryKey: ['dast', 'scans', projectId] });
+              // Also fetch directly for local state
+              try {
+                const scansResponse = await fetch(`/api/v1/projects/${projectId}/dast/scans?limit=10`, {
+                  headers: { 'Authorization': `Bearer ${token}` },
+                });
+                if (scansResponse.ok) {
+                  const scansData = await scansResponse.json();
+                  setDastScans(scansData.scans);
+                }
+              } catch {
+                // Ignore, query will retry
+              }
+              setIsRunningDastScan(false);
+              if (scanData.scan.status === 'completed') {
+                toast.success(`DAST scan completed: ${scanData.scan.summary.total} alerts`);
+              } else {
+                toast.error('DAST scan failed');
+              }
+            } else {
+              // Still running, poll again after 2 seconds
+              setTimeout(() => pollScan(scanId), 2000);
+            }
+          }
+        } catch {
+          toast.error('Failed to check scan status');
+          setIsRunningDastScan(false);
+        }
+      };
+      // Start polling
+      setIsRunningDastScan(true);
+      setTimeout(() => pollScan(data.scan.id), 2000);
+    },
+    onError: () => {
+      toast.error('Failed to start DAST scan');
+      setIsRunningDastScan(false);
+    },
+  });
+
   const handleTriggerDastScan = useCallback(async () => {
     const urlToScan = dastTargetUrl || dastConfig.targetUrl;
     if (!urlToScan) {
       toast.error('Please configure a target URL first');
       return;
     }
-
     // Validate URL
     try {
       new URL(urlToScan);
@@ -117,64 +183,11 @@ export function useDastHandlers({
       toast.error('Please enter a valid URL (e.g., https://example.com)');
       return;
     }
-
-    setIsRunningDastScan(true);
-    try {
-      const response = await fetch(`/api/v1/projects/${projectId}/dast/scans`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          targetUrl: urlToScan,
-          scanProfile: dastConfig.scanProfile,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to start DAST scan');
-      }
-
-      const data = await response.json();
-      toast.success('DAST scan started');
-
-      // Poll for scan completion
-      const pollScan = async (scanId: string) => {
-        const scanResponse = await fetch(`/api/v1/projects/${projectId}/dast/scans/${scanId}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (scanResponse.ok) {
-          const scanData = await scanResponse.json();
-          if (scanData.scan.status === 'completed' || scanData.scan.status === 'failed') {
-            // Refresh scans list
-            const scansResponse = await fetch(`/api/v1/projects/${projectId}/dast/scans?limit=10`, {
-              headers: { 'Authorization': `Bearer ${token}` },
-            });
-            if (scansResponse.ok) {
-              const scansData = await scansResponse.json();
-              setDastScans(scansData.scans);
-            }
-            setIsRunningDastScan(false);
-            if (scanData.scan.status === 'completed') {
-              toast.success(`DAST scan completed: ${scanData.scan.summary.total} alerts`);
-            } else {
-              toast.error('DAST scan failed');
-            }
-          } else {
-            // Still running, poll again after 2 seconds
-            setTimeout(() => pollScan(scanId), 2000);
-          }
-        }
-      };
-
-      // Start polling
-      setTimeout(() => pollScan(data.scan.id), 2000);
-    } catch (err) {
-      toast.error('Failed to start DAST scan');
-      setIsRunningDastScan(false);
-    }
-  }, [projectId, token, dastTargetUrl, dastConfig.targetUrl, dastConfig.scanProfile]);
+    triggerDastScanMutation.mutate({
+      targetUrl: urlToScan,
+      scanProfile: dastConfig.scanProfile,
+    });
+  }, [triggerDastScanMutation, dastTargetUrl, dastConfig.targetUrl, dastConfig.scanProfile]);
 
   // Feature #624: useMutation for uploading OpenAPI spec
   const uploadOpenApiSpecMutation = useMutation({

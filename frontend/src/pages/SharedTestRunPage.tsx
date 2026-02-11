@@ -425,7 +425,7 @@ export default function SharedTestRunPage() {
  <button
  type="submit"
  disabled={authenticating || !password}
- className="w-full py-2.5 px-4 bg-primary hover:bg-primary disabled:bg-primary/80 text-primary-foreground font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+ className="w-full py-2.5 px-4 bg-primary hover:bg-primary/90 disabled:bg-primary/80 text-primary-foreground font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
  >
  {authenticating ? (
  <>
@@ -555,7 +555,7 @@ export default function SharedTestRunPage() {
  <div className="flex flex-col sm:flex-row gap-3 mt-8">
  <Link
  to="/login"
- className="flex-1 inline-flex items-center justify-center px-4 py-2.5 bg-primary hover:bg-primary text-primary-foreground font-medium rounded-lg transition-colors"
+ className="flex-1 inline-flex items-center justify-center px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-colors"
  >
  Sign In
  </Link>
@@ -587,7 +587,7 @@ export default function SharedTestRunPage() {
  <p className="text-foreground mb-6">{error}</p>
  <Link
  to="/"
- className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary transition-colors"
+ className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
  >
  Go to Home
  </Link>

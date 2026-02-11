@@ -84,10 +84,10 @@ export function AIBudgetDashboard({
           <h2 className="text-lg font-semibold flex items-center gap-2">
             💰 Monthly AI Budget
             {getBudgetStatus() === 'blocked' && (
-              <span className="text-xs bg-destructive text-white px-2 py-0.5 rounded-full animate-pulse">BLOCKED</span>
+              <span className="text-xs bg-destructive text-destructive-foreground px-2 py-0.5 rounded-full animate-pulse">BLOCKED</span>
             )}
             {getBudgetStatus() === 'critical' && (
-              <span className="text-xs bg-warning text-white px-2 py-0.5 rounded-full">Soft Limit</span>
+              <span className="text-xs bg-warning text-warning-foreground px-2 py-0.5 rounded-full">Soft Limit</span>
             )}
           </h2>
           <p className="text-sm text-muted-foreground">Track and control AI spending with soft and hard limits</p>
@@ -149,7 +149,7 @@ export function AIBudgetDashboard({
           />
           {/* Labels */}
           <div className="absolute inset-0 flex items-center justify-between px-3 text-xs font-medium">
-            <span className={getBudgetPercentage() > 50 ? 'text-white' : 'text-foreground'}>
+            <span className={getBudgetPercentage() > 50 ? 'text-success-foreground' : 'text-foreground'}>
               {formatCurrency(spendingData.current_month_spend_cents)}
             </span>
             <span className="text-foreground">
@@ -349,7 +349,7 @@ export function AIBudgetDashboard({
                   onResetBudget();
                   setShowBudgetResetModal(false);
                 }}
-                className="px-4 py-2 bg-destructive text-white rounded-lg hover:bg-destructive"
+                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90"
               >
                 Reset Budget
               </button>

@@ -2,11 +2,13 @@
  * WebhookModal Component
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
  * Feature #127: Mobile responsive design audit and fixes
+ * Feature #635: Migrated to Modal/ModalBody/ModalFooter
  *
  * Handles creating webhook monitoring checks
  */
 
 import { useState, useEffect } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 import { WebhookCheck } from '../types';
 import { toast } from '../../../stores/toastStore';
 
@@ -89,15 +91,9 @@ export default function WebhookModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-webhook-title"
-        className="w-full max-w-md rounded-lg bg-card p-4 sm:p-6 shadow-xl max-h-[90vh] overflow-y-auto"
-      >
-        <h2 id="create-webhook-title" className="text-lg font-semibold text-foreground mb-4">Create Webhook Check</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal isOpen onClose={onClose} title="Create Webhook Check" size="md">
+      <form id="webhook-form" onSubmit={handleSubmit}>
+        <ModalBody className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Name</label>
             <input
@@ -158,24 +154,25 @@ export default function WebhookModal({
               <p className="text-xs text-muted-foreground mt-1">Comma-separated list of required JSON fields</p>
             </div>
           )}
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Creating...' : 'Create Webhook'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="webhook-form"
+            disabled={isSubmitting}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {isSubmitting ? 'Creating...' : 'Create Webhook'}
+          </button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }

@@ -1,13 +1,16 @@
 /**
  * Feature #127: Mobile-responsive Modal component
+ * Feature #616: Added open/close animations with CSS transitions
+ *
  * Provides consistent modal styling with proper mobile support:
  * - max-h-[90vh] for small screens
  * - overflow-y-auto for scrollable content
  * - Proper padding and responsive widths
  * - Keyboard trap and accessibility
+ * - Smooth enter/exit animations (respects prefers-reduced-motion)
  */
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 
 type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
@@ -73,19 +76,44 @@ export function Modal({
   const generatedTitleId = useRef(`modal-title-${Math.random().toString(36).substr(2, 9)}`);
   const actualTitleId = titleId || generatedTitleId.current;
 
+  // Feature #616: Track animation state for smooth exit
+  const [isVisible, setIsVisible] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  // Feature #616: Handle close with animation
+  const handleClose = useCallback(() => {
+    if (isClosing) return; // Prevent double-close
+    setIsClosing(true);
+    // Wait for exit animation to complete before actually closing
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const animationDuration = prefersReducedMotion ? 0 : 150;
+    setTimeout(() => {
+      setIsClosing(false);
+      setIsVisible(false);
+      onClose();
+    }, animationDuration);
+  }, [onClose, isClosing]);
+
   // Handle escape key
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (closeOnEscape && e.key === 'Escape') {
-        onClose();
+        handleClose();
       }
     },
-    [closeOnEscape, onClose]
+    [closeOnEscape, handleClose]
   );
+
+  // Feature #616: Sync visibility with isOpen prop
+  useEffect(() => {
+    if (isOpen && !isVisible && !isClosing) {
+      setIsVisible(true);
+    }
+  }, [isOpen, isVisible, isClosing]);
 
   // Focus trap and escape handler
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isVisible) return;
 
     document.addEventListener('keydown', handleKeyDown);
 
@@ -102,19 +130,28 @@ export function Modal({
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = originalOverflow;
     };
-  }, [isOpen, handleKeyDown]);
+  }, [isVisible, handleKeyDown]);
 
-  if (!isOpen) return null;
+  // Don't render if not visible
+  if (!isVisible) return null;
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (closeOnBackdrop && e.target === e.currentTarget) {
-      onClose();
+      handleClose();
     }
   };
 
+  // Feature #616: Animation classes based on state
+  const backdropAnimationClass = isClosing
+    ? 'animate-modal-backdrop-exit'
+    : 'animate-modal-backdrop-enter';
+  const contentAnimationClass = isClosing
+    ? 'animate-modal-content-exit'
+    : 'animate-modal-content-enter';
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 ${backdropAnimationClass}`}
       onMouseDown={handleBackdropClick}
       role="presentation"
     >
@@ -129,6 +166,7 @@ export function Modal({
           max-h-[90vh] overflow-y-auto
           rounded-lg border border-border bg-card shadow-lg
           focus:outline-none
+          ${contentAnimationClass}
           ${className}
         `.trim().replace(/\s+/g, ' ')}
         onClick={(e) => e.stopPropagation()}

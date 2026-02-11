@@ -142,10 +142,10 @@ export function AIBudgetPanel({
             <h2 className="text-lg font-semibold flex items-center gap-2">
               Monthly AI Budget
               {getBudgetStatus() === 'blocked' && (
-                <span className="text-xs bg-destructive text-white px-2 py-0.5 rounded-full animate-pulse">BLOCKED</span>
+                <span className="text-xs bg-destructive text-destructive-foreground px-2 py-0.5 rounded-full animate-pulse">BLOCKED</span>
               )}
               {getBudgetStatus() === 'critical' && (
-                <span className="text-xs bg-warning text-white px-2 py-0.5 rounded-full">Soft Limit</span>
+                <span className="text-xs bg-warning text-warning-foreground px-2 py-0.5 rounded-full">Soft Limit</span>
               )}
             </h2>
             <p className="text-sm text-muted-foreground">Track and control AI spending with soft and hard limits</p>
@@ -209,7 +209,7 @@ export function AIBudgetPanel({
             />
             {/* Labels */}
             <div className="absolute inset-0 flex items-center justify-between px-3 text-xs font-medium">
-              <span className={getBudgetPercentage() > 50 ? 'text-white' : 'text-foreground'}>
+              <span className={getBudgetPercentage() > 50 ? 'text-success-foreground' : 'text-foreground'}>
                 {formatCurrency(spendingData.current_month_spend_cents)}
               </span>
               <span className="text-foreground">
@@ -406,11 +406,11 @@ export function AIBudgetPanel({
                   >
                     <div
                       className={`w-full rounded-t transition-all ${
-                        isOverDailyBudget ? 'bg-destructive/80 hover:bg-destructive' : 'bg-primary/80 hover:bg-primary'
+                        isOverDailyBudget ? 'bg-destructive/80 hover:bg-destructive/90' : 'bg-primary/80 hover:bg-primary/90'
                       }`}
                       style={{ height: `${Math.max(height, 4)}%` }}
                     />
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-card text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-10">
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-card text-foreground text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-10">
                       {formatCurrency(day.amount_cents)}
                     </div>
                   </div>
@@ -616,7 +616,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
                   printWindow.print();
                 }
               }}
-              className="px-3 py-2 bg-primary text-white rounded hover:bg-primary flex items-center gap-2"
+              className="px-3 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 flex items-center gap-2"
             >
               <span>Print Report</span>
             </button>
@@ -732,7 +732,7 @@ ${Object.entries(spendingData.by_feature).map(([f, c]) => ` ${f.replace('_', ' '
               </button>
               <button
                 onClick={resetBudget}
-                className="px-4 py-2 bg-primary text-white rounded hover:bg-primary"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
               >
                 Reset Budget
               </button>

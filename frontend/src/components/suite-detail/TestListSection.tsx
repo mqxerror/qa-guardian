@@ -96,7 +96,7 @@ export function TestListSection({
  };
 
  // Helper function to render test type icon
- const renderTestTypeIcon = (testType: string) => {
+ const renderTestTypeIcon = (testType: string | undefined) => {
  switch (testType) {
  case 'e2e':
  return (
@@ -220,7 +220,7 @@ interface VirtualizedTestListProps {
  onShowDeleteTestModal: (testId: string) => void;
  loadStepTemplates: () => void;
  renderSortIndicator: (field: LocalSortField) => React.ReactNode;
- renderTestTypeIcon: (testType: string) => React.ReactNode;
+ renderTestTypeIcon: (testType: string | undefined) => React.ReactNode;
  formatDuration: (ms: number | null | undefined) => string;
 }
 
@@ -326,7 +326,8 @@ function VirtualizedTestList({
  const test = sortedTests[virtualRow.index];
  // Feature #1959: Check run status for this test
  const testResult = suiteRun?.results?.find((r: SuiteRunResult) => r.test_id === test.id);
- const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && suiteRun?.results?.length < tests.length;
+ const resultsLength = suiteRun?.results?.length ?? 0;
+const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && resultsLength < tests.length;
  const completedTestIds = suiteRun?.results?.map((r: SuiteRunResult) => r.test_id) || [];
  const currentTestIndex = completedTestIds.length;
  const testsInOrder = tests.map(t => t.id);
@@ -630,7 +631,8 @@ function VirtualizedTestList({
  {sortedTests.map((test) => {
  // Feature #1959: Check run status for this test
  const testResult = suiteRun?.results?.find((r: SuiteRunResult) => r.test_id === test.id);
- const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && suiteRun?.results?.length < tests.length;
+ const resultsLength = suiteRun?.results?.length ?? 0;
+const isCurrentlyRunning = suiteRun?.status === 'running' && !testResult && resultsLength < tests.length;
  const completedTestIds = suiteRun?.results?.map((r: SuiteRunResult) => r.test_id) || [];
  const currentTestIndex = completedTestIds.length;
  const testsInOrder = tests.map(t => t.id);

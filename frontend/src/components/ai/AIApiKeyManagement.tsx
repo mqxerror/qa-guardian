@@ -115,7 +115,7 @@ export function AIApiKeyManagement({
         </div>
         <button
           onClick={openAddKeyModal}
-          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary flex items-center gap-2"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 flex items-center gap-2"
         >
           <span>➕</span> Add API Key
         </button>
@@ -374,7 +374,7 @@ export function AIApiKeyManagement({
               <button
                 onClick={keyModalMode === 'add' ? handleAddKey : handleRotateKey}
                 disabled={!newKeyValue || (keyModalMode === 'add' && !newKeyName)}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary disabled:opacity-50"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
               >
                 {keyModalMode === 'add' ? 'Add Key' : 'Rotate Key'}
               </button>

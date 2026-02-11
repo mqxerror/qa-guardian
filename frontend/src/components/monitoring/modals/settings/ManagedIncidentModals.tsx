@@ -20,12 +20,12 @@ export const getIncidentStatusColor = (status: ManagedIncident['status']) => {
 
 export const getIncidentPriorityColor = (priority: ManagedIncident['priority']) => {
   switch (priority) {
-    case 'P1': return 'bg-destructive text-white';
-    case 'P2': return 'bg-warning text-white';
-    case 'P3': return 'bg-warning text-white';
-    case 'P4': return 'bg-primary text-white';
-    case 'P5': return 'bg-muted-foreground text-white';
-    default: return 'bg-muted-foreground text-white';
+    case 'P1': return 'bg-destructive text-destructive-foreground';
+    case 'P2': return 'bg-warning text-warning-foreground';
+    case 'P3': return 'bg-warning text-warning-foreground';
+    case 'P4': return 'bg-primary text-primary-foreground';
+    case 'P5': return 'bg-muted-foreground text-foreground';
+    default: return 'bg-muted-foreground text-foreground';
   }
 };
 
@@ -188,7 +188,7 @@ export function CreateManagedIncidentModal({
             <button
               type="submit"
               disabled={isSubmitting || !title.trim()}
-              className="flex-1 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive disabled:opacity-50"
+              className="flex-1 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
             >
               {isSubmitting ? 'Creating...' : 'Declare Incident'}
             </button>
@@ -281,7 +281,7 @@ export function ManagedIncidentDetailModal({
             ))}
             <button
               onClick={onOpenResolveModal}
-              className="px-3 py-1 text-xs rounded-full bg-success text-white hover:bg-success"
+              className="px-3 py-1 text-xs rounded-full bg-success text-success-foreground hover:bg-success"
             >
               Resolve
             </button>
@@ -650,7 +650,7 @@ export function ResolveIncidentModal({
             <button
               onClick={handleResolve}
               disabled={!resolutionSummary.trim()}
-              className="flex-1 rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success disabled:opacity-50"
+              className="flex-1 rounded-md bg-success px-4 py-2 text-sm font-medium text-success-foreground hover:bg-success disabled:opacity-50"
             >
               Resolve Incident
             </button>

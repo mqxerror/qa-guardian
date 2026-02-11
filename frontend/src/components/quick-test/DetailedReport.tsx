@@ -13,17 +13,11 @@
  * - Wave 7: SEO (reuses SeoAnalysisDetails)
  */
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import {
   ChevronDown,
   ChevronRight,
   Globe,
-  Gauge,
-  Shield,
-  Brain,
-  Accessibility,
-  Network,
-  Search,
   CheckCircle2,
   XCircle,
   AlertTriangle,
@@ -33,7 +27,10 @@ import {
   FileWarning,
   Cookie,
   Eye,
+  Gauge,
+  Shield,
 } from 'lucide-react';
+import { getWaveConfig } from '../../constants/waves';
 import {
   AIAnalysisDetails,
   AccessibilityDetails,
@@ -117,9 +114,10 @@ function ReportSection({ title, icon: Icon, status, duration, defaultExpanded = 
 
 // ============================================================
 // Wave 1: Health Check Details
+// Feature #622: React.memo for performance optimization
 // ============================================================
 
-function HealthCheckDetails({ data }: { data: Record<string, unknown> }) {
+const HealthCheckDetails = memo(function HealthCheckDetails({ data }: { data: Record<string, unknown> }) {
   const dns = data.dns as { resolved?: boolean; addresses?: string[]; durationMs?: number; error?: string } | undefined;
   const http = data.http as { status?: number; statusText?: string; durationMs?: number; headers?: Record<string, string>; error?: string } | undefined;
   const ssl = data.ssl as { valid?: boolean; issuer?: string; validFrom?: string; validTo?: string; daysUntilExpiry?: number; durationMs?: number; error?: string } | undefined;
@@ -253,13 +251,15 @@ function HealthCheckDetails({ data }: { data: Record<string, unknown> }) {
       )}
     </div>
   );
-}
+});
+HealthCheckDetails.displayName = 'HealthCheckDetails';
 
 // ============================================================
 // Wave 2: Performance Details
+// Feature #622: React.memo for performance optimization
 // ============================================================
 
-function PerformanceDetails({ data }: { data: Record<string, unknown> }) {
+const PerformanceDetails = memo(function PerformanceDetails({ data }: { data: Record<string, unknown> }) {
   // Feature #563: Renamed from 'lighthouse' to 'performanceScores' - these are custom heuristic scores, not real Lighthouse
   const performanceScores = (data.performanceScores || data.lighthouse) as { performance?: number; accessibility?: number; seo?: number; bestPractices?: number } | undefined;
   // Feature #564: Added inp field (Interaction to Next Paint, replaced FID in March 2024)
@@ -497,13 +497,15 @@ function PerformanceDetails({ data }: { data: Record<string, unknown> }) {
       )}
     </div>
   );
-}
+});
+PerformanceDetails.displayName = 'PerformanceDetails';
 
 // ============================================================
 // Wave 3: Security Details
+// Feature #622: React.memo for performance optimization
 // ============================================================
 
-function SecurityDetails({ data }: { data: Record<string, unknown> }) {
+const SecurityDetails = memo(function SecurityDetails({ data }: { data: Record<string, unknown> }) {
   const headers = data.headers as {
     score?: number;
     missing?: string[];
@@ -692,13 +694,15 @@ function SecurityDetails({ data }: { data: Record<string, unknown> }) {
       )}
     </div>
   );
-}
+});
+SecurityDetails.displayName = 'SecurityDetails';
 
 // ============================================================
 // Wave 4: AI Analysis Wrapper
+// Feature #622: React.memo for performance optimization
 // ============================================================
 
-function AIAnalysisReport({ data }: { data: Record<string, unknown> }) {
+const AIAnalysisReport = memo(function AIAnalysisReport({ data }: { data: Record<string, unknown> }) {
   const skipped = data.skipped as boolean | undefined;
   if (skipped) {
     return (
@@ -712,27 +716,17 @@ function AIAnalysisReport({ data }: { data: Record<string, unknown> }) {
       <AIAnalysisDetails data={data as unknown as AIAnalysisData} />
     </div>
   );
-}
+});
+AIAnalysisReport.displayName = 'AIAnalysisReport';
 
 // ============================================================
 // Main DetailedReport Component
+// Feature #612: WAVE_CONFIG centralized to constants/waves.ts
 // ============================================================
 
-const WAVE_CONFIG: Array<{
-  wave: number;
-  title: string;
-  icon: React.ElementType;
-}> = [
-  { wave: 1, title: 'Health Check', icon: Globe },
-  { wave: 2, title: 'Performance & Visual', icon: Gauge },
-  { wave: 3, title: 'Security Scan', icon: Shield },
-  { wave: 4, title: 'AI Analysis', icon: Brain },
-  { wave: 5, title: 'Accessibility', icon: Accessibility },
-  { wave: 6, title: 'API Discovery', icon: Network },
-  { wave: 7, title: 'SEO Analysis', icon: Search },
-];
-
 export function DetailedReport({ waves }: DetailedReportProps) {
+  // Feature #612: Get wave config from centralized constants
+  const WAVE_CONFIG = getWaveConfig();
   const [showReport, setShowReport] = useState(false);
   const completedWaves = waves.filter(w => w.status === 'completed' || w.status === 'failed' || w.status === 'skipped');
 

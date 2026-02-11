@@ -42,6 +42,17 @@
     --warning-foreground: 20 14% 4%;
     --info: 199 89% 48%;              /* Cyan for info */
     --info-foreground: 210 20% 98%;
+
+    /* Feature #613: Method colors for CustomTestWizard */
+    --method-ai: 271 91% 65%;                /* Purple for AI Generate */
+    --method-ai-foreground: 271 91% 98%;
+    --method-ai-muted: 271 91% 15%;          /* Dark purple background */
+    --method-manual: 217 91% 60%;            /* Blue for Manual Setup */
+    --method-manual-foreground: 217 91% 98%;
+    --method-manual-muted: 217 91% 15%;      /* Dark blue background */
+    --method-record: 347 77% 50%;            /* Rose for Record */
+    --method-record-foreground: 347 77% 98%;
+    --method-record-muted: 347 77% 15%;      /* Dark rose background */
   }
 
   /* Light theme opt-in - preserved from original */
@@ -79,6 +90,17 @@
     --warning-foreground: 20 14% 4%;
     --info: 199 89% 48%;
     --info-foreground: 210 20% 98%;
+
+    /* Feature #613: Method colors for CustomTestWizard (light mode) */
+    --method-ai: 271 81% 56%;                /* Purple for AI Generate */
+    --method-ai-foreground: 271 81% 20%;
+    --method-ai-muted: 271 91% 95%;          /* Light purple background */
+    --method-manual: 217 91% 53%;            /* Blue for Manual Setup */
+    --method-manual-foreground: 217 91% 20%;
+    --method-manual-muted: 217 91% 95%;      /* Light blue background */
+    --method-record: 347 77% 50%;            /* Rose for Record */
+    --method-record-foreground: 347 77% 20%;
+    --method-record-muted: 347 77% 95%;      /* Light rose background */
   }
 }
 
@@ -316,4 +338,74 @@ textarea {
   --ring: 0 0% 25%;
   --sidebar-primary: 0 0% 25%;
   --sidebar-ring: 0 0% 25%;
+}
+
+/* Feature #616: Modal animation keyframes */
+@keyframes modal-backdrop-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-backdrop-exit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-content-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modal-content-exit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+}
+
+/* Feature #616: Modal animation utility classes */
+.animate-modal-backdrop-enter {
+  animation: modal-backdrop-enter 150ms ease-out forwards;
+}
+
+.animate-modal-backdrop-exit {
+  animation: modal-backdrop-exit 100ms ease-in forwards;
+}
+
+.animate-modal-content-enter {
+  animation: modal-content-enter 200ms ease-out forwards;
+}
+
+.animate-modal-content-exit {
+  animation: modal-content-exit 150ms ease-in forwards;
+}
+
+/* Feature #616: Respect prefers-reduced-motion for modal animations */
+@media (prefers-reduced-motion: reduce) {
+  .animate-modal-backdrop-enter,
+  .animate-modal-backdrop-exit,
+  .animate-modal-content-enter,
+  .animate-modal-content-exit {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }

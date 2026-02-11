@@ -8,7 +8,7 @@
  * - Fail thresholds by severity (critical/serious/moderate/minor)
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 
 /**
  * WCAG compliance level
@@ -129,24 +129,30 @@ const SEVERITY_CONFIG: { key: Severity; label: string; color: string; descriptio
 
 /**
  * Form field component
+ * Feature #622: React.memo for performance optimization
  */
-const FormField: React.FC<{
+interface FormFieldProps {
  label: string;
  required?: boolean;
  children: React.ReactNode;
  hint?: string;
  error?: string;
-}> = ({ label, required, children, hint, error }) => (
- <div className="space-y-1">
- <label className="block text-sm font-medium text-foreground">
- {label}
- {required && <span className="text-destructive ml-1">*</span>}
- </label>
- {children}
- {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
- {error && <p className="text-xs text-destructive">{error}</p>}
- </div>
-);
+}
+
+const FormField = memo<FormFieldProps>(function FormField({ label, required, children, hint, error }) {
+ return (
+   <div className="space-y-1">
+     <label className="block text-sm font-medium text-foreground">
+       {label}
+       {required && <span className="text-destructive ml-1">*</span>}
+     </label>
+     {children}
+     {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
+     {error && <p className="text-xs text-destructive">{error}</p>}
+   </div>
+ );
+});
+FormField.displayName = 'FormField';
 
 /**
  * AccessibilityConfig - Configuration form for Accessibility tests

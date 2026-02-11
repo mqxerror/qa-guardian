@@ -328,7 +328,6 @@ export interface CreateTestSuiteModalProps {
   testSuggestions: TestSuggestion[] | undefined;
   onClose: () => void;
   targetUrl: string;
-  token: string | null;
 }
 
 // ============================================================

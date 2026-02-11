@@ -11,21 +11,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSocketStore } from '../stores/socketStore';
 import { useAuthStore } from '../stores/authStore';
+import { getInitialWaveStates, type WaveState as BaseWaveState, type WaveStep as BaseWaveStep } from '../constants/waves';
 
 // ============================================================
 // Types
+// Feature #612: Base types imported from constants/waves.ts
 // ============================================================
 
-export interface WaveStep {
-  name: string;
+export interface WaveStep extends Omit<BaseWaveStep, 'status'> {
   status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
   duration?: number;
   result?: string;
 }
 
-export interface WaveState {
-  wave: number;
-  name: string;
+export interface WaveState extends Omit<BaseWaveState, 'status' | 'steps'> {
   status: 'waiting' | 'running' | 'completed' | 'failed' | 'skipped';
   steps: WaveStep[];
   startedAt?: Date;
@@ -55,91 +54,8 @@ export interface QuickTestState {
   completedAt: Date | null;
 }
 
-// Initial wave definitions
-const INITIAL_WAVES: WaveState[] = [
-  {
-    wave: 1,
-    name: 'Health Check',
-    status: 'waiting',
-    steps: [
-      { name: 'DNS Resolution', status: 'pending' },
-      { name: 'HTTP Request', status: 'pending' },
-      { name: 'SSL Certificate', status: 'pending' },
-      { name: 'Response Time', status: 'pending' },
-    ],
-  },
-  {
-    wave: 2,
-    name: 'Visual + Performance',
-    status: 'waiting',
-    steps: [
-      { name: 'Desktop Screenshot', status: 'pending' },
-      { name: 'Mobile Screenshot', status: 'pending' },
-      { name: 'Core Web Vitals', status: 'pending' },
-      { name: 'Performance Score', status: 'pending' },
-    ],
-  },
-  {
-    wave: 3,
-    name: 'Security Scan',
-    status: 'waiting',
-    steps: [
-      { name: 'Security Headers', status: 'pending' },
-      { name: 'Cookie Audit', status: 'pending' },
-      { name: 'Mixed Content', status: 'pending' },
-      { name: 'Exposed Paths', status: 'pending' },
-    ],
-  },
-  {
-    wave: 4,
-    name: 'AI Analysis',
-    status: 'waiting',
-    steps: [
-      { name: 'Test Suggestions', status: 'pending' },
-      { name: 'UX Issues', status: 'pending' },
-      { name: 'Accessibility', status: 'pending' },
-      { name: 'Summary', status: 'pending' },
-    ],
-  },
-  // Feature #471: Wave 5 - Accessibility Scan
-  {
-    wave: 5,
-    name: 'Accessibility',
-    status: 'waiting',
-    steps: [
-      { name: 'WCAG 2.1 AA Scan', status: 'pending' },
-      { name: 'Critical Violations', status: 'pending' },
-      { name: 'Serious Violations', status: 'pending' },
-      { name: 'Minor Violations', status: 'pending' },
-    ],
-  },
-  // Feature #472: Wave 6 - API Discovery
-  {
-    wave: 6,
-    name: 'API Discovery',
-    status: 'waiting',
-    steps: [
-      { name: 'OpenAPI Spec Detection', status: 'pending' },
-      { name: 'Common API Paths', status: 'pending' },
-      { name: 'Endpoint Health', status: 'pending' },
-      { name: 'Auth Protection', status: 'pending' },
-    ],
-  },
-  // Feature #527: Wave 7 - SEO Analysis (Smoke Test)
-  {
-    wave: 7,
-    name: 'SEO Analysis',
-    status: 'waiting',
-    steps: [
-      { name: 'Meta Tags', status: 'pending' },
-      { name: 'Heading Structure', status: 'pending' },
-      { name: 'Schema Markup', status: 'pending' },
-      { name: 'Navigation', status: 'pending' },
-      { name: 'Tracking Scripts', status: 'pending' },
-      { name: 'Crawlability', status: 'pending' },
-    ],
-  },
-];
+// Feature #612: Wave definitions centralized to constants/waves.ts
+// getInitialWaveStates() imported from constants/waves
 
 // ============================================================
 // Hook
@@ -152,12 +68,12 @@ export function useQuickTestSocket() {
   // Track the current run ID
   const currentRunIdRef = useRef<string | null>(null);
 
-  // State
+  // State - Feature #612: Use centralized getInitialWaveStates()
   const [state, setState] = useState<QuickTestState>({
     runId: null,
     url: null,
     status: 'idle',
-    waves: INITIAL_WAVES.map(w => ({ ...w, steps: w.steps.map(s => ({ ...s })) })),
+    waves: getInitialWaveStates() as WaveState[],
     summary: null,
     startedAt: null,
     completedAt: null,
@@ -169,7 +85,7 @@ export function useQuickTestSocket() {
       runId: null,
       url: null,
       status: 'idle',
-      waves: INITIAL_WAVES.map(w => ({ ...w, steps: w.steps.map(s => ({ ...s })) })),
+      waves: getInitialWaveStates() as WaveState[],
       summary: null,
       startedAt: null,
       completedAt: null,
@@ -272,9 +188,11 @@ export function useQuickTestSocket() {
       const data = await response.json();
 
       // Map the API waves into our WaveState format
-      const apiWaves: WaveState[] = INITIAL_WAVES.map((initialWave, idx) => {
+      // Feature #612: Use centralized getInitialWaveStates()
+      const initialWaves = getInitialWaveStates();
+      const apiWaves: WaveState[] = initialWaves.map((initialWave, idx) => {
         const apiWave = data.waves?.[idx];
-        if (!apiWave) return { ...initialWave, steps: initialWave.steps.map(s => ({ ...s })) };
+        if (!apiWave) return { ...initialWave, steps: initialWave.steps.map(s => ({ ...s })) } as WaveState;
         return {
           ...initialWave,
           status: apiWave.status || initialWave.status,
@@ -283,13 +201,13 @@ export function useQuickTestSocket() {
           duration: apiWave.duration,
           data: apiWave.data,
           error: apiWave.error,
-          steps: apiWave.steps || initialWave.steps.map((s: WaveStep) => ({
+          steps: apiWave.steps || initialWave.steps.map((s) => ({
             ...s,
             status: apiWave.status === 'completed' ? 'completed' as const :
                     apiWave.status === 'failed' ? 'failed' as const :
                     apiWave.status === 'skipped' ? 'skipped' as const : s.status,
           })),
-        };
+        } as WaveState;
       });
 
       setState({

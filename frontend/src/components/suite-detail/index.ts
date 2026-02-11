@@ -20,7 +20,7 @@ export type { RecordingState, UseRecordingStateReturn } from './useRecordingStat
 export { useCreateTestState } from './useCreateTestState';
 export type { UseCreateTestStateReturn, NewTestType, UrlValidationState, AntiAliasingTolerance, CaptureMode, DiffThresholdMode, WcagLevel, IgnoreRegion } from './useCreateTestState';
 export { useAIGenerationState } from './useAIGenerationState';
-export type { UseAIGenerationStateReturn, AIGenMode, WizardStep, AnnotationType, Annotation, AICopilotSuggestion } from './useAIGenerationState';
+export type { UseAIGenerationStateReturn, AIGenMode, AIWizardStep, AnnotationType, Annotation, AICopilotSuggestion } from './useAIGenerationState';
 
 // Components
 export { default as TestListItem } from './TestListItem';

@@ -286,7 +286,7 @@ export default function ExportModal({
  <button
  onClick={handleGeneratePdfReport}
  disabled={generatingPdf}
- className="w-full px-4 py-2 bg-destructive text-primary-foreground rounded-md hover:bg-destructive disabled:opacity-50 transition-colors"
+ className="w-full px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 disabled:opacity-50 transition-colors"
  >
  {generatingPdf ? (
  <span className="flex items-center justify-center gap-2">
@@ -345,7 +345,7 @@ export default function ExportModal({
  </div>
  <button
  onClick={exportFullJson}
- className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary transition-colors"
+ className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
  >
  Download
  </button>

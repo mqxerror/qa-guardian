@@ -724,7 +724,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  <button
  onClick={handleGenerateTests}
  disabled={isGenerating || selectedCount === 0 || !quickUrl.trim()}
- className="w-full mt-4 px-4 py-2.5 bg-primary hover:bg-primary disabled:bg-muted text-primary-foreground font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
+ className="w-full mt-4 px-4 py-2.5 bg-primary hover:bg-primary/90 disabled:bg-muted text-primary-foreground font-medium rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
  type="button"
  >
  {isGenerating ? (

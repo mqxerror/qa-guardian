@@ -10,7 +10,7 @@
  * - Full keyboard navigation (arrow keys, Enter/Space)
  */
 
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect, memo } from 'react';
 
 /**
  * Test types supported by the selector
@@ -118,10 +118,10 @@ const TEST_TYPES: TestTypeConfig[] = [
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
  </svg>
  ),
- colorClass: 'text-violet-600 dark:text-violet-400',
- hoverBorderClass: 'hover:border-violet-500/30',
- selectedBorderClass: 'border-violet-500 ring-2 ring-violet-500/20',
- iconBgClass: 'bg-violet-500/10',
+ colorClass: 'text-primary',
+ hoverBorderClass: 'hover:border-primary/30',
+ selectedBorderClass: 'border-primary ring-2 ring-primary/20',
+ iconBgClass: 'bg-primary/10',
  },
 ];
 
@@ -147,7 +147,7 @@ export interface TestTypeCardsProps {
  * Displays 5 test types as interactive cards with hover effects
  * and keyboard navigation support.
  */
-export const TestTypeCards: React.FC<TestTypeCardsProps> = ({
+export const TestTypeCards = memo<TestTypeCardsProps>(({
  selectedType,
  onSelect,
  className = '',
@@ -308,6 +308,7 @@ export const TestTypeCards: React.FC<TestTypeCardsProps> = ({
  })}
  </div>
  );
-};
+});
+TestTypeCards.displayName = 'TestTypeCards';
 
 export default TestTypeCards;

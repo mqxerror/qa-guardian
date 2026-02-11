@@ -70,7 +70,7 @@ export function FalsePositiveModal({
  <button
  onClick={handleMarkFalsePositive}
  disabled={isMarkingFP || !fpReason.trim()}
- className="px-4 py-2 rounded-md bg-warning text-white hover:bg-warning disabled:opacity-50"
+ className="px-4 py-2 rounded-md bg-warning text-warning-foreground hover:bg-warning disabled:opacity-50"
  >
  {isMarkingFP ? 'Marking...' : 'Mark as False Positive'}
  </button>

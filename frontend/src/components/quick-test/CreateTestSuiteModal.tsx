@@ -15,6 +15,7 @@ import {
   FolderPlus,
   Plus,
 } from 'lucide-react';
+import { useAuthStore } from '../../stores/authStore';
 import type { CreateTestSuiteModalProps, TestSuggestion } from './types';
 
 interface Project {
@@ -27,8 +28,10 @@ export function CreateTestSuiteModal({
   testSuggestions,
   targetUrl,
   onClose,
-  token,
 }: CreateTestSuiteModalProps) {
+  // Get token from auth store instead of props
+  const { token } = useAuthStore();
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [createNewProject, setCreateNewProject] = useState(false);

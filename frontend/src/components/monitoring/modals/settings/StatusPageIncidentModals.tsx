@@ -120,7 +120,7 @@ export const IncidentManagementPanel: React.FC<IncidentManagementPanelProps> = (
           <div className="flex items-center justify-end mb-4">
             <button
               onClick={() => setShowCreateModal(true)}
-              className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-white hover:bg-warning/90"
+              className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90"
             >
               + Create Incident
             </button>
@@ -396,7 +396,7 @@ export const CreateStatusPageIncidentModal: React.FC<CreateStatusPageIncidentMod
             <button
               type="submit"
               disabled={isSubmitting || !title.trim()}
-              className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-white hover:bg-warning/90 disabled:opacity-50"
+              className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90 disabled:opacity-50"
             >
               {isSubmitting ? 'Creating...' : 'Create Incident'}
             </button>
@@ -534,7 +534,7 @@ export const AddIncidentUpdateModal: React.FC<AddIncidentUpdateModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || !message.trim()}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary disabled:opacity-50"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               {isSubmitting ? 'Posting...' : 'Post Update'}
             </button>

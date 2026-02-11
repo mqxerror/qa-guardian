@@ -10,7 +10,7 @@
  * - Ignore patterns
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 
 /**
  * Security scan types matching backend SecurityScanType
@@ -107,65 +107,77 @@ const SCAN_TYPES: { value: SecurityScanType; label: string; description: string;
 ];
 
 /**
- * Severity options
+ * Severity options - Feature #614: Use semantic tokens
  */
 const SEVERITY_OPTIONS: { value: SecuritySeverity; label: string; color: string }[] = [
-  { value: 'critical', label: 'Critical', color: 'text-red-600 dark:text-red-400' },
-  { value: 'high', label: 'High', color: 'text-orange-600 dark:text-orange-400' },
-  { value: 'medium', label: 'Medium', color: 'text-yellow-600 dark:text-yellow-400' },
-  { value: 'low', label: 'Low', color: 'text-blue-600 dark:text-blue-400' },
-  { value: 'info', label: 'Info', color: 'text-gray-600 dark:text-gray-400' },
+  { value: 'critical', label: 'Critical', color: 'text-destructive' },
+  { value: 'high', label: 'High', color: 'text-warning' },
+  { value: 'medium', label: 'Medium', color: 'text-warning/80' },
+  { value: 'low', label: 'Low', color: 'text-info' },
+  { value: 'info', label: 'Info', color: 'text-muted-foreground' },
 ];
 
 /**
  * Form field component
+ * Feature #622: React.memo for performance optimization
  */
-const FormField: React.FC<{
+interface FormFieldProps {
   label: string;
   required?: boolean;
   children: React.ReactNode;
   hint?: string;
   error?: string;
-}> = ({ label, required, children, hint, error }) => (
-  <div className="space-y-1">
-    <label className="block text-sm font-medium text-foreground">
-      {label}
-      {required && <span className="text-destructive ml-1">*</span>}
-    </label>
-    {children}
-    {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
-    {error && <p className="text-xs text-destructive">{error}</p>}
-  </div>
-);
+}
+
+const FormField = memo<FormFieldProps>(function FormField({ label, required, children, hint, error }) {
+  return (
+    <div className="space-y-1">
+      <label className="block text-sm font-medium text-foreground">
+        {label}
+        {required && <span className="text-destructive ml-1">*</span>}
+      </label>
+      {children}
+      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+  );
+});
+FormField.displayName = 'FormField';
 
 /**
  * Collapsible section component
+ * Feature #622: React.memo for performance optimization
  */
-const CollapsibleSection: React.FC<{
+interface CollapsibleSectionProps {
   title: string;
   isOpen: boolean;
   onToggle: () => void;
   children: React.ReactNode;
-}> = ({ title, isOpen, onToggle, children }) => (
-  <div className="border border-border rounded-lg overflow-hidden bg-card">
-    <button
-      type="button"
-      onClick={onToggle}
-      className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/50 hover:bg-muted/80 transition-colors"
-    >
-      <span className="text-sm font-medium text-foreground">{title}</span>
-      <svg
-        className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
+}
+
+const CollapsibleSection = memo<CollapsibleSectionProps>(function CollapsibleSection({ title, isOpen, onToggle, children }) {
+  return (
+    <div className="border border-border rounded-lg overflow-hidden bg-card">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/50 hover:bg-muted/80 transition-colors"
       >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    </button>
-    {isOpen && <div className="p-4 border-t border-border">{children}</div>}
-  </div>
-);
+        <span className="text-sm font-medium text-foreground">{title}</span>
+        <svg
+          className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {isOpen && <div className="p-4 border-t border-border">{children}</div>}
+    </div>
+  );
+});
+CollapsibleSection.displayName = 'CollapsibleSection';
 
 /**
  * SecurityConfig - Configuration form for Security tests
@@ -290,8 +302,8 @@ export const SecurityConfig: React.FC<SecurityConfigProps> = ({
               onClick={() => updateField('scanType', type.value)}
               className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
                 config.scanType === type.value
-                  ? 'border-violet-500 bg-violet-500/5 ring-1 ring-violet-500/20'
-                  : 'border-border hover:border-violet-500/30'
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                  : 'border-border hover:border-primary/30'
               }`}
             >
               <span className="text-xl">{type.icon}</span>
@@ -360,7 +372,7 @@ export const SecurityConfig: React.FC<SecurityConfigProps> = ({
               onClick={() => updateField('failOnSeverity', sev.value)}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 config.failOnSeverity === sev.value
-                  ? 'bg-violet-500 text-white'
+                  ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`}
             >

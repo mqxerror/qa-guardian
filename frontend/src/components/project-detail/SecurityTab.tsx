@@ -274,7 +274,7 @@ function SastEmptyState({ handleUpdateSastConfig }: { handleUpdateSastConfig: (u
  </svg>
  <h3 className="mt-4 text-lg font-semibold text-foreground">SAST Scanning Disabled</h3>
  <p className="mt-2 text-muted-foreground">Enable SAST scanning to detect security vulnerabilities in your source code using Semgrep.</p>
- <button onClick={() => handleUpdateSastConfig({ enabled: true })} className="mt-4 rounded-md bg-warning px-4 py-2 text-sm font-medium text-white hover:bg-warning/90">
+ <button onClick={() => handleUpdateSastConfig({ enabled: true })} className="mt-4 rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90">
  Enable SAST Scanning
  </button>
  </div>

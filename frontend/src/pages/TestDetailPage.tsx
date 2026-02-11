@@ -1373,7 +1373,7 @@ function TestDetailPage() {
                     isEditingK6Script={isEditingK6Script}
                     k6Script={k6Script}
                     isSavingK6Script={isSavingK6Script}
-                    token={token}
+                    token={token || ''}
                     k6Templates={k6Templates}
                     showK6Templates={showK6Templates}
                     onSetK6Script={setK6Script}
@@ -1542,7 +1542,7 @@ function TestDetailPage() {
           show={showCompareModal}
           results={compareResults}
           onClose={() => setShowCompareModal(false)}
-          formatDateTime={formatDateTime}
+          formatDateTime={(date) => date ? formatDateTime(date) : '—'}
         />
 
         {/* Screenshot Lightbox Modal - Feature #48: Extracted to component */}

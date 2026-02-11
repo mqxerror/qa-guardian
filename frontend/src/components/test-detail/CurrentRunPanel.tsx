@@ -258,7 +258,7 @@ function LiveExecutionPanel({
  <button
  onClick={onCancelRun}
  disabled={isCancellingRun}
- className="flex items-center gap-2 px-4 py-2 bg-destructive text-primary-foreground rounded-md hover:bg-destructive disabled:opacity-50 transition-colors"
+ className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 disabled:opacity-50 transition-colors"
  >
  {isCancellingRun ? (
  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">

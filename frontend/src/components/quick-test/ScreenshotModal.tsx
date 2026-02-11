@@ -39,7 +39,7 @@ export function ScreenshotModal({ isOpen, url, type, onClose }: ScreenshotModalP
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute -top-10 right-0 p-2 text-white hover:text-gray-300 transition-colors"
+          className="absolute -top-10 right-0 p-2 text-white hover:text-muted-foreground transition-colors"
         >
           <X className="w-6 h-6" />
         </button>

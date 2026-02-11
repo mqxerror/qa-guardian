@@ -2,11 +2,13 @@
  * PerformanceCheckModal Component
  * Feature #47: Extracted from MonitoringPage.tsx for modularity
  * Feature #127: Mobile responsive design audit and fixes
+ * Feature #635: Migrated to Modal/ModalBody/ModalFooter
  *
  * Handles creating performance (Lighthouse) checks
  */
 
 import { useState, useEffect } from 'react';
+import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 import { PerformanceCheck } from '../types';
 import { toast } from '../../../stores/toastStore';
 

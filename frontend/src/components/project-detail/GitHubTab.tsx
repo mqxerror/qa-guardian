@@ -142,7 +142,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  <button
  onClick={handleConnectGithub}
  disabled={isConnectingGithub}
- className="rounded-md bg-[#24292e] px-4 py-2 text-sm font-medium text-white hover:bg-[#24292e]/90 disabled:opacity-50"
+ className="rounded-md bg-[#24292e] px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-[#24292e]/90 disabled:opacity-50"
  >
  {isConnectingGithub ? 'Connecting...' : 'Connect GitHub'}
  </button>
@@ -506,7 +506,7 @@ export const GitHubTab: React.FC<GitHubTabProps> = ({
  <button
  onClick={() => handleTriggerPRDependencyScan(pr.number)}
  disabled={isRunningPRDependencyScan === pr.number}
- className="rounded-md bg-success px-2 py-1 text-xs font-medium text-white hover:bg-success/90 disabled:opacity-50 flex items-center gap-1"
+ className="rounded-md bg-success px-2 py-1 text-xs font-medium text-success-foreground hover:bg-success/90 disabled:opacity-50 flex items-center gap-1"
  >
  {isRunningPRDependencyScan === pr.number ? (
  <>

@@ -140,9 +140,9 @@ export function DebugAnalysisMessage({ debug }: DebugAnalysisMessageProps) {
         }`}>
           <div className="flex items-center gap-2">
             <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-              step.status === 'passed' ? 'bg-success text-white' :
-              step.status === 'failed' ? 'bg-destructive text-white' :
-              'bg-muted-foreground text-white'
+              step.status === 'passed' ? 'bg-success text-success-foreground' :
+              step.status === 'failed' ? 'bg-destructive text-destructive-foreground' :
+              'bg-muted-foreground text-foreground'
             }`}>{step.number}</span>
             <span className="flex-1">{step.action}</span>
             <span className={`text-[10px] ${
@@ -186,9 +186,9 @@ export function SuggestionsMessage({ suggestions }: SuggestionsMessageProps) {
         }`}>
           <div className="flex items-center gap-2 mb-1">
             <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-              suggestion.priority === 'high' ? 'bg-warning text-white' :
-              suggestion.priority === 'medium' ? 'bg-primary text-white' :
-              'bg-muted-foreground text-white'
+              suggestion.priority === 'high' ? 'bg-warning text-warning-foreground' :
+              suggestion.priority === 'medium' ? 'bg-primary text-primary-foreground' :
+              'bg-muted-foreground text-foreground'
             }`}>{suggestion.priority}</span>
             <span className="font-medium text-foreground">{suggestion.title}</span>
             <span className="ml-auto text-[10px] text-muted-foreground">{suggestion.confidence}% confidence</span>
@@ -218,7 +218,7 @@ export function ScreenshotAnalysisMessage({ analysis }: ScreenshotAnalysisMessag
         <div className="flex items-center gap-2 mb-1">
           <span className="text-accent">🖼️</span>
           <span className="text-xs font-medium text-foreground">Page Identified</span>
-          <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] bg-accent text-white">
+          <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] bg-accent text-accent-foreground">
             {analysis.page_type.confidence}% confidence
           </span>
         </div>
@@ -258,7 +258,7 @@ export function ScreenshotAnalysisMessage({ analysis }: ScreenshotAnalysisMessag
               <div key={idx} className="text-[10px]">
                 <div className="flex items-center gap-1">
                   <span className={`px-1 py-0.5 rounded text-[8px] uppercase ${
-                    err.severity === 'error' ? 'bg-destructive text-white' : 'bg-warning text-white'
+                    err.severity === 'error' ? 'bg-destructive text-destructive-foreground' : 'bg-warning text-warning-foreground'
                   }`}>{err.severity}</span>
                   <span className="text-destructive/70">{err.message}</span>
                 </div>

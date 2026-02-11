@@ -619,14 +619,14 @@ function RunHistoryPage() {
  <div className="flex items-center gap-1">
  <button
  onClick={() => setCurrentPage(1)}
- disabled={currentPage === 1 || (pagination && !pagination.hasPrev)}
+ disabled={currentPage === 1 || (pagination && !pagination.hasPrev) || undefined}
  className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
  >
  &laquo;&laquo;
  </button>
  <button
  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
- disabled={currentPage === 1 || (pagination && !pagination.hasPrev)}
+ disabled={currentPage === 1 || (pagination && !pagination.hasPrev) || undefined}
  className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
  >
  &laquo;
@@ -634,14 +634,14 @@ function RunHistoryPage() {
  <span className="px-3 py-1">{currentPage} / {totalPages || 1}</span>
  <button
  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
- disabled={currentPage >= totalPages || (pagination && !pagination.hasNext)}
+ disabled={currentPage >= totalPages || (pagination && !pagination.hasNext) || undefined}
  className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
  >
  &raquo;
  </button>
  <button
  onClick={() => setCurrentPage(totalPages)}
- disabled={currentPage >= totalPages || (pagination && !pagination.hasNext)}
+ disabled={currentPage >= totalPages || (pagination && !pagination.hasNext) || undefined}
  className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
  >
  &raquo;&raquo;

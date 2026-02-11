@@ -128,13 +128,13 @@ export function DurationTrendsChart({
               </div>
               <div className="text-xs text-info">p50</div>
             </div>
-            <div className="text-center p-3 bg-amber-500/15 rounded-lg">
-              <div className="text-2xl font-bold text-amber-500">
+            <div className="text-center p-3 bg-warning/15 rounded-lg">
+              <div className="text-2xl font-bold text-warning">
                 {durationTrendSummary.overall_p95_ms !== null
                   ? `${(durationTrendSummary.overall_p95_ms / 1000).toFixed(1)}s`
                   : 'N/A'}
               </div>
-              <div className="text-xs text-amber-500">p95</div>
+              <div className="text-xs text-warning">p95</div>
             </div>
             <div className="text-center p-3 bg-warning/15 rounded-lg">
               <div className="text-2xl font-bold text-warning">
@@ -186,8 +186,8 @@ export function DurationTrendsChart({
                     borderRadius: '8px',
                   }}
                   labelStyle={{ color: 'hsl(var(--foreground))' }}
-                  formatter={(value: number | null, name: string) => {
-                    if (value === null) return ['N/A', name];
+                  formatter={(value, name: string) => {
+                    if (value === null || value === undefined || typeof value !== 'number') return ['N/A', name];
                     return [`${value.toFixed(2)}s`, name];
                   }}
                   labelFormatter={(label) => `Date: ${label}`}
