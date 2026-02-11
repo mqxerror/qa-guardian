@@ -228,14 +228,13 @@ services:
     command: >
       -c "
         apk add --no-cache bash coreutils &&
-        chmod +x /usr/local/bin/backup-db.sh &&
         echo 'Running initial backup...' &&
-        /usr/local/bin/backup-db.sh &&
+        bash /usr/local/bin/backup-db.sh &&
         echo 'Initial backup complete. Starting cron schedule...' &&
         while true; do
           sleep 86400;
           echo 'Running scheduled backup...' &&
-          /usr/local/bin/backup-db.sh;
+          bash /usr/local/bin/backup-db.sh;
         done
       "
     restart: unless-stopped
