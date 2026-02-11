@@ -652,23 +652,27 @@ export async function listTestRunsByTestId(testId: string, orgId: string, limit:
       // loading the entire results array (which can be 20-114 MB for suite runs).
       // For direct test runs (test_id matches), return full results (small, single test).
       // For suite runs, use jsonb_array_elements to extract only the matching entry.
+      // Fix: Explicit type casts needed because $2 is used in both UUID context
+      // (test_id = $2::uuid) and text context (elem->>'test_id' = $2::text).
+      // Without casts, PostgreSQL infers $2 as uuid and fails on text comparison
+      // with error 42883: "No operator matches the given name and argument types."
       const result = await query<any>(
         `SELECT id, suite_id, suite_name, project_id, project_name, test_id,
           schedule_id, organization_id, browser, branch, test_type, status,
           started_at, completed_at, duration_ms, created_at,
           error_message, priority, triggered_by, user_id, pr_number,
           CASE
-            WHEN test_id = $2 THEN results
+            WHEN test_id = $2::uuid THEN results
             ELSE (
               SELECT jsonb_agg(elem)
               FROM jsonb_array_elements(COALESCE(results, '[]'::jsonb)) elem
-              WHERE elem->>'test_id' = $2
+              WHERE elem->>'test_id' = $2::text
             )
           END as results
         FROM test_runs
-        WHERE organization_id = $1
+        WHERE organization_id = $1::uuid
         AND (
-          test_id = $2
+          test_id = $2::uuid
           OR (test_id IS NULL AND results @> $3::jsonb)
         )
         ORDER BY created_at DESC
