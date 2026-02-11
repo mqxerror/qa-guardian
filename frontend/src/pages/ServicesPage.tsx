@@ -3,6 +3,7 @@
 // Feature #2130: Auto-refresh, health history dots, toast notifications
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { ChevronRight, RefreshCw, AlertCircle } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
@@ -160,9 +161,7 @@ function ServiceCard({ service, history }: { service: ServiceInfo; history: Heal
         onClick={() => setExpanded(!expanded)}
         className="text-xs text-primary hover:underline flex items-center gap-1 mt-1"
       >
-        <svg className={`w-3 h-3 transition-transform ${expanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
+        <ChevronRight className={`w-3 h-3 transition-transform ${expanded ? 'rotate-90' : ''}`} />
         {service.capabilities.length} capabilities
       </button>
 
@@ -378,9 +377,7 @@ export function ServicesPage() {
                 disabled={loading}
                 className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-muted/50 disabled:opacity-50 transition-colors"
               >
-                <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </button>
             </div>
@@ -428,9 +425,7 @@ export function ServicesPage() {
         {error && (
           <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
             <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <AlertCircle className="w-5 h-5 text-destructive" />
               <p className="text-sm text-destructive">{error}</p>
             </div>
             <button onClick={() => fetchServices()} className="mt-2 text-sm text-destructive hover:underline">

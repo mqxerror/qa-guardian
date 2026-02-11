@@ -15,7 +15,7 @@ import { UnifiedAIService } from '../services/UnifiedAIService';
 import { CreateTestModal } from '../components/create-test';
 import { ScoreCard } from '../components/ui/score-card';
 // Feature #580: Icons for AI health monitoring panel
-import { Sparkles, AlertTriangle, AlertCircle, Info, ChevronDown, ChevronUp, Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Sparkles, AlertTriangle, AlertCircle, Info, ChevronDown, ChevronUp, Loader2, TrendingUp, TrendingDown, Minus, Clock, ChevronRight } from 'lucide-react';
 // Feature #554: Standardized PageHeader with breadcrumbs
 // Feature #556: ScoreTrendChart replaces inline recharts chart
 import { PageHeader, ScoreTrendChart } from '../components/ui';
@@ -1526,17 +1526,12 @@ function TestSuitePage() {
                 className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-muted/50 rounded-lg transition-colors"
               >
                 <span className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <Clock className="w-4 h-4" />
                   Recent Runs ({completedRuns.length})
                 </span>
-                <svg
+                <ChevronDown
                   className={`w-4 h-4 text-muted-foreground transition-transform ${showRecentRuns ? 'rotate-180' : ''}`}
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                />
               </button>
 
               {showRecentRuns && (
@@ -1586,9 +1581,7 @@ function TestSuitePage() {
                           {run.passed_count || 0}/{run.results_count || 0} passed
                         </span>
                         {/* Arrow */}
-                        <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
+                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
                       </button>
                     ))}
                   </div>
