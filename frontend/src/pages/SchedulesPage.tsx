@@ -19,6 +19,7 @@ import {
 } from '../hooks/api/useSchedules';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { PageHeader } from '../components/ui';
+import { Loader2, X } from 'lucide-react';
 
 // Feature #1256: AI Schedule Recommendation interfaces
 interface AIScheduleRecommendation {
@@ -284,10 +285,7 @@ export function SchedulesPage() {
     >
      {isLoadingRecommendations ? (
       <>
-       <svg aria-hidden="true" className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-       </svg>
+       <Loader2 className="animate-spin h-4 w-4" />
        Analyzing...
       </>
      ) : (
@@ -322,19 +320,14 @@ export function SchedulesPage() {
  onClick={() => setShowAIRecommendations(false)}
  className="p-1 rounded hover:bg-muted"
  >
- <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
+ <X className="h-5 w-5" />
  </button>
  </div>
 
  {isLoadingRecommendations ? (
  <div className="flex items-center justify-center py-8">
  <div className="text-center">
- <svg aria-hidden="true" className="animate-spin h-8 w-8 text-accent mx-auto mb-2" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
- </svg>
+ <Loader2 className="animate-spin h-8 w-8 text-accent mx-auto mb-2" />
  <p className="text-muted-foreground">Analyzing test patterns and team activity...</p>
  </div>
  </div>
@@ -781,10 +774,7 @@ export function SchedulesPage() {
  className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
  >
  {createScheduleMutation.isPending && (
- <svg aria-hidden="true" className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
+ <Loader2 className="animate-spin h-4 w-4" />
  )}
  {createScheduleMutation.isPending ? 'Creating...' : 'Create Schedule'}
  </button>

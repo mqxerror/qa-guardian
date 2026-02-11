@@ -2,6 +2,7 @@
  * ImageLightbox - Feature #48: Extracted from TestDetailPage.tsx
  * Screenshot lightbox modal with zoom and pan functionality
  */
+import { ZoomIn, ZoomOut, Maximize2, Download } from 'lucide-react';
 
 export interface ImageLightboxProps {
   image: string | null;
@@ -51,9 +52,7 @@ export function ImageLightbox({
               className="text-white hover:text-muted-foreground px-2 py-1 rounded hover:bg-white/10"
               aria-label="Zoom out"
             >
-              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
-              </svg>
+              <ZoomOut className="h-5 w-5" />
             </button>
             <span className="text-white text-sm min-w-[60px] text-center font-medium">
               {Math.round(zoom * 100)}%
@@ -63,9 +62,7 @@ export function ImageLightbox({
               className="text-white hover:text-muted-foreground px-2 py-1 rounded hover:bg-white/10"
               aria-label="Zoom in"
             >
-              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-              </svg>
+              <ZoomIn className="h-5 w-5" />
             </button>
             <button
               onClick={() => {
@@ -85,9 +82,7 @@ export function ImageLightbox({
               className="text-white text-xs hover:text-muted-foreground px-2 py-1 rounded hover:bg-white/10 flex items-center gap-1"
               aria-label="Fit to screen"
             >
-              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-              </svg>
+              <Maximize2 className="h-4 w-4" />
               Fit
             </button>
           </div>
@@ -100,9 +95,7 @@ export function ImageLightbox({
               onClick={(e) => e.stopPropagation()}
               className="text-white text-sm hover:text-muted-foreground flex items-center gap-1"
             >
-              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
+              <Download className="h-5 w-5" />
               Download
             </a>
             <button

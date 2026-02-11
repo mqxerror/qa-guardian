@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { X, Check, Mail, Users } from 'lucide-react';
 
 interface Invitation {
   id: string;
@@ -93,9 +94,7 @@ export function AcceptInvitationPage() {
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <div className="w-full max-w-md rounded-lg border bg-card p-8 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-            <svg className="h-8 w-8 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="h-8 w-8 text-destructive" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Invalid Invitation</h1>
           <p className="mt-2 text-muted-foreground">{error}</p>
@@ -115,9 +114,7 @@ export function AcceptInvitationPage() {
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <div className="w-full max-w-md rounded-lg border bg-card p-8 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success/20">
-            <svg className="h-8 w-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <Check className="h-8 w-8 text-success" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Welcome!</h1>
           <p className="mt-2 text-muted-foreground">
@@ -136,9 +133,7 @@ export function AcceptInvitationPage() {
         <div className="w-full max-w-md rounded-lg border bg-card p-8 shadow-sm">
           <div className="text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <svg className="h-8 w-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
+              <Mail className="h-8 w-8 text-primary" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">You're Invited!</h1>
             <p className="mt-2 text-muted-foreground">
@@ -182,9 +177,7 @@ export function AcceptInvitationPage() {
       <div className="w-full max-w-md rounded-lg border bg-card p-8 shadow-sm">
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <svg className="h-8 w-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
+            <Users className="h-8 w-8 text-primary" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Join {invitation?.organization?.name}</h1>
           <p className="mt-2 text-muted-foreground">

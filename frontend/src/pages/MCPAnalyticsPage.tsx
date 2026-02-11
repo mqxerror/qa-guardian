@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Zap, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 
 // Types for MCP Analytics
 interface MCPUsageStats {
@@ -222,9 +223,7 @@ export function MCPAnalyticsPage() {
  <div className="rounded-lg border border-border bg-card p-6">
  <div className="flex items-center gap-3">
  <div className="p-2 rounded-lg bg-primary/10">
- <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
- </svg>
+ <Zap className="h-6 w-6 text-primary" />
  </div>
  <div>
  <p className="text-sm text-muted-foreground">Total Calls</p>
@@ -236,9 +235,7 @@ export function MCPAnalyticsPage() {
  <div className="rounded-lg border border-border bg-card p-6">
  <div className="flex items-center gap-3">
  <div className="p-2 rounded-lg bg-success/10">
- <svg className="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <CheckCircle className="h-6 w-6 text-success" />
  </div>
  <div>
  <p className="text-sm text-muted-foreground">Success Rate</p>
@@ -250,9 +247,7 @@ export function MCPAnalyticsPage() {
  <div className="rounded-lg border border-border bg-card p-6">
  <div className="flex items-center gap-3">
  <div className="p-2 rounded-lg bg-destructive/10">
- <svg className="h-6 w-6 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
- </svg>
+ <AlertTriangle className="h-6 w-6 text-destructive" />
  </div>
  <div>
  <p className="text-sm text-muted-foreground">Error Rate</p>
@@ -264,9 +259,7 @@ export function MCPAnalyticsPage() {
  <div className="rounded-lg border border-border bg-card p-6">
  <div className="flex items-center gap-3">
  <div className="p-2 rounded-lg bg-accent/10">
- <svg className="h-6 w-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <Clock className="h-6 w-6 text-accent" />
  </div>
  <div>
  <p className="text-sm text-muted-foreground">Avg Response</p>

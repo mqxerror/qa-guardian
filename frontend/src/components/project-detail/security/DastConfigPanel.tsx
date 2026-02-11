@@ -3,6 +3,7 @@
  * Feature #102: Extracted from SecurityTab.tsx
  */
 import { DASTConfig, DASTScanResult, OpenAPISpec } from '../types';
+import { Globe, Loader2, ChevronDown } from 'lucide-react';
 
 // DAST Schedule type
 export interface DastSchedule {
@@ -69,9 +70,7 @@ export function DastConfigPanel(props: DastConfigPanelProps) {
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-4">
  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
- <svg className="h-6 w-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
- </svg>
+ <Globe className="h-6 w-6 text-accent" />
  </div>
  <div>
  <h2 className="text-lg font-semibold text-foreground">Dynamic Application Security Testing (DAST)</h2>
@@ -105,10 +104,7 @@ export function DastConfigPanel(props: DastConfigPanelProps) {
 
  {isLoadingDast ? (
  <div className="py-8 text-center">
- <svg className="mx-auto h-8 w-8 animate-spin text-muted-foreground" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
- </svg>
+ <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
  <p className="mt-2 text-muted-foreground">Loading DAST configuration...</p>
  </div>
  ) : dastConfig.enabled ? (
@@ -240,17 +236,12 @@ function DASTConfigSection(props: DASTConfigSectionProps) {
  >
  {isRunningDastScan ? (
  <>
- <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
- </svg>
+ <Loader2 className="h-4 w-4 animate-spin" />
  Scanning...
  </>
  ) : (
  <>
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
- </svg>
+ <Globe className="h-4 w-4" />
  Start DAST Scan
  </>
  )}
@@ -338,16 +329,9 @@ function DASTScanResults(props: DASTScanResultsProps) {
  )}
  </div>
  )}
- <svg
- className={`h-5 w-5 text-muted-foreground transition-transform ${
+ <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${
  selectedDastScan?.id === scan.id ? 'rotate-180' : ''
- }`}
- fill="none"
- viewBox="0 0 24 24"
- stroke="currentColor"
- >
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
- </svg>
+ }`} />
  </div>
  </button>
 

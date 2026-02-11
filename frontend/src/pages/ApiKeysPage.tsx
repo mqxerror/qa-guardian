@@ -8,6 +8,7 @@ import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
+import { Check, Clock, ChevronDown, Loader2 } from 'lucide-react';
 
 interface ApiKey {
   id: string;
@@ -258,9 +259,7 @@ export function ApiKeysPage() {
               <ModalBody>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
-                    <svg aria-hidden="true" className="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                    <Check className="h-5 w-5 text-success" />
                   </div>
                   <h3 className="text-lg font-semibold text-foreground">API Key Created</h3>
                 </div>
@@ -377,19 +376,10 @@ export function ApiKeysPage() {
                     className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/50 rounded-md"
                   >
                     <span className="flex items-center gap-2">
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                      <Clock className="h-4 w-4" />
                       Rate Limiting {showRateLimitConfig && <span className="text-xs text-muted-foreground">(Custom)</span>}
                     </span>
-                    <svg
-                      className={`h-4 w-4 transition-transform ${showRateLimitConfig ? 'rotate-180' : ''}`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${showRateLimitConfig ? 'rotate-180' : ''}`} />
                   </button>
                   {showRateLimitConfig && (
                     <div className="px-3 pb-3 space-y-3 border-t border-border">
@@ -470,10 +460,7 @@ export function ApiKeysPage() {
                   className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
                 >
                   {isCreating && (
-                    <svg aria-hidden="true" className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <Loader2 className="animate-spin h-4 w-4" />
                   )}
                   {isCreating ? 'Creating...' : 'Create Key'}
                 </button>

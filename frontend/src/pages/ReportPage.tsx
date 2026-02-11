@@ -8,6 +8,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { PageHeader } from '../components/ui';
+import { FileText, BarChart2, Code2, Download } from 'lucide-react';
 
 // Type definitions matching backend
 interface E2EReportSection {
@@ -391,9 +392,7 @@ export function ReportPage() {
                   {exportLoading === 'pdf' ? (
                     <span className="w-4 h-4 border-2 border-destructive/30 border-t-destructive rounded-full animate-spin" />
                   ) : (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
+                    <FileText className="w-4 h-4" />
                   )}
                   PDF
                 </button>
@@ -406,9 +405,7 @@ export function ReportPage() {
                   {exportLoading === 'csv' ? (
                     <span className="w-4 h-4 border-2 border-success/30 border-t-success rounded-full animate-spin" />
                   ) : (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                    <BarChart2 className="w-4 h-4" />
                   )}
                   CSV
                 </button>
@@ -421,9 +418,7 @@ export function ReportPage() {
                   {exportLoading === 'html' ? (
                     <span className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                   ) : (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                    </svg>
+                    <Code2 className="w-4 h-4" />
                   )}
                   HTML
                 </button>
@@ -436,9 +431,7 @@ export function ReportPage() {
                   {exportLoading === 'json' ? (
                     <span className="w-4 h-4 border-2 border-warning/30 border-t-warning rounded-full animate-spin" />
                   ) : (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
+                    <Download className="w-4 h-4" />
                   )}
                   JSON
                 </button>

@@ -5,6 +5,7 @@
  */
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../ui/Modal';
 import { SecretPattern } from '../types';
+import { Key, Plus, Trash2 } from 'lucide-react';
 
 export interface SecretPatternsManagerProps {
  projectId: string;
@@ -63,9 +64,7 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-4">
  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
- <svg className="h-6 w-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
- </svg>
+ <Key className="h-6 w-6 text-accent" />
  </div>
  <div>
  <h3 className="text-lg font-semibold text-foreground">Custom Secret Patterns</h3>
@@ -78,18 +77,14 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  onClick={() => setShowAddSecretPatternModal(true)}
  className="flex items-center gap-2 rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"
  >
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
- </svg>
+ <Plus className="h-4 w-4" />
  Add Pattern
  </button>
  </div>
 
  {secretPatterns.length === 0 ? (
  <div className="text-center py-8 text-muted-foreground">
- <svg className="mx-auto h-12 w-12 mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
- </svg>
+ <Key className="mx-auto h-12 w-12 mb-4 opacity-50" />
  <p>No custom secret patterns configured</p>
  <p className="text-sm mt-1">Add regex patterns to detect organization-specific secrets like internal API keys or tokens</p>
  </div>
@@ -142,9 +137,7 @@ export function SecretPatternsManager(props: SecretPatternsManagerProps) {
  className="p-2 text-muted-foreground hover:text-destructive transition-colors"
  title="Delete pattern"
  >
- <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
- </svg>
+ <Trash2 className="h-4 w-4" />
  </button>
  </div>
  ))}

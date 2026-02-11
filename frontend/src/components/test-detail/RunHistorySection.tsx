@@ -4,7 +4,7 @@
 // Feature #572: Enriched rows with duration bars, error previews, anomaly indicators, sparklines
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart3, AlertTriangle } from 'lucide-react';
+import { BarChart3, AlertTriangle, X, ChevronRight, Download } from 'lucide-react';
 import { TestRunType } from './types';
 
 /** Feature #572: Mini sparkline showing pass/fail pattern for recent runs */
@@ -263,9 +263,7 @@ function RunHistorySectionInner({
  className="ml-1 rounded-full hover:bg-primary/20 p-0.5"
  aria-label="Clear status filter"
  >
- <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
- <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
- </svg>
+ <X className="h-3.5 w-3.5" />
  </button>
  </span>
  )}
@@ -277,9 +275,7 @@ function RunHistorySectionInner({
  className="ml-1 rounded-full hover:bg-primary/20 p-0.5"
  aria-label="Clear date filter"
  >
- <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
- <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
- </svg>
+ <X className="h-3.5 w-3.5" />
  </button>
  </span>
  )}
@@ -374,9 +370,7 @@ function RunHistorySectionInner({
    className="inline-flex items-center gap-1 rounded-md border border-primary bg-primary/10 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/20"
    title="View detailed run results"
   >
-   <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-   </svg>
+   <ChevronRight className="h-3 w-3" />
    View Details
   </Link>
   )}
@@ -388,9 +382,7 @@ function RunHistorySectionInner({
    className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
    title="Download all artifacts (screenshots, traces, videos)"
   >
-   <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-   </svg>
+   <Download className="h-3 w-3" />
    Download All
   </button>
   )}
