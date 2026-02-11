@@ -5,6 +5,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
+import { fetchWithAuth } from './fetchWithAuth'; // Feature #655: Shared auth fetch
 
 // Types
 export interface DashboardStats {
@@ -33,24 +34,6 @@ export interface RecentRun {
   completed_at?: string;
   duration_ms?: number;
 }
-
-// API helper
-const fetchWithAuth = async (url: string, token: string | null) => {
-  if (!token) throw new Error('Not authenticated');
-
-  const response = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
-
-  return response.json();
-};
 
 // Query keys factory
 export const dashboardKeys = {

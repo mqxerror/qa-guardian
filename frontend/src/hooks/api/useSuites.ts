@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
 // Feature #143: Import dashboard keys for cross-cache invalidation
 import { dashboardKeys } from './useDashboard';
+import { fetchWithAuth } from './fetchWithAuth'; // Feature #655: Shared auth fetch
 
 // Types
 export interface TestSuite {
@@ -69,26 +70,6 @@ export interface UpdateSuiteInput {
   timeout?: number;
   retry_count?: number;
 }
-
-// API helper
-const fetchWithAuth = async (url: string, token: string | null, options?: RequestInit) => {
-  if (!token) throw new Error('Not authenticated');
-
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
-
-  return response.json();
-};
 
 // Query keys factory
 export const suiteKeys = {

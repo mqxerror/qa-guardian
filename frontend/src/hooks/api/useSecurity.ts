@@ -5,6 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
+import { fetchWithAuth } from './fetchWithAuth'; // Feature #655: Shared auth fetch
 
 // Types matching SecurityDashboardPage interfaces
 export interface DashboardFinding {
@@ -174,26 +175,6 @@ export interface SecretsQueryParams {
 export interface TrendsQueryParams {
   days?: number;
 }
-
-// API helper
-const fetchWithAuth = async (url: string, token: string | null, options?: RequestInit) => {
-  if (!token) throw new Error('Not authenticated');
-
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
-
-  return response.json();
-};
 
 // Query keys factory for cache management
 export const securityKeys = {

@@ -5,24 +5,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
-
-// API helper
-const fetchWithAuth = async (url: string, token: string | null) => {
-  if (!token) throw new Error('Not authenticated');
-
-  const response = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
-
-  return response.json();
-};
+import { fetchWithAuth } from './fetchWithAuth'; // Feature #655: Shared auth fetch
 
 // Query keys factory
 export const analyticsKeys = {

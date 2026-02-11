@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
 // Feature #110: Import runKeys for cross-cache invalidation
 import { runKeys } from './useRuns';
+import { fetchWithAuth } from './fetchWithAuth'; // Feature #655: Shared auth fetch
 
 // Types matching VisualReviewPage interfaces
 export interface PendingVisualChange {
@@ -69,27 +70,6 @@ export interface BatchRejectInput {
   }>;
   reason?: string;
 }
-
-// API helper
-const fetchWithAuth = async (url: string, token: string | null, options?: RequestInit) => {
-  if (!token) throw new Error('Not authenticated');
-
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.message || data.error || `API error: ${response.status}`);
-  }
-
-  return response.json();
-};
 
 // Query keys factory for cache management
 export const visualReviewKeys = {

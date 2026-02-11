@@ -5,6 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
+import { fetchWithAuth } from './fetchWithAuth'; // Feature #655: Shared auth fetch
 
 // Types matching FlakyTestsDashboardPage interfaces
 export interface FlakyTest {
@@ -131,27 +132,6 @@ export interface RemediationSuggestion {
     expected_improvement: string;
   }>;
 }
-
-// API helper
-const fetchWithAuth = async (url: string, token: string | null, options?: RequestInit) => {
-  if (!token) throw new Error('Not authenticated');
-
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.message || `API error: ${response.status}`);
-  }
-
-  return response.json();
-};
 
 // Query keys factory for cache management
 export const flakyTestKeys = {

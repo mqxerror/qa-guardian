@@ -10,6 +10,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
+import { fetchWithAuth } from './fetchWithAuth'; // Feature #655: Shared auth fetch
 
 // API base URL
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
@@ -104,27 +105,6 @@ export interface CreateWebhookParams {
   batch_size?: number;
   batch_interval_seconds?: number;
 }
-
-// API helper
-const fetchWithAuth = async (url: string, token: string | null, options?: RequestInit) => {
-  if (!token) throw new Error('Not authenticated');
-
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.message || data.error || `API error: ${response.status}`);
-  }
-
-  return response.json();
-};
 
 // Query keys factory for cache management
 export const organizationKeys = {

@@ -13,6 +13,9 @@
  * - Cache invalidation helpers
  */
 
+// Feature #655: Shared auth fetch helper
+export { fetchWithAuth, type FetchError } from './fetchWithAuth';
+
 // Runs hooks
 export {
   useRuns,

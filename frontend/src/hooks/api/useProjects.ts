@@ -6,6 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
 import { Schedule } from './useSchedules'; // Feature #421: Proper type import
+import { fetchWithAuth } from './fetchWithAuth'; // Feature #655: Shared auth fetch
 
 // Types
 export interface Project {
@@ -39,28 +40,6 @@ export interface UpdateProjectInput {
   default_branch?: string;
   is_archived?: boolean;
 }
-
-// API helper
-const fetchWithAuth = async (url: string, token: string | null, options?: RequestInit) => {
-  if (!token) throw new Error('Not authenticated');
-
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const err = new Error(`API error: ${response.status}`);
-    (err as Error & { status: number }).status = response.status;
-    throw err;
-  }
-
-  return response.json();
-};
 
 // Query keys factory
 export const projectKeys = {
