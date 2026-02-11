@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useCallback, useRef } from 'react';
+import { ChevronDown, Loader2, ChevronRight, Check, X, Plus, ZoomOut, ZoomIn, Maximize2, ChevronsUpDown, ImageIcon } from 'lucide-react';
 import { TestResult, VisualViewMode, VisualMarker } from './types';
 
 interface VisualTabProps {
@@ -215,14 +216,7 @@ export default function VisualTab({
  {visualMarkers.length} marker{visualMarkers.length !== 1 ? 's' : ''}
  </span>
  </div>
- <svg
- className={`w-5 h-5 text-muted-foreground transition-transform ${visualVideoExpanded ? 'rotate-180' : ''}`}
- fill="none"
- viewBox="0 0 24 24"
- stroke="currentColor"
- >
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
- </svg>
+ <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${visualVideoExpanded ? 'rotate-180' : ''}`} />
  </button>
 
  {visualVideoExpanded && (
@@ -231,10 +225,7 @@ export default function VisualTab({
  <div className="bg-black">
  {videoLoading && (
  <div className="flex items-center justify-center h-48 text-muted-foreground">
- <svg className="animate-spin h-6 w-6 mr-2" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
- </svg>
+ <Loader2 className="animate-spin h-6 w-6 mr-2" />
  Loading video...
  </div>
  )}
@@ -360,9 +351,7 @@ export default function VisualTab({
 
  {visualResults.length === 0 ? (
  <div className="text-center py-12 border border-dashed border-border rounded-lg">
- <svg className="w-12 h-12 mx-auto text-muted-foreground mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
- </svg>
+ <ImageIcon className="w-12 h-12 mx-auto text-muted-foreground mb-4" strokeWidth={1.5} />
  <p className="text-muted-foreground">No visual comparison data available.</p>
  <p className="text-sm text-muted-foreground mt-1">Run a visual regression test to see comparisons here.</p>
  </div>
@@ -397,14 +386,7 @@ export default function VisualTab({
  onClick={() => toggleVisualResult(resultKey)}
  className="p-1 hover:bg-black/5 rounded"
  >
- <svg
- className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
- fill="none"
- viewBox="0 0 24 24"
- stroke="currentColor"
- >
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
- </svg>
+ <ChevronRight className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
  </button>
  <div>
  <h3 className="font-medium text-foreground">{result.test_name}</h3>
@@ -438,14 +420,9 @@ export default function VisualTab({
  className="px-3 py-1.5 text-sm bg-success text-primary-foreground rounded-lg hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
  >
  {isApprovalLoading ? (
- <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
- </svg>
+ <Loader2 className="w-4 h-4 animate-spin" />
  ) : (
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
- </svg>
+ <Check className="w-4 h-4" />
  )}
  Approve
  </button>
@@ -454,9 +431,7 @@ export default function VisualTab({
  disabled={isApprovalLoading}
  className="px-3 py-1.5 text-sm bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
  >
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
+ <X className="w-4 h-4" />
  Reject
  </button>
  </div>
@@ -470,14 +445,9 @@ export default function VisualTab({
  className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
  >
  {isApprovalLoading ? (
- <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
- </svg>
+ <Loader2 className="w-4 h-4 animate-spin" />
  ) : (
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
- </svg>
+ <Plus className="w-4 h-4" />
  )}
  Set as Baseline
  </button>
@@ -674,27 +644,21 @@ export default function VisualTab({
  className="p-1.5 rounded-md hover:bg-muted transition-colors"
  title="Zoom Out (-)"
  >
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
- </svg>
+ <ZoomOut className="w-4 h-4" />
  </button>
  <button
  onClick={() => handleZoomIn(resultKey)}
  className="p-1.5 rounded-md hover:bg-muted transition-colors"
  title="Zoom In (+)"
  >
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
- </svg>
+ <ZoomIn className="w-4 h-4" />
  </button>
  <button
  onClick={() => handleZoomFit(resultKey)}
  className="p-1.5 rounded-md hover:bg-muted transition-colors"
  title="Fit to Screen"
  >
- <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
- </svg>
+ <Maximize2 className="w-4 h-4" />
  </button>
  <button
  onClick={() => handleZoomReset(resultKey)}
@@ -838,9 +802,7 @@ export default function VisualTab({
  style={{ left: `${currentSlider}%`, transform: 'translateX(-50%)' }}
  >
  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-card rounded-full shadow-md flex items-center justify-center">
- <svg className="w-4 h-4 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
- </svg>
+ <ChevronsUpDown className="w-4 h-4 text-foreground" />
  </div>
  </div>
  </div>

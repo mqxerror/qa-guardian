@@ -2,7 +2,7 @@
 // Displays visual regression baseline management, history, and merge options
 // Feature #571: Replace emoji with Lucide icons for cross-browser consistency
 import React from 'react';
-import { Camera } from 'lucide-react';
+import { Camera, Loader2, GitBranch, GitMerge, Clock, User, Eye, X, RotateCcw, Download } from 'lucide-react';
 
 interface BaselineData {
  hasBaseline: boolean;
@@ -66,34 +66,18 @@ function LoadingSpinner({ size = 'md', className = '' }: { size?: 'sm' | 'md' | 
  lg: 'h-8 w-8',
  };
  return (
- <svg className={`animate-spin ${sizeClasses[size]} text-primary ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
+ <Loader2 className={`animate-spin ${sizeClasses[size]} text-primary ${className}`} />
  );
 }
 
-// Branch icon SVG
+// Branch icon using Lucide
 function BranchIcon({ className = '' }: { className?: string }) {
- return (
- <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
- <line x1="6" y1="3" x2="6" y2="15"/>
- <circle cx="18" cy="6" r="3"/>
- <circle cx="6" cy="18" r="3"/>
- <path d="M18 9a9 9 0 0 1-9 9"/>
- </svg>
- );
+ return <GitBranch className={className} size={14} />;
 }
 
-// Merge icon SVG
+// Merge icon using Lucide
 function MergeIcon({ className = '' }: { className?: string }) {
- return (
- <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
- <circle cx="18" cy="18" r="3"/>
- <circle cx="6" cy="6" r="3"/>
- <path d="M6 21V9a9 9 0 0 0 9 9"/>
- </svg>
- );
+ return <GitMerge className={className} size={18} />;
 }
 
 // No baseline state component
@@ -217,10 +201,7 @@ function BaselineHistoryTable({
  if (baselineHistory.length === 0) {
  return (
  <div className="text-center py-8 text-muted-foreground">
- <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-2 opacity-50">
- <circle cx="12" cy="12" r="10"/>
- <polyline points="12 6 12 12 16 14"/>
- </svg>
+ <Clock className="mx-auto mb-2 opacity-50" size={32} strokeWidth={1.5} />
  <p>No baseline history yet.</p>
  <p className="text-sm">Approve baselines to build version history.</p>
  </div>
@@ -253,10 +234,7 @@ function BaselineHistoryTable({
  </td>
  <td className="px-4 py-3">
  <span className="inline-flex items-center gap-1.5 text-muted-foreground">
- <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
- <circle cx="12" cy="7" r="4"/>
- </svg>
+ <User size={12} />
  {entry.approvedBy}
  </span>
  </td>
@@ -280,10 +258,7 @@ function BaselineHistoryTable({
  : 'text-muted-foreground hover:text-foreground'
  }`}
  >
- <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
- <circle cx="12" cy="12" r="3"/>
- </svg>
+ <Eye size={14} />
  {selectedHistoryVersion === entry.id ? 'Hide' : 'View'}
  </button>
  {/* Only show Restore button for non-current versions */}
@@ -297,10 +272,7 @@ function BaselineHistoryTable({
  className="inline-flex items-center gap-1 text-sm text-warning hover:text-warning"
  title="Restore this version as the current baseline"
  >
- <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
- <path d="M3 3v5h5"/>
- </svg>
+ <RotateCcw size={14} />
  Restore
  </button>
  )}
@@ -326,10 +298,7 @@ function BaselineHistoryTable({
  }}
  className="text-muted-foreground hover:text-foreground"
  >
- <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <line x1="18" y1="6" x2="6" y2="18"/>
- <line x1="6" y1="6" x2="18" y2="18"/>
- </svg>
+ <X size={16} />
  </button>
  </div>
  {loadingHistoryImage ? (
@@ -405,10 +374,7 @@ function CurrentBaselineDisplay({
  {baselineData.approvedBy && (
  <p className="text-sm text-muted-foreground mt-1">
  <span className="inline-flex items-center gap-1">
- <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
- <circle cx="12" cy="7" r="4"/>
- </svg>
+ <User size={12} />
  Approved by: {baselineData.approvedBy}
  </span>
  {baselineData.approvedAt && (
@@ -423,11 +389,7 @@ function CurrentBaselineDisplay({
  download={`baseline-${testId}.png`}
  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
  >
- <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
- <polyline points="7 10 12 15 17 10"/>
- <line x1="12" y1="15" x2="12" y2="3"/>
- </svg>
+ <Download size={14} />
  Download
  </a>
  </div>
@@ -501,10 +463,7 @@ function CurrentBaselineDisplay({
  <div className="flex items-center justify-between mb-4">
  <div>
  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
- <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <circle cx="12" cy="12" r="10"/>
- <polyline points="12 6 12 12 16 14"/>
- </svg>
+ <Clock size={18} />
  Baseline History
  </h3>
  <p className="text-sm text-muted-foreground">
