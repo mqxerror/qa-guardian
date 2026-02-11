@@ -18,6 +18,7 @@
  */
 
 import React, { memo, useMemo, useCallback, useState } from 'react';
+import { ArrowUpDown, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // =============================================================================
 // TYPES
@@ -115,22 +116,11 @@ export interface DataTableProps<T extends Record<string, unknown>> {
 
 const SortIcon = memo(function SortIcon({ direction }: { direction: SortDirection }) {
   if (!direction) {
-    return (
-      <svg className="w-4 h-4 text-muted-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-      </svg>
-    );
+    return <ArrowUpDown className="w-4 h-4 text-muted-foreground/50" />;
   }
-  return (
-    <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d={direction === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'}
-      />
-    </svg>
-  );
+  return direction === 'asc'
+    ? <ChevronUp className="w-4 h-4 text-primary" />
+    : <ChevronDown className="w-4 h-4 text-primary" />;
 });
 
 const Checkbox = memo(function Checkbox({
@@ -232,9 +222,7 @@ const Pagination = memo(function Pagination({
           className="p-2 rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Previous page"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="w-4 h-4" />
         </button>
 
         {pageNumbers.map((pageNum, idx) =>
@@ -263,9 +251,7 @@ const Pagination = memo(function Pagination({
           className="p-2 rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Next page"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
     </div>

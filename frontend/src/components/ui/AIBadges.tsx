@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { Layers, BarChart3, Info } from 'lucide-react';
 
 interface BadgeProps {
  size?: 'sm' | 'md' | 'lg';
@@ -35,19 +36,7 @@ export function AIPoweredBadge({ size = 'md', className = '' }: BadgeProps) {
  className={`inline-flex items-center rounded-full bg-gradient-to-r from-accent/10 to-primary/10 border border-accent/30 text-accent font-medium ${sizeClasses[size]} ${className}`}
  title="Powered by Claude AI"
  >
- <svg
- className={iconSizes[size]}
- viewBox="0 0 24 24"
- fill="none"
- stroke="currentColor"
- strokeWidth="2"
- strokeLinecap="round"
- strokeLinejoin="round"
- >
- <path d="M12 2L2 7l10 5 10-5-10-5z" />
- <path d="M2 17l10 5 10-5" />
- <path d="M2 12l10 5 10-5" />
- </svg>
+ <Layers className={iconSizes[size]} />
  <span>AI Powered</span>
  </span>
  );
@@ -74,19 +63,7 @@ export function MCPReadyBadge({ size = 'md', className = '' }: BadgeProps) {
  className={`inline-flex items-center rounded-full bg-gradient-to-r from-success/10 to-info/10 border border-success/30 text-success font-medium ${sizeClasses[size]} ${className}`}
  title="Available via Model Context Protocol (MCP)"
  >
- <svg
- className={iconSizes[size]}
- viewBox="0 0 24 24"
- fill="none"
- stroke="currentColor"
- strokeWidth="2"
- strokeLinecap="round"
- strokeLinejoin="round"
- >
- <path d="M18 20V10" />
- <path d="M12 20V4" />
- <path d="M6 20v-6" />
- </svg>
+ <BarChart3 className={iconSizes[size]} />
  <span>MCP Ready</span>
  </span>
  );
@@ -113,19 +90,7 @@ export function AIReadyBadge({ size = 'md', className = '' }: BadgeProps) {
  className={`inline-flex items-center rounded-full bg-gradient-to-r from-warning/10 via-warning/10 to-destructive/10 border border-warning/30 text-warning font-medium ${sizeClasses[size]} ${className}`}
  title="AI-ready: Powered by Claude AI and available via MCP"
  >
- <svg
- className={iconSizes[size]}
- viewBox="0 0 24 24"
- fill="none"
- stroke="currentColor"
- strokeWidth="2"
- strokeLinecap="round"
- strokeLinejoin="round"
- >
- <circle cx="12" cy="12" r="10" />
- <path d="M12 16v-4" />
- <path d="M12 8h.01" />
- </svg>
+ <Info className={iconSizes[size]} />
  <span>AI Ready</span>
  </span>
  );
