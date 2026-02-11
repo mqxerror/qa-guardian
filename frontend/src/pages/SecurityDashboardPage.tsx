@@ -13,6 +13,7 @@ import { EmptyState, EmptyStateIcons, EmptyStates } from '../components/ui/Empty
 // Feature #129: URL state for shareable links
 import { useUrlState, useUrlStateArray, useUrlTab } from '../hooks/useUrlState';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PageHeader } from '../components/ui';
 import {
   useSecurityDashboard,
   useSecurityTrends,
@@ -249,14 +250,13 @@ export function SecurityDashboardPage() {
 
   return (
     <Layout>
-      <div className="p-8">
-        {/* Header */}
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold text-foreground">Security Dashboard</h2>
-          <p className="mt-2 text-muted-foreground">
-            SAST findings across all projects in your organization
-          </p>
-        </div>
+      <div className="p-6 lg:p-8 space-y-6">
+        {/* Feature #638: PageHeader component */}
+        <PageHeader
+          title="Security Dashboard"
+          description="SAST findings across all projects in your organization"
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security' }]}
+        />
 
         {/* Tab Navigation */}
         <div className="mb-6 border-b border-border">

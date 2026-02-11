@@ -18,6 +18,7 @@ import {
  type CreateScheduleInput,
 } from '../hooks/api/useSchedules';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
+import { PageHeader } from '../components/ui';
 
 // Feature #1256: AI Schedule Recommendation interfaces
 interface AIScheduleRecommendation {
@@ -268,42 +269,42 @@ export function SchedulesPage() {
 
  return (
  <Layout>
- <div className="p-8">
- <div className="flex items-center justify-between mb-8">
- <div>
- <h1 className="text-3xl font-bold text-foreground">Schedules</h1>
- <p className="mt-2 text-muted-foreground">
- Schedule automated test runs
- </p>
- </div>
- <div className="flex gap-3">
- <button
- onClick={loadAIRecommendations}
- disabled={isLoadingRecommendations}
- className="rounded-md bg-gradient-to-r from-accent to-primary px-4 py-2 font-medium text-primary-foreground hover:from-accent/90 hover:to-primary flex items-center gap-2"
- >
- {isLoadingRecommendations ? (
- <>
- <svg aria-hidden="true" className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
- </svg>
- Analyzing...
- </>
- ) : (
- <>AI Schedule Optimizer</>
- )}
- </button>
- {canCreateSchedule && (
- <button
- onClick={() => setShowCreateModal(true)}
- className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
- >
- Create Schedule
- </button>
- )}
- </div>
- </div>
+ <div className="p-6 lg:p-8 space-y-6">
+ {/* Feature #638: PageHeader component */}
+ <PageHeader
+  title="Schedules"
+  description="Schedule automated test runs"
+  breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Schedules' }]}
+  actions={
+   <div className="flex gap-3">
+    <button
+     onClick={loadAIRecommendations}
+     disabled={isLoadingRecommendations}
+     className="rounded-md bg-gradient-to-r from-accent to-primary px-4 py-2 font-medium text-primary-foreground hover:from-accent/90 hover:to-primary flex items-center gap-2"
+    >
+     {isLoadingRecommendations ? (
+      <>
+       <svg aria-hidden="true" className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+       </svg>
+       Analyzing...
+      </>
+     ) : (
+      <>AI Schedule Optimizer</>
+     )}
+    </button>
+    {canCreateSchedule && (
+     <button
+      onClick={() => setShowCreateModal(true)}
+      className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
+     >
+      Create Schedule
+     </button>
+    )}
+   </div>
+  }
+ />
 
  {/* Feature #1256: AI Schedule Recommendations Panel */}
  {showAIRecommendations && (

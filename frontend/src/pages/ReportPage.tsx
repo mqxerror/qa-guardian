@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
+import { PageHeader } from '../components/ui';
 
 // Type definitions matching backend
 interface E2EReportSection {
@@ -362,28 +363,23 @@ export function ReportPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="bg-card rounded-lg border border-border p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">{report.title}</h1>
-              <p className="text-muted-foreground mt-1">
-                Project: {report.projectName} | Generated: {new Date(report.createdAt).toLocaleString()}
-              </p>
-              {report.description && (
-                <p className="text-muted-foreground mt-2">{report.description}</p>
-              )}
-              <p className="text-sm text-muted-foreground mt-2">
-                Period: {new Date(report.period.start).toLocaleDateString()} - {new Date(report.period.end).toLocaleDateString()}
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-4">
+      <div className="p-6 lg:p-8 space-y-6">
+        {/* Feature #638: PageHeader component */}
+        <PageHeader
+          title={report.title}
+          description={`Project: ${report.projectName} | Generated: ${new Date(report.createdAt).toLocaleString()}${report.description ? ' | ' + report.description : ''}`}
+          breadcrumbs={[
+            { label: 'Home', href: '/' },
+            { label: 'Projects', href: '/projects' },
+            { label: report.projectName, href: `/projects/${report.projectId}` },
+            { label: 'Report' }
+          ]}
+          actions={
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-4">
                 <ScoreBadge score={report.executiveSummary.overallScore} />
                 <StatusBadge status={report.executiveSummary.overallStatus} />
               </div>
-              {/* Export Buttons */}
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground mr-2">Export:</span>
                 <button
@@ -448,8 +444,13 @@ export function ReportPage() {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+          }
+        />
+
+        {/* Period info */}
+        <p className="text-sm text-muted-foreground">
+          Period: {new Date(report.period.start).toLocaleDateString()} - {new Date(report.period.end).toLocaleDateString()}
+        </p>
 
         {/* Navigation Tabs */}
         <div className="bg-card rounded-lg border border-border overflow-hidden">

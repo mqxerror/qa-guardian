@@ -3,6 +3,7 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
+import { PageHeader } from "../components/ui";
 import type {
   AIRouterConfig, RouterStats, CircuitBreakerState, ProviderSwitchLog,
   ActiveProviderState, ProviderChangeLog, ProviderSwitchResult,
@@ -185,16 +186,13 @@ function AIRouterPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <button onClick={() => navigate('/ai-insights')} className="text-primary hover:text-primary mb-2 flex items-center gap-1">
-            ← Back to AI Insights
-          </button>
-          <h1 className="text-2xl font-bold">AI Provider Router</h1>
-          <p className="text-foreground">Route AI requests with automatic fallback</p>
-        </div>
-      </div>
+    <div className="p-6 lg:p-8 space-y-6">
+      {/* Feature #638: PageHeader component */}
+      <PageHeader
+        title="AI Provider Router"
+        description="Route AI requests with automatic fallback"
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'AI Insights', href: '/ai-insights' }, { label: 'AI Router' }]}
+      />
 
       {/* Provider Flow Diagram */}
       <div className="mb-6 bg-gradient-to-r from-accent via-accent to-primary rounded-lg p-6 text-primary-foreground">

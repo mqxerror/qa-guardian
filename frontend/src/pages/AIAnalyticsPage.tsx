@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { ArrowLeft, RefreshCw, DollarSign, Zap, FileInput, FileOutput, Building2, Brain, TrendingUp, Settings } from 'lucide-react';
+import { PageHeader } from '../components/ui';
 
 // Feature #317: API base URL from environment
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -262,28 +263,13 @@ export function AIAnalyticsPage() {
 
   return (
     <Layout>
-      <div className="p-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <span className="text-muted-foreground">Back to Dashboard</span>
-          </div>
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-                <TrendingUp className="h-8 w-8 text-primary" />
-                AI Analytics & Costs
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                Track AI usage, costs, and savings across providers
-              </p>
-            </div>
+      <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+        {/* Feature #638: PageHeader component */}
+        <PageHeader
+          title="AI Analytics & Costs"
+          description="Track AI usage, costs, and savings across providers"
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'AI Analytics' }]}
+          actions={
             <div className="flex items-center gap-4 flex-wrap">
               <select
                 value={period}
@@ -321,8 +307,8 @@ export function AIAnalyticsPage() {
                 Refresh
               </button>
             </div>
-          </div>
-        </div>
+          }
+        />
 
         {/* Tab Navigation */}
         <div className="border-b border-border mb-6">
