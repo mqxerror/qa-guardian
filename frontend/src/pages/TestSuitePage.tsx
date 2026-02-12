@@ -422,7 +422,7 @@ function TestSuitePage() {
       }
     };
     fetchReviewSettings();
-  }, [suiteId, token, tests]);
+  }, [suiteId, token]);
 
   // Feature #1151: Toggle human review requirement
   const handleToggleHumanReview = async () => {
