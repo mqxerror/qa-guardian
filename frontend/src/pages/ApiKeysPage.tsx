@@ -1,12 +1,14 @@
 // ApiKeysPage - Extracted from App.tsx for code quality compliance
 // Feature #636: Adopt Modal component in page-level inline modals
 // Feature #1357: Frontend file size limit enforcement
+// Feature #690: Migrated from raw fetch to React Query hooks
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
+import { useApiKeys, useCreateApiKey, useDeleteApiKey } from '../hooks/api/useOrganization';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Check, Clock, ChevronDown, Loader2 } from 'lucide-react';
 
@@ -21,15 +23,17 @@ interface ApiKey {
 }
 
 export function ApiKeysPage() {
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const { formatDate } = useTimezoneStore();
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Feature #690: React Query hooks for data fetching and mutations
+  const { data: apiKeys = [], isLoading } = useApiKeys();
+  const createMutation = useCreateApiKey();
+  const deleteMutation = useDeleteApiKey();
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyScopes, setNewKeyScopes] = useState<string[]>(['read']);
-  const [createError, setCreateError] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
   const [createdKey, setCreatedKey] = useState<ApiKey | null>(null);
   const [keyCopied, setKeyCopied] = useState(false);
   // Rate limiting configuration
@@ -39,78 +43,25 @@ export function ApiKeysPage() {
   const [burstLimit, setBurstLimit] = useState(20);
   const [burstWindow, setBurstWindow] = useState(10);
 
-  // Escape key handling moved to Modal component
-
-  // Fetch API keys on mount
-  useEffect(() => {
-    const fetchApiKeys = async () => {
-      try {
-        const response = await fetch(`/api/v1/organizations/${user?.organization_id}/api-keys`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setApiKeys(data.api_keys);
-        }
-      } catch (err) {
-        console.error('Failed to fetch API keys:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    if (user?.organization_id) {
-      fetchApiKeys();
-    }
-  }, [token, user?.organization_id]);
-
   const handleCreateKey = async (e: React.FormEvent) => {
     e.preventDefault();
-    setCreateError('');
-    setIsCreating(true);
 
     try {
-      const response = await fetch(`/api/v1/organizations/${user?.organization_id}/api-keys`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: newKeyName,
-          scopes: newKeyScopes,
-          // Include rate limit config if custom values are set
-          ...(showRateLimitConfig ? {
-            rate_limit: rateLimitValue,
-            rate_limit_window: rateLimitWindow,
-            burst_limit: burstLimit,
-            burst_window: burstWindow,
-          } : {}),
-        }),
+      const result = await createMutation.mutateAsync({
+        name: newKeyName,
+        scopes: newKeyScopes,
+        // Include rate limit config if custom values are set
+        ...(showRateLimitConfig ? {
+          rate_limit: rateLimitValue,
+          rate_limit_window: rateLimitWindow,
+          burst_limit: burstLimit,
+          burst_window: burstWindow,
+        } : {}),
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to create API key');
-      }
-
-      const data = await response.json();
       // Show the created key (this is the only time the full key is shown!)
-      setCreatedKey(data.api_key);
-      // Add the key to the list (without the full key)
-      setApiKeys([...apiKeys, {
-        id: data.api_key.id,
-        name: data.api_key.name,
-        key_prefix: data.api_key.key_prefix,
-        scopes: data.api_key.scopes,
-        expires_at: data.api_key.expires_at,
-        created_at: data.api_key.created_at,
-      }]);
-    } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create API key');
-    } finally {
-      setIsCreating(false);
+      setCreatedKey(result.api_key as ApiKey);
+    } catch {
+      // Error is handled by mutation state
     }
   };
 
@@ -127,7 +78,7 @@ export function ApiKeysPage() {
     setCreatedKey(null);
     setNewKeyName('');
     setNewKeyScopes(['read']);
-    setCreateError('');
+    createMutation.reset();
     setKeyCopied(false);
     // Reset rate limit config
     setShowRateLimitConfig(false);
@@ -143,16 +94,7 @@ export function ApiKeysPage() {
     }
 
     try {
-      const response = await fetch(`/api/v1/api-keys/${keyId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        setApiKeys(apiKeys.filter(k => k.id !== keyId));
-      }
+      await deleteMutation.mutateAsync(keyId);
     } catch (err) {
       console.error('Failed to delete API key:', err);
     }
@@ -307,9 +249,9 @@ export function ApiKeysPage() {
             // Create key form
             <form onSubmit={handleCreateKey}>
               <ModalBody className="space-y-4">
-                {createError && (
+                {createMutation.error && (
                   <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                    {createError}
+                    {createMutation.error.message}
                   </div>
                 )}
                 <div>
@@ -456,13 +398,13 @@ export function ApiKeysPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isCreating || newKeyScopes.length === 0}
+                  disabled={createMutation.isPending || newKeyScopes.length === 0}
                   className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
                 >
-                  {isCreating && (
+                  {createMutation.isPending && (
                     <Loader2 className="animate-spin h-4 w-4" />
                   )}
-                  {isCreating ? 'Creating...' : 'Create Key'}
+                  {createMutation.isPending ? 'Creating...' : 'Create Key'}
                 </button>
               </ModalFooter>
             </form>

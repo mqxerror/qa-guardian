@@ -1,50 +1,33 @@
 // WebhookConfigurationPage extracted from App.tsx for code quality compliance (Feature #1357)
 // Note: This file is 723 lines - will need further splitting in future sessions
 // Feature #636: Adopt Modal component in page-level inline modals
-import { useState, useEffect } from 'react';
+// Feature #690: Migrated from raw fetch to React Query hooks
+import { useState } from 'react';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
-import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
-
-interface WebhookSubscription {
-  id: string;
-  name: string;
-  url: string;
-  events: string[];
-  result_statuses?: string[];
-  enabled: boolean;
-  retry_enabled?: boolean;
-  max_retries?: number;
-  success_count: number;
-  failure_count: number;
-  last_triggered_at?: string;
-  batch_enabled?: boolean;
-  batch_size?: number;
-  batch_interval_seconds?: number;
-}
-
-interface WebhookDeliveryLog {
-  id: string;
-  webhook_id: string;
-  event: string;
-  success: boolean;
-  timestamp: string;
-  duration_ms: number;
-  attempt: number;
-  max_attempts: number;
-  responseStatus?: number;
-  responseBody?: string;
-  error?: string;
-}
+// Feature #690: React Query hooks for data fetching and mutations
+import {
+  useWebhooks,
+  useCreateWebhook,
+  useUpdateWebhook,
+  useDeleteWebhook,
+  useWebhookLogs,
+  type WebhookSubscription,
+  type WebhookDeliveryLog,
+} from '../hooks/api/useOrganization';
 
 export function WebhookConfigurationPage() {
-  const { token } = useAuthStore();
   const { formatDate } = useTimezoneStore();
-  const [webhooks, setWebhooks] = useState<WebhookSubscription[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Feature #690: React Query hooks for data fetching and mutations
+  const { data: webhooks = [], isLoading } = useWebhooks();
+  const createMutation = useCreateWebhook();
+  const updateMutation = useUpdateWebhook();
+  const deleteMutation = useDeleteWebhook();
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedWebhook, setSelectedWebhook] = useState<WebhookSubscription | null>(null);
   const [error, setError] = useState('');
@@ -65,10 +48,9 @@ export function WebhookConfigurationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Feature #1303: Delivery history state
+  // Feature #690: deliveryLogs and isLoadingHistory now come from React Query hook
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyWebhookId, setHistoryWebhookId] = useState<string | null>(null);
-  const [deliveryLogs, setDeliveryLogs] = useState<WebhookDeliveryLog[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'success' | 'failed'>('all');
 
   // Feature #1394: 12 essential webhook events for n8n/Zapier integration
@@ -94,26 +76,7 @@ export function WebhookConfigurationPage() {
     { value: 'error', label: 'Error', color: 'bg-warning/10 text-warning' },
   ];
 
-  // Fetch webhooks
-  useEffect(() => {
-    const fetchWebhooks = async () => {
-      try {
-        const response = await fetch('/api/v1/webhook-subscriptions', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setWebhooks(data.subscriptions || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch webhooks:', err);
-        setError('Failed to load webhooks');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchWebhooks();
-  }, [token]);
+  // Feature #690: useEffect removed - React Query handles data fetching
 
   const resetForm = () => {
     setFormName('');
@@ -154,13 +117,14 @@ export function WebhookConfigurationPage() {
     setShowCreateModal(true);
   };
 
+  // Feature #690: handleSubmit uses React Query mutations
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
 
     try {
-      const payload: Record<string, unknown> = {
+      const payload = {
         name: formName,
         url: formUrl,
         events: formEvents,
@@ -171,39 +135,14 @@ export function WebhookConfigurationPage() {
         batch_enabled: formBatchEnabled,
         batch_size: formBatchSize,
         batch_interval_seconds: formBatchInterval,
+        ...(formResultStatuses.length > 0 ? { result_statuses: formResultStatuses } : {}),
+        ...(formSecret ? { secret: formSecret } : {}),
       };
 
-      if (formResultStatuses.length > 0) {
-        payload.result_statuses = formResultStatuses;
-      }
-      if (formSecret) {
-        payload.secret = formSecret;
-      }
-
-      const url = selectedWebhook
-        ? `/api/v1/webhook-subscriptions/${selectedWebhook.id}`
-        : '/api/v1/webhook-subscriptions';
-
-      const response = await fetch(url, {
-        method: selectedWebhook ? 'PATCH' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to save webhook');
-      }
-
-      const data = await response.json();
-
       if (selectedWebhook) {
-        setWebhooks(webhooks.map(w => w.id === selectedWebhook.id ? { ...w, ...data } : w));
+        await updateMutation.mutateAsync({ webhookId: selectedWebhook.id, ...payload });
       } else {
-        setWebhooks([...webhooks, data]);
+        await createMutation.mutateAsync(payload);
       }
 
       setShowCreateModal(false);
@@ -215,65 +154,40 @@ export function WebhookConfigurationPage() {
     }
   };
 
+  // Feature #690: handleDelete uses React Query mutation
   const handleDelete = async (webhookId: string) => {
     if (!confirm('Are you sure you want to delete this webhook? This action cannot be undone.')) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/v1/webhook-subscriptions/${webhookId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        setWebhooks(webhooks.filter(w => w.id !== webhookId));
-      }
+      await deleteMutation.mutateAsync(webhookId);
     } catch (err) {
       console.error('Failed to delete webhook:', err);
     }
   };
 
+  // Feature #690: handleToggleEnabled uses React Query mutation
   const handleToggleEnabled = async (webhook: WebhookSubscription) => {
     try {
-      const response = await fetch(`/api/v1/webhook-subscriptions/${webhook.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ enabled: !webhook.enabled }),
-      });
-
-      if (response.ok) {
-        setWebhooks(webhooks.map(w => w.id === webhook.id ? { ...w, enabled: !webhook.enabled } : w));
-      }
+      await updateMutation.mutateAsync({ webhookId: webhook.id, enabled: !webhook.enabled });
     } catch (err) {
       console.error('Failed to toggle webhook:', err);
     }
   };
 
-  // Feature #1303: Fetch delivery history for a webhook
-  const handleViewHistory = async (webhookId: string) => {
+  // Feature #1303: View delivery history for a webhook
+  // Feature #690: Uses React Query hook - data is fetched by the hook when historyWebhookId is set
+  const handleViewHistory = (webhookId: string) => {
     setHistoryWebhookId(webhookId);
     setShowHistoryModal(true);
-    setIsLoadingHistory(true);
     setHistoryFilter('all');
-
-    try {
-      const response = await fetch(`/api/v1/webhook-subscriptions/${webhookId}/logs?limit=50`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setDeliveryLogs(data.logs || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch delivery history:', err);
-    } finally {
-      setIsLoadingHistory(false);
-    }
   };
+
+  // Feature #690: React Query hook for webhook logs - only fetches when modal is open
+  const { data: deliveryLogs = [], isLoading: isLoadingHistory } = useWebhookLogs(
+    showHistoryModal ? (historyWebhookId || '') : ''
+  );
 
   const filteredLogs = deliveryLogs.filter(log => {
     if (historyFilter === 'all') return true;

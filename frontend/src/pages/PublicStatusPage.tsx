@@ -1,58 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
+// Feature #690: React Query hooks for data fetching
+import { usePublicStatus, useStatusSubscribe } from '../hooks/api/useMonitoring';
 
 // Feature #1296: Public Status Page
 // Feature #636: Adopt Modal component in page-level inline modals
+// Feature #690: Migrated from raw fetch to React Query hooks
 export function PublicStatusPage() {
   const { slug } = useParams<{ slug: string }>();
-  const [statusData, setStatusData] = useState<{
-    name: string;
-    slug: string;
-    description?: string;
-    logo_url?: string;
-    primary_color?: string;
-    overall_status: 'up' | 'down' | 'degraded';
-    checks: {
-      id: string;
-      type: string;
-      name: string;
-      status: 'up' | 'down' | 'degraded' | 'unknown';
-      uptime?: number;
-      avg_response_time?: number;
-    }[];
-    incidents?: {
-      id: string;
-      status: string;
-      started_at: string;
-      ended_at?: string;
-      error?: string;
-      check_name: string;
-    }[];
-    manual_incidents?: {
-      id: string;
-      title: string;
-      status: 'investigating' | 'identified' | 'monitoring' | 'resolved';
-      impact: 'none' | 'minor' | 'major' | 'critical';
-      updates: {
-        id: string;
-        status: string;
-        message: string;
-        created_at: string;
-      }[];
-      created_at: string;
-      updated_at: string;
-      resolved_at?: string;
-    }[];
-    last_updated: string;
-  } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Feature #690: React Query hooks for data fetching and mutations
+  const { data: statusData, isLoading, error: fetchError } = usePublicStatus(slug);
+  const subscribeMutation = useStatusSubscribe();
 
   // Subscribe modal state
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const [subscribeEmail, setSubscribeEmail] = useState('');
-  const [subscribeLoading, setSubscribeLoading] = useState(false);
   const [subscribeResult, setSubscribeResult] = useState<{
     success: boolean;
     message: string;
@@ -61,81 +25,33 @@ export function PublicStatusPage() {
     dev_verify_url?: string;
   } | null>(null);
 
-  useEffect(() => {
-    const fetchStatusPage = async () => {
-      if (!slug) return;
-      setIsLoading(true);
-      setError(null);
+  // Derive error message from React Query error
+  const error = fetchError?.message || null;
 
-      try {
-        const response = await fetch(`/api/v1/status/${slug}`);
-        if (!response.ok) {
-          if (response.status === 404) {
-            setError('Status page not found');
-          } else if (response.status === 403) {
-            setError('This status page is private');
-          } else {
-            setError('Failed to load status page');
-          }
-          return;
-        }
-        const data = await response.json();
-        setStatusData(data);
-      } catch (err) {
-        console.error('Failed to fetch status page:', err);
-        setError('Failed to load status page');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchStatusPage();
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchStatusPage, 60000);
-    return () => clearInterval(interval);
-  }, [slug]);
-
-  // Handle subscription
+  // Handle subscription using React Query mutation
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!slug || !subscribeEmail) return;
 
-    setSubscribeLoading(true);
     setSubscribeResult(null);
 
     try {
-      const response = await fetch(`/api/v1/status/${slug}/subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: subscribeEmail }),
+      const result = await subscribeMutation.mutateAsync({ slug, email: subscribeEmail });
+      setSubscribeResult({
+        success: true,
+        message: result.message || 'Subscribed successfully',
+        verification_required: result.verification_required,
+        already_subscribed: result.already_subscribed,
+        dev_verify_url: result.dev_verify_url,
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSubscribeResult({
-          success: true,
-          message: data.message,
-          verification_required: data.verification_required,
-          already_subscribed: data.already_subscribed,
-          dev_verify_url: data.dev_verify_url,
-        });
-        if (!data.verification_required) {
-          setSubscribeEmail('');
-        }
-      } else {
-        setSubscribeResult({
-          success: false,
-          message: data.error || 'Failed to subscribe',
-        });
+      if (!result.verification_required) {
+        setSubscribeEmail('');
       }
     } catch (err) {
       setSubscribeResult({
         success: false,
-        message: 'Network error. Please try again.',
+        message: err instanceof Error ? err.message : 'Network error. Please try again.',
       });
-    } finally {
-      setSubscribeLoading(false);
     }
   };
 
@@ -309,10 +225,10 @@ export function PublicStatusPage() {
               <button
                 type="submit"
                 form="subscribe-form"
-                disabled={subscribeLoading || !subscribeEmail}
+                disabled={subscribeMutation.isPending || !subscribeEmail}
                 className="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {subscribeLoading ? 'Subscribing...' : 'Subscribe'}
+                {subscribeMutation.isPending ? 'Subscribing...' : 'Subscribe'}
               </button>
             </>
           )}

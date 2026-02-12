@@ -1,82 +1,33 @@
 // Feature #1357: Extracted AcceptInvitationPage for code quality compliance (400 line limit)
-import { useState, useEffect } from 'react';
+// Feature #690: Migrated from raw fetch to React Query hooks
+import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { useInvitation, useAcceptInvitation } from '../hooks/api/useOrganization';
 import { X, Check, Mail, Users } from 'lucide-react';
-
-interface Invitation {
-  id: string;
-  email: string;
-  role: string;
-  organization: { id: string; name: string; slug: string } | null;
-  created_at: string;
-}
 
 export function AcceptInvitationPage() {
   const { inviteId } = useParams<{ inviteId: string }>();
   const navigate = useNavigate();
   const { token, isAuthenticated, user } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAccepting, setIsAccepting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Fetch invitation details
-  useEffect(() => {
-    async function fetchInvitation() {
-      if (!inviteId) return;
-
-      try {
-        const response = await fetch(`/api/v1/invitations/${inviteId}`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          setError(data.message || 'Failed to load invitation');
-          return;
-        }
-
-        setInvitation(data.invitation);
-      } catch {
-        setError('Failed to load invitation');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchInvitation();
-  }, [inviteId]);
+  // Feature #690: Use React Query hooks for data fetching
+  const { data: invitation, isLoading, error: fetchError } = useInvitation(inviteId);
+  const acceptMutation = useAcceptInvitation();
 
   const handleAccept = async () => {
     if (!inviteId || !token) return;
 
-    setIsAccepting(true);
-    setError(null);
-
     try {
-      const response = await fetch(`/api/v1/invitations/${inviteId}/accept`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || 'Failed to accept invitation');
-        return;
-      }
-
+      await acceptMutation.mutateAsync(inviteId);
       setSuccess(true);
       // Navigate to dashboard after a short delay
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
     } catch {
-      setError('Failed to accept invitation');
-    } finally {
-      setIsAccepting(false);
+      // Error is handled by mutation state
     }
   };
 
@@ -89,7 +40,7 @@ export function AcceptInvitationPage() {
     );
   }
 
-  if (error && !invitation) {
+  if (fetchError && !invitation) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <div className="w-full max-w-md rounded-lg border bg-card p-8 text-center shadow-sm">
@@ -97,7 +48,7 @@ export function AcceptInvitationPage() {
             <X className="h-8 w-8 text-destructive" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Invalid Invitation</h1>
-          <p className="mt-2 text-muted-foreground">{error}</p>
+          <p className="mt-2 text-muted-foreground">{fetchError.message}</p>
           <Link
             to="/"
             className="mt-6 inline-block rounded-md bg-primary px-6 py-2 font-medium text-primary-foreground hover:bg-primary/90"
@@ -212,18 +163,18 @@ export function AcceptInvitationPage() {
             </div>
           )}
 
-          {error && (
+          {acceptMutation.error && (
             <div className="rounded-lg bg-destructive/10 p-4">
-              <p className="text-sm text-destructive">{error}</p>
+              <p className="text-sm text-destructive">{acceptMutation.error.message}</p>
             </div>
           )}
 
           <button
             onClick={handleAccept}
-            disabled={isAccepting || emailMismatch}
+            disabled={acceptMutation.isPending || emailMismatch}
             className="w-full rounded-md bg-primary py-3 font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isAccepting ? 'Accepting...' : 'Accept Invitation'}
+            {acceptMutation.isPending ? 'Accepting...' : 'Accept Invitation'}
           </button>
 
           <Link

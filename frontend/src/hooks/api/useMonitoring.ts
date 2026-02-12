@@ -285,3 +285,110 @@ export function useInvalidateMonitoring() {
     },
   };
 }
+
+// ============== Public Status Page Hooks ==============
+// Feature #690: Hooks for PublicStatusPage migration
+
+export interface PublicStatusData {
+  name: string;
+  slug: string;
+  description?: string;
+  logo_url?: string;
+  primary_color?: string;
+  overall_status: 'up' | 'down' | 'degraded';
+  checks: {
+    id: string;
+    type: string;
+    name: string;
+    status: 'up' | 'down' | 'degraded' | 'unknown';
+    uptime?: number;
+    avg_response_time?: number;
+  }[];
+  incidents?: {
+    id: string;
+    status: string;
+    started_at: string;
+    ended_at?: string;
+    error?: string;
+    check_name: string;
+  }[];
+  manual_incidents?: {
+    id: string;
+    title: string;
+    status: 'investigating' | 'identified' | 'monitoring' | 'resolved';
+    impact: 'none' | 'minor' | 'major' | 'critical';
+    updates: {
+      id: string;
+      status: string;
+      message: string;
+      created_at: string;
+    }[];
+    created_at: string;
+    updated_at: string;
+    resolved_at?: string;
+  }[];
+  last_updated: string;
+}
+
+export interface SubscribeResult {
+  success: boolean;
+  message: string;
+  verification_required?: boolean;
+  already_subscribed?: boolean;
+  dev_verify_url?: string;
+}
+
+// Query keys for public status page
+export const publicStatusKeys = {
+  all: ['publicStatus'] as const,
+  detail: (slug: string) => [...publicStatusKeys.all, slug] as const,
+};
+
+/**
+ * Hook to fetch public status page data (no auth required)
+ * Feature #690: Migrate PublicStatusPage to React Query
+ */
+export function usePublicStatus(slug: string | undefined) {
+  return useQuery({
+    queryKey: publicStatusKeys.detail(slug || ''),
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/status/${slug}`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Status page not found');
+        } else if (response.status === 403) {
+          throw new Error('This status page is private');
+        } else {
+          throw new Error('Failed to load status page');
+        }
+      }
+      return response.json() as Promise<PublicStatusData>;
+    },
+    enabled: !!slug,
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 60 * 1000,
+    refetchInterval: 60 * 1000, // Auto-refresh every 60 seconds
+    retry: false,
+  });
+}
+
+/**
+ * Hook to subscribe to status page notifications
+ * Feature #690: Migrate PublicStatusPage to React Query
+ */
+export function useStatusSubscribe() {
+  return useMutation({
+    mutationFn: async ({ slug, email }: { slug: string; email: string }) => {
+      const response = await fetch(`/api/v1/status/${slug}/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to subscribe');
+      }
+      return data as SubscribeResult;
+    },
+  });
+}

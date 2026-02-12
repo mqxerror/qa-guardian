@@ -347,6 +347,68 @@ export function useWebhookLogs(webhookId: string) {
   });
 }
 
+// ============== Invitation Types ==============
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: string;
+  organization: { id: string; name: string; slug: string } | null;
+  created_at: string;
+}
+
+// Query keys for invitations
+export const invitationKeys = {
+  all: ['invitations'] as const,
+  detail: (id: string) => [...invitationKeys.all, id] as const,
+};
+
+/**
+ * Hook to fetch invitation details
+ * Feature #690: Migrate AcceptInvitationPage to React Query
+ */
+export function useInvitation(inviteId: string | undefined) {
+  return useQuery({
+    queryKey: invitationKeys.detail(inviteId || ''),
+    queryFn: async () => {
+      const response = await fetch(`/api/v1/invitations/${inviteId}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to load invitation');
+      }
+      return data.invitation as Invitation;
+    },
+    enabled: !!inviteId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000,
+    retry: false, // Don't retry failed invitation fetches
+  });
+}
+
+/**
+ * Hook to accept an invitation
+ * Feature #690: Migrate AcceptInvitationPage to React Query
+ */
+export function useAcceptInvitation() {
+  const token = useAuthStore(state => state.token);
+
+  return useMutation({
+    mutationFn: async (inviteId: string) => {
+      const response = await fetch(`/api/v1/invitations/${inviteId}/accept`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to accept invitation');
+      }
+      return data;
+    },
+  });
+}
+
 // ============== Invalidation Hooks ==============
 
 /**
