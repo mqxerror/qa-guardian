@@ -345,21 +345,27 @@ export async function runCoreRoutes(app: FastifyInstance) {
     }
     const runs = allSuiteRuns
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .map(r => ({
+      .map(r => {
+        // Handle both Date objects (from DB) and ISO strings (from Redis cache)
+        const createdAt = r.created_at instanceof Date ? r.created_at : new Date(r.created_at);
+        const startedAt = r.started_at ? (r.started_at instanceof Date ? r.started_at : new Date(r.started_at)) : null;
+        const completedAt = r.completed_at ? (r.completed_at instanceof Date ? r.completed_at : new Date(r.completed_at)) : null;
+        return {
         id: r.id,
         suite_id: r.suite_id,
         test_id: r.test_id,
         status: r.status,
         browser: r.browser,
         branch: r.branch,
-        created_at: r.created_at.toISOString(),
-        started_at: r.started_at?.toISOString(),
-        completed_at: r.completed_at?.toISOString(),
+        created_at: createdAt.toISOString(),
+        started_at: startedAt?.toISOString(),
+        completed_at: completedAt?.toISOString(),
         duration_ms: r.duration_ms,
         results_count: r.results?.length || 0,
         passed_count: r.results?.filter((res: { status: string }) => res.status === 'passed').length || 0,
         failed_count: r.results?.filter((res: { status: string }) => res.status === 'failed').length || 0,
-      }));
+      };
+      });
 
     return {
       suite_id: suiteId,
