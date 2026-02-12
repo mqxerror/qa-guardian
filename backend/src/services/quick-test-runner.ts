@@ -28,7 +28,7 @@ function getBrowserLauncher(browser: QuickTestBrowser): BrowserType {
     default: return chromium;
   }
 }
-import { AxeBuilder } from '@axe-core/playwright';
+// Feature #680: AxeBuilder moved to quick-test-waves/accessibility.ts
 import { getWebSocketIO } from './websocket-events.js';
 import { aiService } from './ai-service.js';
 import { isPrivateIP, validateURLForSSRF } from '../utils/index.js';
@@ -47,6 +47,8 @@ import { saveScreenshot } from './quick-test-screenshots.js';
 import { parseOpenAPISpec } from './openapi-parser.js';
 // Feature #679: AI Analysis wave module (extracted from this file)
 import { runAIAnalysis } from './quick-test-waves/ai-analysis.js';
+// Feature #680: Accessibility wave module (extracted from this file)
+import { runAccessibilityScan } from './quick-test-waves/accessibility.js';
 
 // Feature #449: Use structured logger instead of console.*
 const log = createLogger('quick-test-runner');
@@ -2361,6 +2363,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
     }
 
     // Feature #471: Wave 5 - Accessibility Scan using axe-core
+    // Feature #680: Extracted to quick-test-waves/accessibility.ts
     let accessibilityResult: AccessibilityScanResult | undefined;
     emitWaveStart(orgId, runId, 5, 'Accessibility');
     testResult.waves[4].status = 'running';
@@ -2371,7 +2374,6 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
 
       // Reuse existing browser/page if still open, otherwise launch new one
       let a11yBrowser: Browser | null = browser;
-      let a11yPage: Page | null = null;
       let ownsBrowser = false;
 
       if (!a11yBrowser) {
@@ -2380,65 +2382,14 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
         ownsBrowser = true;
       }
 
-      // Use browser.newContext() for proper isolation - AxeBuilder requires context-based pages
-      let a11yContext: BrowserContext | null = null;
       try {
-        a11yContext = await a11yBrowser.newContext();
-        a11yPage = await a11yContext.newPage();
         emitWaveProgress(orgId, runId, 5, 10, 'Loading page for accessibility scan...');
-
-        await a11yPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        await a11yPage.waitForTimeout(1000); // Allow content to settle
-
         emitWaveProgress(orgId, runId, 5, 30, 'Running axe-core WCAG 2.1 AA scan...');
 
-        // Run axe-core with WCAG 2.1 AA rules
-        const axeResults = await new AxeBuilder({ page: a11yPage })
-          .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'])
-          .analyze();
+        // Feature #680: Call extracted module
+        accessibilityResult = await runAccessibilityScan(url, a11yBrowser);
 
         emitWaveProgress(orgId, runId, 5, 80, 'Processing accessibility results...');
-
-        // Map violations
-        const violations = axeResults.violations.map(v => ({
-          id: v.id,
-          impact: (v.impact || 'minor') as 'critical' | 'serious' | 'moderate' | 'minor',
-          description: v.description,
-          help: v.help,
-          helpUrl: v.helpUrl,
-          wcagTags: v.tags,
-          nodes: v.nodes.map(n => ({
-            html: n.html,
-            target: n.target as string[],
-            failureSummary: n.failureSummary,
-          })),
-        }));
-
-        // Count by impact
-        const violationCounts = {
-          critical: violations.filter(v => v.impact === 'critical').length,
-          serious: violations.filter(v => v.impact === 'serious').length,
-          moderate: violations.filter(v => v.impact === 'moderate').length,
-          minor: violations.filter(v => v.impact === 'minor').length,
-          total: violations.length,
-        };
-
-        // Calculate accessibility score: 100 - (critical * 15 + serious * 8 + moderate * 3 + minor * 1), min 0
-        const penalty =
-          (violationCounts.critical * 15) +
-          (violationCounts.serious * 8) +
-          (violationCounts.moderate * 3) +
-          (violationCounts.minor * 1);
-        const a11yScore = Math.max(0, 100 - penalty);
-
-        accessibilityResult = {
-          score: a11yScore,
-          violations,
-          violationCounts,
-          passesCount: axeResults.passes.length,
-          wcagLevel: 'AA',
-          axeVersion: axeResults.testEngine.version,
-        };
 
         testResult.waves[4].status = 'completed';
         testResult.waves[4].completedAt = new Date();
@@ -2447,10 +2398,6 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
         emitWaveComplete(orgId, runId, 5, accessibilityResult as unknown as Record<string, unknown>);
 
       } finally {
-        // Close context (which also closes the page)
-        if (a11yContext) {
-          await a11yContext.close().catch(() => {});
-        }
         // Only close browser if we created it
         if (ownsBrowser && a11yBrowser) {
           await a11yBrowser.close().catch(() => {});
