@@ -1,105 +1,35 @@
 // AuditLogsPage extracted from App.tsx for code quality compliance (Feature #1357)
-import { useState, useEffect } from 'react';
+// Feature #689: Migrated from raw fetch to React Query hooks
+import { useState } from 'react';
 import { Loader2, FileText } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
-
-interface AuditLogEntry {
- id: string;
- user_id: string;
- user_email: string;
- action: string;
- resource_type: string;
- resource_id: string;
- resource_name?: string;
- details?: Record<string, unknown>;
- ip_address: string;
- created_at: string;
-}
+// Feature #689: React Query hooks for caching and automatic refetching
+import { useAuditLogs, useAuditLogActions, useAuditLogResourceTypes, type AuditLog } from '../hooks/api/useSettings';
 
 export function AuditLogsPage() {
- const { user, token } = useAuthStore();
+ const { user } = useAuthStore();
  const { formatDate } = useTimezoneStore();
- const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
- const [isLoading, setIsLoading] = useState(true);
- const [total, setTotal] = useState(0);
  const [offset, setOffset] = useState(0);
  const [filterAction, setFilterAction] = useState('');
  const [filterResourceType, setFilterResourceType] = useState('');
- const [availableActions, setAvailableActions] = useState<string[]>([]);
- const [availableResourceTypes, setAvailableResourceTypes] = useState<string[]>([]);
  const [limit, setLimit] = useState(20);
 
- // Fetch audit logs
- useEffect(() => {
- const fetchAuditLogs = async () => {
- if (!user?.organization_id) return;
-
- setIsLoading(true);
- try {
- const params = new URLSearchParams({
- limit: String(limit),
- offset: String(offset),
+ // Feature #689: React Query hooks for caching - replaces useState+useEffect+fetch pattern
+ const { data: auditLogsData, isLoading } = useAuditLogs(user?.organization_id, {
+  action: filterAction || undefined,
+  resource_type: filterResourceType || undefined,
+  limit,
+  offset,
  });
- if (filterAction) params.append('action', filterAction);
- if (filterResourceType) params.append('resource_type', filterResourceType);
+ const { data: availableActions = [] } = useAuditLogActions(user?.organization_id);
+ const { data: availableResourceTypes = [] } = useAuditLogResourceTypes(user?.organization_id);
 
- const response = await fetch(
- `/api/v1/organizations/${user.organization_id}/audit-logs?${params}`,
- {
- headers: {
- 'Authorization': `Bearer ${token}`,
- },
- }
- );
-
- if (response.ok) {
- const data = await response.json();
- setAuditLogs(data.logs);
- setTotal(data.total);
- }
- } catch (err) {
- console.error('Failed to fetch audit logs:', err);
- } finally {
- setIsLoading(false);
- }
- };
-
- fetchAuditLogs();
- }, [token, user?.organization_id, offset, filterAction, filterResourceType, limit]);
-
- // Fetch filter options
- useEffect(() => {
- const fetchFilterOptions = async () => {
- if (!user?.organization_id) return;
-
- try {
- const [actionsRes, typesRes] = await Promise.all([
- fetch(`/api/v1/organizations/${user.organization_id}/audit-logs/actions`, {
- headers: { 'Authorization': `Bearer ${token}` },
- }),
- fetch(`/api/v1/organizations/${user.organization_id}/audit-logs/resource-types`, {
- headers: { 'Authorization': `Bearer ${token}` },
- }),
- ]);
-
- if (actionsRes.ok) {
- const data = await actionsRes.json();
- setAvailableActions(data.actions);
- }
- if (typesRes.ok) {
- const data = await typesRes.json();
- setAvailableResourceTypes(data.resource_types);
- }
- } catch (err) {
- console.error('Failed to fetch filter options:', err);
- }
- };
-
- fetchFilterOptions();
- }, [token, user?.organization_id]);
+ // Derive data from React Query response
+ const auditLogs = auditLogsData?.logs ?? [];
+ const total = auditLogsData?.total ?? 0;
 
  const getActionColor = (action: string) => {
  switch (action) {
@@ -195,7 +125,7 @@ export function AuditLogsPage() {
  </tr>
  </thead>
  <tbody>
- {auditLogs.map((log) => (
+ {auditLogs.map((log: AuditLog) => (
  <tr key={log.id} className="border-b border-border last:border-0 hover:bg-muted/20">
  <td className="px-4 py-3 text-sm text-foreground whitespace-nowrap">
  {formatDate(log.created_at)}
@@ -211,14 +141,14 @@ export function AuditLogsPage() {
  <td className="px-4 py-3 text-sm">
  <div className="font-medium text-foreground capitalize">{getResourceTypeLabel(log.resource_type)}</div>
  <div className="text-muted-foreground text-xs">
- {log.resource_name || log.resource_id}
+ {log.resource_id}
  </div>
  </td>
  <td className="px-4 py-3 text-sm text-muted-foreground font-mono">
  {log.ip_address}
  </td>
  <td className="px-4 py-3 text-sm text-muted-foreground">
- {log.details ? (
+ {log.details && Object.keys(log.details).length > 0 ? (
  <details className="cursor-pointer">
  <summary className="text-primary hover:underline">View details</summary>
  <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-auto max-w-xs">

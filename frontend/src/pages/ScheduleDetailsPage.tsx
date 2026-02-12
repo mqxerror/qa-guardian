@@ -1,155 +1,35 @@
 // ScheduleDetailsPage - Extracted from App.tsx for code quality compliance
 // Feature #1357: Frontend file size limit enforcement
-// Note: This file is 675 lines, exceeding the 400 line limit. Future work should split it further.
+// Feature #689: Migrated from raw fetch to React Query hooks
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
-import { useAuthStore } from '../stores/authStore';
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { useTimezoneStore } from '../stores/timezoneStore';
-
-// Type definitions for schedules
-interface Schedule {
- id: string;
- suite_id: string;
- name: string;
- description?: string;
- cron_expression?: string;
- run_at?: string;
- timezone: string;
- enabled: boolean;
- browsers: string[];
- notify_on_failure: boolean;
- created_at: string;
- next_run_at?: string;
- run_count?: number;
- last_run_id?: string;
-}
-
-interface ScheduleRun {
- id: string;
- suite_id: string;
- status: string;
- browser: string;
- started_at?: string;
- completed_at?: string;
- duration_ms?: number;
- created_at: string;
- passed: number;
- failed: number;
- total: number;
-}
-
-// Feature #1538: Predictive Resource Scaling removed - enterprise infrastructure feature not needed for SMB
+import { getStatusColor } from '../constants/colors';
+// Feature #689: React Query hooks for caching
+import { useSchedule, useScheduleRuns, useTriggerSchedule, type ScheduleRun } from '../hooks/api/useSchedules';
 
 export function ScheduleDetailsPage() {
  const { scheduleId } = useParams<{ scheduleId: string }>();
  const navigate = useNavigate();
- const { token } = useAuthStore();
  const { formatDateTime } = useTimezoneStore();
- const [schedule, setSchedule] = useState<Schedule | null>(null);
- const [runs, setRuns] = useState<ScheduleRun[]>([]);
- const [isLoading, setIsLoading] = useState(true);
  const [activeTab, setActiveTab] = useState<'details' | 'history'>('history');
- const [isTriggering, setIsTriggering] = useState(false);
 
- // Feature #1538: Resource scaling state removed - enterprise infrastructure feature not needed for SMB
+ // Feature #689: React Query hooks for caching - replaces useState+useEffect+fetch pattern
+ const { data: schedule, isLoading: isScheduleLoading } = useSchedule(scheduleId);
+ const { data: runs = [] } = useScheduleRuns(scheduleId);
+ const triggerMutation = useTriggerSchedule();
 
- useEffect(() => {
- const fetchData = async () => {
- if (!scheduleId) return;
-
- try {
- // Fetch schedule details
- const scheduleRes = await fetch(`/api/v1/schedules/${scheduleId}`, {
- headers: { 'Authorization': `Bearer ${token}` },
- });
- if (scheduleRes.ok) {
- const data = await scheduleRes.json();
- setSchedule(data.schedule);
- }
-
- // Fetch schedule run history
- const runsRes = await fetch(`/api/v1/schedules/${scheduleId}/runs`, {
- headers: { 'Authorization': `Bearer ${token}` },
- });
- if (runsRes.ok) {
- const data = await runsRes.json();
- setRuns(data.runs);
- }
- } catch (err) {
- console.error('Failed to fetch schedule data:', err);
- } finally {
- setIsLoading(false);
- }
+ const handleTriggerRun = () => {
+   if (!scheduleId) return;
+   triggerMutation.mutate(scheduleId);
  };
 
- fetchData();
- }, [scheduleId, token]);
-
- // Feature #1538: Predictive resource scaling functions removed - enterprise infrastructure feature not needed for SMB
-
- const handleTriggerRun = async () => {
- if (!scheduleId) return;
- setIsTriggering(true);
-
- try {
- const response = await fetch(`/api/v1/schedules/${scheduleId}/trigger`, {
- method: 'POST',
- headers: {
- 'Authorization': `Bearer ${token}`,
- },
- });
-
- if (response.ok) {
- const data = await response.json();
- // Add the new run to the list
- setRuns([
- {
- id: data.run.id,
- suite_id: data.run.suite_id,
- status: 'pending',
- browser: schedule?.browsers[0] || 'chromium',
- created_at: data.run.created_at,
- passed: 0,
- failed: 0,
- total: 0,
- },
- ...runs,
- ]);
- // Update schedule run count
- if (schedule) {
- setSchedule({
- ...schedule,
- run_count: (schedule.run_count || 0) + 1,
- last_run_id: data.run.id,
- });
- }
- }
- } catch (err) {
- console.error('Failed to trigger schedule:', err);
- } finally {
- setIsTriggering(false);
- }
- };
-
- const getStatusColor = (status: string) => {
- switch (status) {
- case 'passed':
- return 'bg-success/10 text-success';
- case 'failed':
- case 'error':
- return 'bg-destructive/10 text-destructive';
- case 'running':
- case 'pending':
- return 'bg-primary/10 text-primary';
- case 'cancelled':
- return 'bg-warning/10 text-warning';
- default:
- return 'bg-muted text-foreground';
- }
- };
+ const isLoading = isScheduleLoading;
+ const isTriggering = triggerMutation.isPending;
 
  if (isLoading) {
  return (
@@ -212,8 +92,6 @@ export function ScheduleDetailsPage() {
  <span>{schedule.run_count || 0} runs</span>
  </div>
 
- {/* Feature #1538: Predictive Resource Scaling Panel removed - enterprise infrastructure feature not needed for SMB */}
-
  {/* Tabs */}
  <nav className="mb-6 flex border-b border-border" aria-label="Schedule tabs">
  <button
@@ -242,12 +120,12 @@ export function ScheduleDetailsPage() {
  {activeTab === 'history' && (
  <div>
  {runs.length === 0 ? (
- <div className="rounded-lg border border-border bg-card p-8 text-center">
- <h3 className="text-lg font-semibold text-foreground">No runs yet</h3>
- <p className="mt-2 text-muted-foreground">
- This schedule hasn&apos;t run yet. Click "Trigger Run Now" to start a test run.
- </p>
- </div>
+ <EmptyState
+ icon={EmptyStateIcons.history}
+ title="No runs yet"
+ description="This schedule hasn't run yet. Click 'Trigger Run Now' to start a test run."
+ action={{ label: 'Trigger Run Now', onClick: handleTriggerRun }}
+ />
  ) : (
  <div className="rounded-lg border border-border bg-card overflow-hidden">
  <table className="w-full">
@@ -263,13 +141,13 @@ export function ScheduleDetailsPage() {
  </tr>
  </thead>
  <tbody className="divide-y divide-border">
- {runs.map((run) => (
+ {runs.map((run: ScheduleRun) => (
  <tr key={run.id} className="hover:bg-muted/30">
  <td className="px-4 py-3 text-sm font-mono text-foreground">
  {run.id.slice(-8)}
  </td>
  <td className="px-4 py-3">
- <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${getStatusColor(run.status)}`}>
+ <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${getStatusColor(run.status).badge}`}>
  {run.status}
  </span>
  </td>

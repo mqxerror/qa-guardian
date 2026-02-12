@@ -73,6 +73,14 @@ export interface AuditLogFilters {
   action?: string;
   resource_type?: string;
   days?: number;
+  limit?: number;
+  offset?: number;
+}
+
+// Feature #689: Paginated audit logs response type
+export interface AuditLogsResponse {
+  logs: AuditLog[];
+  total: number;
 }
 
 // Query keys factory for cache management
@@ -351,23 +359,30 @@ export function useToggleWebhook(orgId: string | number | undefined) {
 // ============== Audit Logs Hooks ==============
 
 /**
- * Hook to fetch audit logs with filtering
+ * Hook to fetch audit logs with filtering and pagination
+ * Feature #689: Added pagination support (limit/offset) and total count
  */
 export function useAuditLogs(orgId: string | number | undefined, filters: AuditLogFilters = {}) {
   const token = useAuthStore(state => state.token);
 
   return useQuery({
     queryKey: settingsKeys.auditLogs(orgId || 'none', filters),
-    queryFn: async () => {
+    queryFn: async (): Promise<AuditLogsResponse> => {
       const params = new URLSearchParams();
       if (filters.action) params.set('action', filters.action);
       if (filters.resource_type) params.set('resource_type', filters.resource_type);
       if (filters.days) params.set('days', String(filters.days));
+      // Feature #689: Pagination support
+      if (filters.limit !== undefined) params.set('limit', String(filters.limit));
+      if (filters.offset !== undefined) params.set('offset', String(filters.offset));
 
       const queryString = params.toString();
       const url = `/api/v1/organizations/${orgId}/audit-logs${queryString ? `?${queryString}` : ''}`;
-      const data = await fetchWithAuth(url, token) as { logs?: AuditLog[] };
-      return data.logs || [];
+      const data = await fetchWithAuth(url, token) as { logs?: AuditLog[]; total?: number };
+      return {
+        logs: data.logs || [],
+        total: data.total ?? (data.logs?.length || 0),
+      };
     },
     enabled: !!token && !!orgId,
     staleTime: 30 * 1000, // 30 seconds - logs update frequently

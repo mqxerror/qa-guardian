@@ -58,12 +58,28 @@ export interface UpdateScheduleInput {
   notify_on_failure?: boolean;
 }
 
+// Feature #689: Schedule run type for history
+export interface ScheduleRun {
+  id: string;
+  suite_id: string;
+  status: string;
+  browser: string;
+  started_at?: string;
+  completed_at?: string;
+  duration_ms?: number;
+  created_at: string;
+  passed: number;
+  failed: number;
+  total: number;
+}
+
 // Query keys factory for cache management
 export const scheduleKeys = {
   all: ['schedules'] as const,
   lists: () => [...scheduleKeys.all, 'list'] as const,
   list: () => [...scheduleKeys.lists()] as const,
   detail: (id: string) => [...scheduleKeys.all, 'detail', id] as const,
+  runs: (id: string) => [...scheduleKeys.all, 'runs', id] as const,
   testSuites: () => [...scheduleKeys.all, 'testSuites'] as const,
 };
 
@@ -232,6 +248,63 @@ export function useDeleteSchedule() {
 }
 
 /**
+ * Feature #689: Hook to fetch a single schedule by ID
+ */
+export function useSchedule(scheduleId: string | undefined) {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: scheduleKeys.detail(scheduleId || 'none'),
+    queryFn: async () => {
+      const data = await fetchWithAuth<{ schedule: Schedule }>(`/api/v1/schedules/${scheduleId}`, token);
+      return data.schedule;
+    },
+    enabled: !!token && !!scheduleId,
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 60 * 1000, // Feature #106: 2x staleTime for garbage collection
+  });
+}
+
+/**
+ * Feature #689: Hook to fetch schedule run history
+ */
+export function useScheduleRuns(scheduleId: string | undefined) {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: scheduleKeys.runs(scheduleId || 'none'),
+    queryFn: async () => {
+      const data = await fetchWithAuth<{ runs: ScheduleRun[] }>(`/api/v1/schedules/${scheduleId}/runs`, token);
+      return data.runs || [];
+    },
+    enabled: !!token && !!scheduleId,
+    staleTime: 15 * 1000, // 15 seconds - runs change frequently
+    gcTime: 30 * 1000, // Feature #106: 2x staleTime for garbage collection
+  });
+}
+
+/**
+ * Feature #689: Hook to trigger a schedule run
+ */
+export function useTriggerSchedule() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (scheduleId: string) =>
+      fetchWithAuth<{ run: ScheduleRun }>(`/api/v1/schedules/${scheduleId}/trigger`, token, {
+        method: 'POST',
+      }),
+    onSuccess: (_data, scheduleId) => {
+      // Invalidate runs to show new triggered run
+      queryClient.invalidateQueries({ queryKey: scheduleKeys.runs(scheduleId) });
+      // Also refresh schedule list for run_count updates
+      queryClient.invalidateQueries({ queryKey: scheduleKeys.lists() });
+    },
+  });
+}
+
+/**
  * Hook to invalidate schedule queries
  */
 export function useInvalidateSchedules() {
@@ -240,6 +313,7 @@ export function useInvalidateSchedules() {
   return {
     invalidateAll: () => queryClient.invalidateQueries({ queryKey: scheduleKeys.all }),
     invalidateList: () => queryClient.invalidateQueries({ queryKey: scheduleKeys.lists() }),
+    invalidateRuns: (id: string) => queryClient.invalidateQueries({ queryKey: scheduleKeys.runs(id) }),
     invalidateTestSuites: () => queryClient.invalidateQueries({ queryKey: scheduleKeys.testSuites() }),
     refetchList: () => queryClient.refetchQueries({ queryKey: scheduleKeys.list() }),
   };
