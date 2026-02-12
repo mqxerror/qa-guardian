@@ -55,6 +55,7 @@ import { healthRoutes, setHealthSocketIO } from './routes/health.js'; // Feature
 import { requestTimeoutHook } from './middleware/timeout.js'; // Feature #90: Request timeout middleware
 import { registerRateLimiting } from './middleware/rate-limit.js'; // Feature #359: Rate limiting middleware
 import { initializeCleanupJob, stopCleanupJob } from './jobs/cleanup.js'; // Feature #154: Data retention cleanup
+import { initializeQuickTestScheduler, stopQuickTestScheduler } from './jobs/quick-test-scheduler.js'; // Feature #684: Quick Test cron scheduler
 import { initializeExecutionQueue, shutdownExecutionQueue } from './services/execution-queue.js'; // Feature #155: BullMQ execution queue
 import { initializeWebhookQueue, shutdownWebhookQueue, registerSubscriptionStatsCallback } from './services/webhook-queue.js'; // Feature #320: BullMQ webhook queue
 import { updateSubscriptionDeliveryStats, initializeWebhookSubscriptionsFromDb, closeWebhookPubSub, initializeWebhookPubSub } from './routes/test-runs/webhooks.js'; // Feature #321: Webhook auto-disable, Feature #329: DB persistence, Feature #362: Pub/Sub init, Feature #372: Pub/Sub cleanup
@@ -716,6 +717,9 @@ async function start() {
     // Feature #154: Initialize data retention cleanup job
     initializeCleanupJob();
 
+    // Feature #684: Initialize quick test cron scheduler
+    initializeQuickTestScheduler();
+
     // Check AI provider status for MCP features
     const kieApiKey = process.env.KIE_API_KEY;
     const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
@@ -749,6 +753,7 @@ async function start() {
 async function gracefulShutdown(): Promise<void> {
   log.info('Closing connections gracefully...');
   stopCleanupJob(); // Feature #154: Stop cleanup job
+  stopQuickTestScheduler(); // Feature #684: Stop quick test scheduler
   await shutdownExecutionQueue(); // Feature #155: Stop execution queue
   await shutdownWebhookQueue(); // Feature #320: Stop webhook queue
   await closeSubscriber(); // Feature #200: Close Redis event subscriber

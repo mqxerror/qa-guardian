@@ -772,6 +772,71 @@ export async function deleteQuickTestSchedule(id: string): Promise<boolean> {
 }
 
 /**
+ * Get all due quick test schedules
+ * Feature #684: Quick Test cron scheduler worker
+ * Returns schedules where enabled = true AND next_run_at <= NOW()
+ */
+export async function getDueQuickTestSchedules(): Promise<QuickTestSchedule[]> {
+  if (!isDatabaseConnected()) {
+    return [];
+  }
+
+  try {
+    const result = await query<QuickTestScheduleRow>(
+      `SELECT ${QUICK_TEST_SCHEDULE_COLUMNS} FROM quick_test_schedules
+       WHERE enabled = true AND next_run_at <= NOW()
+       ORDER BY next_run_at ASC`
+    );
+
+    const schedules = result?.rows.map(rowToQuickTestSchedule) || [];
+    if (schedules.length > 0) {
+      logger.info({ count: schedules.length }, '[QuickTestRepo] Found due quick test schedules');
+    }
+    return schedules;
+  } catch (error) {
+    logger.error({ error }, '[QuickTestRepo] Failed to get due quick test schedules');
+    return [];
+  }
+}
+
+/**
+ * Mark a schedule as run and update next run time
+ * Feature #684: Quick Test cron scheduler worker
+ * Updates last_run_at, last_run_id, next_run_at, and increments run_count
+ */
+export async function markScheduleRun(scheduleId: string, runId: string, cronExpression: string): Promise<QuickTestSchedule | null> {
+  if (!isDatabaseConnected()) {
+    return null;
+  }
+
+  try {
+    const nextRunAt = calculateNextRunFromCron(cronExpression);
+
+    const result = await query<QuickTestScheduleRow>(
+      `UPDATE quick_test_schedules
+       SET last_run_at = NOW(),
+           last_run_id = $1,
+           next_run_at = $2,
+           run_count = run_count + 1,
+           updated_at = NOW()
+       WHERE id = $3
+       RETURNING ${QUICK_TEST_SCHEDULE_COLUMNS}`,
+      [runId, nextRunAt, scheduleId]
+    );
+
+    if (!result || result.rows.length === 0) {
+      return null;
+    }
+
+    logger.info({ scheduleId, runId, nextRunAt }, '[QuickTestRepo] Marked schedule as run');
+    return rowToQuickTestSchedule(result.rows[0]);
+  } catch (error) {
+    logger.error({ error, scheduleId, runId }, '[QuickTestRepo] Failed to mark schedule as run');
+    return null;
+  }
+}
+
+/**
  * Calculate next run time from cron expression
  * Simplified implementation - in production would use a proper cron parser like cron-parser
  */
