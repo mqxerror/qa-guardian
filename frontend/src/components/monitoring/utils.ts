@@ -4,15 +4,10 @@
  */
 
 import { CheckStatus, PerformanceStatus, MonitoringLocation } from './types';
+import { formatDurationPrecise } from '../../utils/formatDuration';
 
-// Format duration in human-readable form
-export const formatDuration = (ms: number): string => {
- if (ms < 1000) return `${ms}ms`;
- if (ms < 60000) return `${(ms / 1000).toFixed(2)}s`;
- const mins = Math.floor(ms / 60000);
- const secs = Math.floor((ms % 60000) / 1000);
- return `${mins}m ${secs}s`;
-};
+// Re-export formatDuration for backward compatibility
+export { formatDurationPrecise as formatDuration };
 
 // Format response time
 export const formatResponseTime = (ms?: number): string => {

@@ -8,6 +8,7 @@ import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
+import { formatDuration } from '../utils/formatDuration';
 
 interface TestRun {
  id: string;
@@ -189,13 +190,6 @@ function ProjectRunHistoryPage() {
 
  return { total, passed, failed, running, avgDuration, suiteCount };
  }, [runs, uniqueSuites]);
-
- const formatDuration = (ms?: number) => {
- if (!ms) return '-';
- if (ms < 1000) return `${ms}ms`;
- if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
- return `${Math.floor(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`;
- };
 
  const getStatusColor = (status: string) => {
  switch (status) {

@@ -8,16 +8,10 @@ import { SimpleErrorPattern, ErrorAnalysis } from './types';
 import { logger } from '../../utils/logger';
 import { getStatusColor, getSeverityColor } from '../../constants/colors';
 import type { K6LoadTestData } from './pdfExport';
+import { formatDurationPrecise } from '../../utils/formatDuration';
 
-// Format duration in human-readable form
-export const formatDuration = (ms?: number): string => {
- if (ms === undefined || ms === null) return '-';
- if (ms < 1000) return `${ms}ms`;
- if (ms < 60000) return `${(ms / 1000).toFixed(2)}s`;
- const mins = Math.floor(ms / 60000);
- const secs = ((ms % 60000) / 1000).toFixed(0);
- return `${mins}m ${secs}s`;
-};
+// Re-export formatDuration for backward compatibility
+export { formatDurationPrecise as formatDuration };
 
 // Format timestamp to locale string
 export const formatDateTime = (dateStr?: string): string => {

@@ -12,6 +12,7 @@ import { useTimezoneStore } from '../stores/timezoneStore';
 import { useSuite } from '../hooks/api/useSuites';
 import { useRunsBySuite, type TestRun } from '../hooks/api/useRuns';
 import { useProject } from '../hooks/api/useProjects';
+import { formatDuration } from '../utils/formatDuration';
 
 function SuiteRunHistoryPage() {
  const { suiteId } = useParams<{ suiteId: string }>();
@@ -104,13 +105,6 @@ function SuiteRunHistoryPage() {
 
  return { total, passed, failed, running, avgDuration };
  }, [runs]);
-
- const formatDuration = (ms?: number) => {
- if (!ms) return '-';
- if (ms < 1000) return `${ms}ms`;
- if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
- return `${Math.floor(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`;
- };
 
  const getStatusColor = (status: string) => {
  switch (status) {

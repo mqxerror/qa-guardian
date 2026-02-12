@@ -4,6 +4,10 @@
  */
 
 import type { TestTypeEnum, TestStatus, SortField, SortDirection, TestType } from './types';
+import { formatDurationWithDash } from '../../utils/formatDuration';
+
+// Re-export formatDuration for backward compatibility
+export { formatDurationWithDash as formatDuration };
 
 /**
  * Extract URL from user description text
@@ -280,18 +284,6 @@ export function sortTests(tests: TestType[], field: SortField, direction: SortDi
 
  return direction === 'asc' ? comparison : -comparison;
  });
-}
-
-/**
- * Format duration in milliseconds to human-readable string
- */
-export function formatDuration(ms: number | null | undefined): string {
- if (ms === null || ms === undefined) return '—';
- if (ms < 1000) return `${ms}ms`;
- if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
- const minutes = Math.floor(ms / 60000);
- const seconds = Math.floor((ms % 60000) / 1000);
- return `${minutes}m ${seconds}s`;
 }
 
 /**

@@ -14,6 +14,7 @@ import { TestType } from './types';
 import { formatRelativeTime } from './utils';
 // Feature #126: Reusable empty state components
 import { EmptyStates } from '../ui/EmptyState';
+import { formatDuration } from '../../utils/formatDuration';
 
 // Local sort field type matching TestSuitePage.tsx
 type LocalSortField = 'name' | 'status' | 'last_run' | 'last_result' | 'run_count' | 'avg_duration';
@@ -132,14 +133,6 @@ export function TestListSection({
  default:
  return null;
  }
- };
-
- // Format duration
- const formatDuration = (ms: number | null | undefined) => {
- if (ms == null) return '-';
- if (ms < 1000) return `${ms}ms`;
- if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
- return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`;
  };
 
  return (

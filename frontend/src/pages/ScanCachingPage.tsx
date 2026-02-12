@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { formatDuration } from '../utils/formatDuration';
 
 // Feature #317: API base URL from environment
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -225,12 +226,6 @@ export function ScanCachingPage() {
   const filteredEntries = statusFilter === 'all'
     ? entries
     : entries.filter(e => e.status === statusFilter);
-
-  // Format time duration
-  const formatDuration = (ms: number) => {
-    if (ms < 1000) return `${ms}ms`;
-    return `${(ms / 1000).toFixed(2)}s`;
-  };
 
   // Format bytes
   const formatBytes = (bytes: number) => {

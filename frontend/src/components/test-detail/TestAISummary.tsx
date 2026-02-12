@@ -12,6 +12,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Sparkles, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react';
 import { TestRunType, RunStatus } from './types';
+import { formatDuration } from '../../utils/formatDuration';
 
 export interface TestAISummaryProps {
   testId: string;
@@ -215,12 +216,6 @@ function TestAISummaryInner({
   if (runs.length === 0) {
     return null;
   }
-
-  const formatDuration = (ms: number) => {
-    if (ms < 1000) return `${ms}ms`;
-    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
-    return `${(ms / 60000).toFixed(1)}m`;
-  };
 
   const getStatusIcon = (status: RunStatus) => {
     if (status === 'passed') {
