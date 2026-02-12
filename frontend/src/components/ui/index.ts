@@ -163,3 +163,12 @@ export {
   type ScoreTrendThreshold,
   type ScoreTrendLegendItem,
 } from './ScoreTrendChart';
+
+// Feature #703: Virtual list/table components for performance
+export {
+  VirtualList,
+  VirtualTable,
+  useVirtualList,
+  type VirtualListProps,
+  type VirtualTableProps,
+} from './VirtualList';

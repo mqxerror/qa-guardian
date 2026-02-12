@@ -1,18 +1,20 @@
 // SuiteRunHistoryPage - Feature #1851: Test Run History page at suite level
 // Shows all historical test runs for a specific suite
 // Feature #677: Migrated to React Query hooks
+// Feature #703: Added virtualization for large run lists
 
 import { useState, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ClipboardList, Eye } from 'lucide-react';
 import { Layout } from '../components/Layout';
-import { PageHeader } from '../components/ui';
+import { PageHeader, VirtualTable } from '../components/ui';
 import { useTimezoneStore } from '../stores/timezoneStore';
 // Feature #677: Use React Query hooks instead of raw fetch+useState
 import { useSuite } from '../hooks/api/useSuites';
 import { useRunsBySuite, type TestRun } from '../hooks/api/useRuns';
 import { useProject } from '../hooks/api/useProjects';
 import { formatDuration } from '../utils/formatDuration';
+import { getStatusColor, getStatusIcon } from '../constants/colors';
 
 function SuiteRunHistoryPage() {
  const { suiteId } = useParams<{ suiteId: string }>();
@@ -39,9 +41,9 @@ function SuiteRunHistoryPage() {
  const [dateFilter, setDateFilter] = useState<string>('all');
  const [searchQuery, setSearchQuery] = useState('');
 
- // Pagination
- const [currentPage, setCurrentPage] = useState(1);
- const [itemsPerPage, setItemsPerPage] = useState(10);
+ // Feature #703: Virtualization replaces pagination for better performance
+ // Virtual table row height (in pixels) - matches table row styling
+ const ROW_HEIGHT = 72; // Approximate row height with content
 
  // Filter runs
  const filteredRuns = useMemo(() => {
@@ -85,13 +87,9 @@ function SuiteRunHistoryPage() {
  return filtered;
  }, [runs, statusFilter, dateFilter, searchQuery]);
 
- // Paginated runs
- const paginatedRuns = useMemo(() => {
- const startIndex = (currentPage - 1) * itemsPerPage;
- return filteredRuns.slice(startIndex, startIndex + itemsPerPage);
- }, [filteredRuns, currentPage, itemsPerPage]);
-
- const totalPages = Math.ceil(filteredRuns.length / itemsPerPage);
+ // Feature #703: Virtualization handles rendering - no pagination needed
+ // Calculate container height based on available viewport space
+ const CONTAINER_HEIGHT = 500; // Fixed height for virtual scroll container
 
  // Stats
  const stats = useMemo(() => {
@@ -105,28 +103,6 @@ function SuiteRunHistoryPage() {
 
  return { total, passed, failed, running, avgDuration };
  }, [runs]);
-
- const getStatusColor = (status: string) => {
- switch (status) {
- case 'passed': return 'bg-success/10 text-success';
- case 'failed': return 'bg-destructive/10 text-destructive';
- case 'running': return 'bg-primary/10 text-primary';
- case 'pending': return 'bg-warning/10 text-warning';
- case 'cancelled': return 'bg-muted text-foreground';
- default: return 'bg-muted text-foreground';
- }
- };
-
- const getStatusIcon = (status: string) => {
- switch (status) {
- case 'passed': return '✓';
- case 'failed': return '✗';
- case 'running': return '⟳';
- case 'pending': return '○';
- case 'cancelled': return '⊘';
- default: return '?';
- }
- };
 
  return (
  <Layout>
@@ -181,7 +157,7 @@ function SuiteRunHistoryPage() {
  <label className="text-sm text-muted-foreground">Status:</label>
  <select
  value={statusFilter}
- onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+ onChange={(e) => setStatusFilter(e.target.value)}
  className="rounded-md border border-border bg-background px-3 py-1.5 text-sm"
  >
  <option value="all">All</option>
@@ -197,7 +173,7 @@ function SuiteRunHistoryPage() {
  <label className="text-sm text-muted-foreground">Date:</label>
  <select
  value={dateFilter}
- onChange={(e) => { setDateFilter(e.target.value); setCurrentPage(1); }}
+ onChange={(e) => setDateFilter(e.target.value)}
  className="rounded-md border border-border bg-background px-3 py-1.5 text-sm"
  >
  <option value="all">All Time</option>
@@ -212,7 +188,7 @@ function SuiteRunHistoryPage() {
  type="text"
  placeholder="Search by run ID, branch, or browser..."
  value={searchQuery}
- onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+ onChange={(e) => setSearchQuery(e.target.value)}
  className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm"
  />
  </div>
@@ -237,139 +213,93 @@ function SuiteRunHistoryPage() {
  {/* Runs List */}
  {!loading && !error && (
  <>
- {filteredRuns.length === 0 ? (
- <div className="text-center py-12 border border-dashed border-border rounded-lg">
+ {/* Feature #703: Virtualized table for performance with large run lists */}
+ <div className="border border-border rounded-lg overflow-hidden">
+ <VirtualTable
+ items={filteredRuns}
+ rowHeight={ROW_HEIGHT}
+ containerHeight={CONTAINER_HEIGHT}
+ getRowKey={(run) => run.id}
+ isLoading={loading}
+ emptyState={
+ <div className="text-center py-12">
  <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
  <p className="text-muted-foreground">No test runs found.</p>
  <p className="text-sm text-muted-foreground mt-1">
- {runs.length > 0 ? 'Try adjusting your filters.' : 'Run some tests to see history here.'}
+   {runs.length > 0 ? 'Try adjusting your filters.' : 'Run some tests to see history here.'}
  </p>
  </div>
- ) : (
- <div className="border border-border rounded-lg overflow-hidden">
- <table className="w-full">
- <thead className="bg-muted/30">
- <tr>
- <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Run ID</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Date/Time</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Duration</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Pass/Fail</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Browser</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Branch</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
- </tr>
- </thead>
- <tbody className="divide-y divide-border">
- {paginatedRuns.map((run) => (
- <tr key={run.id} className="hover:bg-muted/20 transition-colors">
- <td className="px-4 py-3">
- <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(run.status)}`}>
- <span>{getStatusIcon(run.status)}</span>
- {run.status}
+ }
+ renderHeader={() => (
+ <div className="grid grid-cols-8 gap-2 px-4 py-3 bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+ <div>Status</div>
+ <div>Run ID</div>
+ <div>Date/Time</div>
+ <div>Duration</div>
+ <div>Pass/Fail</div>
+ <div>Browser</div>
+ <div>Branch</div>
+ <div>Actions</div>
+ </div>
+ )}
+ renderRow={(run) => (
+ <div className="grid grid-cols-8 gap-2 px-4 py-3 items-center border-b border-border hover:bg-muted/20 transition-colors">
+ <div>
+ <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(run.status).badge}`}>
+   <span>{getStatusIcon(run.status)}</span>
+   {run.status}
  </span>
- </td>
- <td className="px-4 py-3">
+ </div>
+ <div>
  <code className="text-sm font-mono text-foreground">#{run.id.slice(-8)}</code>
- </td>
- <td className="px-4 py-3">
+ </div>
+ <div>
  <div className="text-sm text-foreground">
- {formatDate(run.created_at)}
+   {formatDate(run.created_at)}
  </div>
  {run.started_at && (
- <div className="text-xs text-muted-foreground">
- Started: {formatDate(run.started_at)}
- </div>
+   <div className="text-xs text-muted-foreground">
+     Started: {formatDate(run.started_at)}
+   </div>
  )}
- </td>
- <td className="px-4 py-3">
+ </div>
+ <div>
  <span className="text-sm text-foreground">{formatDuration(run.duration_ms)}</span>
- </td>
- <td className="px-4 py-3">
+ </div>
+ <div>
  <div className="flex items-center gap-2 text-sm">
- <span className="text-success">{run.passed_count} passed</span>
- <span className="text-muted-foreground">/</span>
- <span className="text-destructive">{run.failed_count} failed</span>
+   <span className="text-success">{run.passed_count} passed</span>
+   <span className="text-muted-foreground">/</span>
+   <span className="text-destructive">{run.failed_count} failed</span>
  </div>
  <div className="text-xs text-muted-foreground">
- {run.results_count} total tests
+   {run.results_count} total tests
  </div>
- </td>
- <td className="px-4 py-3">
+ </div>
+ <div>
  <span className="text-sm text-foreground">{run.browser || 'chromium'}</span>
- </td>
- <td className="px-4 py-3">
+ </div>
+ <div>
  <span className="text-sm text-foreground">{run.branch || 'main'}</span>
- </td>
- <td className="px-4 py-3">
+ </div>
+ <div>
  <Link
- to={`/runs/${run.id}`}
- className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+   to={`/runs/${run.id}`}
+   className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
  >
- <Eye className="w-4 h-4" />
- View Details
+   <Eye className="w-4 h-4" />
+   View
  </Link>
- </td>
- </tr>
- ))}
- </tbody>
- </table>
+ </div>
  </div>
  )}
+ />
+ </div>
 
- {/* Pagination */}
+ {/* Feature #703: Virtualization info replaces pagination */}
  {filteredRuns.length > 0 && (
- <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
  <div className="text-sm text-muted-foreground">
- Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredRuns.length)} of {filteredRuns.length} runs
- </div>
- <div className="flex items-center gap-2">
- <label className="text-sm text-muted-foreground">Per page:</label>
- <select
- value={itemsPerPage}
- onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
- className="rounded-md border border-border bg-background px-2 py-1 text-sm"
- >
- <option value={5}>5</option>
- <option value={10}>10</option>
- <option value={25}>25</option>
- <option value={50}>50</option>
- </select>
-
- <div className="flex items-center gap-1 ml-4">
- <button
- onClick={() => setCurrentPage(1)}
- disabled={currentPage === 1}
- className="px-2 py-1 text-sm rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
- >
- ««
- </button>
- <button
- onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
- disabled={currentPage === 1}
- className="px-2 py-1 text-sm rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
- >
- «
- </button>
- <span className="px-3 text-sm text-foreground">
- {currentPage} / {totalPages || 1}
- </span>
- <button
- onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
- disabled={currentPage >= totalPages}
- className="px-2 py-1 text-sm rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
- >
- »
- </button>
- <button
- onClick={() => setCurrentPage(totalPages)}
- disabled={currentPage >= totalPages}
- className="px-2 py-1 text-sm rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
- >
- »»
- </button>
- </div>
- </div>
+ Showing {filteredRuns.length} runs (scroll to see more)
  </div>
  )}
  </>
