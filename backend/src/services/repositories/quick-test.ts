@@ -9,6 +9,7 @@
 
 import { query, isDatabaseConnected } from '../database.js';
 import { logger } from '../logger.js';
+import { getNextRunTime, validateCronExpression } from '../../utils/cron-parser.js';
 
 // ============================================
 // Types
@@ -838,35 +839,20 @@ export async function markScheduleRun(scheduleId: string, runId: string, cronExp
 
 /**
  * Calculate next run time from cron expression
- * Simplified implementation - in production would use a proper cron parser like cron-parser
+ * Feature #685: Uses proper cron parser for all standard 5-field expressions
  */
 function calculateNextRunFromCron(cronExpression: string): Date {
-  const now = new Date();
-
-  // Simple mapping for common patterns
-  if (cronExpression === '0 * * * *') {
-    // Hourly - next hour
-    const next = new Date(now);
-    next.setMinutes(0, 0, 0);
-    next.setHours(next.getHours() + 1);
-    return next;
-  }
-  if (cronExpression === '0 0 * * *') {
-    // Daily at midnight
-    const next = new Date(now);
-    next.setHours(0, 0, 0, 0);
-    next.setDate(next.getDate() + 1);
-    return next;
-  }
-  if (cronExpression === '0 9 * * 1') {
-    // Weekly on Monday at 9 AM
-    const next = new Date(now);
-    next.setHours(9, 0, 0, 0);
-    const daysUntilMonday = (8 - next.getDay()) % 7 || 7;
-    next.setDate(next.getDate() + daysUntilMonday);
-    return next;
+  const validation = validateCronExpression(cronExpression);
+  if (!validation.valid) {
+    logger.warn({ cronExpression, error: validation.error }, '[QuickTestRepo] Invalid cron expression, defaulting to 1 hour');
+    return new Date(Date.now() + 60 * 60 * 1000);
   }
 
-  // Default: 1 hour from now
-  return new Date(now.getTime() + 60 * 60 * 1000);
+  const nextRun = getNextRunTime(cronExpression);
+  if (!nextRun) {
+    logger.warn({ cronExpression }, '[QuickTestRepo] Could not calculate next run time, defaulting to 1 hour');
+    return new Date(Date.now() + 60 * 60 * 1000);
+  }
+
+  return nextRun;
 }

@@ -36,6 +36,8 @@ import {
 import { readScreenshot, screenshotExists, validateSignedScreenshotToken, generateSignedScreenshotUrl, type ScreenshotType } from '../../services/quick-test-screenshots.js';
 // Feature #481: Structured Pino logging
 import { createLogger } from '../../services/logger.js';
+// Feature #685: Cron expression validation
+import { validateCronExpression } from '../../utils/cron-parser.js';
 
 const log = createLogger('quick-test-routes');
 
@@ -582,6 +584,15 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
         });
       }
 
+      // Feature #685: Validate cron expression before creating schedule
+      const cronValidation = validateCronExpression(cron_expression);
+      if (!cronValidation.valid) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: `Invalid cron expression: ${cronValidation.error}`,
+        });
+      }
+
       // Feature #671: Persist schedule to database
       const schedule = await createQuickTestSchedule({
         organizationId: orgId,
@@ -777,6 +788,17 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
           error: 'Not Found',
           message: 'Schedule not found',
         });
+      }
+
+      // Feature #685: Validate cron expression if being updated
+      if (cron_expression) {
+        const cronValidation = validateCronExpression(cron_expression);
+        if (!cronValidation.valid) {
+          return reply.status(400).send({
+            error: 'Bad Request',
+            message: `Invalid cron expression: ${cronValidation.error}`,
+          });
+        }
       }
 
       const updated = await updateQuickTestSchedule(scheduleId, {
