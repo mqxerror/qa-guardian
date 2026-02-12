@@ -51,7 +51,7 @@ export function useDashboardStats() {
 
   return useQuery({
     queryKey: dashboardKeys.stats(),
-    queryFn: () => fetchWithAuth('/api/v1/stats', token) as Promise<DashboardStats>,
+    queryFn: () => fetchWithAuth<DashboardStats>('/api/v1/stats', token),
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds - stats don't change frequently
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
@@ -67,7 +67,7 @@ export function useRecentRuns(limit: number = 10) {
 
   return useQuery({
     queryKey: dashboardKeys.recentRuns(limit),
-    queryFn: () => fetchWithAuth(`/api/v1/test-runs?limit=${limit}&sort=created_at:desc`, token) as Promise<{ runs: RecentRun[] }>,
+    queryFn: () => fetchWithAuth<{ runs: RecentRun[] }>(`/api/v1/test-runs?limit=${limit}&sort=created_at:desc`, token),
     enabled: !!token,
     staleTime: 15 * 1000, // 15 seconds - runs can change more frequently
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes

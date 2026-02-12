@@ -18,19 +18,21 @@ export interface FetchError extends Error {
 
 /**
  * Fetch helper that automatically adds auth headers and handles errors
+ * Feature #686: Generic return type for type-safe API responses
+ *
  * @param url - The URL to fetch
  * @param token - JWT authentication token (or null if not authenticated)
  * @param options - Standard fetch options
- * @returns Parsed JSON response
+ * @returns Parsed JSON response of type T
  * @throws FetchError with status code on HTTP errors
  * @throws Error if not authenticated
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function fetchWithAuth(
+export async function fetchWithAuth<T = any>(
   url: string,
   token: string | null,
   options?: RequestInit
-): Promise<any> {
+): Promise<T> {
   if (!token) throw new Error('Not authenticated');
 
   const response = await fetch(url, {
@@ -48,7 +50,7 @@ export async function fetchWithAuth(
     throw err;
   }
 
-  return response.json();
+  return response.json() as Promise<T>;
 }
 
 export default fetchWithAuth;

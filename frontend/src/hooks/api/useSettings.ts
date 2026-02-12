@@ -104,8 +104,8 @@ export function useMembers(orgId: string | number = 1) {
   return useQuery({
     queryKey: settingsKeys.members(orgId),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/members`, token);
-      return (data.members || []) as Member[];
+      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/members`, token) as { members?: Member[] };
+      return data.members || [];
     },
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute - members don't change often
@@ -122,8 +122,8 @@ export function useInvitations(orgId: string | number = 1) {
   return useQuery({
     queryKey: settingsKeys.invitations(orgId),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/invitations`, token);
-      return (data.invitations || []) as Invitation[];
+      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/invitations`, token) as { invitations?: Invitation[] };
+      return data.invitations || [];
     },
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds - invitations may be accepted
@@ -216,8 +216,8 @@ export function useApiKeys(orgId: string | number | undefined) {
   return useQuery({
     queryKey: settingsKeys.apiKeys(orgId || 'none'),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/api-keys`, token);
-      return (data.keys || []) as ApiKey[];
+      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/api-keys`, token) as { keys?: ApiKey[] };
+      return data.keys || [];
     },
     enabled: !!token && !!orgId,
     staleTime: 60 * 1000, // 1 minute
@@ -277,8 +277,8 @@ export function useWebhooks(orgId: string | number | undefined) {
   return useQuery({
     queryKey: settingsKeys.webhooks(orgId || 'none'),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/webhooks`, token);
-      return (data.webhooks || []) as Webhook[];
+      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/webhooks`, token) as { webhooks?: Webhook[] };
+      return data.webhooks || [];
     },
     enabled: !!token && !!orgId,
     staleTime: 60 * 1000, // 1 minute
@@ -366,8 +366,8 @@ export function useAuditLogs(orgId: string | number | undefined, filters: AuditL
 
       const queryString = params.toString();
       const url = `/api/v1/organizations/${orgId}/audit-logs${queryString ? `?${queryString}` : ''}`;
-      const data = await fetchWithAuth(url, token);
-      return (data.logs || []) as AuditLog[];
+      const data = await fetchWithAuth(url, token) as { logs?: AuditLog[] };
+      return data.logs || [];
     },
     enabled: !!token && !!orgId,
     staleTime: 30 * 1000, // 30 seconds - logs update frequently
@@ -384,8 +384,8 @@ export function useAuditLogActions(orgId: string | number | undefined) {
   return useQuery({
     queryKey: settingsKeys.auditLogActions(orgId || 'none'),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/audit-logs/actions`, token);
-      return (data.actions || []) as string[];
+      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/audit-logs/actions`, token) as { actions?: string[] };
+      return data.actions || [];
     },
     enabled: !!token && !!orgId,
     staleTime: 5 * 60 * 1000, // 5 minutes - actions rarely change
@@ -402,8 +402,8 @@ export function useAuditLogResourceTypes(orgId: string | number | undefined) {
   return useQuery({
     queryKey: settingsKeys.auditLogResourceTypes(orgId || 'none'),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/audit-logs/resource-types`, token);
-      return (data.resource_types || []) as string[];
+      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/audit-logs/resource-types`, token) as { resource_types?: string[] };
+      return data.resource_types || [];
     },
     enabled: !!token && !!orgId,
     staleTime: 5 * 60 * 1000, // 5 minutes - resource types rarely change

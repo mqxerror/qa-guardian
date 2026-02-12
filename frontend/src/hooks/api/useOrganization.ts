@@ -161,8 +161,8 @@ export function useAuditLogActions() {
   return useQuery({
     queryKey: organizationKeys.auditLogActions(orgId),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/audit-logs/actions`, token);
-      return (data.actions || []) as string[];
+      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/audit-logs/actions`, token) as { actions?: string[] };
+      return data.actions || [];
     },
     enabled: !!token && !!orgId,
     staleTime: 5 * 60 * 1000, // 5 minutes - actions don't change often
@@ -181,8 +181,8 @@ export function useAuditLogResourceTypes() {
   return useQuery({
     queryKey: organizationKeys.auditLogResourceTypes(orgId),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/audit-logs/resource-types`, token);
-      return (data.resource_types || []) as string[];
+      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/audit-logs/resource-types`, token) as { resource_types?: string[] };
+      return data.resource_types || [];
     },
     enabled: !!token && !!orgId,
     staleTime: 5 * 60 * 1000, // 5 minutes - resource types don't change often
@@ -203,8 +203,8 @@ export function useApiKeys() {
   return useQuery({
     queryKey: organizationKeys.apiKeys(orgId),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/api-keys`, token);
-      return (data.api_keys || []) as ApiKey[];
+      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/api-keys`, token) as { api_keys?: ApiKey[] };
+      return data.api_keys || [];
     },
     enabled: !!token && !!orgId,
     staleTime: 60 * 1000, // 1 minute
@@ -264,8 +264,8 @@ export function useWebhooks() {
   return useQuery({
     queryKey: organizationKeys.webhooks(),
     queryFn: async () => {
-      const data = await fetchWithAuth('/api/v1/webhook-subscriptions', token);
-      return (data.subscriptions || []) as WebhookSubscription[];
+      const data = await fetchWithAuth('/api/v1/webhook-subscriptions', token) as { subscriptions?: WebhookSubscription[] };
+      return data.subscriptions || [];
     },
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds
@@ -338,8 +338,8 @@ export function useWebhookLogs(webhookId: string) {
   return useQuery({
     queryKey: organizationKeys.webhookLogs(webhookId),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/webhook-subscriptions/${webhookId}/logs?limit=50`, token);
-      return (data.logs || []) as WebhookDeliveryLog[];
+      const data = await fetchWithAuth(`/api/v1/webhook-subscriptions/${webhookId}/logs?limit=50`, token) as { logs?: WebhookDeliveryLog[] };
+      return data.logs || [];
     },
     enabled: !!token && !!webhookId,
     staleTime: 30 * 1000, // 30 seconds

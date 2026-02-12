@@ -99,8 +99,8 @@ export function useGenerationHistory(params?: { status?: string }) {
       if (params?.status) searchParams.set('status', params.status);
       const queryString = searchParams.toString();
       const url = `/api/v1/ai/generation-history${queryString ? `?${queryString}` : ''}`;
-      const data = await fetchWithAuth(url, token);
-      return (data.history || []) as GenerationHistoryItem[];
+      const data = await fetchWithAuth(url, token) as { history?: GenerationHistoryItem[] };
+      return data.history || [];
     },
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds
@@ -138,8 +138,8 @@ export function useReviewQueue() {
   return useQuery({
     queryKey: aiKeys.reviewQueue(),
     queryFn: async () => {
-      const data = await fetchWithAuth('/api/v1/ai/review-queue', token);
-      return (data.queue || []) as ReviewQueueItem[];
+      const data = await fetchWithAuth('/api/v1/ai/review-queue', token) as { queue?: ReviewQueueItem[] };
+      return data.queue || [];
     },
     enabled: !!token,
     staleTime: 30 * 1000, // 30 seconds - queue changes often

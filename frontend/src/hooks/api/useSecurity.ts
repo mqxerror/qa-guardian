@@ -373,7 +373,7 @@ export function useDependencyAlerts() {
   return useQuery({
     queryKey: securityKeys.alerts(),
     queryFn: async () => {
-      const data = await fetchWithAuth('/api/v1/organization/dependency-alerts', token);
+      const data = await fetchWithAuth('/api/v1/organization/dependency-alerts', token) as { alerts?: unknown[] };
       return data.alerts || [];
     },
     enabled: !!token,
@@ -445,7 +445,7 @@ export function useProjectDependencies(projectId: string) {
   return useQuery({
     queryKey: securityKeys.dependencies(projectId),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/projects/${projectId}/dependencies`, token);
+      const data = await fetchWithAuth(`/api/v1/projects/${projectId}/dependencies`, token) as { dependencies?: unknown[] };
       return data.dependencies || [];
     },
     enabled: !!token && !!projectId,
@@ -484,7 +484,7 @@ export function useDependencyPolicies() {
   return useQuery({
     queryKey: securityKeys.policies(),
     queryFn: async () => {
-      const data = await fetchWithAuth('/api/v1/organization/dependency-policies', token);
+      const data = await fetchWithAuth('/api/v1/organization/dependency-policies', token) as { policies?: unknown[] };
       return data.policies || [];
     },
     enabled: !!token,
@@ -502,7 +502,7 @@ export function usePolicyViolations() {
   return useQuery({
     queryKey: securityKeys.violations(),
     queryFn: async () => {
-      const data = await fetchWithAuth('/api/v1/organization/dependency-policies/violations', token);
+      const data = await fetchWithAuth('/api/v1/organization/dependency-policies/violations', token) as { violations?: unknown[] };
       return data.violations || [];
     },
     enabled: !!token,
@@ -578,7 +578,7 @@ export function useVulnerabilityHistory(projectId: string) {
   return useQuery({
     queryKey: securityKeys.vulnerabilityHistory(projectId),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/projects/${projectId}/vulnerability-history`, token);
+      const data = await fetchWithAuth(`/api/v1/projects/${projectId}/vulnerability-history`, token) as { vulnerabilities?: unknown[] };
       return data.vulnerabilities || [];
     },
     enabled: !!token && !!projectId,
@@ -663,7 +663,7 @@ export function useAllDependencies(projectId: string) {
   return useQuery({
     queryKey: securityKeys.allDependencies(projectId),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/projects/${projectId}/all-dependencies`, token);
+      const data = await fetchWithAuth(`/api/v1/projects/${projectId}/all-dependencies`, token) as { dependencies?: unknown[] };
       return data.dependencies || [];
     },
     enabled: !!token && !!projectId,

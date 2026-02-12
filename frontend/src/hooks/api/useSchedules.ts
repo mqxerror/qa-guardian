@@ -76,7 +76,7 @@ export function useSchedules() {
   return useQuery({
     queryKey: scheduleKeys.list(),
     queryFn: async () => {
-      const data = await fetchWithAuth('/api/v1/schedules', token) as SchedulesResponse;
+      const data = await fetchWithAuth<SchedulesResponse>('/api/v1/schedules', token);
       return data.schedules;
     },
     enabled: !!token,
@@ -95,14 +95,14 @@ export function useTestSuitesForSchedule() {
     queryKey: scheduleKeys.testSuites(),
     queryFn: async () => {
       // Fetch all projects
-      const projectsData = await fetchWithAuth('/api/v1/projects', token) as { projects: Array<{ id: string; name: string }> };
+      const projectsData = await fetchWithAuth<{ projects: Array<{ id: string; name: string }> }>('/api/v1/projects', token);
 
       // Fetch suites for each project
       const allSuites: TestSuiteOption[] = [];
 
       for (const project of projectsData.projects) {
         try {
-          const suitesData = await fetchWithAuth(`/api/v1/projects/${project.id}/suites`, token) as { suites: Array<{ id: string; name: string }> };
+          const suitesData = await fetchWithAuth<{ suites: Array<{ id: string; name: string }> }>(`/api/v1/projects/${project.id}/suites`, token);
           allSuites.push(...suitesData.suites.map((s) => ({
             id: s.id,
             name: `${project.name} / ${s.name}`,
@@ -131,10 +131,10 @@ export function useCreateSchedule() {
 
   return useMutation({
     mutationFn: (data: CreateScheduleInput) =>
-      fetchWithAuth('/api/v1/schedules', token, {
+      fetchWithAuth<{ schedule: Schedule }>('/api/v1/schedules', token, {
         method: 'POST',
         body: JSON.stringify(data),
-      }) as Promise<{ schedule: Schedule }>,
+      }),
     onSuccess: (data) => {
       // Optimistically add the new schedule to the cache
       queryClient.setQueryData<Schedule[]>(scheduleKeys.list(), (old) => {
@@ -156,10 +156,10 @@ export function useToggleSchedule() {
 
   return useMutation({
     mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
-      fetchWithAuth(`/api/v1/schedules/${id}`, token, {
+      fetchWithAuth<{ schedule: Schedule }>(`/api/v1/schedules/${id}`, token, {
         method: 'PATCH',
         body: JSON.stringify({ enabled }),
-      }) as Promise<{ schedule: Schedule }>,
+      }),
     // Optimistic update
     onMutate: async ({ id, enabled }) => {
       // Cancel any outgoing refetches
@@ -203,10 +203,10 @@ export function useUpdateSchedule() {
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateScheduleInput }) =>
-      fetchWithAuth(`/api/v1/schedules/${id}`, token, {
+      fetchWithAuth<{ schedule: Schedule }>(`/api/v1/schedules/${id}`, token, {
         method: 'PATCH',
         body: JSON.stringify(data),
-      }) as Promise<{ schedule: Schedule }>,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: scheduleKeys.lists() });
     },
@@ -222,7 +222,7 @@ export function useDeleteSchedule() {
 
   return useMutation({
     mutationFn: (id: string) =>
-      fetchWithAuth(`/api/v1/schedules/${id}`, token, {
+      fetchWithAuth<void>(`/api/v1/schedules/${id}`, token, {
         method: 'DELETE',
       }),
     onSuccess: () => {
