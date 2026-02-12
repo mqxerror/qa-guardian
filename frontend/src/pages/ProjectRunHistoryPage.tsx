@@ -1,14 +1,18 @@
 // ProjectRunHistoryPage - Feature #1852: Test Run History page at project level
 // Shows all historical test runs across all suites in a project
+// Feature #689: Migrated from raw fetch to React Query hooks
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ClipboardList, Eye } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
-import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 import { formatDuration } from '../utils/formatDuration';
+import { getStatusColor, getStatusIcon } from '../constants/colors';
+// Feature #689: React Query hooks for caching
+import { useProject } from '../hooks/api/useProjects';
+import { useRunsByProject } from '../hooks/api/useRuns';
 
 interface TestRun {
  id: string;
@@ -30,22 +34,18 @@ interface TestRun {
  skipped_count?: number;
 }
 
-interface Project {
- id: string;
- name: string;
- description?: string;
-}
-
 function ProjectRunHistoryPage() {
  const { projectId } = useParams<{ projectId: string }>();
  const navigate = useNavigate();
- const { token } = useAuthStore();
  const { formatDate } = useTimezoneStore();
 
- const [project, setProject] = useState<Project | null>(null);
- const [runs, setRuns] = useState<TestRun[]>([]);
- const [loading, setLoading] = useState(true);
- const [error, setError] = useState<string | null>(null);
+ // Feature #689: React Query hooks for caching - replaces useState+useEffect+fetch pattern
+ const { data: project } = useProject(projectId);
+ const { data: runsData, isLoading: loading, error: runsError } = useRunsByProject(projectId, 1000);
+
+ // Derive runs from React Query response
+ const runs = (runsData?.runs || []) as TestRun[];
+ const error = runsError ? (runsError instanceof Error ? runsError.message : 'Failed to load run history') : null;
 
  // Filters
  const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -56,58 +56,6 @@ function ProjectRunHistoryPage() {
  // Pagination
  const [currentPage, setCurrentPage] = useState(1);
  const [itemsPerPage, setItemsPerPage] = useState(10);
-
- // Fetch project details
- useEffect(() => {
- const fetchProject = async () => {
- if (!projectId || !token) return;
-
- try {
- const response = await fetch(`/api/v1/projects/${projectId}`, {
- headers: { Authorization: `Bearer ${token}` },
- });
-
- if (!response.ok) throw new Error('Failed to fetch project');
-
- const data = await response.json();
- setProject(data);
- } catch (err) {
- console.error('Error fetching project:', err);
- }
- };
-
- fetchProject();
- }, [projectId, token]);
-
- // Fetch runs for project
- useEffect(() => {
- const fetchRuns = async () => {
- if (!projectId || !token) return;
-
- setLoading(true);
- setError(null);
-
- try {
- // Fetch runs filtered by project_id with a high limit
- const response = await fetch(`/api/v1/test-runs?project_id=${projectId}&limit=1000`, {
- headers: { Authorization: `Bearer ${token}` },
- });
-
- if (!response.ok) {
- throw new Error(`Failed to fetch runs: ${response.status}`);
- }
-
- const data = await response.json();
- setRuns(data.runs || []);
- } catch (err) {
- setError(err instanceof Error ? err.message : 'Failed to load run history');
- } finally {
- setLoading(false);
- }
- };
-
- fetchRuns();
- }, [projectId, token]);
 
  // Get unique suites for filter
  const uniqueSuites = useMemo(() => {
@@ -190,28 +138,6 @@ function ProjectRunHistoryPage() {
 
  return { total, passed, failed, running, avgDuration, suiteCount };
  }, [runs, uniqueSuites]);
-
- const getStatusColor = (status: string) => {
- switch (status) {
- case 'passed': return 'bg-success/10 text-success';
- case 'failed': return 'bg-destructive/10 text-destructive';
- case 'running': return 'bg-primary/10 text-primary';
- case 'pending': return 'bg-warning/10 text-warning';
- case 'cancelled': return 'bg-muted text-foreground';
- default: return 'bg-muted text-foreground';
- }
- };
-
- const getStatusIcon = (status: string) => {
- switch (status) {
- case 'passed': return '✓';
- case 'failed': return '✗';
- case 'running': return '⟳';
- case 'pending': return '○';
- case 'cancelled': return '⊘';
- default: return '?';
- }
- };
 
  return (
  <Layout>
@@ -366,7 +292,7 @@ function ProjectRunHistoryPage() {
  {paginatedRuns.map((run) => (
  <tr key={run.id} className="hover:bg-muted/20 transition-colors">
  <td className="px-4 py-3">
- <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(run.status)}`}>
+ <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(run.status).badge}`}>
  <span>{getStatusIcon(run.status)}</span>
  {run.status}
  </span>
