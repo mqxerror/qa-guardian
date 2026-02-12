@@ -18,7 +18,22 @@
     "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-non-null-assertion": "warn",
-    "no-console": ["warn", { "allow": ["warn", "error"] }]
+    "no-console": ["error", { "allow": ["warn", "error"] }]
   },
-  "ignorePatterns": ["node_modules/", "dist/", "*.js"]
+  "ignorePatterns": ["node_modules/", "dist/", "*.js"],
+  "overrides": [
+    {
+      "files": [
+        "**/test-*.ts",
+        "**/__tests__/**/*.ts",
+        "**/scripts/**/*.ts",
+        "**/mcp/*.ts",
+        "**/routes/setup-and-run-*.ts",
+        "**/routes/enable-quota-simulation.ts"
+      ],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
 }

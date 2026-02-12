@@ -13,6 +13,7 @@
 
 import { Page, Browser } from 'playwright';
 import { AxeBuilder } from '@axe-core/playwright';
+import { createLogger } from '../../services/logger.js';
 
 import {
   StepResult,
@@ -24,6 +25,8 @@ import {
   countViolationsByImpact,
   checkA11yThresholds,
 } from './accessibility-helpers.js';
+
+const logger = createLogger('accessibility-executor');
 
 /**
  * Configuration for an accessibility test
@@ -84,7 +87,7 @@ export async function executeAccessibilityTest(
   let screenshot_base64: string | undefined;
 
   const javascriptDisabled = test.disable_javascript === true;
-  console.log(`[Accessibility] Starting accessibility test for ${test.name}`);
+  logger.info({ testName: test.name, testId: test.id }, `Starting accessibility test for ${test.name}`);
 
   try {
     // Emit step start
@@ -126,7 +129,7 @@ export async function executeAccessibilityTest(
     const includeExperimental = test.include_experimental === true;
     const includePa11y = test.include_pa11y === true;
 
-    console.log(`[Accessibility] Config: WCAG ${wcagLevel}, Best Practices: ${includeBestPractices}`);
+    logger.info({ wcagLevel, includeBestPractices }, `Config: WCAG ${wcagLevel}, Best Practices: ${includeBestPractices}`);
 
     // Emit scan progress
     emitRunEvent(runId, orgId, 'step-progress', {

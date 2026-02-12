@@ -12,6 +12,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { BASELINES_DIR } from './visual-regression.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('storage');
 
 // ============================================
 // Directory Constants
@@ -59,7 +62,7 @@ let simulatedStorageQuotaExceeded = false;
 
 export function setSimulatedStorageQuotaExceeded(value: boolean): void {
   simulatedStorageQuotaExceeded = value;
-  console.log(`[Visual] Storage quota exceeded simulation ${value ? 'ENABLED' : 'DISABLED'}`);
+  logger.info({ simulation: value }, `Storage quota exceeded simulation ${value ? 'ENABLED' : 'DISABLED'}`);
 }
 
 export function getSimulatedStorageQuotaExceeded(): boolean {

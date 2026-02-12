@@ -12,6 +12,9 @@ import { useSidebarStore, SidebarSection } from '../stores/sidebarStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
 import { ConnectionStatusIndicator } from './ConnectionStatusIndicator'; // Feature #167
 import { usePrefetch } from '../hooks/usePrefetch'; // Feature #134
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('Sidebar');
 
 // Import icons from sidebar folder
 import {
@@ -79,7 +82,7 @@ export function Sidebar() {
         }
       } catch (error) {
         // Silently fail - badge just won't show
-        console.debug('Could not fetch security alerts:', error);
+        log.debug('Could not fetch security alerts:', error);
       }
     };
     fetchSecurityAlerts();

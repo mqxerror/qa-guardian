@@ -9,6 +9,9 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
 import { getProject as dbGetProject } from '../projects/stores.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('dependency-auto-pr');
 
 // ============================================================
 // Feature #771: Auto-PR for Dependency Updates Types
@@ -115,16 +118,7 @@ export async function dependencyAutoPRRoutes(app: FastifyInstance): Promise<void
     const config = { ...existingConfig, ...updates };
     autoPRConfigs.set(orgId, config);
 
-    console.log(`
-====================================
-  Auto-PR Config Updated
-====================================
-  Organization: ${orgId}
-  Enabled: ${config.enabled}
-  Auto-merge Patch: ${config.auto_merge_patch}
-  Auto-merge Minor: ${config.auto_merge_minor}
-====================================
-    `);
+    logger.info({ orgId, enabled: config.enabled, autoMergePatch: config.auto_merge_patch, autoMergeMinor: config.auto_merge_minor }, 'Auto-PR config updated');
 
     return {
       success: true,
@@ -263,17 +257,7 @@ export async function dependencyAutoPRRoutes(app: FastifyInstance): Promise<void
     orgPRs.push(autoPR);
     autoPRs.set(orgId, orgPRs);
 
-    console.log(`
-====================================
-  Auto-PR Created
-====================================
-  Project: ${projectName}
-  Dependency: ${dependency_name}
-  Update: ${current_version} -> ${target_version}
-  PR #${prNumber}
-  Branch: ${branchName}
-====================================
-    `);
+    logger.info({ projectName, dependencyName: dependency_name, currentVersion: current_version, targetVersion: target_version, prNumber, branchName }, `Auto-PR #${prNumber} created for ${dependency_name}`);
 
     return {
       success: true,
@@ -411,15 +395,7 @@ export async function dependencyAutoPRRoutes(app: FastifyInstance): Promise<void
 
     autoPRs.set(orgId, orgPRs);
 
-    console.log(`
-====================================
-  Auto-PR Scan Complete
-====================================
-  Project: ${projectName}
-  Vulnerable Dependencies: ${vulnerableDeps.length}
-  PRs Created: ${createdPRs.length}
-====================================
-    `);
+    logger.info({ projectName, vulnerableCount: vulnerableDeps.length, prsCreated: createdPRs.length }, `Auto-PR scan complete: created ${createdPRs.length} PRs`);
 
     return {
       success: true,

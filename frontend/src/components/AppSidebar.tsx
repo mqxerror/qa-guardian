@@ -33,6 +33,9 @@ import { useSidebarStore, SidebarSection } from '../stores/sidebarStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
 import { ConnectionStatusIndicator } from './ConnectionStatusIndicator';
 import { usePrefetch } from '../hooks/usePrefetch';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('Sidebar');
 
 import {
   Sidebar,
@@ -124,7 +127,7 @@ export function AppSidebar() {
           setSecurityAlertCount(count);
         }
       } catch (error) {
-        console.debug('Could not fetch security alerts:', error);
+        log.debug('Could not fetch security alerts:', error);
       }
     };
     fetchSecurityAlerts();
@@ -401,7 +404,7 @@ export function AppSidebar() {
           </Link>
         </SidebarMenuButton>
         {options?.showBadge && options.badgeCount && options.badgeCount > 0 && (
-          <SidebarMenuBadge className="bg-warning text-white">
+          <SidebarMenuBadge className="bg-warning text-warning-foreground">
             {options.badgeCount > 99 ? '99+' : options.badgeCount}
           </SidebarMenuBadge>
         )}
@@ -440,12 +443,12 @@ export function AppSidebar() {
                 {icon}
                 <span className="text-xs font-semibold uppercase">{label}</span>
                 {showShortcutHints && options?.shortcutKey && (
-                  <span className="flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] text-white font-bold animate-pulse">
+                  <span className="flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] text-primary-foreground font-bold animate-pulse">
                     {options.shortcutKey}
                   </span>
                 )}
                 {!showShortcutHints && options?.badge && options.badge > 0 && (
-                  <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full ${options.badgeColor === 'red' ? 'bg-destructive' : 'bg-warning'} text-xs text-white font-bold px-1`}>
+                  <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full ${options.badgeColor === 'red' ? 'bg-destructive text-destructive-foreground' : 'bg-warning text-warning-foreground'} text-xs font-bold px-1`}>
                     {options.badge > 99 ? '99+' : options.badge}
                   </span>
                 )}

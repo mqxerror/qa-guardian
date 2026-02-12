@@ -11,6 +11,9 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
+import { createLogger } from '../../services/logger.js';
+
+const logger = createLogger('dependency-lists');
 
 // ============================================================
 // Feature #777: Dependency Allowlist/Blocklist Types
@@ -176,17 +179,7 @@ export async function dependencyListsRoutes(app: FastifyInstance): Promise<void>
       orgEntries.push(entry);
       dependencyLists.set(orgId, orgEntries);
 
-      console.log(`
-====================================
-  Package Added to Blocklist
-====================================
-  Organization: ${orgId}
-  Package: ${package_name}
-  Version Pattern: ${version_pattern || '*'}
-  Reason: ${reason}
-  Severity Override: ${severity_override || 'None'}
-====================================
-      `);
+      logger.info({ orgId, package: package_name, versionPattern: version_pattern || '*', reason, severityOverride: severity_override }, `Package "${package_name}" added to blocklist`);
 
       return {
         success: true,
@@ -222,16 +215,7 @@ export async function dependencyListsRoutes(app: FastifyInstance): Promise<void>
       orgEntries.push(entry);
       dependencyLists.set(orgId, orgEntries);
 
-      console.log(`
-====================================
-  Package Added to Allowlist
-====================================
-  Organization: ${orgId}
-  Package: ${package_name}
-  Version Pattern: ${version_pattern || '*'}
-  Reason: ${reason}
-====================================
-      `);
+      logger.info({ orgId, package: package_name, versionPattern: version_pattern || '*', reason }, `Package "${package_name}" added to allowlist`);
 
       return {
         success: true,
@@ -393,18 +377,7 @@ export async function dependencyListsRoutes(app: FastifyInstance): Promise<void>
         clean: results.filter(r => r.status === 'clean').length,
       };
 
-      console.log(`
-====================================
-  Dependency Scan with Lists
-====================================
-  Organization: ${orgId}
-  Dependencies: ${dependencies.length}
-  Blocked: ${summary.blocked}
-  Allowlisted: ${summary.allowed}
-  Flagged: ${summary.flagged}
-  Clean: ${summary.clean}
-====================================
-      `);
+      logger.info({ orgId, total: dependencies.length, blocked: summary.blocked, allowed: summary.allowed, flagged: summary.flagged, clean: summary.clean }, 'Dependency scan completed');
 
       return {
         success: true,
@@ -546,17 +519,7 @@ export async function dependencyListsRoutes(app: FastifyInstance): Promise<void>
       const criticalRiskDeps = results.filter(r => r.risk_level === 'critical');
       const highRiskDeps = results.filter(r => r.risk_level === 'high');
 
-      console.log(`
-====================================
-  Dependency Health Analysis
-====================================
-  Dependencies Analyzed: ${dependencies.length}
-  Average Health Score: ${Math.round(results.reduce((sum, r) => sum + r.health_score, 0) / results.length)}
-  Low Health (<60): ${lowHealthDeps.length}
-  Critical Risk: ${criticalRiskDeps.length}
-  High Risk: ${highRiskDeps.length}
-====================================
-      `);
+      logger.info({ total: dependencies.length, avgHealth: Math.round(results.reduce((sum, r) => sum + r.health_score, 0) / results.length), lowHealth: lowHealthDeps.length, criticalRisk: criticalRiskDeps.length, highRisk: highRiskDeps.length }, 'Dependency health analysis completed');
 
       return {
         success: true,
@@ -664,15 +627,7 @@ export async function dependencyListsRoutes(app: FastifyInstance): Promise<void>
     const config = { ...existingConfig, ...updates };
     dependencyAgeConfigs.set(orgId, config);
 
-    console.log(`
-====================================
-  Dependency Age Config Updated
-====================================
-  Organization: ${orgId}
-  Outdated Threshold: ${config.outdated_threshold_days} days
-  Critical Age: ${config.critical_age_days} days
-====================================
-    `);
+    logger.info({ orgId, outdatedThreshold: config.outdated_threshold_days, criticalAge: config.critical_age_days }, 'Dependency age config updated');
 
     return {
       success: true,
@@ -893,15 +848,7 @@ export async function dependencyListsRoutes(app: FastifyInstance): Promise<void>
 
     projectDependencies.set(projectId, refreshedDeps);
 
-    console.log(`
-====================================
-  Dependencies Refreshed
-====================================
-  Project: ${projectId}
-  Dependencies: ${refreshedDeps.length}
-  Last Checked: ${now.toISOString()}
-====================================
-    `);
+    logger.info({ projectId, count: refreshedDeps.length, lastChecked: now.toISOString() }, `Refreshed ${refreshedDeps.length} dependencies`);
 
     return {
       success: true,

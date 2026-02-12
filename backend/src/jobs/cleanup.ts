@@ -7,15 +7,12 @@
 
 import { isDatabaseConnected, query } from '../services/database.js';
 import { deleteExpiredQuickTestComparisons } from '../services/repositories/quick-test.js';
+import { createLogger } from '../services/logger.js';
 import fs from 'fs';
 import path from 'path';
 
-// Simple logger wrapper (logger may not exist)
-const logger = {
-  info: (...args: unknown[]) => console.log(...args),
-  warn: (...args: unknown[]) => console.warn(...args),
-  error: (...args: unknown[]) => console.error(...args),
-};
+// Use structured logger
+const logger = createLogger('cleanup');
 
 // Configuration
 const RETENTION_DAYS = parseInt(process.env.DATA_RETENTION_DAYS || '90', 10);
@@ -46,7 +43,7 @@ export function initializeCleanupJob(): void {
   // Run initial cleanup after a delay to let the server start up
   setTimeout(() => {
     runCleanup().catch(err => {
-      logger.error('[Cleanup] Initial cleanup failed:', err);
+      logger.error({ err }, 'Initial cleanup failed');
     });
   }, 5000);
 }
@@ -82,7 +79,7 @@ function scheduleNextRun(): void {
 
   cleanupInterval = setInterval(() => {
     runCleanup().catch(err => {
-      logger.error('[Cleanup] Scheduled cleanup failed:', err);
+      logger.error({ err }, 'Scheduled cleanup failed');
     });
   }, CLEANUP_INTERVAL_MS);
 }
@@ -145,7 +142,7 @@ async function runCleanup(): Promise<void> {
   } catch (error) {
     cleanupStats.status = 'error';
     cleanupStats.errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('[Cleanup] Cleanup failed:', error);
+    logger.error({ error }, 'Cleanup failed');
     throw error;
   }
 }
@@ -166,7 +163,7 @@ async function cleanupDatabaseRecords(cutoffDate: Date): Promise<{ deletedRuns: 
 
     return { deletedRuns };
   } catch (error) {
-    logger.error('[Cleanup] Database cleanup failed:', error);
+    logger.error({ error }, 'Database cleanup failed');
     return { deletedRuns: 0 };
   }
 }
@@ -204,11 +201,11 @@ async function cleanupArtifactFiles(cutoffDate: Date): Promise<{ deletedFiles: n
           }
         } catch (fileError) {
           // Skip files that can't be accessed
-          logger.warn(`[Cleanup] Could not process file ${filePath}:`, fileError);
+          logger.warn({ filePath, error: fileError }, `Could not process file ${filePath}`);
         }
       }
     } catch (dirError) {
-      logger.warn(`[Cleanup] Could not access directory ${dir}:`, dirError);
+      logger.warn({ dir, error: dirError }, `Could not access directory ${dir}`);
     }
   }
 

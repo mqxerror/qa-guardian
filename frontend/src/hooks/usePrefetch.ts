@@ -21,6 +21,9 @@ import { useAuthStore } from '../stores/authStore';
 import { projectKeys } from './api/useProjects';
 import { suiteKeys } from './api/useSuites';
 import { dashboardKeys } from './api/useDashboard';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('Prefetch');
 
 // Maximum concurrent prefetches to avoid network flooding
 const MAX_CONCURRENT_PREFETCHES = 2;
@@ -110,7 +113,7 @@ export function usePrefetch() {
           });
         } catch (error) {
           // Silently ignore prefetch errors - they're not critical
-          console.debug('Prefetch failed:', key, error);
+          log.debug('Prefetch failed:', key, error);
         } finally {
           activePrefetches.current.delete(key);
         }

@@ -13,11 +13,14 @@ import { FastifyInstance } from 'fastify';
 import * as fs from 'fs';
 import * as path from 'path';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
+import { createLogger } from '../../services/logger.js';
 import {
   calculateTotalStorageUsage,
   DEFAULT_STORAGE_QUOTA,
 } from './storage.js';
 import { BASELINES_DIR } from './visual-regression.js';
+
+const logger = createLogger('visual-storage');
 
 /**
  * Register visual storage routes
@@ -141,7 +144,7 @@ export async function visualStorageRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
-    console.log(`[Visual] Cleanup completed: deleted ${deletedCount} baselines, freed ${Math.round(deletedBytes / (1024 * 1024))}MB`);
+    logger.info({ deletedCount, bytesFreed: deletedBytes }, `Cleanup completed: deleted ${deletedCount} baselines, freed ${Math.round(deletedBytes / (1024 * 1024))}MB`);
 
     return {
       success: true,
