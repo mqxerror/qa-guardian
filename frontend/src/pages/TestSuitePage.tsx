@@ -27,11 +27,17 @@ import { PageHeader, ScoreTrendChart } from '../components/ui';
 import { useSuiteRunSocket, type LiveScreenshot, type ScreenshotHistoryEntry, type SuiteRun as SuiteRunSocket } from '../hooks/useSuiteRunSocket';
 // Feature #59: React Query hooks for paginated test loading
 // Feature #143: Added mutation hooks for operations
+// Feature #701: Added review settings, AI health check, step templates, and selector hooks
 import {
   useTestsPaginated, useSuite, useInvalidateTests,
   useReviewTest, useBatchReviewTests, useDuplicateTest, useDeleteTest,
   useStartRun, useCancelRun, useStartSuiteRun, useDeleteSuite,
   useRunsBySuite,
+  useProject,
+  useReviewSettings, useToggleHumanReview, useAIHealthCheck,
+  useStepTemplates, useInsertTemplateSteps, useDeleteStepTemplate,
+  useUpdateRunSelector, useAcceptHealedSelector,
+  useRun,
 } from '../hooks/api';
 // Feature #553: Pass rate trend chart (Feature #556: now uses ScoreTrendChart component)
 import {
@@ -39,9 +45,11 @@ import {
   ImportTestsModal, EditSelectorModal, ExpandedScreenshotModal, InsertTemplateModal,
   GeneratedTestPreviewModal, RecordTestModal, ReviewRecordedTestModal,
   SuiteHeaderActions, HumanReviewPanel, SuiteRunResults,
-  TestListSection, useRecordingState, EditSelectorModalState,
+  TestListSection, useRecordingState,
   FullEditTestModal,
   computeSuiteHealthScore,
+  // Feature #702: State consolidation hooks
+  useAIHealthState, useReviewState, useSelectorEditState,
 } from '../components/suite-detail';
 
 // Suite run result for test status tracking (compatible with both SuiteRunResults and TestListSection)
@@ -110,8 +118,25 @@ function TestSuitePage() {
   // Feature #553: State for collapsible recent runs section
   const [showRecentRuns, setShowRecentRuns] = useState(false);
 
-  // Project state - loaded separately after suite loads
-  const [project, setProject] = useState<{ id: string; name: string; base_url?: string } | null>(null);
+  // Feature #701: Project loaded via React Query instead of raw fetch
+  const { data: projectData } = useProject(suite?.project_id);
+  const project = projectData?.project || null;
+
+  // Feature #701: Review settings via React Query
+  const { data: reviewSettingsData } = useReviewSettings(suiteId);
+  const toggleHumanReviewMutation = useToggleHumanReview();
+
+  // Feature #701: AI health check mutation
+  const aiHealthCheckMutation = useAIHealthCheck();
+
+  // Feature #701: Step templates via React Query
+  const { data: stepTemplatesData, refetch: refetchStepTemplates } = useStepTemplates(suiteId);
+
+  // Feature #701: Selector update mutations
+  const updateRunSelectorMutation = useUpdateRunSelector();
+  const acceptHealedSelectorMutation = useAcceptHealedSelector();
+  const insertTemplateStepsMutation = useInsertTemplateSteps();
+  const deleteStepTemplateMutation = useDeleteStepTemplate();
 
   // Recording state hook - saves ~500 lines of recording/socket logic
   const recording = useRecordingState({
@@ -121,6 +146,11 @@ function TestSuitePage() {
       invalidateBySuite(suiteId || '');
     },
   });
+
+  // Feature #702: State consolidation hooks - reduce 40+ useState to grouped hooks
+  const aiHealth = useAIHealthState();
+  const reviewState = useReviewState();
+  const selectorEdit = useSelectorEditState();
 
   useEffect(() => { UnifiedAIService.setToken(token || null); }, [token]);
   // Feature #59: Derive loading/error state from React Query
@@ -153,23 +183,27 @@ function TestSuitePage() {
   const [showGeneratedCodeModal, setShowGeneratedCodeModal] = useState(false);
   // Feature #50: AI generation modes moved to CreateTestModal which is self-contained
   // Feature #1151: Human review workflow for AI tests
-  const [requireHumanReview, setRequireHumanReview] = useState(false);
-  const [reviewStats, setReviewStats] = useState<{
-    total_tests: number;
-    ai_generated: number;
-    pending_review: number;
-    approved: number;
-    rejected: number;
-  } | null>(null);
-  const [showReviewPanel, setShowReviewPanel] = useState(false);
-  const [isApproving, setIsApproving] = useState(false);
-  // Feature #1152: Batch review AI-generated tests
-  const [selectedForReview, setSelectedForReview] = useState<Set<string>>(new Set());
-  // Feature #1163: Code diff view for regenerations
-  const [regenerationFeedback, setRegenerationFeedback] = useState('');
-  const [isRegenerating, setIsRegenerating] = useState(false);
-  const [previousGeneratedCode, setPreviousGeneratedCode] = useState<string | null>(null);
-  const [showDiffView, setShowDiffView] = useState(false);
+  // Feature #701: Review settings now from React Query (reviewSettingsData)
+  const requireHumanReview = reviewSettingsData?.require_human_review ?? false;
+  // Map API stats to component-expected shape (ensure required fields have defaults)
+  const reviewStats = reviewSettingsData?.stats ? {
+    total_tests: reviewSettingsData.stats.total_tests ?? 0,
+    ai_generated: reviewSettingsData.stats.ai_generated ?? 0,
+    pending_review: reviewSettingsData.stats.pending_review,
+    approved: reviewSettingsData.stats.approved,
+    rejected: reviewSettingsData.stats.rejected,
+  } : null;
+  // Feature #1151-1163: Review workflow state - Feature #702: Now using useReviewState hook
+  const {
+    showReviewPanel, setShowReviewPanel,
+    isApproving, setIsApproving,
+    selectedForReview,
+    regenerationFeedback, setRegenerationFeedback,
+    isRegenerating, setIsRegenerating,
+    previousGeneratedCode, setPreviousGeneratedCode,
+    showDiffView, setShowDiffView,
+    toggleTestSelection, toggleAllTestsSelection,
+  } = reviewState;
 
   const [searchQuery, setSearchQuery] = useState('');
   // Feature #1958: Sorting state for test list
@@ -195,29 +229,14 @@ function TestSuitePage() {
   // Feature #595: Full edit test modal state
   const [editingTest, setEditingTest] = useState<TestType | null>(null);
 
-  // Feature #580: AI Health Monitoring state
-  const [aiHealthReport, setAIHealthReport] = useState<{
-    health_score: number;
-    trend: 'improving' | 'stable' | 'degrading';
-    ai_summary: string;
-    recommendations: Array<{
-      id: string;
-      severity: 'critical' | 'warning' | 'info';
-      category: string;
-      title: string;
-      description: string;
-      suggested_action: string;
-      affected_tests?: string[];
-    }>;
-    generated_at: string;
-  } | null>(null);
-  const [isLoadingHealthCheck, setIsLoadingHealthCheck] = useState(false);
-  const [showHealthInsights, setShowHealthInsights] = useState(false);
+  // Feature #580: AI Health Monitoring state - Feature #702: Now using useAIHealthState hook
+  const { aiHealthReport, isLoadingHealthCheck, showHealthInsights } = aiHealth;
 
   // Feature #50: Visual recorder state moved to useRecordingState hook (saves ~55 lines)
-  // Feature #31: Step Templates state (kept here as not part of recording hook)
+  // Feature #31: Step Templates state
+  // Feature #701: Step templates now from React Query (stepTemplatesData)
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [stepTemplates, setStepTemplates] = useState<Array<{ id: string; name: string; description?: string; steps: Array<{ action: string; selector?: string; value?: string; text?: string; url?: string }>; tags: string[]; created_at: string }>>([]);
+  const stepTemplates = stepTemplatesData?.templates ?? [];
   const [insertTemplateForTest, setInsertTemplateForTest] = useState<string | null>(null);
 
   // Feature #35: Live screenshot streaming during test execution
@@ -254,15 +273,12 @@ function TestSuitePage() {
     setIsRunningSuite(false);
 
     // Fetch full run results from API (WebSocket event doesn't include per-test results)
-    if (completedRun.id) {
+    // Feature #701: Using fetchWithAuth helper instead of raw fetch
+    if (completedRun.id && token) {
       try {
-        const response = await fetch(`/api/v1/runs/${completedRun.id}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setSuiteRun(data.run);
-        }
+        const { fetchWithAuth } = await import('../hooks/api/fetchWithAuth');
+        const data = await fetchWithAuth(`/api/v1/runs/${completedRun.id}`, token);
+        setSuiteRun(data.run);
       } catch (err) {
         logger.error('Failed to fetch final run results:', err);
       }
@@ -292,20 +308,15 @@ function TestSuitePage() {
   const canCreateTest = user?.role !== 'viewer';
   const canDeleteSuite = user?.role === 'owner' || user?.role === 'admin';
 
-  // Feature #1065: Edit selector modal state (type imported from suite-detail)
-  const [editSelectorModal, setEditSelectorModal] = useState<EditSelectorModalState>({
-    isOpen: false,
-    runId: '',
-    testId: '',
-    stepId: '',
-    currentSelector: '',
-    originalSelector: '',
-    wasHealed: false,
-  });
-  const [editSelectorValue, setEditSelectorValue] = useState('');
-  const [editSelectorNotes, setEditSelectorNotes] = useState('');
-  const [editSelectorApplyToTest, setEditSelectorApplyToTest] = useState(true);
-  const [isSubmittingSelector, setIsSubmittingSelector] = useState(false);
+  // Feature #1065: Edit selector modal state - Feature #702: Now using useSelectorEditState hook
+  const {
+    editSelectorModal,
+    editSelectorValue, setEditSelectorValue,
+    editSelectorNotes, setEditSelectorNotes,
+    editSelectorApplyToTest, setEditSelectorApplyToTest,
+    isSubmittingSelector, setIsSubmittingSelector,
+    closeSelectorModal,
+  } = selectorEdit;
 
   // Handle Escape key to close modals and dropdowns
   useEffect(() => {
@@ -383,64 +394,20 @@ function TestSuitePage() {
     return sortDirection === 'desc' ? -comparison : comparison;
   });
 
-  // Feature #59: Fetch project when suite data is available
-  // Suite and tests are now loaded via React Query hooks at the top
-  useEffect(() => {
-    if (!suite?.project_id || !token) return;
-
-    const fetchProject = async () => {
-      try {
-        const projectResponse = await fetch(`/api/v1/projects/${suite.project_id}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (projectResponse.ok) {
-          const projectData = await projectResponse.json();
-          setProject(projectData.project);
-        }
-      } catch (err) {
-        logger.error('Failed to load project:', err);
-      }
-    };
-    fetchProject();
-  }, [suite?.project_id, token]);
-
-  // Feature #1151: Fetch review settings when suite loads
-  useEffect(() => {
-    const fetchReviewSettings = async () => {
-      if (!suiteId || !token) return;
-      try {
-        const response = await fetch(`/api/v1/suites/${suiteId}/review-settings`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setRequireHumanReview(data.require_human_review);
-          setReviewStats(data.stats);
-        }
-      } catch (err) {
-        logger.error('Failed to fetch review settings:', err);
-      }
-    };
-    fetchReviewSettings();
-  }, [suiteId, token]);
+  // Feature #701: Project and review settings now loaded via React Query hooks at the top
+  // Removed useEffect for project fetch - now using useProject hook
+  // Removed useEffect for review settings fetch - now using useReviewSettings hook
 
   // Feature #1151: Toggle human review requirement
+  // Feature #701: Converted to React Query mutation
   const handleToggleHumanReview = async () => {
-    if (!suiteId || !token) return;
+    if (!suiteId) return;
     try {
-      const response = await fetch(`/api/v1/suites/${suiteId}/review-settings`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ require_human_review: !requireHumanReview }),
+      const data = await toggleHumanReviewMutation.mutateAsync({
+        suiteId,
+        requireHumanReview: !requireHumanReview,
       });
-      if (response.ok) {
-        const data = await response.json();
-        setRequireHumanReview(data.suite.require_human_review);
-        toast.success(data.message);
-      }
+      toast.success(data.message || 'Review settings updated');
     } catch (err) {
       toast.error('Failed to update review settings');
     }
@@ -464,6 +431,7 @@ function TestSuitePage() {
 
   // Feature #1152: Batch review multiple AI-generated tests
   // Feature #143: Converted to React Query mutation
+  // Feature #702: Now using useReviewState hook methods
   const handleBatchReview = async (action: 'approve' | 'reject') => {
     if (!token || selectedForReview.size === 0) return;
     setIsApproving(true);
@@ -471,8 +439,8 @@ function TestSuitePage() {
       const status = action === 'approve' ? 'approved' : 'rejected';
       const testIds = Array.from(selectedForReview);
       const data = await batchReviewMutation.mutateAsync({ testIds, status, suiteId });
-      // Clear selection
-      setSelectedForReview(new Set());
+      // Clear selection using hook method
+      reviewState.clearSelection();
       toast.success(`Successfully ${action}d ${data.successful || testIds.length} test(s)`);
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to batch review tests'));
@@ -481,59 +449,24 @@ function TestSuitePage() {
     }
   };
 
-  // Feature #1152: Toggle selection for batch review
-  const toggleTestSelection = (testId: string) => {
-    setSelectedForReview(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(testId)) {
-        newSet.delete(testId);
-      } else {
-        newSet.add(testId);
-      }
-      return newSet;
-    });
-  };
-
-  // Feature #1152: Toggle all tests for batch review
-  const toggleAllTestsSelection = (testIds: string[]) => {
-    setSelectedForReview(prev => {
-      const allSelected = testIds.every(id => prev.has(id));
-      if (allSelected) {
-        // Deselect all
-        return new Set();
-      } else {
-        // Select all
-        return new Set(testIds);
-      }
-    });
-  };
+  // Feature #1152: Toggle selection for batch review - Feature #702: Now provided by useReviewState hook
+  // toggleTestSelection and toggleAllTestsSelection are destructured from reviewState above
 
   // Feature #50: computeCodeDiff, calculateTestConfidence, validateTestName moved to utils.ts
 
   // Feature #580: Run AI health check
+  // Feature #701: Converted to React Query mutation
+  // Feature #702: Now using useAIHealthState hook methods
   const handleAIHealthCheck = async () => {
-    if (!suiteId || !token) return;
-    setIsLoadingHealthCheck(true);
+    if (!suiteId) return;
+    aiHealth.startLoading();
     try {
-      const response = await fetch(`/api/v1/suites/${suiteId}/ai-health-check`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAIHealthReport(data.report);
-        setShowHealthInsights(true);
-      } else {
-        toast.error('Failed to run AI health check');
-      }
+      const data = await aiHealthCheckMutation.mutateAsync({ suiteId });
+      aiHealth.setReport(data.report);
     } catch (err) {
       logger.error('AI health check failed:', err);
       toast.error('AI health check failed');
-    } finally {
-      setIsLoadingHealthCheck(false);
+      aiHealth.setError();
     }
   };
 
@@ -649,8 +582,10 @@ function TestSuitePage() {
   };
 
   // Feature #1065: Handle selector update in TestSuitePage
+  // Feature #701: Converted to React Query mutation
+  // Feature #702: Now using useSelectorEditState hook methods
   const handleUpdateSelector = async () => {
-    if (!token || !editSelectorModal.runId || !editSelectorModal.testId || !editSelectorModal.stepId) {
+    if (!editSelectorModal.runId || !editSelectorModal.testId || !editSelectorModal.stepId) {
       toast.error('Missing required information');
       return;
     }
@@ -662,54 +597,17 @@ function TestSuitePage() {
 
     setIsSubmittingSelector(true);
     try {
-      const response = await fetch(
-        `/api/v1/runs/${editSelectorModal.runId}/results/${editSelectorModal.testId}/steps/${editSelectorModal.stepId}/selector`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            new_selector: editSelectorValue.trim(),
-            notes: editSelectorNotes.trim() || undefined,
-            apply_to_test: editSelectorApplyToTest,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to update selector');
-      }
-
-      const data = await response.json();
-      toast.success(data.message || 'Selector updated successfully');
-
-      // Reset and close modal
-      setEditSelectorModal({
-        isOpen: false,
-        runId: '',
-        testId: '',
-        stepId: '',
-        currentSelector: '',
-        originalSelector: '',
-        wasHealed: false,
+      const data = await updateRunSelectorMutation.mutateAsync({
+        runId: editSelectorModal.runId,
+        testId: editSelectorModal.testId,
+        stepId: editSelectorModal.stepId,
+        newSelector: editSelectorValue.trim(),
+        notes: editSelectorNotes.trim() || undefined,
+        applyToTest: editSelectorApplyToTest,
       });
-      setEditSelectorValue('');
-      setEditSelectorNotes('');
-      setEditSelectorApplyToTest(true);
 
-      // Refresh run details to show updated selector
-      if (suiteRun?.id) {
-        const runResponse = await fetch(`/api/v1/runs/${suiteRun.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (runResponse.ok) {
-          const runData = await runResponse.json();
-          setSuiteRun(runData.run);
-        }
-      }
+      toast.success(data.message || 'Selector updated successfully');
+      closeSelectorModal();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update selector');
     } finally {
@@ -718,48 +616,25 @@ function TestSuitePage() {
   };
 
   // Feature #1065: Handle accept healed selector in TestSuitePage
+  // Feature #701: Converted to React Query mutation
+  // Feature #702: Now using useSelectorEditState hook methods
   const handleAcceptHealed = async () => {
-    if (!token || !editSelectorModal.runId || !editSelectorModal.testId || !editSelectorModal.stepId) {
+    if (!editSelectorModal.runId || !editSelectorModal.testId || !editSelectorModal.stepId) {
       toast.error('Missing required information');
       return;
     }
 
     setIsSubmittingSelector(true);
     try {
-      const response = await fetch(
-        `/api/v1/runs/${editSelectorModal.runId}/results/${editSelectorModal.testId}/steps/${editSelectorModal.stepId}/accept-healed`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            apply_to_test: editSelectorApplyToTest,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to accept healed selector');
-      }
-
-      const data = await response.json();
-      toast.success(data.message || 'Healed selector accepted');
-
-      // Reset and close modal
-      setEditSelectorModal({
-        isOpen: false,
-        runId: '',
-        testId: '',
-        stepId: '',
-        currentSelector: '',
-        originalSelector: '',
-        wasHealed: false,
+      const data = await acceptHealedSelectorMutation.mutateAsync({
+        runId: editSelectorModal.runId,
+        testId: editSelectorModal.testId,
+        stepId: editSelectorModal.stepId,
+        applyToTest: editSelectorApplyToTest,
       });
-      setEditSelectorValue('');
-      setEditSelectorNotes('');
+
+      toast.success(data.message || 'Healed selector accepted');
+      closeSelectorModal();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to accept healed selector');
     } finally {
@@ -848,35 +723,20 @@ function TestSuitePage() {
   // moved to useRecordingState hook - saving ~370 lines
 
   // Feature #31: Load templates list
-  const loadStepTemplates = async () => {
-    try {
-      const response = await fetch(`/api/v1/step-templates?suite_id=${suiteId}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setStepTemplates(data.templates || []);
-      }
-    } catch (err) {
-      logger.error('Failed to load templates:', err);
-    }
+  // Feature #701: Now using useStepTemplates hook, refetch available via refetchStepTemplates
+  const loadStepTemplates = () => {
+    refetchStepTemplates();
   };
 
   // Feature #31: Insert template steps into an existing test
+  // Feature #701: Converted to React Query mutation
   const handleInsertTemplate = async (testId: string, template: { steps: Array<{ action: string; selector?: string; value?: string; text?: string; url?: string }> }) => {
     try {
-      const response = await fetch(`/api/v1/tests/${testId}/append-steps`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ steps: template.steps }),
+      await insertTemplateStepsMutation.mutateAsync({
+        testId,
+        steps: template.steps as Parameters<typeof insertTemplateStepsMutation.mutateAsync>[0]['steps'],
+        suiteId,
       });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to insert template');
-      }
       toast.success('Template steps inserted into test');
       setShowTemplateModal(false);
       setInsertTemplateForTest(null);
@@ -888,16 +748,11 @@ function TestSuitePage() {
   };
 
   // Feature #31: Delete a step template
+  // Feature #701: Converted to React Query mutation
   const handleDeleteTemplate = async (templateId: string) => {
     try {
-      const response = await fetch(`/api/v1/step-templates/${templateId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        setStepTemplates(prev => prev.filter(t => t.id !== templateId));
-        toast.success('Template deleted');
-      }
+      await deleteStepTemplateMutation.mutateAsync({ templateId, suiteId: suiteId || '' });
+      toast.success('Template deleted');
     } catch (err) {
       toast.error('Failed to delete template');
     }
@@ -1220,7 +1075,7 @@ function TestSuitePage() {
                 if (!showHealthInsights && !aiHealthReport && !isLoadingHealthCheck) {
                   handleAIHealthCheck();
                 } else {
-                  setShowHealthInsights(!showHealthInsights);
+                  aiHealth.toggleInsights();
                 }
               }}
               className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
@@ -1342,7 +1197,7 @@ function TestSuitePage() {
           selectedForReview={selectedForReview}
           isApproving={isApproving}
           onToggleHumanReview={handleToggleHumanReview}
-          onToggleReviewPanel={() => setShowReviewPanel(!showReviewPanel)}
+          onToggleReviewPanel={reviewState.toggleReviewPanel}
           onToggleTestSelection={toggleTestSelection}
           onToggleAllTestsSelection={toggleAllTestsSelection}
           onReviewTest={handleReviewTest}
@@ -1407,7 +1262,7 @@ function TestSuitePage() {
           currentStep={currentStep}
           onCancelSuiteRun={handleCancelSuiteRun}
           onExpandScreenshot={(base64) => setExpandedScreenshot(base64)}
-          onEditSelector={(state) => setEditSelectorModal(state)}
+          onEditSelector={(state) => selectorEdit.openSelectorModal(state)}
           onNavigate={navigate}
         />
 
@@ -1764,13 +1619,7 @@ function TestSuitePage() {
           onSelectorValueChange={setEditSelectorValue}
           onNotesChange={setEditSelectorNotes}
           onApplyToTestChange={setEditSelectorApplyToTest}
-          onClose={() => {
-            setEditSelectorModal({
-              isOpen: false, runId: '', testId: '', stepId: '', currentSelector: '', originalSelector: '', wasHealed: false,
-            });
-            setEditSelectorValue('');
-            setEditSelectorNotes('');
-          }}
+          onClose={closeSelectorModal}
           onUpdateSelector={handleUpdateSelector}
           onAcceptHealed={handleAcceptHealed}
         />

@@ -21,6 +21,13 @@ export { useCreateTestState } from './useCreateTestState';
 export type { UseCreateTestStateReturn, NewTestType, UrlValidationState, AntiAliasingTolerance, CaptureMode, DiffThresholdMode, WcagLevel, IgnoreRegion } from './useCreateTestState';
 export { useAIGenerationState } from './useAIGenerationState';
 export type { UseAIGenerationStateReturn, AIGenMode, AIWizardStep, AnnotationType, Annotation, AICopilotSuggestion } from './useAIGenerationState';
+// Feature #702: Additional state consolidation hooks
+export { useAIHealthState } from './useAIHealthState';
+export type { UseAIHealthStateReturn, AIHealthReport, AIHealthRecommendation } from './useAIHealthState';
+export { useReviewState } from './useReviewState';
+export type { UseReviewStateReturn } from './useReviewState';
+export { useSelectorEditState } from './useSelectorEditState';
+export type { UseSelectorEditStateReturn, SelectorModalState } from './useSelectorEditState';
 
 // Components
 export { default as TestListItem } from './TestListItem';
