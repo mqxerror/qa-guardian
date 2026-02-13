@@ -5,7 +5,7 @@
 // Feature #125: Added skeleton loaders for better perceived performance
 // Feature #337: Dark-first design system redesign
 // Feature #550: Real-time wave visualization for smoke test
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { SkeletonProjectDetail } from "../components/ui/Skeleton";
@@ -30,7 +30,7 @@ import {
 import { Flame, Plus, Settings, Loader2, FolderKanban, TestTube2, Calendar, User, MoreHorizontal, Github, Shield, ChevronDown, Globe, FileCheck, CheckCircle2, XCircle, Search, X, Clock, Zap, GitBranch } from "lucide-react";
 // Feature #550: Real-time wave visualization for smoke test
 import { WaveProgressCard, type WaveProgressStatus } from "../components/ui/wave-progress-card";
-import { useSuiteRunSocket, type SuiteRun as SuiteRunSocket } from "../hooks/useSuiteRunSocket";
+// useSuiteRunSocket moved to useSmokeTest hook (Feature #718)
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,8 +39,8 @@ import {
 } from "../components/ui/dropdown-menu";
 import { useAuthStore } from "../stores/authStore";
 import { useTimezoneStore } from "../stores/timezoneStore";
-import { useTestDefaultsStore } from "../stores/testDefaultsStore";
-import { toast } from "../stores/toastStore";
+// useTestDefaultsStore moved to useCreateSuiteModal hook (Feature #718)
+// toast moved to hooks (Feature #718)
 import { createLogger } from "../utils/logger";
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 
@@ -48,7 +48,7 @@ const logger = createLogger('project-detail');
 // Feature #58: Import React Query hooks for parallel data fetching
 // Feature #144: Added project settings hooks for caching
 import {
-  useProject, useSuites, useInvalidateSuites,
+  useProject, useSuites,
   useProjectMembers, useAlertChannels, useAlertHistory,
   useEnvVars, useHealingSettings, useSastConfig, useDastConfig,
   useRunsByProject, // Feature #558: Recent activity feed
@@ -80,9 +80,7 @@ import {
   VisionHealingResult,
   EditSelectorModalState,
   // Utilities
-  DEVICE_PRESETS,
-  getErrorMessage,
-  getDevicePresetDimensions,
+  // DEVICE_PRESETS, getErrorMessage, getDevicePresetDimensions moved to hooks (Feature #718)
   getSASTSeverityClass,
   getDASTRiskClass,
   getAlertChannelIcon,
@@ -114,6 +112,10 @@ import {
   // Modal Components (Feature #49)
   ProjectModals,
 } from '../components/project-detail';
+// Feature #718: Extracted state hooks
+import { useCreateSuiteModal } from '../hooks/useCreateSuiteModal';
+import { useSmokeTest } from '../hooks/useSmokeTest';
+import { useProjectDetailModals } from '../hooks/useProjectDetailModals';
 
 // Removed inline type definitions - now imported from project-detail module (Feature #49)
 
@@ -148,7 +150,6 @@ function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { token, user } = useAuthStore();
   const { formatDate } = useTimezoneStore();
-  const { defaults: testDefaults } = useTestDefaultsStore();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -170,7 +171,6 @@ function ProjectDetailPage() {
   // Project and suites load in parallel automatically via React Query
   const { data: projectData, isLoading: projectLoading, error: projectError } = useProject(id);
   const { data: suitesData, isLoading: suitesLoading } = useSuites(id);
-  const { invalidateByProject } = useInvalidateSuites();
 
   // Extract data from React Query responses
   const project = projectData?.project || null;
@@ -181,57 +181,13 @@ function ProjectDetailPage() {
   // Feature #558: Fetch recent runs for activity feed
   const { data: recentRunsData } = useRunsByProject(id, 5);
 
-  // Feature #1794: Project defaults state
-  const [projectDefaultBrowser, setProjectDefaultBrowser] = useState<'chromium' | 'firefox' | 'webkit'>('chromium');
-  const [projectViewportProfiles, setProjectViewportProfiles] = useState<Array<{name: string; width: number; height: number}>>([
-    { name: 'Desktop', width: 1920, height: 1080 },
-    { name: 'Tablet', width: 768, height: 1024 },
-    { name: 'Mobile', width: 375, height: 667 },
-  ]);
-  const [isSavingProjectDefaults, setIsSavingProjectDefaults] = useState(false);
-
-  // Feature #58: GitHub data loading state (lazy-loaded when tab active)
-  // Feature #144: Settings data loading is now handled by React Query hooks
+  // Feature #718: Extracted state hooks (reduces 25 useState → 2 in main component)
+  const suiteModal = useCreateSuiteModal(id);
+  const detailModals = useProjectDetailModals(id, () => navigate('/projects'));
+  const smokeTest = useSmokeTest(id, project?.base_url);
   const [githubDataLoaded, setGithubDataLoaded] = useState(false);
-  const [showCreateSuiteModal, setShowCreateSuiteModal] = useState(false);
   // Feature #559: Suite search filter
   const [suiteSearchQuery, setSuiteSearchQuery] = useState('');
-  const [newSuiteName, setNewSuiteName] = useState('');
-  const [newSuiteDescription, setNewSuiteDescription] = useState('');
-  const [newSuiteBrowser, setNewSuiteBrowser] = useState<'chromium' | 'firefox' | 'webkit'>(testDefaults.defaultBrowser);
-  const [newSuiteViewportWidth, setNewSuiteViewportWidth] = useState(1280);
-  const [newSuiteViewportHeight, setNewSuiteViewportHeight] = useState(720);
-  const [newSuiteTimeout, setNewSuiteTimeout] = useState(testDefaults.defaultTimeout / 1000); // Convert ms to seconds
-  const [newSuiteRetryCount, setNewSuiteRetryCount] = useState(testDefaults.defaultRetries);
-  const [devicePreset, setDevicePreset] = useState('desktop');
-  const [isCreatingSuite, setIsCreatingSuite] = useState(false);
-
-  // Use imported DEVICE_PRESETS from project-detail module (Feature #49)
-  const handleDevicePresetChange = (preset: string) => {
-    setDevicePreset(preset);
-    const dimensions = getDevicePresetDimensions(preset);
-    if (dimensions) {
-      setNewSuiteViewportWidth(dimensions.width);
-      setNewSuiteViewportHeight(dimensions.height);
-    }
-  };
-  const [createSuiteError, setCreateSuiteError] = useState('');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
-
-  // Feature #1975: One-click Smoke Test state
-  // Feature #550: Added wave visualization state
-  const [isRunningQuickSmokeTest, setIsRunningQuickSmokeTest] = useState(false);
-  const [smokeTestRunId, setSmokeTestRunId] = useState<string | null>(null);
-  const [smokeTestTestId, setSmokeTestTestId] = useState<string | null>(null);
-  const [smokeTestResult, setSmokeTestResult] = useState<'passed' | 'failed' | null>(null);
-  const [smokeTestCurrentStep, setSmokeTestCurrentStep] = useState<{
-    phase: 'health' | 'pageload' | 'validation';
-    stepIndex: number;
-    totalSteps: number;
-  } | null>(null);
-  const [smokeTestExpandedPhase, setSmokeTestExpandedPhase] = useState<string | null>(null);
 
   // Feature #49: Settings state and handlers from useSettingsHandlers hook
   // Destructure what we need from settingsState
@@ -321,179 +277,8 @@ function ProjectDetailPage() {
     handleUpdateDastConfig, handleTriggerDastScan, handleUploadOpenApiSpec, handleDeleteOpenApiSpec,
   } = dastHandlers;
 
-  const handleCreateSuite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreateSuiteError('');
-    setIsCreatingSuite(true);
-
-    try {
-      const response = await fetch(`/api/v1/projects/${id}/suites`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: newSuiteName,
-          description: newSuiteDescription,
-          browser: newSuiteBrowser,
-          viewport_width: newSuiteViewportWidth,
-          viewport_height: newSuiteViewportHeight,
-          timeout: newSuiteTimeout,
-          retry_count: newSuiteRetryCount,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to create test suite');
-      }
-
-      const data = await response.json();
-      // Feature #58: Use React Query invalidation to refetch suites
-      invalidateByProject(id || '');
-      setNewSuiteName('');
-      setNewSuiteDescription('');
-      setNewSuiteBrowser(testDefaults.defaultBrowser);
-      setNewSuiteViewportWidth(1280);
-      setNewSuiteViewportHeight(720);
-      setNewSuiteTimeout(testDefaults.defaultTimeout / 1000);
-      setNewSuiteRetryCount(testDefaults.defaultRetries);
-      setShowCreateSuiteModal(false);
-      toast.success(`Test suite "${data.suite.name}" created successfully!`);
-    } catch (err) {
-      // Use enhanced error handling for network errors
-      toast.error(getErrorMessage(err, 'Failed to create test suite'));
-    } finally {
-      setIsCreatingSuite(false);
-    }
-  };
-
-  const handleDeleteProject = async () => {
-    setDeleteError('');
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/v1/projects/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to delete project');
-      }
-
-      // Navigate to projects list after successful deletion
-      navigate('/projects');
-    } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Failed to delete project');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Feature #550: Smoke test WebSocket callbacks
-  const handleSmokeTestRunUpdate = useCallback(() => {
-    // Update handled by currentStep tracking
-  }, []);
-
-  const handleSmokeTestRunComplete = useCallback((completedRun: SuiteRunSocket) => {
-    const passed = completedRun.status === 'passed';
-    setSmokeTestResult(passed ? 'passed' : 'failed');
-    setIsRunningQuickSmokeTest(false);
-    setSmokeTestCurrentStep(null);
-
-    if (passed) {
-      toast.success('Site Healthy ✅ - All checks passed!', 5000);
-    } else {
-      toast.error('Issues Found ⚠️ - Some checks failed', 8000);
-    }
-  }, []);
-
-  // Placeholder callbacks for screenshot (not used in smoke test)
-  const handleSmokeTestScreenshot = useCallback(() => {}, []);
-  const handleSmokeTestScreenshotHistory = useCallback(() => {}, []);
-
-  // Feature #550: Use WebSocket for real-time smoke test progress
-  const { currentStep: socketCurrentStep } = useSuiteRunSocket({
-    runId: smokeTestRunId,
-    token,
-    onRunUpdate: handleSmokeTestRunUpdate,
-    onRunComplete: handleSmokeTestRunComplete,
-    onScreenshot: handleSmokeTestScreenshot,
-    onScreenshotHistory: handleSmokeTestScreenshotHistory,
-    enabled: isRunningQuickSmokeTest && !!smokeTestRunId,
-  });
-
-  // Map socket step progress to smoke test phases
-  useEffect(() => {
-    if (socketCurrentStep && isRunningQuickSmokeTest) {
-      // Map step index to phases: 0=health, 1=pageload, 2+=validation
-      const stepIdx = socketCurrentStep.stepIndex;
-      const phase: 'health' | 'pageload' | 'validation' =
-        stepIdx === 0 ? 'health' : stepIdx === 1 ? 'pageload' : 'validation';
-      setSmokeTestCurrentStep({
-        phase,
-        stepIndex: socketCurrentStep.stepIndex,
-        totalSteps: socketCurrentStep.totalSteps,
-      });
-    }
-  }, [socketCurrentStep, isRunningQuickSmokeTest]);
-
-  // Feature #1975 + #550: One-click Smoke Test handler with WebSocket
-  const handleQuickSmokeTest = async () => {
-    if (!project?.base_url) {
-      toast.error('No base URL configured for this project. Please set it in Settings.');
-      return;
-    }
-
-    // Reset state
-    setIsRunningQuickSmokeTest(true);
-    setSmokeTestRunId(null);
-    setSmokeTestTestId(null);
-    setSmokeTestResult(null);
-    setSmokeTestCurrentStep({ phase: 'health', stepIndex: 0, totalSteps: 3 });
-    setSmokeTestExpandedPhase(null);
-
-    try {
-      // Start the smoke test - WebSocket will handle progress tracking
-      const testResponse = await fetch(`/api/v1/projects/${id}/quick-smoke-test`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          target_url: project.base_url,
-        }),
-      });
-
-      if (!testResponse.ok) {
-        const errorData = await testResponse.json();
-        throw new Error(errorData.message || 'Failed to run smoke test');
-      }
-
-      const testData = await testResponse.json();
-      setSmokeTestRunId(testData.run_id);
-      setSmokeTestTestId(testData.test_id);
-      // WebSocket will now handle the progress tracking via useSuiteRunSocket
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to run smoke test';
-      toast.error(message);
-      setIsRunningQuickSmokeTest(false);
-      setSmokeTestCurrentStep(null);
-    }
-  };
-
-  // Feature #550: Reset smoke test state
-  const dismissSmokeTestResult = () => {
-    setSmokeTestResult(null);
-    setSmokeTestRunId(null);
-    setSmokeTestTestId(null);
-    setSmokeTestCurrentStep(null);
-  };
+  // Feature #718: handleCreateSuite, handleDeleteProject, and smoke test handlers
+  // all extracted into useCreateSuiteModal, useProjectDetailModals, and useSmokeTest hooks
 
   const canCreateSuite = user?.role !== 'viewer';
   const canDeleteProject = user?.role === 'owner' || user?.role === 'admin';
@@ -504,13 +289,13 @@ function ProjectDetailPage() {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (showCreateSuiteModal) setShowCreateSuiteModal(false);
-        if (showDeleteModal) setShowDeleteModal(false);
+        if (suiteModal.showCreateSuiteModal) suiteModal.setShowCreateSuiteModal(false);
+        if (detailModals.showDeleteModal) detailModals.setShowDeleteModal(false);
       }
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [showCreateSuiteModal, showDeleteModal]);
+  }, [suiteModal.showCreateSuiteModal, detailModals.showDeleteModal]);
 
   // Feature #144: Use React Query hooks for settings data (with caching)
   // Only enable queries when Settings tab is active for lazy loading
@@ -756,18 +541,18 @@ function ProjectDetailPage() {
             <div className="flex items-center gap-3">
               {/* Feature #1975: One-click Smoke Test button */}
               <button
-                onClick={handleQuickSmokeTest}
-                disabled={isRunningQuickSmokeTest || !project?.base_url}
+                onClick={smokeTest.handleQuickSmokeTest}
+                disabled={smokeTest.isRunningQuickSmokeTest || !project?.base_url}
                 title={!project?.base_url ? 'Set a base URL in project settings first' : 'Run a quick health check on the project'}
                 className={`rounded-md px-4 py-2 text-sm font-medium inline-flex items-center gap-2 transition-all ${
-                  isRunningQuickSmokeTest
+                  smokeTest.isRunningQuickSmokeTest
                     ? 'bg-warning text-warning-foreground cursor-wait'
                     : !project?.base_url
                       ? 'bg-muted text-muted-foreground cursor-not-allowed'
                       : 'bg-warning text-warning-foreground hover:bg-warning/90'
                 }`}
               >
-                {isRunningQuickSmokeTest ? (
+                {smokeTest.isRunningQuickSmokeTest ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Running...
@@ -789,7 +574,7 @@ function ProjectDetailPage() {
               </Link>
               {canDeleteProject && (
                 <button
-                  onClick={() => setShowDeleteModal(true)}
+                  onClick={() => detailModals.setShowDeleteModal(true)}
                   className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90"
                 >
                   Delete Project
@@ -800,16 +585,16 @@ function ProjectDetailPage() {
         />
 
         {/* Feature #550: Inline Smoke Test Wave Visualization */}
-        {(isRunningQuickSmokeTest || smokeTestResult) && (
+        {(smokeTest.isRunningQuickSmokeTest || smokeTest.smokeTestResult) && (
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                 <Flame className="h-5 w-5 text-warning" />
                 Smoke Test
               </h3>
-              {smokeTestResult && (
+              {smokeTest.smokeTestResult && (
                 <button
-                  onClick={dismissSmokeTestResult}
+                  onClick={smokeTest.dismissSmokeTestResult}
                   className="text-sm text-muted-foreground hover:text-foreground"
                 >
                   Dismiss
@@ -822,100 +607,100 @@ function ProjectDetailPage() {
               {/* Health Check Wave */}
               <WaveProgressCard
                 status={
-                  smokeTestResult === 'passed' ? 'completed' :
-                  smokeTestResult === 'failed' && smokeTestCurrentStep?.phase !== 'health' ? 'completed' :
-                  smokeTestResult === 'failed' && smokeTestCurrentStep?.phase === 'health' ? 'failed' :
-                  smokeTestCurrentStep?.phase === 'health' ? 'running' :
-                  (smokeTestCurrentStep?.stepIndex || 0) > 0 ? 'completed' :
+                  smokeTest.smokeTestResult === 'passed' ? 'completed' :
+                  smokeTest.smokeTestResult === 'failed' && smokeTest.smokeTestCurrentStep?.phase !== 'health' ? 'completed' :
+                  smokeTest.smokeTestResult === 'failed' && smokeTest.smokeTestCurrentStep?.phase === 'health' ? 'failed' :
+                  smokeTest.smokeTestCurrentStep?.phase === 'health' ? 'running' :
+                  (smokeTest.smokeTestCurrentStep?.stepIndex || 0) > 0 ? 'completed' :
                   'waiting' as WaveProgressStatus
                 }
                 icon={Globe}
                 title="Health Check"
                 subtitle="DNS & SSL verification"
-                expanded={smokeTestExpandedPhase === 'health'}
-                onToggle={() => setSmokeTestExpandedPhase(
-                  smokeTestExpandedPhase === 'health' ? null : 'health'
+                expanded={smokeTest.smokeTestExpandedPhase === 'health'}
+                onToggle={() => smokeTest.setSmokeTestExpandedPhase(
+                  smokeTest.smokeTestExpandedPhase === 'health' ? null : 'health'
                 )}
                 steps={[
-                  { name: 'DNS Resolution', status: (smokeTestCurrentStep?.stepIndex || 0) >= 1 || smokeTestResult ? 'completed' : smokeTestCurrentStep?.phase === 'health' ? 'running' : 'pending' },
-                  { name: 'SSL Certificate', status: (smokeTestCurrentStep?.stepIndex || 0) >= 1 || smokeTestResult ? 'completed' : 'pending' },
+                  { name: 'DNS Resolution', status: (smokeTest.smokeTestCurrentStep?.stepIndex || 0) >= 1 || smokeTest.smokeTestResult ? 'completed' : smokeTest.smokeTestCurrentStep?.phase === 'health' ? 'running' : 'pending' },
+                  { name: 'SSL Certificate', status: (smokeTest.smokeTestCurrentStep?.stepIndex || 0) >= 1 || smokeTest.smokeTestResult ? 'completed' : 'pending' },
                 ]}
-                animate={smokeTestCurrentStep?.phase === 'health'}
+                animate={smokeTest.smokeTestCurrentStep?.phase === 'health'}
               />
 
               {/* Page Load Wave */}
               <WaveProgressCard
                 status={
-                  smokeTestResult === 'passed' ? 'completed' :
-                  smokeTestResult === 'failed' && smokeTestCurrentStep?.phase === 'validation' ? 'completed' :
-                  smokeTestResult === 'failed' && smokeTestCurrentStep?.phase === 'pageload' ? 'failed' :
-                  smokeTestCurrentStep?.phase === 'pageload' ? 'running' :
-                  (smokeTestCurrentStep?.stepIndex || 0) > 1 ? 'completed' :
+                  smokeTest.smokeTestResult === 'passed' ? 'completed' :
+                  smokeTest.smokeTestResult === 'failed' && smokeTest.smokeTestCurrentStep?.phase === 'validation' ? 'completed' :
+                  smokeTest.smokeTestResult === 'failed' && smokeTest.smokeTestCurrentStep?.phase === 'pageload' ? 'failed' :
+                  smokeTest.smokeTestCurrentStep?.phase === 'pageload' ? 'running' :
+                  (smokeTest.smokeTestCurrentStep?.stepIndex || 0) > 1 ? 'completed' :
                   'waiting' as WaveProgressStatus
                 }
                 icon={FileCheck}
                 title="Page Load"
                 subtitle="HTTP response & timing"
-                expanded={smokeTestExpandedPhase === 'pageload'}
-                onToggle={() => setSmokeTestExpandedPhase(
-                  smokeTestExpandedPhase === 'pageload' ? null : 'pageload'
+                expanded={smokeTest.smokeTestExpandedPhase === 'pageload'}
+                onToggle={() => smokeTest.setSmokeTestExpandedPhase(
+                  smokeTest.smokeTestExpandedPhase === 'pageload' ? null : 'pageload'
                 )}
                 steps={[
-                  { name: 'HTTP Status', status: (smokeTestCurrentStep?.stepIndex || 0) >= 2 || smokeTestResult ? 'completed' : smokeTestCurrentStep?.phase === 'pageload' ? 'running' : 'pending' },
-                  { name: 'Response Time', status: (smokeTestCurrentStep?.stepIndex || 0) >= 2 || smokeTestResult ? 'completed' : 'pending' },
+                  { name: 'HTTP Status', status: (smokeTest.smokeTestCurrentStep?.stepIndex || 0) >= 2 || smokeTest.smokeTestResult ? 'completed' : smokeTest.smokeTestCurrentStep?.phase === 'pageload' ? 'running' : 'pending' },
+                  { name: 'Response Time', status: (smokeTest.smokeTestCurrentStep?.stepIndex || 0) >= 2 || smokeTest.smokeTestResult ? 'completed' : 'pending' },
                 ]}
-                animate={smokeTestCurrentStep?.phase === 'pageload'}
+                animate={smokeTest.smokeTestCurrentStep?.phase === 'pageload'}
               />
 
               {/* Basic Validation Wave */}
               <WaveProgressCard
                 status={
-                  smokeTestResult === 'passed' ? 'completed' :
-                  smokeTestResult === 'failed' && smokeTestCurrentStep?.phase === 'validation' ? 'failed' :
-                  smokeTestCurrentStep?.phase === 'validation' ? 'running' :
+                  smokeTest.smokeTestResult === 'passed' ? 'completed' :
+                  smokeTest.smokeTestResult === 'failed' && smokeTest.smokeTestCurrentStep?.phase === 'validation' ? 'failed' :
+                  smokeTest.smokeTestCurrentStep?.phase === 'validation' ? 'running' :
                   'waiting' as WaveProgressStatus
                 }
                 icon={CheckCircle2}
                 title="Validation"
                 subtitle="Content & structure checks"
-                expanded={smokeTestExpandedPhase === 'validation'}
-                onToggle={() => setSmokeTestExpandedPhase(
-                  smokeTestExpandedPhase === 'validation' ? null : 'validation'
+                expanded={smokeTest.smokeTestExpandedPhase === 'validation'}
+                onToggle={() => smokeTest.setSmokeTestExpandedPhase(
+                  smokeTest.smokeTestExpandedPhase === 'validation' ? null : 'validation'
                 )}
                 steps={[
-                  { name: 'HTML Structure', status: smokeTestResult ? (smokeTestResult === 'passed' ? 'completed' : 'failed') : smokeTestCurrentStep?.phase === 'validation' ? 'running' : 'pending' },
-                  { name: 'Console Errors', status: smokeTestResult ? (smokeTestResult === 'passed' ? 'completed' : 'pending') : 'pending' },
+                  { name: 'HTML Structure', status: smokeTest.smokeTestResult ? (smokeTest.smokeTestResult === 'passed' ? 'completed' : 'failed') : smokeTest.smokeTestCurrentStep?.phase === 'validation' ? 'running' : 'pending' },
+                  { name: 'Console Errors', status: smokeTest.smokeTestResult ? (smokeTest.smokeTestResult === 'passed' ? 'completed' : 'pending') : 'pending' },
                 ]}
-                animate={smokeTestCurrentStep?.phase === 'validation'}
+                animate={smokeTest.smokeTestCurrentStep?.phase === 'validation'}
               />
             </div>
 
             {/* Results Summary */}
-            {smokeTestResult && (
+            {smokeTest.smokeTestResult && (
               <div className={`mt-4 p-3 rounded-lg ${
-                smokeTestResult === 'passed'
+                smokeTest.smokeTestResult === 'passed'
                   ? 'bg-success/10 border border-success/20'
                   : 'bg-destructive/10 border border-destructive/20'
               }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {smokeTestResult === 'passed' ? (
+                    {smokeTest.smokeTestResult === 'passed' ? (
                       <CheckCircle2 className="h-5 w-5 text-success" />
                     ) : (
                       <XCircle className="h-5 w-5 text-destructive" />
                     )}
                     <span className={`font-medium ${
-                      smokeTestResult === 'passed' ? 'text-success' : 'text-destructive'
+                      smokeTest.smokeTestResult === 'passed' ? 'text-success' : 'text-destructive'
                     }`}>
-                      {smokeTestResult === 'passed'
+                      {smokeTest.smokeTestResult === 'passed'
                         ? 'All checks passed!'
                         : 'Some checks failed'
                       }
                     </span>
                   </div>
-                  {smokeTestTestId && (
+                  {smokeTest.smokeTestTestId && (
                     <Link
-                      to={`/tests/${smokeTestTestId}`}
+                      to={`/tests/${smokeTest.smokeTestTestId}`}
                       className="text-sm text-primary hover:underline"
                     >
                       View Details →
@@ -1131,7 +916,7 @@ function ProjectDetailPage() {
                 )}
                 {canCreateSuite && (
                   <button
-                    onClick={() => setShowCreateSuiteModal(true)}
+                    onClick={() => suiteModal.setShowCreateSuiteModal(true)}
                     className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                   >
                     Create Suite
@@ -1142,7 +927,7 @@ function ProjectDetailPage() {
 
             {/* Feature #559: Enhanced empty state with EmptyStates component */}
             {suites.length === 0 ? (
-              EmptyStates.noSuites(canCreateSuite ? () => setShowCreateSuiteModal(true) : undefined)
+              EmptyStates.noSuites(canCreateSuite ? () => suiteModal.setShowCreateSuiteModal(true) : undefined)
             ) : (() => {
               const query = suiteSearchQuery.toLowerCase().trim();
               const filteredSuites = query
@@ -1189,12 +974,12 @@ function ProjectDetailPage() {
             user={user}
             token={token}
             formatDate={formatDate}
-            projectDefaultBrowser={projectDefaultBrowser}
-            setProjectDefaultBrowser={setProjectDefaultBrowser}
-            projectViewportProfiles={projectViewportProfiles}
-            setProjectViewportProfiles={setProjectViewportProfiles}
-            isSavingProjectDefaults={isSavingProjectDefaults}
-            setIsSavingProjectDefaults={setIsSavingProjectDefaults}
+            projectDefaultBrowser={detailModals.projectDefaultBrowser}
+            setProjectDefaultBrowser={detailModals.setProjectDefaultBrowser}
+            projectViewportProfiles={detailModals.projectViewportProfiles}
+            setProjectViewportProfiles={detailModals.setProjectViewportProfiles}
+            isSavingProjectDefaults={detailModals.isSavingProjectDefaults}
+            setIsSavingProjectDefaults={detailModals.setIsSavingProjectDefaults}
             canManageMembers={canManageMembers}
             canManageAlerts={canManageAlerts}
             availableMembers={availableMembers}
@@ -1447,35 +1232,35 @@ function ProjectDetailPage() {
         <ProjectModals
           project={project}
           showAddEnvModal={showAddEnvModal}
-          showDeleteModal={showDeleteModal}
+          showDeleteModal={detailModals.showDeleteModal}
           showCreateAlertModal={showCreateAlertModal}
           showAddMemberModal={showAddMemberModal}
-          showCreateSuiteModal={showCreateSuiteModal}
-          isDeleting={isDeleting}
-          deleteError={deleteError}
-          setShowDeleteModal={setShowDeleteModal}
-          handleDeleteProject={handleDeleteProject}
-          setShowCreateSuiteModal={setShowCreateSuiteModal}
-          newSuiteName={newSuiteName}
-          setNewSuiteName={setNewSuiteName}
-          newSuiteDescription={newSuiteDescription}
-          setNewSuiteDescription={setNewSuiteDescription}
-          newSuiteBrowser={newSuiteBrowser}
-          setNewSuiteBrowser={setNewSuiteBrowser}
-          devicePreset={devicePreset}
-          setDevicePreset={setDevicePreset}
-          handleDevicePresetChange={handleDevicePresetChange}
-          newSuiteViewportWidth={newSuiteViewportWidth}
-          setNewSuiteViewportWidth={setNewSuiteViewportWidth}
-          newSuiteViewportHeight={newSuiteViewportHeight}
-          setNewSuiteViewportHeight={setNewSuiteViewportHeight}
-          newSuiteTimeout={newSuiteTimeout}
-          setNewSuiteTimeout={setNewSuiteTimeout}
-          newSuiteRetryCount={newSuiteRetryCount}
-          setNewSuiteRetryCount={setNewSuiteRetryCount}
-          isCreatingSuite={isCreatingSuite}
-          createSuiteError={createSuiteError}
-          handleCreateSuite={handleCreateSuite}
+          showCreateSuiteModal={suiteModal.showCreateSuiteModal}
+          isDeleting={detailModals.isDeleting}
+          deleteError={detailModals.deleteError}
+          setShowDeleteModal={detailModals.setShowDeleteModal}
+          handleDeleteProject={detailModals.handleDeleteProject}
+          setShowCreateSuiteModal={suiteModal.setShowCreateSuiteModal}
+          newSuiteName={suiteModal.newSuiteName}
+          setNewSuiteName={suiteModal.setNewSuiteName}
+          newSuiteDescription={suiteModal.newSuiteDescription}
+          setNewSuiteDescription={suiteModal.setNewSuiteDescription}
+          newSuiteBrowser={suiteModal.newSuiteBrowser}
+          setNewSuiteBrowser={suiteModal.setNewSuiteBrowser}
+          devicePreset={suiteModal.devicePreset}
+          setDevicePreset={suiteModal.setDevicePreset}
+          handleDevicePresetChange={suiteModal.handleDevicePresetChange}
+          newSuiteViewportWidth={suiteModal.newSuiteViewportWidth}
+          setNewSuiteViewportWidth={suiteModal.setNewSuiteViewportWidth}
+          newSuiteViewportHeight={suiteModal.newSuiteViewportHeight}
+          setNewSuiteViewportHeight={suiteModal.setNewSuiteViewportHeight}
+          newSuiteTimeout={suiteModal.newSuiteTimeout}
+          setNewSuiteTimeout={suiteModal.setNewSuiteTimeout}
+          newSuiteRetryCount={suiteModal.newSuiteRetryCount}
+          setNewSuiteRetryCount={suiteModal.setNewSuiteRetryCount}
+          isCreatingSuite={suiteModal.isCreatingSuite}
+          createSuiteError={suiteModal.createSuiteError}
+          handleCreateSuite={suiteModal.handleCreateSuite}
           availableMembers={availableMembers}
           settingsState={settingsState}
           settingsHandlers={settingsHandlers}
