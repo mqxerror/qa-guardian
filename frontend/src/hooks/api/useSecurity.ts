@@ -188,8 +188,6 @@ export const securityKeys = {
   // Feature #83: Dependency page keys
   alertsConfig: () => [...securityKeys.all, 'alertsConfig'] as const,
   alerts: () => [...securityKeys.all, 'alerts'] as const,
-  ageConfig: () => [...securityKeys.all, 'ageConfig'] as const,
-  dependencies: (projectId: string) => [...securityKeys.all, 'dependencies', projectId] as const,
   policies: () => [...securityKeys.all, 'policies'] as const,
   violations: () => [...securityKeys.all, 'violations'] as const,
   vulnerabilityHistory: (projectId: string) => [...securityKeys.all, 'vulnerabilityHistory', projectId] as const,
@@ -415,60 +413,6 @@ export function useDismissAlert() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: securityKeys.alerts() });
-    },
-  });
-}
-
-// ============== Dependency Age Hooks ==============
-
-/**
- * Hook to fetch dependency age config
- */
-export function useAgeConfig() {
-  const token = useAuthStore(state => state.token);
-
-  return useQuery({
-    queryKey: securityKeys.ageConfig(),
-    queryFn: () => fetchWithAuth('/api/v1/organization/dependency-age/config', token),
-    enabled: !!token,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 2 * 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
-  });
-}
-
-/**
- * Hook to fetch project dependencies
- */
-export function useProjectDependencies(projectId: string) {
-  const token = useAuthStore(state => state.token);
-
-  return useQuery({
-    queryKey: securityKeys.dependencies(projectId),
-    queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/projects/${projectId}/dependencies`, token) as { dependencies?: unknown[] };
-      return data.dependencies || [];
-    },
-    enabled: !!token && !!projectId,
-    staleTime: 60 * 1000, // 1 minute
-    gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
-  });
-}
-
-/**
- * Hook to update age config
- */
-export function useUpdateAgeConfig() {
-  const token = useAuthStore(state => state.token);
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (config: Record<string, unknown>) =>
-      fetchWithAuth('/api/v1/organization/dependency-age/config', token, {
-        method: 'PUT',
-        body: JSON.stringify(config),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: securityKeys.ageConfig() });
     },
   });
 }

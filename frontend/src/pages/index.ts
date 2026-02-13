@@ -31,7 +31,6 @@ export { LicenseCompliancePage } from './LicenseCompliancePage';
 export { SbomPage } from './SbomPage';
 export { ContainerScanPage } from './ContainerScanPage';
 export { DependencyPolicyPage } from './DependencyPolicyPage';
-export { DependencyAgePage } from './DependencyAgePage';
 export { MultiLanguageDependencyPage } from './MultiLanguageDependencyPage';
 export { VulnerabilityHistoryPage } from './VulnerabilityHistoryPage';
 export { ScanCachingPage } from './ScanCachingPage';

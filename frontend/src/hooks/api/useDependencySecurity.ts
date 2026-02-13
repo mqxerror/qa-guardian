@@ -155,49 +155,6 @@ export interface AlertSummary {
 }
 
 // ============================================================================
-// Types - DependencyAgePage
-// ============================================================================
-
-export interface DependencyAgeConfig {
-  outdated_threshold_days: number;
-  critical_age_days: number;
-  track_direct_only: boolean;
-  notify_on_outdated: boolean;
-  auto_flag_outdated: boolean;
-}
-
-export interface ProjectDependency {
-  id: string;
-  project_id: string;
-  name: string;
-  current_version: string;
-  latest_version: string;
-  current_release_date: string;
-  latest_release_date: string;
-  age_days: number;
-  versions_behind: number;
-  is_direct: boolean;
-  license: string;
-  status: 'current' | 'outdated' | 'critical' | 'up_to_date';
-  has_vulnerability: boolean;
-  vulnerability_count: number;
-  last_checked: string;
-}
-
-export interface DependencySummary {
-  total: number;
-  up_to_date: number;
-  current: number;
-  outdated: number;
-  critical: number;
-  with_vulnerabilities: number;
-  direct: number;
-  transitive: number;
-  average_age_days: number;
-  oldest_days: number;
-}
-
-// ============================================================================
 // Types - AutoPRPage
 // ============================================================================
 
@@ -349,10 +306,6 @@ export const dependencySecurityKeys = {
   // Alerts keys
   alertConfig: ['dependency-alerts', 'config'] as const,
   alerts: ['dependency-alerts'] as const,
-
-  // Age tracking keys
-  ageConfig: ['dependency-age', 'config'] as const,
-  dependencies: (projectId: string) => ['dependencies', projectId] as const,
 
   // Auto-PR keys
   autoPRConfig: ['auto-pr', 'config'] as const,
@@ -609,82 +562,6 @@ export function useUpdateAlertStatus() {
 }
 
 // ============================================================================
-// Hooks - DependencyAgePage
-// ============================================================================
-
-export function useDependencyAgeConfig() {
-  const token = useAuthStore(state => state.token);
-
-  return useQuery({
-    queryKey: dependencySecurityKeys.ageConfig,
-    queryFn: async () => {
-      const response = await fetchWithAuth<{ config: DependencyAgeConfig }>(
-        '/api/v1/organization/dependency-age/config',
-        token
-      );
-      return response;
-    },
-    enabled: !!token,
-  });
-}
-
-export function useProjectDependencies(projectId: string) {
-  const token = useAuthStore(state => state.token);
-
-  return useQuery({
-    queryKey: dependencySecurityKeys.dependencies(projectId),
-    queryFn: async () => {
-      const response = await fetchWithAuth<{ dependencies: ProjectDependency[]; summary: DependencySummary }>(
-        `/api/v1/projects/${projectId}/dependencies`,
-        token
-      );
-      return response;
-    },
-    enabled: !!token && !!projectId,
-  });
-}
-
-export function useUpdateDependencyAgeConfig() {
-  const token = useAuthStore(state => state.token);
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (config: Partial<DependencyAgeConfig>) => {
-      const response = await fetchWithAuth<{ config: DependencyAgeConfig }>(
-        '/api/v1/organization/dependency-age/config',
-        token,
-        {
-          method: 'PATCH',
-          body: JSON.stringify(config),
-        }
-      );
-      return response;
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(dependencySecurityKeys.ageConfig, { config: data.config });
-    },
-  });
-}
-
-export function useRefreshDependencies(projectId: string) {
-  const token = useAuthStore(state => state.token);
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async () => {
-      await fetchWithAuth(
-        `/api/v1/projects/${projectId}/dependencies/refresh`,
-        token,
-        { method: 'POST' }
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dependencySecurityKeys.dependencies(projectId) });
-    },
-  });
-}
-
-// ============================================================================
 // Hooks - AutoPRPage
 // ============================================================================
 
@@ -846,8 +723,6 @@ export function useInvalidateDependencySecurity() {
     invalidateViolations: () => queryClient.invalidateQueries({ queryKey: dependencySecurityKeys.violations }),
     invalidateAlerts: () => queryClient.invalidateQueries({ queryKey: dependencySecurityKeys.alerts }),
     invalidateAlertConfig: () => queryClient.invalidateQueries({ queryKey: dependencySecurityKeys.alertConfig }),
-    invalidateDependencies: (projectId: string) => queryClient.invalidateQueries({ queryKey: dependencySecurityKeys.dependencies(projectId) }),
-    invalidateAgeConfig: () => queryClient.invalidateQueries({ queryKey: dependencySecurityKeys.ageConfig }),
     invalidateAutoPRs: () => queryClient.invalidateQueries({ queryKey: dependencySecurityKeys.autoPRs }),
     invalidateAutoPRConfig: () => queryClient.invalidateQueries({ queryKey: dependencySecurityKeys.autoPRConfig }),
     invalidateNpmAudit: (projectId: string, includeDev: boolean) =>
@@ -856,9 +731,7 @@ export function useInvalidateDependencySecurity() {
       queryClient.invalidateQueries({ queryKey: ['dependency-policies'] });
       queryClient.invalidateQueries({ queryKey: ['dependency-violations'] });
       queryClient.invalidateQueries({ queryKey: ['dependency-alerts'] });
-      queryClient.invalidateQueries({ queryKey: ['dependency-age'] });
       queryClient.invalidateQueries({ queryKey: ['auto-pr'] });
-      queryClient.invalidateQueries({ queryKey: ['dependencies'] });
       queryClient.invalidateQueries({ queryKey: ['npm-audit'] });
     },
   };

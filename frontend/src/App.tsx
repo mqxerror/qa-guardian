@@ -44,7 +44,6 @@ const ContainerScanPage = lazy(() => import('./pages/ContainerScanPage').then(m 
 const UpgradeRecommendationsPage = lazy(() => import('./pages/UpgradeRecommendationsPage').then(m => ({ default: m.UpgradeRecommendationsPage })));
 const DependencyTreePage = lazy(() => import('./pages/DependencyTreePage').then(m => ({ default: m.DependencyTreePage })));
 const DependencyPolicyPage = lazy(() => import('./pages/DependencyPolicyPage').then(m => ({ default: m.DependencyPolicyPage })));
-const DependencyAgePage = lazy(() => import('./pages/DependencyAgePage').then(m => ({ default: m.DependencyAgePage })));
 const MultiLanguageDependencyPage = lazy(() => import('./pages/MultiLanguageDependencyPage').then(m => ({ default: m.MultiLanguageDependencyPage })));
 const VulnerabilityHistoryPage = lazy(() => import('./pages/VulnerabilityHistoryPage').then(m => ({ default: m.VulnerabilityHistoryPage })));
 const ScanCachingPage = lazy(() => import('./pages/ScanCachingPage').then(m => ({ default: m.ScanCachingPage })));
@@ -426,16 +425,6 @@ function App() {
             <ProtectedRoute>
               <PageErrorBoundary>
                 <DependencyPolicyPage />
-              </PageErrorBoundary>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/security/dependency-age"
-          element={
-            <ProtectedRoute>
-              <PageErrorBoundary>
-                <DependencyAgePage />
               </PageErrorBoundary>
             </ProtectedRoute>
           }

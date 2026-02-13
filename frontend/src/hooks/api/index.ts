@@ -228,11 +228,6 @@ export {
   useUpdateDependencyAlertConfig,
   useSimulateCVE,
   useUpdateAlertStatus,
-  // Dependency Age hooks
-  useDependencyAgeConfig,
-  useProjectDependencies,
-  useUpdateDependencyAgeConfig,
-  useRefreshDependencies,
   // Auto-PR hooks
   useAutoPRConfig,
   useAutoPRs,
@@ -254,9 +249,6 @@ export {
   type DependencyAlertConfig,
   type CVEAlert,
   type AlertSummary,
-  type DependencyAgeConfig,
-  type ProjectDependency,
-  type DependencySummary,
   type AutoPRConfig,
   type AutoPR,
   type AutoPRSummary,
