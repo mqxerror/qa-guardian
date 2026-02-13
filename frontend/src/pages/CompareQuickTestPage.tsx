@@ -21,6 +21,7 @@ import {
   AnimatedCard,
   CardContent,
 } from '../components/ui';
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { Button } from '@/components/ui/button';
 import {
   // Zap, // Unused
@@ -625,6 +626,15 @@ export function CompareQuickTestPage() {
             </div>
           </CardContent>
         </AnimatedCard>
+
+        {/* Empty State when no comparison started */}
+        {!state.compareId && (
+          <EmptyState
+            icon={EmptyStateIcons.analytics}
+            title="No comparison results yet"
+            description="Enter two URLs above and click Compare to see side-by-side results."
+          />
+        )}
 
         {/* URL Labels when running */}
         {state.compareId && (

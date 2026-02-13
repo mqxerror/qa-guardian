@@ -24,6 +24,7 @@ import { Sparkles, AlertTriangle, AlertCircle, Info, ChevronDown, ChevronUp, Loa
 // Feature #554: Standardized PageHeader with breadcrumbs
 // Feature #556: ScoreTrendChart replaces inline recharts chart
 import { PageHeader, ScoreTrendChart } from '../components/ui';
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 // Feature #546: WebSocket-based suite run tracking (replaces HTTP polling + separate socket)
 import { useSuiteRunSocket, type LiveScreenshot, type ScreenshotHistoryEntry, type SuiteRun as SuiteRunSocket } from '../hooks/useSuiteRunSocket';
 // Feature #59: React Query hooks for paginated test loading
@@ -1249,31 +1250,39 @@ function TestSuitePage() {
         />
 
         {/* Tests List - Feature #50: Extracted to TestListSection component */}
-        <TestListSection
-          tests={tests}
-          filteredTests={filteredTests}
-          sortedTests={sortedTests}
-          searchQuery={searchQuery}
-          sortField={sortField}
-          sortDirection={sortDirection}
-          suiteRun={suiteRun}
-          openActionsDropdown={openActionsDropdown}
-          runningTestId={runningTestId}
-          canCreateTest={canCreateTest}
-          onSearchChange={setSearchQuery}
-          onSort={handleSort}
-          onOpenCreateTestModal={() => setShowNewCreateTestModal(true)}
-          onSetActionsDropdown={setOpenActionsDropdown}
-          onRunSingleTest={handleRunSingleTest}
-          onDuplicateTest={handleDuplicateTest}
-          onShowTemplateModal={(testId) => {
-            setInsertTemplateForTest(testId);
-            setShowTemplateModal(true);
-          }}
-          onShowDeleteTestModal={setShowDeleteTestModal}
-          loadStepTemplates={loadStepTemplates}
-          onEditTest={(test) => setEditingTest(test)}
-        />
+        {tests.length === 0 && !testsLoading ? (
+          <EmptyState
+            icon={EmptyStateIcons.test}
+            title="No tests in this suite"
+            description="Create your first test using the test builder, recorder, or AI generator."
+          />
+        ) : (
+          <TestListSection
+            tests={tests}
+            filteredTests={filteredTests}
+            sortedTests={sortedTests}
+            searchQuery={searchQuery}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            suiteRun={suiteRun}
+            openActionsDropdown={openActionsDropdown}
+            runningTestId={runningTestId}
+            canCreateTest={canCreateTest}
+            onSearchChange={setSearchQuery}
+            onSort={handleSort}
+            onOpenCreateTestModal={() => setShowNewCreateTestModal(true)}
+            onSetActionsDropdown={setOpenActionsDropdown}
+            onRunSingleTest={handleRunSingleTest}
+            onDuplicateTest={handleDuplicateTest}
+            onShowTemplateModal={(testId) => {
+              setInsertTemplateForTest(testId);
+              setShowTemplateModal(true);
+            }}
+            onShowDeleteTestModal={setShowDeleteTestModal}
+            loadStepTemplates={loadStepTemplates}
+            onEditTest={(test) => setEditingTest(test)}
+          />
+        )}
 
         {/* Feature #59: Pagination controls for tests */}
         {pagination && pagination.totalPages > 1 && (

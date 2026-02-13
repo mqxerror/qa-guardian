@@ -18,6 +18,7 @@ import {
   useReducedMotion,
   CardContent,
 } from '../components/ui';
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 // Feature #468: Quality Health summary card
 import { QualityHealthCard } from '../components/dashboard';
 import {
@@ -39,7 +40,6 @@ import {
   BarChart3,
   MessageCircle,
   AlertTriangle,
-  TrendingUp,
   Clock,
   ArrowRight,
   RefreshCw,
@@ -231,11 +231,12 @@ export function DashboardPage() {
             {trendsLoading ? (
               <div className="h-48 bg-muted/50 rounded-lg animate-pulse" />
             ) : trendPoints.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
-                <TrendingUp className="h-10 w-10 mb-2 opacity-40" />
-                <p className="text-sm">No trend data available yet</p>
-                <p className="text-xs mt-1">Run some tests to start seeing trends</p>
-              </div>
+              <EmptyState
+                icon={EmptyStateIcons.analytics}
+                title="No trend data yet"
+                description="Run tests to see pass rate trends here."
+                size="sm"
+              />
             ) : (
               <div className="space-y-3">
                 {/* Summary bar */}
@@ -337,11 +338,12 @@ export function DashboardPage() {
           />
 
           {!needsAttention ? (
-            <div className="rounded-xl border border-border bg-card p-8 text-center">
-              <CheckCircle2 className="h-12 w-12 mx-auto text-success mb-3" />
-              <p className="text-foreground font-medium">All clear!</p>
-              <p className="text-sm text-muted-foreground mt-1">No recent failures or flaky tests detected.</p>
-            </div>
+            <EmptyState
+              icon={EmptyStateIcons.run}
+              title="All clear!"
+              description="No recent test failures detected."
+              size="sm"
+            />
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
               {/* Recent Failures */}
@@ -365,10 +367,12 @@ export function DashboardPage() {
                 </div>
                 <div className="divide-y divide-border">
                   {recentFailures.length === 0 ? (
-                    <div className="p-6 text-center text-sm text-muted-foreground">
-                      <CheckCircle2 className="h-8 w-8 mx-auto text-success mb-2 opacity-60" />
-                      No recent failures
-                    </div>
+                    <EmptyState
+                      icon={EmptyStateIcons.run}
+                      title="All clear!"
+                      description="No recent test failures detected."
+                      size="sm"
+                    />
                   ) : (
                     recentFailures.map((run: {
                       id: string;
@@ -432,10 +436,12 @@ export function DashboardPage() {
                 </div>
                 <div className="divide-y divide-border">
                   {topFlakyTests.length === 0 ? (
-                    <div className="p-6 text-center text-sm text-muted-foreground">
-                      <CheckCircle2 className="h-8 w-8 mx-auto text-success mb-2 opacity-60" />
-                      No flaky tests detected
-                    </div>
+                    <EmptyState
+                      icon={EmptyStateIcons.test}
+                      title="No flaky tests detected"
+                      description="Great news! No tests are showing flaky behavior."
+                      size="sm"
+                    />
                   ) : (
                     topFlakyTests.map((test: {
                       test_id: string;

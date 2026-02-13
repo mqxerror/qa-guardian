@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Button } from '@/components/ui/button';
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 // Feature #690: React Query hooks for data fetching
 // Feature #712: Added useStatusVerify to eliminate raw fetch()
 import { usePublicStatus, useStatusSubscribe, useStatusVerify } from '../hooks/api/useMonitoring';
@@ -261,9 +262,7 @@ export function PublicStatusPage() {
           </div>
           <div className="divide-y divide-border">
             {statusData.checks.length === 0 ? (
-              <div className="p-6 text-center text-muted-foreground">
-                No services configured for this status page
-              </div>
+              <EmptyState icon={EmptyStateIcons.security} title="No services configured" description="Configure monitoring services to display their status here." size="sm" />
             ) : (
               statusData.checks.map(check => (
                 <div key={check.id} className="px-4 py-4 flex items-center justify-between">

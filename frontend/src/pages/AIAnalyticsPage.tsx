@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 // Feature #691: Migrated budget modal to shared Modal component
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { fetchWithAuth } from '../hooks/api/fetchWithAuth';
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
 // Feature #317: API base URL from environment
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -271,6 +272,12 @@ export function AIAnalyticsPage() {
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
+        ) : !analytics ? (
+          <EmptyState
+            icon={EmptyStateIcons.analytics}
+            title="No AI usage data"
+            description="AI usage analytics will appear here once AI features are used."
+          />
         ) : (
           <>
             {/* Savings Banner (always visible) */}

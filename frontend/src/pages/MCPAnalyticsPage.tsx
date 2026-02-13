@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { Zap, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
 import type { MCPUsageStats, MCPTimeSeriesData } from '@/types/mcp';
 
@@ -49,11 +50,19 @@ export function MCPAnalyticsPage() {
  }
  }
 
- // Fallback to mock data
- generateMockData();
+ // No usage data available
+ setToolStats([]);
+ setTimeSeriesData([]);
+ setTotalCalls(0);
+ setTotalErrors(0);
+ setAvgResponseTime(0);
  } catch (err) {
  console.error('Failed to fetch MCP analytics:', err);
- generateMockData();
+ setToolStats([]);
+ setTimeSeriesData([]);
+ setTotalCalls(0);
+ setTotalErrors(0);
+ setAvgResponseTime(0);
  } finally {
  setIsLoading(false);
  }
@@ -127,39 +136,6 @@ export function MCPAnalyticsPage() {
  setTimeSeriesData(data);
  };
 
- const generateMockData = () => {
- // Mock tool stats
- const mockTools = [
- 'get_run_status', 'trigger_test_run', 'analyze_failure', 'list_projects',
- 'get_test_results', 'run_test', 'validate_api_key', 'list_all_tools',
- 'get_flaky_tests', 'get_help', 'create_project', 'run_suite'
- ];
-
- const stats: MCPUsageStats[] = mockTools.map(name => {
- const count = Math.floor(5 + Math.random() * 50);
- return {
- tool_name: name,
- call_count: count,
- success_count: Math.floor(count * (0.85 + Math.random() * 0.14)),
- error_count: Math.floor(count * (0.01 + Math.random() * 0.1)),
- avg_duration_ms: Math.floor(20 + Math.random() * 300),
- last_used: new Date(Date.now() - Math.floor(Math.random() * 86400000)).toISOString(),
- };
- });
-
- setToolStats(stats.sort((a, b) => b.call_count - a.call_count));
-
- const total = stats.reduce((sum, s) => sum + s.call_count, 0);
- const errors = stats.reduce((sum, s) => sum + s.error_count, 0);
- const avgTime = stats.reduce((sum, s) => sum + s.avg_duration_ms, 0) / stats.length;
-
- setTotalCalls(total);
- setTotalErrors(errors);
- setAvgResponseTime(Math.round(avgTime));
-
- generateTimeSeriesData();
- };
-
  fetchAnalytics();
  }, [selectedPeriod]);
 
@@ -200,6 +176,12 @@ export function MCPAnalyticsPage() {
  <div className="flex justify-center py-12">
  <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
  </div>
+ ) : toolStats.length === 0 ? (
+ <EmptyState
+ icon={EmptyStateIcons.analytics}
+ title="No MCP usage data"
+ description="MCP tool usage analytics will appear here once tools are invoked."
+ />
  ) : (
  <>
  {/* Stats Cards */}
