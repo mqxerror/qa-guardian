@@ -10,7 +10,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
-import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites.js';
+import { getTest, getTestSuite, getTestsMap, getTestSuitesMap, getTestsMapByOrg, getTestSuitesMapByOrg, batchGetTests, batchGetTestSuites } from '../test-suites.js';
 import { getProject as dbGetProject } from '../projects/stores.js';
 import {
   BaselineMetadata,
@@ -233,9 +233,9 @@ export async function visualBatchRoutes(app: FastifyInstance) {
       }
     }
 
-    // Batch fetch tests and suites
-    const testsMap = await getTestsMap();
-    const suitesMap = await getTestSuitesMap();
+    // Feature #707: Batch fetch only needed tests and suites using collected IDs
+    const testsMap = await batchGetTests([...testIds]);
+    const suitesMap = await batchGetTestSuites([...suiteIds]);
 
     // 3. Count pending changes efficiently
     for (const run of failedRunsWithVisual) {
@@ -294,17 +294,12 @@ export async function visualBatchRoutes(app: FastifyInstance) {
         suiteId = test.suite_id;
       }
     } else {
-      // Otherwise find the first visual regression test
-      for (const [testId, test] of (await getTestsMap())) {
-        if (test.organization_id === orgId && test.test_type === 'visual_regression') {
+      // Feature #707: Use org-filtered version to avoid full table scan
+      // Find the first visual regression test in this org
+      for (const [testId, test] of (await getTestsMapByOrg(orgId))) {
+        if (test.test_type === 'visual_regression') {
           visualTestId = testId;
-          // Find the suite
-          for (const [sid, suite] of (await getTestSuitesMap())) {
-            if (suite.id === test.suite_id) {
-              suiteId = sid;
-              break;
-            }
-          }
+          suiteId = test.suite_id;
           break;
         }
       }

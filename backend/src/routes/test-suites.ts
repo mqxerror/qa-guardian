@@ -36,6 +36,9 @@ export {
   // Feature #706: Batch functions to eliminate N+1 queries
   batchGetTests,
   batchGetTestSuites,
+  // Feature #707: Org-filtered map functions to fix full table scans
+  getTestSuitesMapByOrg,
+  getTestsMapByOrg,
 } from './test-suites/stores.js';
 
 // Re-export utility functions

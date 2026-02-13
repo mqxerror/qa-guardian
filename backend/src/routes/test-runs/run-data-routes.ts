@@ -6,7 +6,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
-import { getTest, getTestSuite, getTestsMap } from '../test-suites.js';
+import { getTest, getTestSuite, getTestsMap, batchGetTests } from '../test-suites.js';
 import { getProjectEnvVars } from '../projects.js';
 import { EnvironmentVariable } from '../projects/types.js';
 import { testRuns, TestRun, ConsoleLog, NetworkRequest } from './execution.js';
@@ -514,10 +514,14 @@ export async function runDataRoutes(app: FastifyInstance) {
       viewport: { width: 1280, height: 720 },
     };
 
+    // Feature #707: Batch fetch all tests for this run to avoid N+1 queries
+    const testIds = results.map(r => r.test_id);
+    const allTests = await batchGetTests(testIds);
+
     // Test type breakdown
     const testTypeBreakdown: Record<string, { count: number; passed: number; failed: number }> = {};
     for (const result of results) {
-      const testInfo = await getTest(result.test_id) as Test | null;
+      const testInfo = allTests.get(result.test_id);
       const testType = testInfo?.test_type || 'e2e';
       if (!testTypeBreakdown[testType]) {
         testTypeBreakdown[testType] = { count: 0, passed: 0, failed: 0 };
@@ -530,8 +534,7 @@ export async function runDataRoutes(app: FastifyInstance) {
       }
     }
 
-    // Slowest tests
-    const allTests = await getTestsMap();
+    // Slowest tests (reuse allTests from above)
     const slowestTests = results
       .filter(r => r.duration_ms !== undefined)
       .sort((a, b) => (b.duration_ms || 0) - (a.duration_ms || 0))

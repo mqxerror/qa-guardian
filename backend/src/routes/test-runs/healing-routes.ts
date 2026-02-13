@@ -10,7 +10,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
-import { getTest, getTestSuite, getTestsMap, updateTest } from '../test-suites.js';
+import { getTest, getTestSuite, getTestsMap, getTestsMapByOrg, updateTest } from '../test-suites.js';
 import { TestStep } from '../test-suites/types.js';
 // Type-only imports (required for ESM compatibility)
 import type {
@@ -647,9 +647,9 @@ export async function healingRoutes(app: FastifyInstance) {
 
     const fragilityReport: SelectorFragilityInfo[] = [];
 
+    // Feature #707: Use org-filtered version to avoid full table scan
     // Iterate through all tests for the organization
-    for (const [testId, test] of (await getTestsMap()).entries()) {
-      if (test.organization_id !== orgId) continue;
+    for (const [testId, test] of (await getTestsMapByOrg(orgId)).entries()) {
 
       // Filter by project if specified
       if (project_id) {

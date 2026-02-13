@@ -7,7 +7,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
-import { getTest, getTestSuite, getTestsMap, getTestSuitesMap } from '../test-suites.js';
+import { getTest, getTestSuite, getTestsMap, getTestSuitesMap, getTestsMapByOrg, getTestSuitesMapByOrg, listTests, batchGetTests, batchGetTestSuites } from '../test-suites.js';
 import { testRuns, runningBrowsers, TestRun, TestRunResult, TestRunStatus } from './execution.js';
 // BrowserType available from execution.js if needed
 
@@ -255,7 +255,8 @@ export async function runCoreRoutes(app: FastifyInstance) {
       const test = await getTest(run.test_id);
       if (test) testsToRun = [test];
     } else if (run.suite_id) {
-      testsToRun = Array.from((await getTestsMap()).values()).filter(t => t.suite_id === run.suite_id);
+      // Feature #707: Use listTests() instead of full table scan + filter
+      testsToRun = await listTests(run.suite_id);
     }
 
     const totalTests = testsToRun.length;
@@ -472,9 +473,13 @@ export async function runCoreRoutes(app: FastifyInstance) {
       await cache.set(cacheKey, result, CacheTTL.SHORT);
     }
 
-    // Map to response format with suite/test names
-    const allSuites = await getTestSuitesMap();
-    const allTests = await getTestsMap();
+    // Feature #707: Use batch functions instead of full table scans
+    // Collect unique IDs from the runs to batch fetch only needed records
+    type RunData = { suite_id: string; test_id?: string };
+    const suiteIds = Array.from(new Set((result.data as RunData[]).map(r => r.suite_id)));
+    const testIds = Array.from(new Set((result.data as RunData[]).filter(r => r.test_id).map(r => r.test_id as string)));
+    const allSuites = await batchGetTestSuites(suiteIds);
+    const allTests = await batchGetTests(testIds);
     // Helper to safely convert date to ISO string
     const toISOString = (date: Date | string | null | undefined): string | null => {
       if (!date) return null;

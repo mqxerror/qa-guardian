@@ -828,3 +828,75 @@ export async function getTestsMap(): Promise<Map<string, Test>> {
 
 // Feature #2101: Removed deprecated getMemoryTestSuites() and getMemoryTests()
 // Use async functions: getTestSuitesMap(), getTestsMap(), or individual CRUD operations
+
+// ===== ORGANIZATION-FILTERED MAP FUNCTIONS (Feature #707) =====
+
+/**
+ * Feature #707: Get test suites for an organization as a Map
+ * Fixes full table scan issue in getTestSuitesMap() by filtering at DB level
+ * @param organizationId Organization ID to filter by
+ * @param limit Maximum number of suites to return (default 1000)
+ * @returns Map of suite ID to TestSuite object
+ */
+export async function getTestSuitesMapByOrg(organizationId: string, limit: number = 1000): Promise<Map<string, TestSuite>> {
+  const map = new Map<string, TestSuite>();
+
+  if (!isDatabaseConnected()) {
+    for (const [id, suite] of memTestSuites) {
+      if (suite.organization_id === organizationId) {
+        map.set(id, suite);
+      }
+    }
+    return map;
+  }
+
+  const result = await query<TestSuiteRow>(
+    `SELECT ${TEST_SUITE_COLUMNS} FROM test_suites WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
+    [organizationId, limit]
+  );
+  if (result) {
+    for (const row of result.rows) {
+      const suite = rowToTestSuite(row);
+      map.set(row.id, suite);
+    }
+  }
+  return map;
+}
+
+/**
+ * Feature #707: Get tests for an organization as a Map
+ * Fixes full table scan issue in getTestsMap() by filtering at DB level
+ * @param organizationId Organization ID to filter by
+ * @param limit Maximum number of tests to return (default 1000)
+ * @returns Map of test ID to Test object
+ */
+export async function getTestsMapByOrg(organizationId: string, limit: number = 1000): Promise<Map<string, Test>> {
+  const map = new Map<string, Test>();
+
+  if (!isDatabaseConnected()) {
+    for (const [id, test] of memTests) {
+      if (test.organization_id === organizationId) {
+        map.set(id, test);
+      }
+    }
+    return map;
+  }
+
+  const result = await query<TestWithSuiteRow>(
+    `SELECT t.*, ts.config as suite_config FROM tests t
+     INNER JOIN test_suites ts ON t.suite_id = ts.id
+     WHERE ts.organization_id = $1
+     ORDER BY t.created_at DESC
+     LIMIT $2`,
+    [organizationId, limit]
+  );
+  if (result) {
+    for (const row of result.rows) {
+      const suiteConfig = safeJsonParseOrPassthrough(row.suite_config, {} as Record<string, unknown>);
+      const orgId = (suiteConfig?.organization_id as string) || organizationId;
+      const test = rowToTest(row, orgId);
+      map.set(row.id, test);
+    }
+  }
+  return map;
+}

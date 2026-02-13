@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import archiver from 'archiver';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
-import { getTestSuite, getTestSuitesMap } from '../test-suites.js';
+import { getTestSuite, getTestSuitesMap, getTestSuitesMapByOrg, batchGetTestSuites } from '../test-suites.js';
 import { getProject as dbGetProject } from '../projects/stores.js';
 import { TRACES_DIR, VIDEOS_DIR } from './storage.js';
 import { listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
@@ -1368,13 +1368,12 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     let totalVideos = 0;
     let totalTraces = 0;
 
+    // Feature #707: Use org-filtered version to avoid full table scan
     const projectMap = new Map<string, string>();
-    for (const [, suite] of (await getTestSuitesMap())) {
-      if (suite.organization_id === orgId) {
-        const project = await dbGetProject(suite.project_id);
-        if (project) {
-          projectMap.set(suite.project_id, project.name);
-        }
+    for (const [, suite] of (await getTestSuitesMapByOrg(orgId))) {
+      const project = await dbGetProject(suite.project_id);
+      if (project) {
+        projectMap.set(suite.project_id, project.name);
       }
     }
 

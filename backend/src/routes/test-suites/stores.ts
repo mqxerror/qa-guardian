@@ -27,6 +27,9 @@ import {
   // Feature #139: Batch functions to eliminate N+1 queries
   batchGetTests as dbBatchGetTests,
   batchGetTestSuites as dbBatchGetTestSuites,
+  // Feature #707: Org-filtered map functions to fix full table scans
+  getTestSuitesMapByOrg as dbGetTestSuitesMapByOrg,
+  getTestsMapByOrg as dbGetTestsMapByOrg,
 } from '../../services/repositories/test-suites.js';
 
 // ===== ASYNC DATABASE FUNCTIONS =====
@@ -56,3 +59,7 @@ export { getTestSuitesMap, getTestsMap };
 // Feature #139: Batch functions to eliminate N+1 queries
 export const batchGetTests = dbBatchGetTests;
 export const batchGetTestSuites = dbBatchGetTestSuites;
+
+// Feature #707: Org-filtered map functions to fix full table scans
+export const getTestSuitesMapByOrg = dbGetTestSuitesMapByOrg;
+export const getTestsMapByOrg = dbGetTestsMapByOrg;
