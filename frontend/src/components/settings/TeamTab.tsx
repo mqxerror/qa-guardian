@@ -35,12 +35,14 @@ export function TeamTab() {
   const canManageMembers = user?.role === 'owner' || user?.role === 'admin';
 
   // Feature #80: React Query hooks for team data
-  const { data: members = [], isLoading: isLoadingMembers } = useMembers(1);
-  const { data: pendingInvitations = [] } = useInvitations(1);
-  const sendInvitationMutation = useSendInvitation(1);
-  const cancelInvitationMutation = useCancelInvitation(1);
-  const removeMemberMutation = useRemoveMember(1);
-  const updateRoleMutation = useUpdateMemberRole(1);
+  // Feature #734: Use actual organization UUID instead of hardcoded '1'
+  const orgId = user?.organization_id;
+  const { data: members = [], isLoading: isLoadingMembers } = useMembers(orgId);
+  const { data: pendingInvitations = [] } = useInvitations(orgId);
+  const sendInvitationMutation = useSendInvitation(orgId);
+  const cancelInvitationMutation = useCancelInvitation(orgId);
+  const removeMemberMutation = useRemoveMember(orgId);
+  const updateRoleMutation = useUpdateMemberRole(orgId);
 
   const isInviting = sendInvitationMutation.isPending;
   const isRemoving = removeMemberMutation.isPending;

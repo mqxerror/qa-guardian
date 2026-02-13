@@ -106,16 +106,18 @@ export const settingsKeys = {
 /**
  * Hook to fetch organization members
  */
-export function useMembers(orgId: string | number = 1) {
+export function useMembers(orgId?: string | number) {
   const token = useAuthStore(state => state.token);
+  const storeOrgId = useAuthStore(state => state.user?.organization_id);
+  const effectiveOrgId = orgId || storeOrgId;
 
   return useQuery({
-    queryKey: settingsKeys.members(orgId),
+    queryKey: settingsKeys.members(effectiveOrgId || 'none'),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/members`, token) as { members?: Member[] };
+      const data = await fetchWithAuth(`/api/v1/organizations/${effectiveOrgId}/members`, token) as { members?: Member[] };
       return data.members || [];
     },
-    enabled: !!token,
+    enabled: !!token && !!effectiveOrgId,
     staleTime: 60 * 1000, // 1 minute - members don't change often
     gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
@@ -124,16 +126,18 @@ export function useMembers(orgId: string | number = 1) {
 /**
  * Hook to fetch pending invitations
  */
-export function useInvitations(orgId: string | number = 1) {
+export function useInvitations(orgId?: string | number) {
   const token = useAuthStore(state => state.token);
+  const storeOrgId = useAuthStore(state => state.user?.organization_id);
+  const effectiveOrgId = orgId || storeOrgId;
 
   return useQuery({
-    queryKey: settingsKeys.invitations(orgId),
+    queryKey: settingsKeys.invitations(effectiveOrgId || 'none'),
     queryFn: async () => {
-      const data = await fetchWithAuth(`/api/v1/organizations/${orgId}/invitations`, token) as { invitations?: Invitation[] };
+      const data = await fetchWithAuth(`/api/v1/organizations/${effectiveOrgId}/invitations`, token) as { invitations?: Invitation[] };
       return data.invitations || [];
     },
-    enabled: !!token,
+    enabled: !!token && !!effectiveOrgId,
     staleTime: 30 * 1000, // 30 seconds - invitations may be accepted
     gcTime: 2 * 30 * 1000, // Feature #106: 2x staleTime for garbage collection
   });
@@ -142,18 +146,20 @@ export function useInvitations(orgId: string | number = 1) {
 /**
  * Hook to send invitation
  */
-export function useSendInvitation(orgId: string | number = 1) {
+export function useSendInvitation(orgId?: string | number) {
   const token = useAuthStore(state => state.token);
+  const storeOrgId = useAuthStore(state => state.user?.organization_id);
+  const effectiveOrgId = orgId || storeOrgId;
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ email, role }: { email: string; role: string }) =>
-      fetchWithAuth(`/api/v1/organizations/${orgId}/invitations`, token, {
+      fetchWithAuth(`/api/v1/organizations/${effectiveOrgId}/invitations`, token, {
         method: 'POST',
         body: JSON.stringify({ email, role }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: settingsKeys.invitations(orgId) });
+      queryClient.invalidateQueries({ queryKey: settingsKeys.invitations(effectiveOrgId || 'none') });
     },
   });
 }
@@ -161,17 +167,19 @@ export function useSendInvitation(orgId: string | number = 1) {
 /**
  * Hook to cancel invitation
  */
-export function useCancelInvitation(orgId: string | number = 1) {
+export function useCancelInvitation(orgId?: string | number) {
   const token = useAuthStore(state => state.token);
+  const storeOrgId = useAuthStore(state => state.user?.organization_id);
+  const effectiveOrgId = orgId || storeOrgId;
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (invitationId: string) =>
-      fetchWithAuth(`/api/v1/organizations/${orgId}/invitations/${invitationId}`, token, {
+      fetchWithAuth(`/api/v1/organizations/${effectiveOrgId}/invitations/${invitationId}`, token, {
         method: 'DELETE',
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: settingsKeys.invitations(orgId) });
+      queryClient.invalidateQueries({ queryKey: settingsKeys.invitations(effectiveOrgId || 'none') });
     },
   });
 }
@@ -179,17 +187,19 @@ export function useCancelInvitation(orgId: string | number = 1) {
 /**
  * Hook to remove member
  */
-export function useRemoveMember(orgId: string | number = 1) {
+export function useRemoveMember(orgId?: string | number) {
   const token = useAuthStore(state => state.token);
+  const storeOrgId = useAuthStore(state => state.user?.organization_id);
+  const effectiveOrgId = orgId || storeOrgId;
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (userId: string) =>
-      fetchWithAuth(`/api/v1/organizations/${orgId}/members/${userId}`, token, {
+      fetchWithAuth(`/api/v1/organizations/${effectiveOrgId}/members/${userId}`, token, {
         method: 'DELETE',
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: settingsKeys.members(orgId) });
+      queryClient.invalidateQueries({ queryKey: settingsKeys.members(effectiveOrgId || 'none') });
     },
   });
 }
@@ -197,18 +207,20 @@ export function useRemoveMember(orgId: string | number = 1) {
 /**
  * Hook to update member role
  */
-export function useUpdateMemberRole(orgId: string | number = 1) {
+export function useUpdateMemberRole(orgId?: string | number) {
   const token = useAuthStore(state => state.token);
+  const storeOrgId = useAuthStore(state => state.user?.organization_id);
+  const effectiveOrgId = orgId || storeOrgId;
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: string }) =>
-      fetchWithAuth(`/api/v1/organizations/${orgId}/members/${userId}/role`, token, {
+      fetchWithAuth(`/api/v1/organizations/${effectiveOrgId}/members/${userId}/role`, token, {
         method: 'PATCH',
         body: JSON.stringify({ role }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: settingsKeys.members(orgId) });
+      queryClient.invalidateQueries({ queryKey: settingsKeys.members(effectiveOrgId || 'none') });
     },
   });
 }
