@@ -1,8 +1,8 @@
 // AIRouterPage - AI Provider Router with circuit breaker, rate limiting, and fallback (Feature #405)
-// Feature #623: Added React.lazy for heavy panel components
 // Feature #691: Migrated provider switch modal to shared Modal component
-import { useState, useEffect, lazy, Suspense } from "react";
-import { useNavigate } from "react-router-dom";
+// Feature #865: Removed 8 mock sub-panels (retry, timeout, model, rate-limit, fallback, budget, cache, API keys)
+//   that used hardcoded DEFAULT_* data with no backend. Kept core router config UI.
+import { useState, useEffect } from "react";
 import { useAuthStore } from "../stores/authStore";
 import { PageHeader } from "../components/ui";
 import { Button } from '@/components/ui/button';
@@ -12,29 +12,7 @@ import type {
   ActiveProviderState, ProviderChangeLog, ProviderSwitchResult,
 } from '../components/ai-router/types';
 
-// Feature #623: Lazy-load heavy panel components for better initial load performance
-// These panels are below the fold and not immediately visible
-const AIAPIKeyManager = lazy(() => import('../components/ai-router/AIAPIKeyManager').then(m => ({ default: m.AIAPIKeyManager })));
-const AIBudgetPanel = lazy(() => import('../components/ai-router/AIBudgetPanel').then(m => ({ default: m.AIBudgetPanel })));
-const AICachePanel = lazy(() => import('../components/ai-router/AICachePanel').then(m => ({ default: m.AICachePanel })));
-const AIFallbackRulesPanel = lazy(() => import('../components/ai-router/AIFallbackRulesPanel').then(m => ({ default: m.AIFallbackRulesPanel })));
-const AIModelConfigPanel = lazy(() => import('../components/ai-router/AIModelConfigPanel').then(m => ({ default: m.AIModelConfigPanel })));
-const AIRateLimitPanel = lazy(() => import('../components/ai-router/AIRateLimitPanel').then(m => ({ default: m.AIRateLimitPanel })));
-const AIRetryConfigPanel = lazy(() => import('../components/ai-router/AIRetryConfigPanel').then(m => ({ default: m.AIRetryConfigPanel })));
-const AITimeoutPanel = lazy(() => import('../components/ai-router/AITimeoutPanel').then(m => ({ default: m.AITimeoutPanel })));
-import {
-  DEFAULT_API_KEYS, DEFAULT_KEY_AUDIT_LOGS,
-  DEFAULT_RETRY_CONFIG, DEFAULT_RETRY_STATS, DEFAULT_RETRY_LOGS,
-  DEFAULT_FEATURE_TIMEOUTS, DEFAULT_TIMEOUT_EVENTS, DEFAULT_TIMEOUT_STATS,
-  DEFAULT_ORG_MODEL, DEFAULT_FEATURE_MODEL_CONFIGS, DEFAULT_MODEL_USAGE_STATS,
-  DEFAULT_RATE_LIMIT_CONFIGS, DEFAULT_RATE_LIMIT_STATUS, DEFAULT_RATE_LIMIT_EVENTS, DEFAULT_RATE_LIMIT_ALERTS,
-  DEFAULT_FALLBACK_RULES, DEFAULT_FALLBACK_TEST_RESULTS, DEFAULT_FALLBACK_STATS,
-  DEFAULT_BUDGET_CONFIG, DEFAULT_SPENDING_DATA, DEFAULT_BUDGET_ALERTS,
-  DEFAULT_CACHE_CONFIG, DEFAULT_CACHE_STATS, DEFAULT_CACHE_ENTRIES, DEFAULT_CACHE_EVENTS,
-} from '../components/ai-router/defaultData';
-
 function AIRouterPage() {
-  const navigate = useNavigate();
   const token = useAuthStore.getState().token;
 
   // Core router state
@@ -57,47 +35,6 @@ function AIRouterPage() {
   const [switchReason, setSwitchReason] = useState('');
   const [gracefulSwitch, setGracefulSwitch] = useState(true);
   const [targetProvider, setTargetProvider] = useState<'kie' | 'anthropic'>('anthropic');
-
-  // Feature #1337: API Key Management State
-  const [apiKeys, setApiKeys] = useState(DEFAULT_API_KEYS);
-  const [keyAuditLogs, setKeyAuditLogs] = useState(DEFAULT_KEY_AUDIT_LOGS);
-
-  // Feature #1331: Retry with exponential backoff state
-  const [retryConfig, setRetryConfig] = useState(DEFAULT_RETRY_CONFIG);
-  const [retryStats, setRetryStats] = useState(DEFAULT_RETRY_STATS);
-  const [retryLogs, setRetryLogs] = useState(DEFAULT_RETRY_LOGS);
-
-  // Feature #1334: Per-feature timeout configuration
-  const [featureTimeouts, setFeatureTimeouts] = useState(DEFAULT_FEATURE_TIMEOUTS);
-  const [timeoutEvents, setTimeoutEvents] = useState(DEFAULT_TIMEOUT_EVENTS);
-  const [timeoutStats] = useState(DEFAULT_TIMEOUT_STATS);
-
-  // Feature #1333: Model selection per feature
-  const [orgDefaultModel, setOrgDefaultModel] = useState(DEFAULT_ORG_MODEL);
-  const [featureModelConfigs, setFeatureModelConfigs] = useState(DEFAULT_FEATURE_MODEL_CONFIGS);
-  const [modelUsageStats] = useState(DEFAULT_MODEL_USAGE_STATS);
-
-  // Feature #1335: Provider-specific rate limiting
-  const [rateLimitConfigs, setRateLimitConfigs] = useState(DEFAULT_RATE_LIMIT_CONFIGS);
-  const [rateLimitStatus] = useState(DEFAULT_RATE_LIMIT_STATUS);
-  const [rateLimitEvents] = useState(DEFAULT_RATE_LIMIT_EVENTS);
-  const [rateLimitAlerts, setRateLimitAlerts] = useState(DEFAULT_RATE_LIMIT_ALERTS);
-
-  // Feature #1339: Fallback rules configuration
-  const [fallbackRules, setFallbackRules] = useState(DEFAULT_FALLBACK_RULES);
-  const [fallbackTestResults, setFallbackTestResults] = useState(DEFAULT_FALLBACK_TEST_RESULTS);
-  const [fallbackStats] = useState(DEFAULT_FALLBACK_STATS);
-
-  // Feature #1329: Monthly AI Budget Limits
-  const [budgetConfig, setBudgetConfig] = useState(DEFAULT_BUDGET_CONFIG);
-  const [spendingData, setSpendingData] = useState(DEFAULT_SPENDING_DATA);
-  const [budgetAlerts, setBudgetAlerts] = useState(DEFAULT_BUDGET_ALERTS);
-
-  // Feature #1332: AI Response Caching
-  const [cacheConfig, setCacheConfig] = useState(DEFAULT_CACHE_CONFIG);
-  const [cacheStats, setCacheStats] = useState(DEFAULT_CACHE_STATS);
-  const [cacheEntries, setCacheEntries] = useState(DEFAULT_CACHE_ENTRIES);
-  const [cacheEvents, setCacheEvents] = useState(DEFAULT_CACHE_EVENTS);
 
   // Fetch data
   useEffect(() => { fetchData(); }, []);
@@ -421,87 +358,6 @@ function AIRouterPage() {
           )}
         </div>
       </div>
-
-      {/* Feature #623: Suspense boundary for lazy-loaded panels */}
-      <Suspense fallback={<div className="bg-card rounded-lg p-6 animate-pulse"><div className="h-8 bg-muted rounded w-1/3 mb-4" /><div className="h-32 bg-muted rounded" /></div>}>
-        {/* Feature #1331: Retry Configuration - Extracted Component */}
-        <AIRetryConfigPanel
-          retryConfig={retryConfig}
-          setRetryConfig={setRetryConfig}
-          retryStats={retryStats}
-          setRetryStats={setRetryStats}
-          retryLogs={retryLogs}
-          setRetryLogs={setRetryLogs}
-          fallbackProvider={config?.fallback_provider}
-        />
-
-        {/* Feature #1334: Per-Feature Timeout Configuration - Extracted Component */}
-        <AITimeoutPanel
-          featureTimeouts={featureTimeouts}
-          setFeatureTimeouts={setFeatureTimeouts}
-          timeoutEvents={timeoutEvents}
-          setTimeoutEvents={setTimeoutEvents}
-          timeoutStats={timeoutStats}
-        />
-
-        {/* Feature #1333: Model Selection per Feature - Extracted Component */}
-        <AIModelConfigPanel
-          featureModelConfigs={featureModelConfigs}
-          setFeatureModelConfigs={setFeatureModelConfigs}
-          modelUsageStats={modelUsageStats}
-          orgDefaultModel={orgDefaultModel}
-          setOrgDefaultModel={setOrgDefaultModel}
-        />
-
-        {/* Feature #1335: Provider Rate Limiting - Extracted Component */}
-        <AIRateLimitPanel
-          rateLimitConfigs={rateLimitConfigs}
-          setRateLimitConfigs={setRateLimitConfigs}
-          rateLimitStatus={rateLimitStatus}
-          rateLimitEvents={rateLimitEvents}
-          rateLimitAlerts={rateLimitAlerts}
-          setRateLimitAlerts={setRateLimitAlerts}
-        />
-
-        {/* Feature #1339: Fallback Rules Configuration - Extracted Component */}
-        <AIFallbackRulesPanel
-          fallbackRules={fallbackRules}
-          setFallbackRules={setFallbackRules}
-          fallbackTestResults={fallbackTestResults}
-          setFallbackTestResults={setFallbackTestResults}
-          fallbackStats={fallbackStats}
-        />
-
-        {/* Feature #1329: Monthly AI Budget - Extracted Component */}
-        <AIBudgetPanel
-          budgetConfig={budgetConfig}
-          setBudgetConfig={setBudgetConfig}
-          spendingData={spendingData}
-          setSpendingData={setSpendingData}
-          budgetAlerts={budgetAlerts}
-          setBudgetAlerts={setBudgetAlerts}
-        />
-
-        {/* Feature #1332: AI Response Caching - Extracted Component */}
-        <AICachePanel
-          cacheConfig={cacheConfig}
-          setCacheConfig={setCacheConfig}
-          cacheStats={cacheStats}
-          setCacheStats={setCacheStats}
-          cacheEntries={cacheEntries}
-          setCacheEntries={setCacheEntries}
-          cacheEvents={cacheEvents}
-          setCacheEvents={setCacheEvents}
-        />
-
-        {/* Feature #1337: API Key Management - Extracted Component */}
-        <AIAPIKeyManager
-          apiKeys={apiKeys}
-          setApiKeys={setApiKeys}
-          keyAuditLogs={keyAuditLogs}
-          setKeyAuditLogs={setKeyAuditLogs}
-        />
-      </Suspense>
     </div>
   );
 }
