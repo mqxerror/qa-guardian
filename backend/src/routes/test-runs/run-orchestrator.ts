@@ -14,7 +14,7 @@ import { Browser } from 'playwright';
 import { publishRunEvent as publishToRedis, isPublisherAvailable } from '../../services/redis-events.js';
 import { getCache, CacheKeys } from '../../services/cache.js';
 import { getTestRun, updateTestRun as dbUpdateTestRun } from '../../services/repositories/test-runs.js';
-import { getTestSuite, getTest, listTests, updateTest } from '../test-suites.js';
+import { getTestSuite, getTest, listTests, updateTest, batchGetTests } from '../test-suites.js';
 import { getProjectEnvVars } from '../projects.js';
 import { getProject } from '../projects/stores.js';
 
@@ -467,8 +467,12 @@ export async function runTestsForRun(runId: string) {
       }
 
       // Feature #1957: Update test status from 'draft' to 'active'
+      // Feature #706: Use batch query to eliminate N+1 database roundtrips
+      const testIds = results.map(r => r.test_id);
+      const testsMap = await batchGetTests(testIds);
+
       for (const result of results) {
-        const test = await getTest(result.test_id);
+        const test = testsMap.get(result.test_id);
         if (test && test.status === 'draft') {
           await updateTest(result.test_id, { status: 'active', updated_at: new Date() });
           logger.info(`[STATUS] Test "${test.name}" promoted from draft to active after first run (status: ${result.status})`);

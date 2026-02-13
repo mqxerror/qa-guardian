@@ -33,6 +33,9 @@ export {
   listAllTests,
   getTestSuitesMap,
   getTestsMap,
+  // Feature #706: Batch functions to eliminate N+1 queries
+  batchGetTests,
+  batchGetTestSuites,
 } from './test-suites/stores.js';
 
 // Re-export utility functions
