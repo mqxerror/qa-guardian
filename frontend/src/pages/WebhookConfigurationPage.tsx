@@ -19,7 +19,6 @@ import {
   useDeleteWebhook,
   useWebhookLogs,
   type WebhookSubscription,
-  type WebhookDeliveryLog,
 } from '../hooks/api/useOrganization';
 
 export function WebhookConfigurationPage() {

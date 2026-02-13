@@ -26,8 +26,8 @@ import { computeTestHealthScore } from '../components/suite-detail/utils';
 // lucide-react icons: Play, Clock, Calendar, Tag - moved to test-detail components
 // Feature #68: Import React Query hooks for caching
 // Feature #712: Added useVisualRejectionStatus for visual rejection check
-import { useTest, useInvalidateTests, useVisualRejectionStatus } from '../hooks/api/useTests';
-import { useRunsByTest, useInvalidateRuns } from '../hooks/api/useRuns';
+import { useTest, useVisualRejectionStatus } from '../hooks/api/useTests';
+import { useRunsByTest } from '../hooks/api/useRuns';
 import { useSuite } from '../hooks/api/useSuites';
 import { useProject } from '../hooks/api/useProjects';
 // Feature #581: Browser notifications for long-running test completion
@@ -68,13 +68,8 @@ import {
   generatePlaywrightCode,
   generateK6Script,
   getK6Templates,
-  highlightJavaScriptLine,
-  isLineHidden,
-  getFoldIcon,
   findSelectorAutocomplete,
   findValueAutocomplete,
-  type FoldableRegion,
-  type K6Template,
   // Feature #48: Custom hooks for state management
   useBaselineHandlers,
   useStepHandlers,
@@ -116,9 +111,6 @@ function TestDetailPage() {
   const { data: projectData } = useProject(projectId);
   // Feature #513: Removed unused suiteLoading, projectLoading - no longer needed
 
-  // Feature #68: Invalidation helpers for cache updates
-  const { invalidateTest } = useInvalidateTests();
-  const { invalidateAll: invalidateRuns } = useInvalidateRuns();
 
   // Feature #569: Combined state hook replaces ~78 useState + useModalState
   // Feature #646: Returns { core, modals, visual, ui, steps } nested structure for stable identity
@@ -134,7 +126,7 @@ function TestDetailPage() {
     isRunning, setIsRunning, isCancellingRun, setIsCancellingRun,
     runError, setRunError,
     liveProgress, setLiveProgress, liveScreenshot, setLiveScreenshot,
-    liveConsoleLogs, setLiveConsoleLogs,
+    liveConsoleLogs,
   } = core;
 
   // Destructure from modal state (visibility + associated form/loading/error)
@@ -183,10 +175,10 @@ function TestDetailPage() {
     historyVersionImage, setHistoryVersionImage,
     loadingHistoryImage, setLoadingHistoryImage,
     selectedBranch, setSelectedBranch,
-    availableBranches, setAvailableBranches, loadingBranches, setLoadingBranches,
+    availableBranches, setAvailableBranches, setLoadingBranches,
     mergeableBranches, setMergeableBranches,
-    loadingMergeableBranches, setLoadingMergeableBranches,
-    rejectionStatus, setRejectionStatus,
+    setLoadingMergeableBranches,
+    setRejectionStatus,
     comparisonViewMode, setComparisonViewMode,
     sliderPosition, setSliderPosition,
     onionSkinOpacity, setOnionSkinOpacity,
@@ -209,9 +201,8 @@ function TestDetailPage() {
     isDuplicating, setIsDuplicating, duplicateError, setDuplicateError,
     k6Script, setK6Script,
     isEditingK6Script, setIsEditingK6Script,
-    isSavingK6Script, setIsSavingK6Script,
+    isSavingK6Script,
     showK6Templates, setShowK6Templates,
-    foldedRegions, setFoldedRegions,
     isEditingCode, setIsEditingCode, editedCode, setEditedCode,
     isSavingCode, setIsSavingCode, codeError, setCodeError,
     sortBy, setSortBy, sortOrder, setSortOrder,
@@ -301,26 +292,6 @@ function TestDetailPage() {
     });
   }, []);
 
-  const toggleFold = useCallback((lineNumber: number) => {
-    setFoldedRegions(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(lineNumber)) {
-        newSet.delete(lineNumber);
-      } else {
-        newSet.add(lineNumber);
-      }
-      return newSet;
-    });
-  }, []);
-
-  const getFoldIconForLine = useCallback((lineNumber: number, regions: FoldableRegion[]) => {
-    return getFoldIcon(lineNumber, regions, foldedRegions);
-  }, [foldedRegions]);
-
-  const isLineHiddenForLine = useCallback((lineNumber: number, regions: FoldableRegion[]) => {
-    return isLineHidden(lineNumber, regions, foldedRegions);
-  }, [foldedRegions]);
-
   const generatePlaywrightCodeForTest = useCallback((steps: TestType['steps'] | undefined) => {
     return generatePlaywrightCode(steps || [], test?.name || 'Untitled Test');
   }, [test?.name]);
@@ -328,21 +299,6 @@ function TestDetailPage() {
   const generateK6ScriptForTest = useCallback(() => {
     return generateK6Script(test);
   }, [test]);
-
-  const highlightJavaScript = useCallback((code: string): JSX.Element[] => {
-    const lines = code.split('\n');
-    return lines.map((line, lineIndex) => {
-      const highlighted = highlightJavaScriptLine(line);
-      return (
-        <div key={lineIndex} className="leading-6 flex">
-          <span className="select-none text-muted-foreground pr-4 text-right" style={{ minWidth: '3rem' }}>
-            {lineIndex + 1}
-          </span>
-          <span dangerouslySetInnerHTML={{ __html: highlighted || '&nbsp;' }} />
-        </div>
-      );
-    });
-  }, []);
 
   const k6Templates = useMemo(() => getK6Templates(test?.target_url || ''), [test?.target_url]);
 

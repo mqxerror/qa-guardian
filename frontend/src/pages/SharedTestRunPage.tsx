@@ -9,16 +9,13 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
+// Modal components available if needed
 import { Lock, Loader2, Clock, Calendar, Mail, ExternalLink, LogIn, Image, X, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 // Feature #712: React Query hook for shared runs
-import { useSharedRun, type SharedTestRun, type ExpiredLinkInfo } from '../hooks/api/useSharedRuns';
+import { useSharedRun } from '../hooks/api/useSharedRuns';
 import { Button } from '@/components/ui/button';
 
-import type { StepResult, TestRunResult, GalleryScreenshot } from '@/types/tests';
-
-// Re-export TestRun type from hook for consistency
-type TestRun = SharedTestRun;
+import type { GalleryScreenshot } from '@/types/tests';
 
 export default function SharedTestRunPage() {
  const { token } = useParams<{ token: string }>();

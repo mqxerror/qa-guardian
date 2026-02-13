@@ -24,8 +24,6 @@ import {
  useAIModelPreferencesStore,
  MODELS,
  getModelsForProvider,
- type AIModel,
- type AIProvider,
 } from '../stores/aiModelPreferencesStore';
 
 // Helper functions that delegate to the modular system
@@ -130,7 +128,7 @@ function generateQuickActions(toolUsed?: string, result?: Record<string, unknown
 // Note: Response types are now handled by UnifiedAIService
 
 export function MCPChatPage() {
- const { user, token } = useAuthStore();
+ const { token } = useAuthStore();
  const location = useLocation();
  const [messages, setMessages] = useState<MCPChatMessage[]>([]);
  const [input, setInput] = useState('');
@@ -331,7 +329,6 @@ Just type naturally and I'll help you manage your QA workflows!`,
 
  // Feature #1694: Select a command suggestion
  const selectCommandSuggestion = (suggestion: { command: string; params: string[] }) => {
- const paramHint = suggestion.params.length > 0 ? ` [${suggestion.params.join('] [')}]` : '';
  setInput(suggestion.command + (suggestion.params.length > 0 ? ' ' : ''));
  setShowCommandSuggestions(false);
  inputRef.current?.focus();

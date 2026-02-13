@@ -10,7 +10,7 @@ import { PageHeader } from '../components/ui';
 import { Button } from '@/components/ui/button';
 import { toast } from '../stores/toastStore';
 // Feature #712: React Query hook for services status
-import { useServicesStatus, type ServiceInfo, type ServicesResponse } from '../hooks/api/useServices';
+import { useServicesStatus, type ServiceInfo } from '../hooks/api/useServices';
 
 type HealthStatus = 'healthy' | 'degraded' | 'unavailable' | 'not_configured';
 

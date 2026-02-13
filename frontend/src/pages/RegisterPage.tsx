@@ -8,7 +8,6 @@ import { LazyMotionWrapper, m } from '../components/LazyMotion';
 import { getErrorMessage } from '../utils/errorHandling';
 import { BackgroundBeams, Input } from '../components/aceternity';
 import { ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
-import { useReducedMotion } from '../components/ui';
 import { Button } from '@/components/ui/button';
 
 export function RegisterPage() {

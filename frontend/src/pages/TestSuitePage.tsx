@@ -5,7 +5,7 @@
 // Feature #525: Added suite health metrics with unified ScoreCard component
 // Feature #546: Replaced HTTP polling with WebSocket live streaming via useSuiteRunSocket
 import { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { SkeletonTestSuitePage } from '../components/ui/Skeleton';
 import { useAuthStore } from '../stores/authStore';
@@ -38,7 +38,6 @@ import {
   useReviewSettings, useToggleHumanReview, useAIHealthCheck,
   useStepTemplates, useInsertTemplateSteps, useDeleteStepTemplate,
   useUpdateRunSelector, useAcceptHealedSelector,
-  useRun,
 } from '../hooks/api';
 // Feature #553: Pass rate trend chart (Feature #556: now uses ScoreTrendChart component)
 import {
@@ -140,7 +139,7 @@ function TestSuitePage() {
   // Feature #1800: New two-section modal toggle (use new modal by default)
   const [showNewCreateTestModal, setShowNewCreateTestModal] = useState(false);
   // Feature #1342: Natural Language Test Generation state
-  const [showAITestGenerator, setShowAITestGenerator] = useState(false);
+  const [, setShowAITestGenerator] = useState(false);
   const [aiTestDescription, setAITestDescription] = useState('');
   const [generatedTestCode, setGeneratedTestCode] = useState('');
   const [generatedTestPreview, setGeneratedTestPreview] = useState<{
@@ -176,7 +175,7 @@ function TestSuitePage() {
   } : null;
   // Feature #1151-1163: Review workflow state - Feature #702: Now using useReviewState hook
   const {
-    showReviewPanel, setShowReviewPanel,
+    showReviewPanel,
     isApproving, setIsApproving,
     selectedForReview,
     regenerationFeedback, setRegenerationFeedback,

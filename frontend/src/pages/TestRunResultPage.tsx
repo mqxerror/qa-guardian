@@ -10,23 +10,10 @@ import { useAuthStore } from '../stores/authStore';
 import { useOrganizationBrandingStore } from '../stores/organizationBrandingStore';
 // Feature #567: Replaced standalone io() connection with shared useSocketStore
 import { useSocketStore } from '../stores/socketStore';
-import { toast } from '../stores/toastStore';
-// Feature #337: Design system components
-import {
- PageHeader,
- AnimatedCard,
- StatusPill,
- SectionHeader,
- CardContent,
- Tabs,
- TabsList,
- TabsTrigger,
- TabsContent,
- useReducedMotion,
-} from '../components/ui';
+// toast, PageHeader, AnimatedCard, StatusPill, SectionHeader, CardContent, Tabs, TabsList, TabsTrigger, TabsContent, useReducedMotion removed - unused
 // Feature #571: Added Lucide icons to replace emoji in tab navigation
 import { Button } from '../components/ui/button';
-import { Download, RefreshCw, Share2, FlaskConical, ListOrdered, Camera, BarChart3, Globe, Eye, Accessibility, ScrollText, Loader2, Frown, Lock, Server, WifiOff, AlertTriangle, ArrowLeft, Info } from 'lucide-react';
+import { Download, RefreshCw, FlaskConical, ListOrdered, Camera, BarChart3, Globe, Eye, Accessibility, ScrollText, Loader2, Frown, Lock, Server, WifiOff, AlertTriangle, ArrowLeft, Info } from 'lucide-react';
 import { useMetricsState } from '../hooks/useMetricsState';
 import { useNetworkAnalysisState } from '../hooks/useNetworkAnalysisState';
 import { useAccessibilityState, AccessibilityData } from '../hooks/useAccessibilityState';
@@ -46,47 +33,18 @@ import {
  ResultsTab,
  LogsTab,
  ScreenshotsTab,
- CircularGauge,
  NetworkTab,
  MetricsTab,
  exportK6ResultsPDF,
  exportLighthousePDF,
  formatDuration,
- formatDateTime,
- formatStepTime,
- formatRelativeTime,
- formatBytes,
- getScoreColorClass,
- getScoreBgClass,
- getScreenshotTypeBadgeColor,
  detectSimpleError,
  generateK6TimeSeries,
  generateResponseTimeHistogram,
  ActiveTab,
- // Import types from modular components - eliminates ~380 lines of duplicate type definitions
- StepResult,
  TestResult,
- TestRun,
- TestInfo,
- SuiteInfo,
- ConsoleLog,
- NetworkRequest,
- AccessibilityViolation,
- ResultSummary,
- // Feature #46: Network tab types
- WaterfallRequest,
- NetworkStats,
- WaterfallBounds,
- NetworkSortBy,
- // Feature #46: Screenshot tab types
  ScreenshotItem,
- // Feature #46: Timeline tab types
- ComputedStep,
  SelectedScreenshot,
- // Feature #46: Report generation utilities (extracted from this file)
- generatePdfReport,
- generateHtmlReport,
- // Feature #46 Phase 2: Extract modal and view components
  ExportModal,
  BatchAnalysisModal,
  LiveExecutionView,
@@ -136,8 +94,6 @@ export default function TestRunResultPage() {
  // Previous comparison toggle state
  showPreviousComparison,
  setShowPreviousComparison,
- previousRunData,
- setPreviousRunData,
  // Performance AI analysis states
  perfAIAnalysisOpen,
  setPerfAIAnalysisOpen,
@@ -156,22 +112,12 @@ export default function TestRunResultPage() {
 
  // Feature #46: Accessibility state extracted to useAccessibilityState hook
  const {
- a11yViewMode,
- setA11yViewMode,
- a11yExpandedSeverities,
- setA11yExpandedSeverities,
- toggleA11ySeverity,
- a11yExpandedViolations,
  setA11yExpandedViolations,
- toggleA11yViolation,
  a11yAIAnalysisOpen,
- setA11yAIAnalysisOpen,
  a11yAILoading,
- setA11yAILoading,
  a11yAIResult,
  setA11yAIResult,
  a11yAIError,
- setA11yAIError,
  analyzeAccessibilityResults: analyzeA11y,
  } = useAccessibilityState();
 
@@ -205,7 +151,6 @@ export default function TestRunResultPage() {
  networkSearch,
  networkSortBy,
  selectedNetworkRequest,
- setNetworkTypeFilter,
  setNetworkSearch,
  setNetworkSortBy,
  setSelectedNetworkRequest,
@@ -259,26 +204,15 @@ export default function TestRunResultPage() {
 
  // Feature #46: Visual testing state extracted to useVisualTestState hook
  const {
- visualViewMode, setVisualViewMode,
- sliderPosition, setSliderPosition,
- onionOpacity, setOnionOpacity,
- expandedVisualResults, setExpandedVisualResults,
  visualZoom, setVisualZoom,
  visualPan, setVisualPan,
  isPanning, setIsPanning,
  panStart, setPanStart,
- visualContainerRefs,
  visualVideoRef,
- visualVideoCurrentTime, setVisualVideoCurrentTime,
- isVisualVideoPlaying, setIsVisualVideoPlaying,
- visualVideoExpanded, setVisualVideoExpanded,
+ setVisualVideoCurrentTime,
+ setIsVisualVideoPlaying,
  approvalLoading, setApprovalLoading,
- toggleVisualResult,
- handleSliderChange, handleOnionOpacityChange,
- handleZoomIn, handleZoomOut, handleZoomReset, handleZoomFit,
- handlePanStart, handlePanMove, handlePanEnd, handleWheelZoom,
  handleApproveBaseline, handleRejectBaseline,
- seekVisualVideoToMarker, handleVisualVideoTimeUpdate,
  } = useVisualTestState({ runId, token, retry });
 
  // Feature #1839: Logs tab enhanced state
@@ -309,10 +243,10 @@ export default function TestRunResultPage() {
  // Feature #1844: Live execution state
  // Feature #567: Removed standalone socketRef - using shared useSocketStore
  const [liveMode, setLiveMode] = useState(false);
- const [currentStep, setCurrentStep] = useState<{ action: string; selector?: string; progress: number } | null>(null);
- const [liveScreenshot, setLiveScreenshot] = useState<string | null>(null);
- const [liveConsoleLogs, setLiveConsoleLogs] = useState<Array<{ level: string; message: string; timestamp: number }>>([]);
- const [liveMetrics, setLiveMetrics] = useState<{ rps?: number; responseTime?: number; vus?: number } | null>(null);
+ const [currentStep] = useState<{ action: string; selector?: string; progress: number } | null>(null);
+ const [liveScreenshot] = useState<string | null>(null);
+ const [liveConsoleLogs] = useState<Array<{ level: string; message: string; timestamp: number }>>([]);
+ const [liveMetrics] = useState<{ rps?: number; responseTime?: number; vus?: number } | null>(null);
  const [executionProgress, setExecutionProgress] = useState<{ current: number; total: number; eta?: number }>({ current: 0, total: 0 });
  const [cancellingTest, setCancellingTest] = useState(false);
 
@@ -502,185 +436,9 @@ export default function TestRunResultPage() {
  });
  };
 
- // Feature #1839: Create unified log entries from console logs and network requests
- interface UnifiedLogEntry {
- type: 'console' | 'network';
- timestamp: number;
- level?: 'log' | 'info' | 'warn' | 'error' | 'debug';
- message: string;
- location?: string;
- // Network-specific
- method?: string;
- url?: string;
- status?: number;
- duration_ms?: number;
- requestSize?: number;
- responseSize?: number;
- failed?: boolean;
- failureText?: string;
- resourceType?: string;
- requestBody?: string;
- responseBody?: string;
- originalIndex?: number;
- }
+ // UnifiedLogEntry interface, getUnifiedLogs, filteredLogs, exportLogs, logCounts removed - unused
 
- const getUnifiedLogs = useMemo((): UnifiedLogEntry[] => {
- if (!run?.results) return [];
-
- const entries: UnifiedLogEntry[] = [];
-
- // Add console logs
- run.results.forEach(result => {
- (result.console_logs || []).forEach(log => {
- entries.push({
- type: 'console',
- timestamp: log.timestamp,
- level: log.level,
- message: log.message,
- location: log.location,
- });
- });
- });
-
- // Add network requests
- run.results.forEach(result => {
- (result.network_requests || []).forEach((req, idx) => {
- const statusLevel = !req.status ? 'warn' :
- req.status >= 400 ? 'error' :
- req.status >= 300 ? 'warn' : 'info';
-
- entries.push({
- type: 'network',
- timestamp: req.timestamp,
- level: statusLevel as 'info' | 'warn' | 'error',
- message: `${req.method} ${req.url}`,
- method: req.method,
- url: req.url,
- status: req.status,
- duration_ms: req.duration_ms,
- requestSize: req.requestSize,
- responseSize: req.responseSize,
- failed: req.failed,
- failureText: req.failureText,
- resourceType: req.resourceType,
- originalIndex: idx,
- });
- });
- });
-
- // Sort by timestamp
- return entries.sort((a, b) => a.timestamp - b.timestamp);
- }, [run]);
-
- // Feature #1839: Filter logs based on current filter state
- const filteredLogs = useMemo(() => {
- return getUnifiedLogs.filter(log => {
- // Apply type filter
- if (log.type === 'console') {
- if (log.level === 'error' && !logsFilter.errors) return false;
- if (log.level === 'warn' && !logsFilter.warnings) return false;
- if (log.level === 'info' && !logsFilter.info) return false;
- if ((log.level === 'log' || log.level === 'debug') && !logsFilter.debug) return false;
- } else if (log.type === 'network') {
- if (!logsFilter.network) return false;
- if (log.failed && !logsFilter.failedRequests) return false;
- }
-
- // Apply search filter
- if (logsSearch.trim()) {
- const searchLower = logsSearch.toLowerCase();
- const matchMessage = log.message.toLowerCase().includes(searchLower);
- const matchUrl = log.url?.toLowerCase().includes(searchLower);
- const matchLocation = log.location?.toLowerCase().includes(searchLower);
- if (!matchMessage && !matchUrl && !matchLocation) return false;
- }
-
- return true;
- });
- }, [getUnifiedLogs, logsFilter, logsSearch]);
-
- // Feature #1839: Export logs
- const exportLogs = (format: 'json' | 'txt') => {
- const dataToExport = filteredLogs.map(log => ({
- type: log.type,
- timestamp: new Date(log.timestamp).toISOString(),
- level: log.level,
- message: log.message,
- ...(log.type === 'network' && {
- method: log.method,
- url: log.url,
- status: log.status,
- duration_ms: log.duration_ms,
- resourceType: log.resourceType,
- failed: log.failed,
- failureText: log.failureText,
- }),
- ...(log.type === 'console' && log.location && { location: log.location }),
- }));
-
- let content: string;
- let filename: string;
- let mimeType: string;
-
- if (format === 'json') {
- content = JSON.stringify(dataToExport, null, 2);
- filename = `logs-${runId}-${Date.now()}.json`;
- mimeType = 'application/json';
- } else {
- content = dataToExport.map(log => {
- const timestamp = log.timestamp;
- const level = (log.level || 'info').toUpperCase().padEnd(5);
- const type = log.type.toUpperCase().padEnd(7);
- let line = `[${timestamp}] [${type}] [${level}] ${log.message}`;
- if (log.type === 'network') {
- line += ` | Status: ${log.status || 'N/A'} | Duration: ${log.duration_ms || '-'}ms`;
- }
- if (log.location) {
- line += ` @ ${log.location}`;
- }
- return line;
- }).join('\n');
- filename = `logs-${runId}-${Date.now()}.txt`;
- mimeType = 'text/plain';
- }
-
- const blob = new Blob([content], { type: mimeType });
- const url = URL.createObjectURL(blob);
- const a = document.createElement('a');
- a.href = url;
- a.download = filename;
- document.body.appendChild(a);
- a.click();
- document.body.removeChild(a);
- URL.revokeObjectURL(url);
- };
-
- // Feature #1839: Get log counts by type
- const logCounts = useMemo(() => {
- const counts = {
- total: getUnifiedLogs.length,
- errors: 0,
- warnings: 0,
- info: 0,
- debug: 0,
- network: 0,
- failedRequests: 0,
- };
-
- getUnifiedLogs.forEach(log => {
- if (log.type === 'console') {
- if (log.level === 'error') counts.errors++;
- else if (log.level === 'warn') counts.warnings++;
- else if (log.level === 'info') counts.info++;
- else counts.debug++;
- } else if (log.type === 'network') {
- counts.network++;
- if (log.failed || (log.status && log.status >= 400)) counts.failedRequests++;
- }
- });
-
- return counts;
- }, [getUnifiedLogs]);
+ // logCounts useMemo removed - unused
 
  // Feature #46: Network waterfall data (waterfallData, filteredNetworkRequests, waterfallBounds,
  // networkStats, getWaterfallPosition, exportHAR, toggleNetworkType) provided by useNetworkAnalysisState hook
@@ -928,14 +686,12 @@ export default function TestRunResultPage() {
  // handleRejectBaseline, seekVisualVideoToMarker, handleVisualVideoTimeUpdate come from useVisualTestState
  const {
  toggleStep,
- toggleViolation,
  toggleComparisonSelect,
  analyzePerformanceResults,
  exportK6Results,
  downloadAllAsZip,
  downloadGroupAsZip,
  downloadScreenshot,
- seekVideoToTime,
  handleVideoTimeUpdate,
  handleVideoDownload,
  handleStepVideoSeek,

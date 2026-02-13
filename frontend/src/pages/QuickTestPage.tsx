@@ -14,9 +14,8 @@
 import { useEffect, useCallback, useRef } from 'react'; // Feature #608: useState replaced with useReducer
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
-import { useQuickTestSocket, WaveState, QuickTestSummary } from '../hooks/useQuickTestSocket';
+import { useQuickTestSocket } from '../hooks/useQuickTestSocket';
 import { useQuickTestPageState, type HistoryEntry as ReducerHistoryEntry } from '../hooks/useQuickTestPageState';
-import { useAuthStore } from '../stores/authStore';
 // Feature #712: React Query hooks for history and scheduling
 import { useQuickTestHistory, useCreateQuickTestSchedule } from '../hooks/api/useQuickTest';
 import {
@@ -31,7 +30,6 @@ import {
   Globe,
   Shield,
   Gauge,
-  Brain,
   Loader2,
   ExternalLink,
   History,
@@ -54,7 +52,6 @@ import {
   type WaveData,
   type QuickTestResult,
   type HistoryEntry,
-  type AIAnalysisData,
   // Utilities
   isValidUrl,
   getScoreColor,
@@ -72,7 +69,7 @@ import {
   DetailedReport,
 } from '../components/quick-test';
 import { Button } from '@/components/ui/button';
-import { getWaveDefinitionsWithStatus, WAVE_DEFINITIONS } from '../constants/waves';
+import { WAVE_DEFINITIONS } from '../constants/waves';
 
 // ============================================================
 // Types - Feature #514: Moved to ../components/quick-test/types.ts
@@ -181,9 +178,6 @@ function ScoreDisplay({ summary }: ScoreDisplayProps) {
 // ============================================================
 
 export function QuickTestPage() {
-  // Feature #474: Get auth token for schedule API calls
-  const { token } = useAuthStore();
-
   // Feature #441: Use the useQuickTestSocket hook for real-time updates
   const {
     runId: currentRunId,
@@ -193,7 +187,6 @@ export function QuickTestPage() {
     summary,
     isConnected,
     startTest: hookStartTest,
-    reset: resetTest,
     loadResult, // Feature #542: Load historical result for re-viewing
   } = useQuickTestSocket();
 

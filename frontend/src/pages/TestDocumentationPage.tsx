@@ -4,9 +4,9 @@
 // Feature #1254: Living documentation - Version history for documentation updates
 // Feature #712: Migrated to React Query
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '../components/ui/button';
-import { Loader2, FileText, CheckCircle, AlertTriangle, X } from 'lucide-react';
+import { Loader2, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Modal, ModalHeader, ModalBody } from '../components/ui/Modal';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';

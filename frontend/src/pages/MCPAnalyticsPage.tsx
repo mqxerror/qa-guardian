@@ -3,7 +3,6 @@
 // Extracted from App.tsx for code quality compliance (Feature #1357)
 
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { Zap, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
@@ -11,7 +10,6 @@ import { Zap, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import type { MCPUsageStats, MCPTimeSeriesData } from '@/types/mcp';
 
 export function MCPAnalyticsPage() {
- const { token } = useAuthStore();
  const [isLoading, setIsLoading] = useState(true);
  const [toolStats, setToolStats] = useState<MCPUsageStats[]>([]);
  const [timeSeriesData, setTimeSeriesData] = useState<MCPTimeSeriesData[]>([]);
@@ -65,7 +63,7 @@ export function MCPAnalyticsPage() {
  const { usage_stats } = content;
 
  // Generate tool stats from most_used_tools
- const stats: MCPUsageStats[] = usage_stats.most_used_tools?.map((tool, idx) => ({
+ const stats: MCPUsageStats[] = usage_stats.most_used_tools?.map((tool) => ({
  tool_name: tool.name,
  call_count: tool.count,
  success_count: Math.floor(tool.count * (0.9 + Math.random() * 0.09)),

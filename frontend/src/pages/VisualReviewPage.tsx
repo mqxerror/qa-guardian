@@ -338,7 +338,6 @@ Respond in this JSON format:
  diffPercent < 1 ? 'minor' : diffPercent < 5 ? 'moderate' : diffPercent < 15 ? 'major' : 'critical';
 
  // Generate change type based on test name and diff level
- const isLayoutChange = change.testName.toLowerCase().includes('layout') || diffPercent > 10;
  const isColorChange = change.testName.toLowerCase().includes('theme') || diffPercent < 3;
  const isTextChange = change.testName.toLowerCase().includes('text') || change.testName.toLowerCase().includes('content');
  const isIconChange = change.testName.toLowerCase().includes('icon') || change.testName.toLowerCase().includes('image');

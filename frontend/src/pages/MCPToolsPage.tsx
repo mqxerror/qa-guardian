@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Meh, ServerOff, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
@@ -9,7 +8,6 @@ import { toast } from '../stores/toastStore';
 import type { MCPToolInfo } from '@/types/mcp';
 
 export function MCPToolsPage() {
- const { token } = useAuthStore();
  const [tools, setTools] = useState<MCPToolInfo[]>([]);
  const [categories, setCategories] = useState<string[]>([]);
  const [isLoading, setIsLoading] = useState(true);

@@ -5,7 +5,6 @@
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
@@ -21,7 +20,6 @@ import type {
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export function ProviderHealthPage() {
-  const navigate = useNavigate();
   // Feature #232: Fixed to use Zustand auth store instead of non-existent localStorage token
   const token = useAuthStore.getState().token;
 
@@ -32,10 +30,9 @@ export function ProviderHealthPage() {
   const [alertConfig, setAlertConfig] = useState<HealthAlertConfig | null>(null);
   const [latencyTrend, setLatencyTrend] = useState<Array<{ timestamp: string; kie_latency: number; anthropic_latency: number }>>([]);
   const [errorDist, setErrorDist] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedProvider, setSelectedProvider] = useState<'all' | 'kie' | 'anthropic'>('all');
+  const [, setIsLoading] = useState(true);
   const [isRunningCheck, setIsRunningCheck] = useState<string | null>(null);
-  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [, setIsSavingConfig] = useState(false);
 
   // Fetch all data
   useEffect(() => {

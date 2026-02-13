@@ -5,7 +5,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, PlayCircle, HelpCircle, Zap, Check, X, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
@@ -13,7 +12,6 @@ import { PageHeader } from '../components/ui';
 import type { MCPToolInfo } from '@/types/mcp';
 
 export function MCPPlaygroundPage() {
- const { token } = useAuthStore();
  const [tools, setTools] = useState<MCPToolInfo[]>([]);
  const [selectedTool, setSelectedTool] = useState<MCPToolInfo | null>(null);
  const [parameters, setParameters] = useState<Record<string, unknown>>({});
@@ -166,7 +164,6 @@ export function MCPPlaygroundPage() {
 
  const renderParameterInput = (key: string, prop: { type?: string; description?: string; enum?: string[]; default?: unknown }) => {
  const value = parameters[key];
- const isRequired = selectedTool?.inputSchema?.required?.includes(key);
 
  if (prop.enum && prop.enum.length > 0) {
  return (

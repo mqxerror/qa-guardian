@@ -46,11 +46,8 @@ import {
 
 // Feature #709: Import shared types from organization-settings
 import type {
-  SessionInfo,
-  MCPConnection,
   McpAuditLogEntry,
   MCPToolInfo,
-  SlackConnectionData,
 } from '../components/organization-settings';
 
 const logger = createLogger('org-settings');
@@ -1012,7 +1009,7 @@ function SlackIntegrationSection() {
 }
 
 function OrganizationSettingsPage() {
- const { user, logout } = useAuthStore();
+ const { logout } = useAuthStore();
  const { theme, setTheme } = useThemeStore();
  const { timezone, setTimezone } = useTimezoneStore();
  const { preferences, setPreference } = useNotificationStore();
@@ -1041,7 +1038,7 @@ function OrganizationSettingsPage() {
  const [orgName, setOrgName] = useState(organizationName);
  const [isSaving, setIsSaving] = useState(false);
  const [logoUrl, setLogoUrl] = useState<string | null>(logoBase64);
- const [logoFile, setLogoFile] = useState<File | null>(null);
+ const [, setLogoFile] = useState<File | null>(null);
 
  const handleTransferOwnership = async (e: React.FormEvent) => {
    e.preventDefault();

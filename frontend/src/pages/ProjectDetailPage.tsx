@@ -14,20 +14,10 @@ import { SkeletonProjectDetail } from "../components/ui/Skeleton";
 import {
   PageHeader,
   AnimatedCard,
-  StatCard,
-  StatusPill,
-  SectionHeader,
-  MetadataRow,
-  CardContent,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-  useReducedMotion,
   ScoreCard,
   EmptyStates, // Feature #559: Enhanced empty state
 } from "../components/ui";
-import { Flame, Plus, Settings, Loader2, FolderKanban, TestTube2, Calendar, User, MoreHorizontal, Github, Shield, ChevronDown, Globe, FileCheck, CheckCircle2, XCircle, Search, X, Clock, Zap, GitBranch } from "lucide-react";
+import { Flame, Settings, Loader2, FolderKanban, MoreHorizontal, Github, Shield, ChevronDown, Globe, FileCheck, CheckCircle2, XCircle, Search, X, Clock, Zap, GitBranch } from "lucide-react";
 // Feature #550: Real-time wave visualization for smoke test
 import { WaveProgressCard, type WaveProgressStatus } from "../components/ui/wave-progress-card";
 // useSuiteRunSocket moved to useSmokeTest hook (Feature #718)
@@ -57,50 +47,15 @@ import {
 import { useMembers } from '../hooks/api/useSettings';
 // Feature #49: Import modular types, utilities and hooks from project-detail
 import {
-  // Types (still needed for inline useState declarations until fully migrated)
+  // Types
   TestSuite,
-  ProjectMember,
-  OrgMember,
-  AlertChannel,
   AlertHistoryEntry,
-  EnvironmentVariable,
-  HealingSettings,
-  DEFAULT_HEALING_SETTINGS,
-  GitHubConnection,
-  GitHubTestFile,
-  GitHubRepository,
-  CustomRule,
-  SASTConfig,
-  SASTFinding,
   SASTScanResult,
-  SecretPattern,
-  DASTConfig,
   DASTScanResult,
-  OpenAPISpec,
-  PRDependencyScanResult,
-  VisionHealingResult,
-  EditSelectorModalState,
   // Utilities
-  // DEVICE_PRESETS, getErrorMessage, getDevicePresetDimensions moved to hooks (Feature #718)
-  getSASTSeverityClass,
-  getDASTRiskClass,
-  getAlertChannelIcon,
-  getAlertConditionLabel,
-  getScanStatusClass,
-  getScanStatusIcon,
-  getHealingStrategyClass,
-  getHealingStrategyLabel,
-  formatFilePath,
-  getMemberRoleClass,
-  formatTimestamp,
   getRelativeTime,
-  truncateText,
   // Components
   SuiteCard,
-  SASTSeverityBadge,
-  DASTRiskBadge,
-  ScanStatusBadge,
-  MemberRoleBadge,
   // Hooks (Feature #49)
   useGitHubHandlers,
   useSastHandlers,
@@ -191,33 +146,21 @@ function ProjectDetailPage() {
   const [suiteSearchQuery, setSuiteSearchQuery] = useState('');
 
   // Feature #49: Settings state and handlers from useSettingsHandlers hook
-  // Destructure what we need from settingsState
+  // Only destructure what's actually used in this file (rest is passed via settingsState/settingsHandlers objects)
   const {
-    projectMembers, orgMembers, showAddMemberModal, selectedUserId, selectedMemberRole,
-    isAddingMember, addMemberError,
-    alertChannels, showCreateAlertModal, newAlertType, newAlertName, newAlertCondition,
-    newAlertThreshold, newAlertEmails, newAlertWebhookUrl, newAlertSlackChannel,
-    slackChannels, newAlertSuppressOnRetry, isCreatingAlert, createAlertError,
-    alertHistory, showAlertHistory,
-    envVars, showAddEnvModal, newEnvKey, newEnvValue, newEnvIsSecret,
-    isAddingEnv, addEnvError, editingEnvId, editEnvValue,
-    healingSettings, isSavingHealingSettings, healingSettingsMessage,
-    editSelectorModal, editSelectorValue, editSelectorNotes, editSelectorApplyToTest,
-    isSubmittingSelector, isHealingWithVision, visionHealingResult,
+    slackChannels,
+    orgMembers,
+    projectMembers,
+    showAddEnvModal,
+    showCreateAlertModal,
+    showAddMemberModal,
   } = settingsState;
   const {
-    setProjectMembers, setOrgMembers, setShowAddMemberModal, setSelectedUserId, setSelectedMemberRole,
-    handleAddMember, handleRemoveMember,
-    setAlertChannels, setShowCreateAlertModal, setNewAlertType, setNewAlertName, setNewAlertCondition,
-    setNewAlertThreshold, setNewAlertEmails, setNewAlertWebhookUrl, setNewAlertSlackChannel,
-    setSlackChannels, setNewAlertSuppressOnRetry, setAlertHistory, setShowAlertHistory,
-    handleCreateAlert, handleToggleAlert, handleDeleteAlert,
-    setEnvVars, setShowAddEnvModal, setNewEnvKey, setNewEnvValue, setNewEnvIsSecret,
-    setAddEnvError, setEditingEnvId, setEditEnvValue,
-    handleAddEnvVar, handleUpdateEnvVar, handleDeleteEnvVar,
-    setHealingSettings, handleSaveHealingSettings,
-    setEditSelectorModal, setEditSelectorValue, setEditSelectorNotes, setEditSelectorApplyToTest,
-    handleUpdateSelector, handleAcceptHealed, handleHealWithVision,
+    setProjectMembers, setOrgMembers,
+    setAlertChannels,
+    setSlackChannels, setAlertHistory,
+    setEnvVars,
+    setHealingSettings,
   } = settingsHandlers;
 
   // Feature #49: GitHub state and handlers from useGitHubHandlers hook
@@ -234,11 +177,10 @@ function ProjectDetailPage() {
   const {
     setGithubConnected, setGithubUsername, setGithubConnection, setGithubTestFiles,
     setShowRepoSelectModal, setSelectedRepo, setSelectedBranch, setSelectedTestPath,
-    setAvailableBranches, setGithubError, setPrChecksEnabled, setPullRequests, setPrCommentsEnabled,
-    setPrDependencyScanEnabled, setPrDependencyScanFiles, setPrDependencyScanSeverity, setPrDependencyScanBlockOnCritical,
+    setAvailableBranches, setPrChecksEnabled, setPullRequests, setPrCommentsEnabled,
     handleConnectGithub, handleDisconnectGithub, handleOpenRepoSelect, handleConnectRepo,
     handleDisconnectRepo, handleSyncRepo, handleChangeBranch, handleTogglePRChecks,
-    fetchPullRequests, handlePostPRStatus, handleTogglePRComments, handlePostPRComment,
+    handlePostPRStatus, handleTogglePRComments, handlePostPRComment,
     handleTogglePRDependencyScan, handleUpdatePRDependencyScanConfig, handleTriggerPRDependencyScan,
   } = githubHandlers;
 
@@ -260,7 +202,7 @@ function ProjectDetailPage() {
     setSecretPatterns, setShowAddSecretPatternModal, setNewPatternName,
     setNewPatternDescription, setNewPatternRegex, setNewPatternSeverity,
     setPatternError, setPatternTestInput, setPatternTestResult,
-    setShowFalsePositiveModal, setSelectedFinding, setFpReason, setShowFalsePositives,
+    setShowFalsePositiveModal, setSelectedFinding, setFpReason,
     toggleRemediation,
     handleUpdateSastConfig, handleTriggerScan, handleAddCustomRule, handleToggleCustomRule,
     handleDeleteCustomRule, handleTestPattern, handleAddSecretPattern,

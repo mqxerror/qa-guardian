@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from "react";
 // import { useNavigate } from "react-router-dom"; // Unused
 import { Layout } from "../components/Layout";
 import { useAuthStore } from "../stores/authStore";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+// recharts imports removed - unused (previously: LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend)
 import { toast } from "../stores/toastStore";
 import {
   useMonitoringSummary,
@@ -25,12 +25,9 @@ import {
   useEscalationPolicies,
   useDeleteEscalationPolicy,
   useTestEscalationPolicy,
-  useAlertHistory,
-  useExportAlertHistory,
+  useInvalidateMonitoringSettings,
   useAlertRoutingRules,
   useAlertRoutingLogs,
-  useDeleteAlertRoutingRule,
-  useInvalidateMonitoringSettings,
 } from "../hooks/api/useMonitoring";
 import { devLog, createLogger } from "../utils/logger";
 
@@ -38,22 +35,14 @@ const logger = createLogger('monitoring');
 // Feature #336: Design system components
 import {
   PageHeader,
-  AnimatedCard,
-  StatusPill,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-  useReducedMotion,
 } from "../components/ui";
-import { Plus, Activity, CreditCard, Webhook, Gauge, Settings } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from '@/components/ui/button';
 
 // Feature #47: Import modular components and types for performance optimization
 // Eliminates ~600 lines of duplicate type definitions
 import {
   MonitoringSummaryCards,
-  StatusBadge,
   UptimeChecksTab,
   SettingsTab,
   TransactionsTab,
@@ -70,8 +59,6 @@ import {
   ManagedIncidentDetailModal,
   AssignResponderModal,
   ResolveIncidentModal,
-  getIncidentStatusColor,
-  getIncidentPriorityColor,
   // Feature #47: Import on-call schedule modal
   OnCallScheduleModal,
   // Feature #47: Import status page modals
@@ -81,7 +68,6 @@ import {
   AlertGroupingModal,
   AlertRoutingTestModal,
   // Feature #47: Import hooks for state management
-  useMonitoringSettings,
   useWebhookHandlers,
   useTransactionHandlers,
   usePerformanceHandlers,
@@ -89,46 +75,13 @@ import {
   useManagedIncidentHandlers,
   useUptimeCheckHandlers,
   // Import types from modular components - Feature #47: Only import types that are used
-  type MonitoringLocation,
-  type MonitoringLocationInfo,
-  type LocationResult,
   type UptimeCheck,
-  type CheckResult,
-  type MonitoringSummary,
-  type WebhookCheck,
-  type WebhookEvent,
-  type SlaMetrics,
-  type IncidentData,
-  type HistoryData,
-  type MaintenanceData,
-  type TransactionCheck,
-  type TransactionResult,
-  type PerformanceCheck,
-  type PerformanceResult,
-  type PerformanceTrends,
   type DetailTab,
   type HistoryRange,
-  type MonitoringSettings,
-  type RetentionStats,
   type StatusPage,
-  type AvailableCheck,
   type OnCallSchedule,
   type EscalationPolicy,
-  type AlertGroupingRule,
-  type AlertGroup,
-  type AlertHistoryStats,
-  type AlertHistoryItem,
-  type AlertsOverTimeData,
   type AlertRoutingRule,
-  type AlertRoutingLog,
-  type GlobalSeverityMapping,
-  type AlertRateLimitConfig,
-  type RateLimitStats,
-  type AlertCorrelationConfig,
-  type AlertCorrelation,
-  type AlertRunbook,
-  type ManagedIncidentResponder,
-  type ManagedIncident,
 } from '../components/monitoring';
 
 function MonitoringPage() {
@@ -137,14 +90,11 @@ function MonitoringPage() {
   // UI state for modals and tabs that useUptimeCheckHandlers doesn't manage
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingCheck, setEditingCheck] = useState<UptimeCheck | null>(null);
-  const [showIncidentTab, setShowIncidentTab] = useState(false);
+  // showIncidentTab state removed - unused
   const [historyRange, setHistoryRange] = useState<HistoryRange>('24h');
   const [activeDetailTab, setActiveDetailTab] = useState<DetailTab>('details');
-  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
-  const [maintenanceName, setMaintenanceName] = useState('');
-  const [maintenanceStartTime, setMaintenanceStartTime] = useState('');
-  const [maintenanceEndTime, setMaintenanceEndTime] = useState('');
-  const [maintenanceReason, setMaintenanceReason] = useState('');
+  // maintenanceName, maintenanceStartTime, maintenanceEndTime, maintenanceReason removed - unused
+  const [, setShowMaintenanceModal] = useState(false);
 
   // Filter state - needed before useUptimeCheckHandlers
   const [filterTag, setFilterTag] = useState<string>('');
@@ -167,7 +117,6 @@ function MonitoringPage() {
     historyData,
     maintenanceData,
     summary,
-    availableLocations,
     availableTags,
     availableGroups,
     isLoading,
@@ -191,7 +140,6 @@ function MonitoringPage() {
     deleteCheck,
     duplicateCheck,
     bulkAction,
-    createMaintenanceWindow,
     deleteMaintenanceWindow,
   } = useUptimeCheckHandlers(token, filterTag, filterGroup, openEditModal);
 
@@ -207,7 +155,7 @@ function MonitoringPage() {
 
   // Feature #708: React Query hooks for settings (replaces useState + fetch)
   const { data: monitoringSettingsData, isLoading: isLoadingSettingsRQ } = useMonitoringSettingsQuery();
-  const { data: retentionStatsData, isLoading: isLoadingStatsRQ } = useMonitoringRetentionStats();
+  const { data: retentionStatsData } = useMonitoringRetentionStats();
   const saveSettingsMutation = useSaveMonitoringSettings();
   const cleanupMutation = useRunRetentionCleanup();
   const { invalidateSettings, invalidateStats } = useInvalidateMonitoringSettings();
@@ -228,18 +176,10 @@ function MonitoringPage() {
   const testEscalationMutation = useTestEscalationPolicy();
 
   // Feature #708: React Query hooks for alert history
-  const [alertHistorySeverityFilter, setAlertHistorySeverityFilter] = useState<string>('');
-  const [alertHistorySourceFilter, setAlertHistorySourceFilter] = useState<string>('');
-  const { data: alertHistoryData, isLoading: isLoadingAlertHistoryRQ } = useAlertHistory({
-    severity: alertHistorySeverityFilter || undefined,
-    source: alertHistorySourceFilter || undefined,
-  });
-  const exportAlertHistoryMutation = useExportAlertHistory();
-
-  // Feature #708: React Query hooks for alert routing
-  const { data: alertRoutingRulesData, isLoading: isLoadingRoutingRulesRQ, refetch: refetchAlertRoutingRules } = useAlertRoutingRules();
-  const { data: alertRoutingLogsData, refetch: refetchAlertRoutingLogs } = useAlertRoutingLogs();
-  const deleteRoutingRuleMutation = useDeleteAlertRoutingRule();
+  // alertHistorySeverityFilter, alertHistorySourceFilter removed - unused
+  // useAlertHistory, useExportAlertHistory, useDeleteAlertRoutingRule hooks removed - unused
+  const { refetch: refetchAlertRoutingRules } = useAlertRoutingRules();
+  const { refetch: refetchAlertRoutingLogs } = useAlertRoutingLogs();
 
   // Derive data from React Query responses
   const monitoringSettings = monitoringSettingsData || null;
@@ -254,13 +194,8 @@ function MonitoringPage() {
   const isLoadingOnCallSchedules = isLoadingOnCallRQ;
   const escalationPolicies = escalationPoliciesData?.policies || [];
   const isLoadingEscalationPolicies = isLoadingEscalationRQ;
-  const alertHistory = alertHistoryData?.alerts || [];
-  const alertHistoryStats = alertHistoryData?.stats || null;
-  const alertsOverTime = alertHistoryData?.alerts_over_time || [];
-  const isLoadingAlertHistory = isLoadingAlertHistoryRQ;
-  const alertRoutingRules = alertRoutingRulesData?.rules || [];
-  const alertRoutingLogs = alertRoutingLogsData?.logs || [];
-  const isLoadingAlertRouting = isLoadingRoutingRulesRQ;
+  // alertHistory, alertHistoryStats, alertsOverTime, isLoadingAlertHistory removed - unused
+  // alertRoutingRules, alertRoutingLogs, isLoadingAlertRouting removed - unused
 
   // Settings form state (local edits before save)
   const [settingsRetentionDays, setSettingsRetentionDays] = useState<30 | 90 | 365>(90);
@@ -282,73 +217,18 @@ function MonitoringPage() {
   const [editingOnCallSchedule, setEditingOnCallSchedule] = useState<OnCallSchedule | null>(null);
   const [showEscalationPolicyModal, setShowEscalationPolicyModal] = useState(false);
   const [editingEscalationPolicy, setEditingEscalationPolicy] = useState<EscalationPolicy | null>(null);
-  const [showAlertHistorySection, setShowAlertHistorySection] = useState(false);
   const [showAlertRoutingModal, setShowAlertRoutingModal] = useState(false);
   const [editingAlertRoutingRule, setEditingAlertRoutingRule] = useState<AlertRoutingRule | null>(null);
   const [showAlertRoutingTest, setShowAlertRoutingTest] = useState(false);
 
-  // Advanced alert config state (keeping as-is since no React Query hooks yet)
-  const [globalSeverityMapping, setGlobalSeverityMapping] = useState<GlobalSeverityMapping>({
-    critical: 'P1',
-    high: 'P2',
-    medium: 'P3',
-    low: 'P4',
-    info: 'P5',
-  });
-  const [isSavingSeverityMapping, setIsSavingSeverityMapping] = useState(false);
-  const [alertRateLimitConfig, setAlertRateLimitConfig] = useState<AlertRateLimitConfig>({
-    enabled: true,
-    max_alerts_per_minute: 5,
-    time_window_seconds: 60,
-    suppression_mode: 'aggregate',
-    aggregate_threshold: 10,
-  });
-  const [isSavingRateLimit, setIsSavingRateLimit] = useState(false);
-  const [rateLimitStats, setRateLimitStats] = useState<RateLimitStats | null>(null);
-  const [isTestingRateLimit, setIsTestingRateLimit] = useState(false);
-  const [alertCorrelationConfig, setAlertCorrelationConfig] = useState<AlertCorrelationConfig>({
-    enabled: true,
-    correlate_by_check: true,
-    correlate_by_location: true,
-    correlate_by_error_type: true,
-    correlate_by_time_window: true,
-    time_window_seconds: 300,
-    similarity_threshold: 60,
-  });
-  const [isSavingCorrelation, setIsSavingCorrelation] = useState(false);
-  const [alertCorrelations, setAlertCorrelations] = useState<AlertCorrelation[]>([]);
-  const [isTestingCorrelation, setIsTestingCorrelation] = useState(false);
-  const [selectedCorrelation, setSelectedCorrelation] = useState<AlertCorrelation | null>(null);
-  const [alertRunbooks, setAlertRunbooks] = useState<AlertRunbook[]>([]);
-  const [isLoadingRunbooks, setIsLoadingRunbooks] = useState(false);
-  const [showRunbookModal, setShowRunbookModal] = useState(false);
-  const [editingRunbook, setEditingRunbook] = useState<AlertRunbook | null>(null);
-  const [runbookForm, setRunbookForm] = useState({
-    name: '',
-    description: '',
-    check_type: 'all' as AlertRunbook['check_type'],
-    severity: 'all' as AlertRunbook['severity'],
-    runbook_url: '',
-    instructions: '',
-  });
-  const [isSavingRunbook, setIsSavingRunbook] = useState(false);
-  const [runbookTestResult, setRunbookTestResult] = useState<{
-    alert: {
-      id: string;
-      check_name: string;
-      check_type: string;
-      severity: string;
-      error_message: string;
-      runbook: { id: string; name: string; url: string; instructions?: string } | null;
-    };
-    runbook_found: boolean;
-    message: string;
-  } | null>(null);
+  // Advanced alert config state removed - all unused (globalSeverityMapping, isSavingSeverityMapping,
+  // alertRateLimitConfig, isSavingRateLimit, rateLimitStats, isTestingRateLimit,
+  // alertCorrelationConfig, isSavingCorrelation, alertCorrelations, isTestingCorrelation,
+  // selectedCorrelation, alertRunbooks, isLoadingRunbooks, showRunbookModal, editingRunbook,
+  // runbookForm, isSavingRunbook, runbookTestResult)
 
   // Feature #47: Managed incident state and handlers extracted to useManagedIncidentHandlers hook
   const {
-    managedIncidents,
-    isLoadingManagedIncidents,
     showManagedIncidentModal,
     selectedManagedIncident,
     isSubmittingManagedIncident,
@@ -360,7 +240,6 @@ function MonitoringPage() {
     setShowManagedAssignResponderModal,
     setShowManagedResolveModal,
     fetchManagedIncidents,
-    openManagedIncidentDetail,
     handleUpdateManagedIncidentStatus,
     handleCreateManagedIncidentFromModal,
     handleAddNoteFromModal,
@@ -370,23 +249,11 @@ function MonitoringPage() {
 
   // Feature #47: Alert grouping state and handlers extracted to useAlertGroupHandlers hook
   const {
-    alertGroupingRules,
-    alertGroups,
-    isLoadingAlertGrouping,
     showAlertGroupingModal,
     editingAlertGroupingRule,
     setShowAlertGroupingModal,
-    setEditingAlertGroupingRule,
     fetchAlertGroupingRules,
     fetchAlertGroups,
-    openEditAlertGroupingRule,
-    handleDeleteAlertGroupingRule,
-    handleSimulateAlertGrouping,
-    createIncidentFromAlertGroup,
-    acknowledgeAlertGroup,
-    resolveAlertGroup,
-    snoozeAlertGroup,
-    unsnoozeAlertGroup,
   } = useAlertGroupHandlers(token, fetchManagedIncidents);
 
   // TCP and DNS state removed - infrastructure monitoring, not QA testing
@@ -579,58 +446,15 @@ function MonitoringPage() {
 
   // Feature #47: fetchAlertGroupingRules and fetchAlertGroups moved to useAlertGroupHandlers hook
 
-  // Feature #708: Alert history is now automatic via useAlertHistory hook (params trigger refetch)
-  // Keeping function for backwards compatibility with components that call it
-  const fetchAlertHistory = useCallback(() => {
-    // No-op: React Query handles this automatically with filter params
-  }, []);
-
-  // Feature #708: Export alert history using React Query mutation
-  const exportAlertHistory = async (format: 'csv' | 'json') => {
-    try {
-      await exportAlertHistoryMutation.mutateAsync({
-        format,
-        severity: alertHistorySeverityFilter || undefined,
-        source: alertHistorySourceFilter || undefined,
-      });
-      toast.success(`Alert history exported as ${format.toUpperCase()}`);
-    } catch (error) {
-      logger.error('Failed to export alert history:', error);
-      toast.error('Failed to export alert history');
-    }
-  };
-
-  // Feature #47: openEditAlertGroupingRule, handleDeleteAlertGroupingRule, handleSimulateAlertGrouping
-  // moved to useAlertGroupHandlers hook
-
-  // Feature #708: fetchAlertRoutingRules is now automatic via useAlertRoutingRules hook
+  // Feature #708: fetchAlertRoutingRules/Logs via React Query refetch
   const fetchAlertRoutingRules = useCallback(() => {
     refetchAlertRoutingRules();
   }, [refetchAlertRoutingRules]);
-
-  // Feature #708: fetchAlertRoutingLogs is now automatic via useAlertRoutingLogs hook
   const fetchAlertRoutingLogs = useCallback(() => {
     refetchAlertRoutingLogs();
   }, [refetchAlertRoutingLogs]);
 
-  // Feature #47: Form state moved to AlertRoutingModal - only need simple open/close
-  const openEditAlertRoutingRule = (rule: AlertRoutingRule) => {
-    setEditingAlertRoutingRule(rule);
-    setShowAlertRoutingModal(true);
-  };
-
-  // Feature #708: Delete alert routing rule using React Query mutation
-  const handleDeleteAlertRoutingRule = async (ruleId: string) => {
-    if (!confirm('Are you sure you want to delete this alert routing rule?')) return;
-
-    try {
-      await deleteRoutingRuleMutation.mutateAsync(ruleId);
-      toast.success('Alert routing rule deleted');
-    } catch (error) {
-      logger.error('Failed to delete alert routing rule:', error);
-      toast.error('Failed to delete alert routing rule');
-    }
-  };
+  // fetchAlertHistory, exportAlertHistory, openEditAlertRoutingRule, handleDeleteAlertRoutingRule removed - unused
 
   // Feature #47: Alert routing condition/destination functions moved to AlertRoutingModal
   // Feature #47: fetchManagedIncidents moved to useManagedIncidentHandlers hook
@@ -672,26 +496,7 @@ function MonitoringPage() {
     }
   }, [selectedPerformance, fetchPerformanceResults]);
 
-  // Feature #47: Uptime check functions moved to useUptimeCheckHandlers hook
-  // Local wrapper for createMaintenanceWindow to use local form state
-  const handleCreateMaintenanceWindow = async () => {
-    if (!selectedCheck) return;
-    if (!maintenanceName || !maintenanceStartTime || !maintenanceEndTime) {
-      alert('Please fill in all required fields');
-      return;
-    }
-    await createMaintenanceWindow(selectedCheck.id, {
-      name: maintenanceName,
-      start_time: maintenanceStartTime,
-      end_time: maintenanceEndTime,
-      reason: maintenanceReason || undefined,
-    });
-    setShowMaintenanceModal(false);
-    setMaintenanceName('');
-    setMaintenanceStartTime('');
-    setMaintenanceEndTime('');
-    setMaintenanceReason('');
-  };
+  // handleCreateMaintenanceWindow removed - unused
 
   // Local wrapper for deleteMaintenanceWindow to use selected check
   const handleDeleteMaintenanceWindow = async (windowId: string) => {

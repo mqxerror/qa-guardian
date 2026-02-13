@@ -13,7 +13,7 @@ import { Eye } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { useTimezoneStore } from '../stores/timezoneStore';
-import { useRunsPaginated, useRunsInfinite, useProjects, type TestRun } from '../hooks/api';
+import { useRunsPaginated, useRunsInfinite, useProjects } from '../hooks/api';
 import { InfiniteScrollContainer } from '../components/ui/InfiniteScrollContainer';
 import { VirtualTable } from '../components/ui/VirtualList';
 import { SkeletonRunHistory } from '../components/ui/Skeleton';
@@ -80,17 +80,6 @@ function RunHistoryPage() {
  const error = useInfiniteScroll
  ? (infiniteError instanceof Error ? infiniteError.message : infiniteError ? String(infiniteError) : null)
  : (runsError instanceof Error ? runsError.message : runsError ? String(runsError) : null);
-
- // Get unique suites from runs
- const uniqueSuites = useMemo(() => {
- const suiteMap = new Map<string, string>();
- runs.forEach(run => {
- if (!suiteMap.has(run.suite_id)) {
- suiteMap.set(run.suite_id, run.suite_name);
- }
- });
- return Array.from(suiteMap.entries()).map(([id, name]) => ({ id, name }));
- }, [runs]);
 
  // Apply client-side filters
  const filteredRuns = useMemo(() => {

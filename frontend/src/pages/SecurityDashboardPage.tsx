@@ -23,10 +23,6 @@ import {
   useVerifySecret,
   useInvalidateSecurity,
   // DashboardFinding, // Unused
-  SecurityDashboardData,
-  TrendsData,
-  SecretsData,
-  DetectedSecret,
 } from '../hooks/api/useSecurity';
 
 export function SecurityDashboardPage() {
@@ -66,25 +62,22 @@ export function SecurityDashboardPage() {
   const {
     data,
     isLoading,
-    error: dashboardError,
   } = useSecurityDashboard(dashboardParams);
 
   const {
     data: trendsData,
     isLoading: isTrendsLoading,
-    error: trendsError,
   } = useSecurityTrends(30);
 
   const {
     data: secretsData,
     isLoading: isSecretsLoading,
-    error: secretsError,
   } = useSecretsDashboard(secretsParams);
 
   // Mutations for scanning and verifying secrets
   const scanSecretsMutation = useScanSecrets();
   const verifySecretMutation = useVerifySecret();
-  const { refetchSecrets } = useInvalidateSecurity();
+  useInvalidateSecurity();
 
   // Helper function for scanning secrets
   const scanForSecrets = (scanEnvFiles: boolean = true, scanCiConfigs: boolean = true) => {
@@ -179,21 +172,6 @@ export function SecurityDashboardPage() {
       }
       return newSet;
     });
-  };
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'cloud': return 'cloud';
-      case 'vcs': return 'git';
-      case 'payment': return 'credit-card';
-      case 'crypto': return 'lock';
-      case 'auth': return 'key';
-      case 'database': return 'database';
-      case 'communication': return 'message';
-      case 'package': return 'package';
-      case 'platform': return 'server';
-      default: return 'shield';
-    }
   };
 
   const getSeverityColor = (severity: string) => {

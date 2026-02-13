@@ -3,7 +3,7 @@
 // Feature #71: Migrated to React Query for caching
 // Feature #126: Added empty states with CTA
 // Feature #337: Dark-first design system redesign
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
@@ -20,7 +20,6 @@ import {
   AnimatedCard,
   StatusPill,
   CardContent,
-  useReducedMotion,
 } from '../components/ui';
 import { Plus, Archive, RotateCcw, Loader2 } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
@@ -29,13 +28,13 @@ import { Button } from '@/components/ui/button';
 import type { Project } from '@/types/organization';
 
 export function ProjectsPage() {
-  const { token, user } = useAuthStore();
+  const { user } = useAuthStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
   const [newProjectBaseUrl, setNewProjectBaseUrl] = useState('');
-  const [createError, setCreateError] = useState('');
-  const [createSuccess, setCreateSuccess] = useState('');
+  const [, setCreateError] = useState('');
+  const [, setCreateSuccess] = useState('');
   const [nameError, setNameError] = useState('');
   const [urlError, setUrlError] = useState('');
   const [selectedProjectFilter, setSelectedProjectFilter] = useState<string>('all');
@@ -99,7 +98,7 @@ export function ProjectsPage() {
         onSettled: () => {
           setArchivingProjectId(null);
         },
-        onError: (err) => {
+        onError: () => {
           toast.error(`Failed to ${archive ? 'archive' : 'unarchive'} project`);
         },
       }
@@ -168,9 +167,6 @@ export function ProjectsPage() {
       }
     );
   };
-
-  // Feature #337: Check for reduced motion preference
-  const prefersReducedMotion = useReducedMotion();
 
   return (
     <Layout>

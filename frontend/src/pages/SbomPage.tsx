@@ -2,7 +2,6 @@
 // Generates Software Bill of Materials in CycloneDX and SPDX formats
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { Button } from '../components/ui/button';
@@ -14,7 +13,6 @@ import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
 import type {
   GeneratedSbom,
-  StoredSbom,
   SbomListResponse,
 } from '@/types/dependencies';
 import type { Project } from '@/types/organization';
@@ -111,7 +109,6 @@ function formatDate(dateStr: string): string {
 }
 
 export function SbomPage() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [selectedProject, setSelectedProject] = useState<string>('');
