@@ -10,7 +10,8 @@ import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { useTimezoneStore } from '../stores/timezoneStore';
 import { getStatusColor } from '../constants/colors';
 // Feature #689: React Query hooks for caching
-import { useSchedule, useScheduleRuns, useTriggerSchedule, type ScheduleRun } from '../hooks/api/useSchedules';
+// Feature #778: Added useDeleteSchedule and useUpdateSchedule for Edit/Delete buttons
+import { useSchedule, useScheduleRuns, useTriggerSchedule, useDeleteSchedule, useUpdateSchedule, type ScheduleRun, type UpdateScheduleInput } from '../hooks/api/useSchedules';
 import { Button } from '@/components/ui/button';
 
 export function ScheduleDetailsPage() {
@@ -18,15 +19,52 @@ export function ScheduleDetailsPage() {
  const navigate = useNavigate();
  const { formatDateTime } = useTimezoneStore();
  const [activeTab, setActiveTab] = useState<'details' | 'history'>('history');
+ const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+ const [showEditModal, setShowEditModal] = useState(false);
+ const [editForm, setEditForm] = useState<UpdateScheduleInput>({});
 
  // Feature #689: React Query hooks for caching - replaces useState+useEffect+fetch pattern
  const { data: schedule, isLoading: isScheduleLoading } = useSchedule(scheduleId);
  const { data: runs = [] } = useScheduleRuns(scheduleId);
  const triggerMutation = useTriggerSchedule();
+ // Feature #778: Edit and Delete mutations
+ const deleteMutation = useDeleteSchedule();
+ const updateMutation = useUpdateSchedule();
 
  const handleTriggerRun = () => {
    if (!scheduleId) return;
    triggerMutation.mutate(scheduleId);
+ };
+
+ const handleDelete = () => {
+   if (!scheduleId) return;
+   deleteMutation.mutate(scheduleId, {
+     onSuccess: () => {
+       navigate('/schedules');
+     },
+   });
+ };
+
+ const handleEditOpen = () => {
+   if (!schedule) return;
+   setEditForm({
+     name: schedule.name,
+     description: schedule.description || '',
+     cron_expression: schedule.cron_expression || '',
+     timezone: schedule.timezone,
+     enabled: schedule.enabled,
+     notify_on_failure: schedule.notify_on_failure,
+   });
+   setShowEditModal(true);
+ };
+
+ const handleEditSave = () => {
+   if (!scheduleId) return;
+   updateMutation.mutate({ id: scheduleId, data: editForm }, {
+     onSuccess: () => {
+       setShowEditModal(false);
+     },
+   });
  };
 
  const isLoading = isScheduleLoading;
@@ -71,12 +109,26 @@ export function ScheduleDetailsPage() {
      { label: schedule.name }
    ]}
    actions={
-     <Button
-       onClick={handleTriggerRun}
-       disabled={isTriggering}
-     >
-       {isTriggering ? 'Triggering...' : 'Trigger Run Now'}
-     </Button>
+     <div className="flex items-center gap-2">
+       <Button
+         variant="outline"
+         onClick={handleEditOpen}
+       >
+         Edit
+       </Button>
+       <Button
+         variant="destructive"
+         onClick={() => setShowDeleteConfirm(true)}
+       >
+         Delete
+       </Button>
+       <Button
+         onClick={handleTriggerRun}
+         disabled={isTriggering}
+       >
+         {isTriggering ? 'Triggering...' : 'Trigger Run Now'}
+       </Button>
+     </div>
    }
  />
 
@@ -242,6 +294,98 @@ export function ScheduleDetailsPage() {
  <div>
  <h4 className="text-sm font-medium text-muted-foreground">Created</h4>
  <p className="mt-1 text-foreground">{formatDateTime(schedule.created_at)}</p>
+ </div>
+ </div>
+ </div>
+ )}
+
+ {/* Feature #778: Delete Confirmation Dialog */}
+ {showDeleteConfirm && (
+ <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+ <div className="bg-card border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+ <h3 className="text-lg font-semibold text-foreground mb-2">Delete Schedule</h3>
+ <p className="text-sm text-muted-foreground mb-4">
+ Are you sure you want to delete &quot;{schedule.name}&quot;? This action cannot be undone.
+ </p>
+ <div className="flex justify-end gap-2">
+ <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+ Cancel
+ </Button>
+ <Button
+ variant="destructive"
+ onClick={handleDelete}
+ disabled={deleteMutation.isPending}
+ >
+ {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+ </Button>
+ </div>
+ </div>
+ </div>
+ )}
+
+ {/* Feature #778: Edit Schedule Modal */}
+ {showEditModal && (
+ <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+ <div className="bg-card border border-border rounded-lg p-6 max-w-lg w-full mx-4 shadow-lg">
+ <h3 className="text-lg font-semibold text-foreground mb-4">Edit Schedule</h3>
+ <div className="space-y-4">
+ <div>
+ <label className="block text-sm font-medium text-muted-foreground mb-1">Name</label>
+ <input
+ type="text"
+ value={editForm.name || ''}
+ onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+ className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+ />
+ </div>
+ <div>
+ <label className="block text-sm font-medium text-muted-foreground mb-1">Description</label>
+ <input
+ type="text"
+ value={editForm.description || ''}
+ onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+ className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+ />
+ </div>
+ <div>
+ <label className="block text-sm font-medium text-muted-foreground mb-1">Cron Expression</label>
+ <input
+ type="text"
+ value={editForm.cron_expression || ''}
+ onChange={(e) => setEditForm(prev => ({ ...prev, cron_expression: e.target.value }))}
+ className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono text-foreground"
+ />
+ </div>
+ <div>
+ <label className="block text-sm font-medium text-muted-foreground mb-1">Timezone</label>
+ <input
+ type="text"
+ value={editForm.timezone || ''}
+ onChange={(e) => setEditForm(prev => ({ ...prev, timezone: e.target.value }))}
+ className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+ />
+ </div>
+ <div className="flex items-center gap-2">
+ <input
+ type="checkbox"
+ checked={editForm.notify_on_failure ?? false}
+ onChange={(e) => setEditForm(prev => ({ ...prev, notify_on_failure: e.target.checked }))}
+ className="rounded border-border"
+ id="notify-on-failure"
+ />
+ <label htmlFor="notify-on-failure" className="text-sm text-foreground">Notify on Failure</label>
+ </div>
+ </div>
+ <div className="flex justify-end gap-2 mt-6">
+ <Button variant="outline" onClick={() => setShowEditModal(false)}>
+ Cancel
+ </Button>
+ <Button
+ onClick={handleEditSave}
+ disabled={updateMutation.isPending}
+ >
+ {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+ </Button>
  </div>
  </div>
  </div>
