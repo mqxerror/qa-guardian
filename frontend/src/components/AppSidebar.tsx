@@ -7,7 +7,7 @@
  * Navigation Groups per spec:
  * 1. Always visible: Dashboard, Projects
  * 2. Testing (expanded by default): Schedules, Visual Review, Analytics
- * 3. Security & Quality (collapsed): Security Scans, Monitoring
+ * 3. Security & Quality (collapsed): Security Dashboard, NPM Audit, Container Scan, SBOM, Dependency Tree, DAST Comparison, License Compliance, Monitoring
  * 4. AI Features (collapsed): AI Insights, Test Generator, AI Chat
  * 5. Settings (collapsed): Team, Settings, Billing, API Keys
  * 6. Developer Tools (collapsed, dev+ role): MCP Hub, Audit Logs
@@ -27,7 +27,7 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 // Feature #513: Removed unused Bell import
-import { ChevronDown, ChevronRight, Pin, LogOut, RefreshCw, Eye, EyeOff, Building2, Check, Users, Key, CreditCard, FileCode, ClipboardList, Bot, Zap } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pin, LogOut, RefreshCw, Eye, EyeOff, Building2, Check, Users, Key, CreditCard, FileCode, ClipboardList, Bot, Zap, Scale } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useSidebarStore, SidebarSection } from '../stores/sidebarStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
@@ -88,6 +88,8 @@ import {
   SecurityIcon,
   SecurityGroupIcon,
   DASTIcon,
+  ContainerScanIcon,
+  DependenciesIcon,
   MonitoringIcon,
   AIInsightsIcon,
   AIGroupIcon,
@@ -305,9 +307,15 @@ export function AppSidebar() {
   ];
 
   // Group 3: Security & Quality (collapsed by default)
+  // Feature #861: Updated to show all remaining security pages after 12 mock pages were removed
   const securityMenuItems: MenuItemConfig[] = [
-    { path: '/security', icon: <SecurityIcon />, label: 'Security Scans', visibility: 'qa' },
-    { path: '/security/dast-compare', icon: <DASTIcon />, label: 'DAST Scanning', visibility: 'qa' },
+    { path: '/security', icon: <SecurityIcon />, label: 'Security Dashboard', visibility: 'qa' },
+    { path: '/security/npm-audit', icon: <DependenciesIcon />, label: 'NPM Audit', visibility: 'qa' },
+    { path: '/security/containers', icon: <ContainerScanIcon />, label: 'Container Scan', visibility: 'qa' },
+    { path: '/security/sbom', icon: <DependenciesIcon />, label: 'SBOM', visibility: 'qa' },
+    { path: '/security/dependency-tree', icon: <DependenciesIcon />, label: 'Dependency Tree', visibility: 'qa' },
+    { path: '/security/dast-compare', icon: <DASTIcon />, label: 'DAST Comparison', visibility: 'qa' },
+    { path: '/security/licenses', icon: <Scale className="h-5 w-5" />, label: 'License Compliance', visibility: 'qa' },
     { path: '/monitoring', icon: <MonitoringIcon />, label: 'Monitoring', visibility: 'qa' },
   ];
 
