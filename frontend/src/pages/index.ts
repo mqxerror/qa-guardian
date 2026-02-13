@@ -31,7 +31,6 @@ export { ContainerScanPage } from './ContainerScanPage';
 export { DependencyPolicyPage } from './DependencyPolicyPage';
 // Feature #412: KieAIProviderPage content moved to SettingsPage AI tab
 // Feature #412: AnthropicProviderPage content moved to SettingsPage AI tab
-export { DependencyAlertsPage } from './DependencyAlertsPage';
 export { MCPChatPage } from './MCPChatPage';
 // Feature #411: AIRunComparisonPage removed - dead demo page
 export { MCPAnalyticsPage } from './MCPAnalyticsPage';
