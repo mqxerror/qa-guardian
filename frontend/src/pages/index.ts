@@ -23,7 +23,6 @@ export { OrganizationMembersPage } from './OrganizationMembersPage';
 export { AuditLogsPage } from './AuditLogsPage';
 export { WebhookConfigurationPage } from './WebhookConfigurationPage';
 export { DASTComparisonPage } from './DASTComparisonPage';
-export { TrivyDependencyScanPage } from './TrivyDependencyScanPage';
 export { NpmAuditPage } from './NpmAuditPage';
 export { LicenseCompliancePage } from './LicenseCompliancePage';
 // Feature #268: SBOM Generation Page
