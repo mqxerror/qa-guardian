@@ -1,7 +1,4 @@
-import { ReactNode, useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { X, Menu } from 'lucide-react';
-import { Sidebar } from './Sidebar';
+import { ReactNode, useEffect } from 'react';
 import { AppSidebar } from './AppSidebar';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import { useSidebarStore } from '../stores/sidebarStore';
@@ -12,18 +9,15 @@ import { useRealtimeCacheInvalidation } from '../hooks/api/useRealtimeCacheInval
 // Feature #128: Command palette for quick navigation
 import { CommandPalette, useCommandPalette } from './ui/CommandPalette';
 
-// Feature #255: Toggle to use new shadcn sidebar vs legacy sidebar
-const USE_NEW_SIDEBAR = true;
-
 interface LayoutProps {
   children: ReactNode;
 }
 
+// Feature #723: Removed USE_NEW_SIDEBAR constant and legacy Sidebar.tsx (646 lines of dead code)
+// The AppSidebar component is now the only sidebar implementation
+
 export function Layout({ children }: LayoutProps) {
-  const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user } = useAuthStore();
   const { collapsed } = useSidebarStore();
 
   // Feature #128: Command palette for quick navigation (Cmd+K / Ctrl+K)
@@ -47,59 +41,8 @@ export function Layout({ children }: LayoutProps) {
   // Feature #96: Enable real-time cache invalidation via WebSocket events
   useRealtimeCacheInvalidation();
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
-
-  const isActive = (path: string) => location.pathname === path;
-
-  // Role-based menu visibility
-  const canViewSettings = user?.role === 'owner' || user?.role === 'admin';
-  const canViewTeam = user?.role === 'owner' || user?.role === 'admin';
-  const canViewBilling = user?.role === 'owner';
-  const canViewApiKeys = user?.role === 'owner' || user?.role === 'admin';
-
-  // Feature #255: Use new shadcn sidebar or legacy sidebar
-  if (USE_NEW_SIDEBAR) {
-    return (
-      <SidebarProvider defaultOpen={!collapsed}>
-        {/* Skip to main content link - visible only when focused */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:shadow-lg"
-        >
-          Skip to main content
-        </a>
-
-        {/* New shadcn/ui Sidebar */}
-        <AppSidebar />
-
-        {/* Main Content with SidebarInset */}
-        <SidebarInset>
-          {/* Mobile Header with SidebarTrigger */}
-          <header className="md:hidden border-b border-border bg-card px-4 py-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-foreground">QA Guardian</h1>
-              <SidebarTrigger />
-            </div>
-          </header>
-
-          {/* Main content */}
-          <main id="main-content" className="flex-1 overflow-auto p-4" tabIndex={-1}>
-            {children}
-          </main>
-        </SidebarInset>
-
-        {/* Feature #128: Command palette for quick navigation */}
-        <CommandPalette isOpen={commandPaletteOpen} onClose={closeCommandPalette} />
-      </SidebarProvider>
-    );
-  }
-
-  // Legacy sidebar layout
   return (
-    <div className="flex min-h-screen">
+    <SidebarProvider defaultOpen={!collapsed}>
       {/* Skip to main content link - visible only when focused */}
       <a
         href="#main-content"
@@ -108,148 +51,27 @@ export function Layout({ children }: LayoutProps) {
         Skip to main content
       </a>
 
-      {/* Desktop Sidebar */}
-      <Sidebar />
+      {/* AppSidebar - shadcn/ui based sidebar */}
+      <AppSidebar />
 
-      {/* Main Content Area */}
-      <div className="flex flex-1 flex-col">
-        {/* Mobile Header */}
+      {/* Main Content with SidebarInset */}
+      <SidebarInset>
+        {/* Mobile Header with SidebarTrigger */}
         <header className="md:hidden border-b border-border bg-card px-4 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-foreground">QA Guardian</h1>
-            <button
-              className="p-2.5 min-w-[44px] min-h-[44px] rounded-md hover:bg-muted flex items-center justify-center"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? (
-                <X className="h-6 w-6" aria-hidden="true" />
-              ) : (
-                <Menu className="h-6 w-6" aria-hidden="true" />
-              )}
-            </button>
+            <SidebarTrigger />
           </div>
-
-          {/* Mobile menu dropdown */}
-          {mobileMenuOpen && (
-            <div className="mt-4 pb-4 border-t border-border pt-4">
-              <nav className="flex flex-col gap-1">
-                <Link
-                  to="/dashboard"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`text-sm font-medium min-h-[44px] flex items-center px-3 rounded-md hover:bg-muted ${
-                    isActive('/dashboard') ? 'bg-muted text-foreground' : 'text-muted-foreground'
-                  }`}
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  to="/projects"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`text-sm font-medium min-h-[44px] flex items-center px-3 rounded-md hover:bg-muted ${
-                    isActive('/projects') ? 'bg-muted text-foreground' : 'text-muted-foreground'
-                  }`}
-                >
-                  Projects
-                </Link>
-                <Link
-                  to="/schedules"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`text-sm font-medium min-h-[44px] flex items-center px-3 rounded-md hover:bg-muted ${
-                    isActive('/schedules') ? 'bg-muted text-foreground' : 'text-muted-foreground'
-                  }`}
-                >
-                  Schedules
-                </Link>
-                <Link
-                  to="/analytics"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`text-sm font-medium min-h-[44px] flex items-center px-3 rounded-md hover:bg-muted ${
-                    isActive('/analytics') ? 'bg-muted text-foreground' : 'text-muted-foreground'
-                  }`}
-                >
-                  Analytics
-                </Link>
-                <Link
-                  to="/security"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`text-sm font-medium min-h-[44px] flex items-center px-3 rounded-md hover:bg-muted ${
-                    isActive('/security') ? 'bg-muted text-foreground' : 'text-muted-foreground'
-                  }`}
-                >
-                  Security
-                </Link>
-                {canViewTeam && (
-                  <Link
-                    to="/organization/members"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`text-sm font-medium min-h-[44px] flex items-center px-3 rounded-md hover:bg-muted ${
-                      isActive('/organization/members') ? 'bg-muted text-foreground' : 'text-muted-foreground'
-                    }`}
-                  >
-                    Team
-                  </Link>
-                )}
-                {canViewSettings && (
-                  <Link
-                    to="/organization/settings"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`text-sm font-medium min-h-[44px] flex items-center px-3 rounded-md hover:bg-muted ${
-                      isActive('/organization/settings') ? 'bg-muted text-foreground' : 'text-muted-foreground'
-                    }`}
-                  >
-                    Settings
-                  </Link>
-                )}
-                {canViewBilling && (
-                  <Link
-                    to="/organization/billing"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`text-sm font-medium min-h-[44px] flex items-center px-3 rounded-md hover:bg-muted ${
-                      isActive('/organization/billing') ? 'bg-muted text-foreground' : 'text-muted-foreground'
-                    }`}
-                  >
-                    Billing
-                  </Link>
-                )}
-                {canViewApiKeys && (
-                  <Link
-                    to="/organization/api-keys"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`text-sm font-medium min-h-[44px] flex items-center px-3 rounded-md hover:bg-muted ${
-                      isActive('/organization/api-keys') ? 'bg-muted text-foreground' : 'text-muted-foreground'
-                    }`}
-                  >
-                    API Keys
-                  </Link>
-                )}
-              </nav>
-              <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-                <div>
-                  <span className="text-sm font-medium text-foreground">{user?.name}</span>
-                  <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                    {user?.role}
-                  </span>
-                </div>
-                <button
-                  onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                  className="rounded-md bg-muted min-h-[44px] px-4 text-sm font-medium text-foreground hover:bg-muted/80"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-          )}
         </header>
 
         {/* Main content */}
-        <main id="main-content" className="flex-1 overflow-auto" tabIndex={-1}>
+        <main id="main-content" className="flex-1 overflow-auto p-4" tabIndex={-1}>
           {children}
         </main>
-      </div>
+      </SidebarInset>
 
       {/* Feature #128: Command palette for quick navigation */}
       <CommandPalette isOpen={commandPaletteOpen} onClose={closeCommandPalette} />
-    </div>
+    </SidebarProvider>
   );
 }
