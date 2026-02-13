@@ -1,5 +1,6 @@
 // Feature #338: Dark-first auth page with premium design
 // Feature #402: Lazy-load framer-motion for reduced bundle size
+// Feature #711: Migrated to React Query - useCreateOrganization hook
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LazyMotionWrapper, m } from '../components/LazyMotion';
@@ -9,16 +10,20 @@ import { getErrorMessage } from '../utils/errorHandling';
 import { BackgroundBeams, Input } from '../components/aceternity';
 import { Building2, ArrowRight, Loader2 } from 'lucide-react';
 import { useReducedMotion } from '../components/ui';
+import { useCreateOrganization } from '../hooks/api/useOrganization';
 
 export function CreateOrganizationPage() {
   const navigate = useNavigate();
-  const { token, user, setUser } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [autoSlug, setAutoSlug] = useState(true);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const prefersReducedMotion = useReducedMotion();
+
+  // React Query mutation for creating organization
+  const createOrgMutation = useCreateOrganization();
+  const isLoading = createOrgMutation.isPending;
 
   // Generate slug from name
   const generateSlug = (name: string) => {
@@ -54,40 +59,26 @@ export function CreateOrganizationPage() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('/api/v1/organizations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+    createOrgMutation.mutate(
+      { name: name.trim(), slug: slug.trim() },
+      {
+        onSuccess: (data) => {
+          // Update the user's organization_id in auth store
+          if (user && data.organization) {
+            setUser({
+              ...user,
+              organization_id: data.organization.id,
+              role: 'owner',
+            });
+          }
+          toast.success(`Organization "${data.organization.name}" created successfully!`);
+          navigate('/dashboard');
         },
-        body: JSON.stringify({ name: name.trim(), slug: slug.trim() }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create organization');
+        onError: (err) => {
+          setError(getErrorMessage(err, 'Failed to create organization. Please try again.'));
+        },
       }
-
-      // Update the user's organization_id in auth store
-      if (user && data.organization) {
-        setUser({
-          ...user,
-          organization_id: data.organization.id,
-          role: 'owner',
-        });
-      }
-
-      toast.success(`Organization "${data.organization.name}" created successfully!`);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(getErrorMessage(err, 'Failed to create organization. Please try again.'));
-    } finally {
-      setIsLoading(false);
-    }
+    );
   };
 
   return (

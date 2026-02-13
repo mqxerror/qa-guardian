@@ -259,6 +259,44 @@ export function useRemediationSuggestions(testId: string | null) {
 }
 
 /**
+ * Hook to fetch AI suggestions with code examples (Feature #711)
+ * Used by FlakyTestsDashboardPage for expanded suggestions modal
+ */
+export function useFlakySuggestions(testId: string | null, enabled: boolean = false) {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: [...flakyTestKeys.suggestions(testId || ''), 'expanded'],
+    queryFn: () => fetchWithAuth(`/api/v1/ai-insights/flaky-tests/${testId}/suggestions?include_code_examples=true`, token),
+    enabled: !!token && !!testId && enabled,
+    staleTime: 10 * 60 * 1000, // 10 minutes - AI-generated content
+    gcTime: 20 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook for AI chat analysis of flaky tests (Feature #711)
+ * Used by FlakyTestsDashboardPage for Claude AI analysis
+ */
+export function useFlakyTestAIAnalysis() {
+  const token = useAuthStore(state => state.token);
+
+  return useMutation({
+    mutationFn: async (payload: { message: string }) => {
+      const response = await fetchWithAuth(
+        `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/mcp-tools/chat`,
+        token,
+        {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        }
+      );
+      return response;
+    },
+  });
+}
+
+/**
  * Hook to run auto-quarantine
  */
 export function useRunAutoQuarantine() {

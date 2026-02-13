@@ -1,7 +1,9 @@
 // Feature #338: Dark-first auth page with premium design
 // Feature #402: Lazy-load framer-motion for reduced bundle size
+// Feature #711: Migrated to React Query - useForgotPassword mutation
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { LazyMotionWrapper, m } from '../components/LazyMotion';
 import { BackgroundBeams, Input } from '../components/aceternity';
 import { ArrowLeft, Mail, CheckCircle, Loader2 } from 'lucide-react';
@@ -9,22 +11,16 @@ import { useReducedMotion } from '../components/ui';
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
   const prefersReducedMotion = useReducedMotion();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    try {
+  // React Query mutation for forgot password
+  const forgotPasswordMutation = useMutation({
+    mutationFn: async (email: string) => {
       const response = await fetch('/api/v1/auth/forgot-password', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
 
@@ -33,12 +29,22 @@ export function ForgotPasswordPage() {
         throw new Error(data.message || 'Failed to send reset link');
       }
 
+      return response.json();
+    },
+    onSuccess: () => {
       setIsSubmitted(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send reset link');
-    } finally {
-      setIsLoading(false);
-    }
+    },
+    onError: (err: Error) => {
+      setError(err.message || 'Failed to send reset link');
+    },
+  });
+
+  const isLoading = forgotPasswordMutation.isPending;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    forgotPasswordMutation.mutate(email);
   };
 
   if (isSubmitted) {

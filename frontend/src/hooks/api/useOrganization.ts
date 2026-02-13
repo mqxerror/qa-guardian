@@ -106,6 +106,12 @@ export interface CreateWebhookParams {
   batch_interval_seconds?: number;
 }
 
+// Create organization params
+export interface CreateOrganizationParams {
+  name: string;
+  slug: string;
+}
+
 // Query keys factory for cache management
 export const organizationKeys = {
   all: ['organization'] as const,
@@ -120,6 +126,26 @@ export const organizationKeys = {
   webhooks: () => [...organizationKeys.all, 'webhooks'] as const,
   webhookLogs: (webhookId: string) => [...organizationKeys.all, 'webhookLogs', webhookId] as const,
 };
+
+// ============== Organization Creation Hook (Feature #711) ==============
+
+/**
+ * Hook to create a new organization
+ * Feature #711: Migrate CreateOrganizationPage to React Query
+ */
+export function useCreateOrganization() {
+  const token = useAuthStore(state => state.token);
+
+  return useMutation({
+    mutationFn: async (params: CreateOrganizationParams) => {
+      const response = await fetchWithAuth('/api/v1/organizations', token, {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+      return response as { organization: { id: string; name: string; slug: string } };
+    },
+  });
+}
 
 // ============== Audit Logs Hooks ==============
 

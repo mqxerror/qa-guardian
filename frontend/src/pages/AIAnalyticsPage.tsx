@@ -1,19 +1,32 @@
 // ============================================================================
 // FEATURE #412: AI Analytics Page - Merged from AIUsageAnalyticsDashboard + AICostTrackingPage
 // Combines usage analytics, cost tracking, provider comparison, and budget management
+// FEATURE #711: Migrated to React Query hooks
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { ArrowLeft, RefreshCw, DollarSign, Zap, FileInput, FileOutput, Building2, Brain, TrendingUp, Settings } from 'lucide-react';
 import { PageHeader } from '../components/ui';
 // Feature #691: Migrated budget modal to shared Modal component
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
+import { fetchWithAuth } from '../hooks/api/fetchWithAuth';
 
 // Feature #317: API base URL from environment
 const API_BASE = import.meta.env.VITE_API_URL || '';
+
+// Query keys for cache management
+const analyticsKeys = {
+  all: ['aiAnalytics'] as const,
+  analytics: (period: string) => [...analyticsKeys.all, 'analytics', period] as const,
+  comparison: (period: string) => [...analyticsKeys.all, 'comparison', period] as const,
+  trends: (period: string) => [...analyticsKeys.all, 'trends', period] as const,
+  budget: () => [...analyticsKeys.all, 'budget'] as const,
+  models: () => [...analyticsKeys.all, 'models'] as const,
+};
 
 // ============================================================================
 // Types
@@ -101,130 +114,121 @@ interface CostBudget {
 
 export function AIAnalyticsPage() {
   const navigate = useNavigate();
-  const token = useAuthStore.getState().token;
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
 
-  // State
-  const [analytics, setAnalytics] = useState<UsageAnalytics | null>(null);
-  const [comparison, setComparison] = useState<ProviderComparison | null>(null);
-  const [trends, setTrends] = useState<UsageTrends | null>(null);
-  const [budget, setBudget] = useState<CostBudget | null>(null);
-  const [pricing, setPricing] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // UI State
   const [period, setPeriod] = useState<'day' | 'week' | 'month' | 'quarter'>('month');
   const [activeTab, setActiveTab] = useState<'overview' | 'costs' | 'comparison'>('overview');
-  const [isExporting, setIsExporting] = useState(false);
   const [exportType, setExportType] = useState<'csv' | 'pdf' | 'json'>('csv');
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [newBudget, setNewBudget] = useState(500);
-  const [isSavingBudget, setIsSavingBudget] = useState(false);
 
-  // Fetch all data
-  useEffect(() => {
-    fetchData();
-  }, [period]);
+  // React Query: Fetch analytics
+  const { data: analytics, isLoading: isAnalyticsLoading } = useQuery({
+    queryKey: analyticsKeys.analytics(period),
+    queryFn: () => fetchWithAuth(`${API_BASE}/api/v1/ai/analytics?period=${period}`, token) as Promise<UsageAnalytics>,
+    enabled: !!token,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
 
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      const days = period === 'day' ? '1' : period === 'week' ? '7' : period === 'month' ? '30' : '90';
+  // React Query: Fetch comparison
+  const { data: comparison, isLoading: isComparisonLoading } = useQuery({
+    queryKey: analyticsKeys.comparison(period),
+    queryFn: () => fetchWithAuth(`${API_BASE}/api/v1/ai/analytics/comparison?period=${period}`, token) as Promise<ProviderComparison>,
+    enabled: !!token,
+    staleTime: 2 * 60 * 1000,
+  });
 
-      const [analyticsRes, comparisonRes, trendsRes, budgetRes, modelsRes] = await Promise.all([
-        fetch(`${API_BASE}/api/v1/ai/analytics?period=${period}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_BASE}/api/v1/ai/analytics/comparison?period=${period}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_BASE}/api/v1/ai/analytics/trends?period=${period}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_BASE}/api/v1/ai/cost-analytics/budget`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_BASE}/api/v1/ai/cost-analytics/models`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
+  // React Query: Fetch trends
+  const { data: trends, isLoading: isTrendsLoading } = useQuery({
+    queryKey: analyticsKeys.trends(period),
+    queryFn: () => fetchWithAuth(`${API_BASE}/api/v1/ai/analytics/trends?period=${period}`, token) as Promise<UsageTrends>,
+    enabled: !!token,
+    staleTime: 2 * 60 * 1000,
+  });
 
-      if (analyticsRes.ok) setAnalytics(await analyticsRes.json());
-      if (comparisonRes.ok) setComparison(await comparisonRes.json());
-      if (trendsRes.ok) setTrends(await trendsRes.json());
+  // React Query: Fetch budget
+  const { data: budgetData, isLoading: isBudgetLoading } = useQuery({
+    queryKey: analyticsKeys.budget(),
+    queryFn: () => fetchWithAuth(`${API_BASE}/api/v1/ai/cost-analytics/budget`, token),
+    enabled: !!token,
+    staleTime: 60 * 1000,
+  });
 
-      if (budgetRes.ok) {
-        const budgetData = await budgetRes.json();
-        setBudget({
-          org_id: 'org-001',
-          monthly_budget: budgetData.monthlyLimitUsd || 500,
-          warning_threshold_percent: 80,
-          critical_threshold_percent: 95,
-          auto_disable_on_limit: false,
-          current_month_spend: budgetData.currentSpendUsd || 0,
-          budget_remaining: budgetData.remainingUsd || 0,
-          percentage_used: budgetData.percentUsed || 0,
-          projected_month_end: budgetData.projectedMonthlySpend || 0,
-        });
-      }
+  // Transform budget data
+  const budget: CostBudget | null = budgetData ? {
+    org_id: 'org-001',
+    monthly_budget: budgetData.monthlyLimitUsd || 500,
+    warning_threshold_percent: 80,
+    critical_threshold_percent: 95,
+    auto_disable_on_limit: false,
+    current_month_spend: budgetData.currentSpendUsd || 0,
+    budget_remaining: budgetData.remainingUsd || 0,
+    percentage_used: budgetData.percentUsed || 0,
+    projected_month_end: budgetData.projectedMonthlySpend || 0,
+  } : null;
 
-      if (modelsRes.ok) {
-        const modelsData = await modelsRes.json();
-        setPricing(Object.entries(modelsData.models || {}).map(([model, data]: [string, any]) => ({
-          model,
-          provider: model.includes('claude') ? 'anthropic' : 'kie',
-          input_cost_per_million: (data.costUsd || 0) / ((data.inputTokens || 1) / 1000000),
-          output_cost_per_million: (data.costUsd || 0) / ((data.outputTokens || 1) / 1000000),
-        })));
-      }
-    } catch (error) {
-      console.error('Failed to fetch analytics:', error);
-    }
-    setIsLoading(false);
-  };
+  // React Query: Fetch models
+  const { data: modelsData } = useQuery({
+    queryKey: analyticsKeys.models(),
+    queryFn: () => fetchWithAuth(`${API_BASE}/api/v1/ai/cost-analytics/models`, token),
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  // Export report
-  const handleExport = async () => {
-    setIsExporting(true);
-    try {
-      const response = await fetch(`${API_BASE}/api/v1/ai/analytics/export`, {
+  // Transform pricing data
+  const pricing = modelsData?.models
+    ? Object.entries(modelsData.models).map(([model, data]: [string, any]) => ({
+        model,
+        provider: model.includes('claude') ? 'anthropic' : 'kie',
+        input_cost_per_million: (data.costUsd || 0) / ((data.inputTokens || 1) / 1000000),
+        output_cost_per_million: (data.costUsd || 0) / ((data.outputTokens || 1) / 1000000),
+      }))
+    : [];
+
+  const isLoading = isAnalyticsLoading || isComparisonLoading || isTrendsLoading || isBudgetLoading;
+
+  // React Query: Export mutation
+  const exportMutation = useMutation({
+    mutationFn: ({ type, period }: { type: string; period: string }) =>
+      fetchWithAuth(`${API_BASE}/api/v1/ai/analytics/export`, token, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ type: exportType, period }),
-      });
-      if (response.ok) {
-        // Handle successful export
-      }
-    } catch (error) {
-      console.error('Failed to export:', error);
-    }
-    setIsExporting(false);
+        body: JSON.stringify({ type, period }),
+      }),
+  });
+
+  const handleExport = () => {
+    exportMutation.mutate({ type: exportType, period });
   };
 
-  // Update budget
-  const updateBudget = async () => {
-    setIsSavingBudget(true);
-    try {
-      const response = await fetch(`${API_BASE}/api/v1/ai/cost-analytics/budget`, {
+  const isExporting = exportMutation.isPending;
+
+  // React Query: Update budget mutation
+  const updateBudgetMutation = useMutation({
+    mutationFn: (monthlyLimitUsd: number) =>
+      fetchWithAuth(`${API_BASE}/api/v1/ai/cost-analytics/budget`, token, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ monthlyLimitUsd: newBudget }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setBudget(prev => prev ? {
-          ...prev,
-          monthly_budget: data.monthlyLimitUsd || newBudget,
-        } : null);
-        setShowBudgetModal(false);
-      }
-    } catch (error) {
-      console.error('Failed to update budget:', error);
-    }
-    setIsSavingBudget(false);
+        body: JSON.stringify({ monthlyLimitUsd }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: analyticsKeys.budget() });
+      setShowBudgetModal(false);
+    },
+  });
+
+  const updateBudget = () => {
+    updateBudgetMutation.mutate(newBudget);
+  };
+
+  const isSavingBudget = updateBudgetMutation.isPending;
+
+  // Refetch all analytics data
+  const refetchAll = () => {
+    queryClient.invalidateQueries({ queryKey: analyticsKeys.analytics(period) });
+    queryClient.invalidateQueries({ queryKey: analyticsKeys.comparison(period) });
+    queryClient.invalidateQueries({ queryKey: analyticsKeys.trends(period) });
+    queryClient.invalidateQueries({ queryKey: analyticsKeys.budget() });
   };
 
   // Format helpers
@@ -302,7 +306,7 @@ export function AIAnalyticsPage() {
                 </button>
               </div>
               <button
-                onClick={fetchData}
+                onClick={refetchAll}
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 flex items-center gap-2"
               >
                 <RefreshCw className="h-4 w-4" />

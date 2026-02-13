@@ -1,13 +1,17 @@
 // ============================================================================
 // FEATURE #1500: AI Test Review Queue Page
 // Review and approve/reject AI-generated tests before adding to test suites
+// FEATURE #711: Migrated to React Query hooks (useReviewQueue, useApprovalStats, useReviewTest)
 // ============================================================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Loader2, ClipboardCheck, CheckCircle } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { EmptyState } from '../components/ui/EmptyState';
+import { useAuthStore } from '../stores/authStore';
+import { fetchWithAuth } from '../hooks/api/fetchWithAuth';
 
 interface ApprovalInfo {
   status: 'pending' | 'approved' | 'rejected';
@@ -50,106 +54,103 @@ interface ApprovalStats {
   approval_rate: string;
 }
 
+// Query keys for cache management
+const reviewKeys = {
+  queue: ['ai', 'review-queue'] as const,
+  stats: ['ai', 'approval-stats'] as const,
+};
+
 export function AITestReviewPage() {
-  const [queueData, setQueueData] = useState<ReviewQueueData | null>(null);
-  const [stats, setStats] = useState<ApprovalStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
   const [selectedTest, setSelectedTest] = useState<PendingTest | null>(null);
   const [reviewComment, setReviewComment] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'pending' | 'reviewed'>('pending');
 
-  const fetchQueueData = async () => {
-    setIsLoading(true);
-    try {
-      const [queueRes, statsRes] = await Promise.all([
-        fetch('/api/v1/ai/review-queue'),
-        fetch('/api/v1/ai/approval-stats'),
-      ]);
-
-      const queueResult = await queueRes.json();
-      const statsResult = await statsRes.json();
-
-      if (queueResult.success) {
-        setQueueData(queueResult);
-      }
-      if (statsResult.success) {
-        setStats(statsResult.stats);
-      }
-    } catch (err) {
-      setError('Failed to load review queue');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchQueueData();
-  }, []);
-
-  const handleApprove = async (testId: string) => {
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/v1/ai/generation-history/${testId}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'approve',
-          comment: reviewComment,
-        }),
-      });
-
-      const result = await response.json();
+  // React Query: Fetch review queue
+  const {
+    data: queueData,
+    isLoading: isQueueLoading,
+    error: queueError,
+  } = useQuery({
+    queryKey: reviewKeys.queue,
+    queryFn: async () => {
+      const result = await fetchWithAuth('/api/v1/ai/review-queue', token);
       if (result.success) {
-        setSelectedTest(null);
-        setReviewComment('');
-        fetchQueueData();
-      } else {
-        setError(result.error || 'Failed to approve test');
+        return result as ReviewQueueData;
       }
-    } catch (err) {
-      setError('Failed to approve test');
-    } finally {
-      setIsSubmitting(false);
-    }
+      throw new Error(result.error || 'Failed to load review queue');
+    },
+    enabled: !!token,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+
+  // React Query: Fetch approval stats
+  const {
+    data: stats,
+    isLoading: isStatsLoading,
+    error: statsError,
+  } = useQuery({
+    queryKey: reviewKeys.stats,
+    queryFn: async () => {
+      const result = await fetchWithAuth('/api/v1/ai/approval-stats', token);
+      if (result.success) {
+        return result.stats as ApprovalStats;
+      }
+      throw new Error(result.error || 'Failed to load stats');
+    },
+    enabled: !!token,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+
+  // React Query: Review test mutation (approve/reject)
+  const reviewMutation = useMutation({
+    mutationFn: async ({ testId, action, comment }: { testId: string; action: 'approve' | 'reject'; comment: string }) => {
+      const result = await fetchWithAuth(`/api/v1/ai/generation-history/${testId}/approve`, token, {
+        method: 'POST',
+        body: JSON.stringify({ action, comment }),
+      });
+      if (!result.success) {
+        throw new Error(result.error || `Failed to ${action} test`);
+      }
+      return result;
+    },
+    onSuccess: () => {
+      setSelectedTest(null);
+      setReviewComment('');
+      setError(null);
+      // Invalidate queries to refetch data
+      queryClient.invalidateQueries({ queryKey: reviewKeys.queue });
+      queryClient.invalidateQueries({ queryKey: reviewKeys.stats });
+    },
+    onError: (err: Error) => {
+      setError(err.message);
+    },
+  });
+
+  const isLoading = isQueueLoading || isStatsLoading;
+  const isSubmitting = reviewMutation.isPending;
+
+  // Set error from query errors
+  React.useEffect(() => {
+    if (queueError) setError((queueError as Error).message);
+    else if (statsError) setError((statsError as Error).message);
+  }, [queueError, statsError]);
+
+  const handleApprove = (testId: string) => {
+    setError(null);
+    reviewMutation.mutate({ testId, action: 'approve', comment: reviewComment });
   };
 
-  const handleReject = async (testId: string) => {
+  const handleReject = (testId: string) => {
     if (!reviewComment.trim()) {
       setError('Please provide a reason for rejection');
       return;
     }
-
-    setIsSubmitting(true);
     setError(null);
-
-    try {
-      const response = await fetch(`/api/v1/ai/generation-history/${testId}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'reject',
-          comment: reviewComment,
-        }),
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setSelectedTest(null);
-        setReviewComment('');
-        fetchQueueData();
-      } else {
-        setError(result.error || 'Failed to reject test');
-      }
-    } catch (err) {
-      setError('Failed to reject test');
-    } finally {
-      setIsSubmitting(false);
-    }
+    reviewMutation.mutate({ testId, action: 'reject', comment: reviewComment });
   };
 
   const getConfidenceColor = (level: string) => {
