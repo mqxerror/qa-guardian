@@ -54,6 +54,16 @@ Fresh context window. Implemented Feature #711 - Deep React Query migration for 
 ### Commit
 - d18371b5: "Feature #711: Deep React Query migration for pages A-M"
 
+### Additional Work - Feature #712 (Partial)
+Started work on Feature #712 (pages N-Z migration). Migrated 3 more pages:
+- ResetPasswordPage.tsx: useMutation for password reset
+- RegisterPage.tsx: useMutation for user registration
+- TestImprovementAnalyzerPage.tsx: useMutation for AI test analysis
+
+Commit: 48adc42d - "Feature #712 partial: React Query migration for pages N-Z"
+
+Feature #712 still in progress - more pages need migration (ProjectDetailPage, ProviderHealthPage, etc.).
+
 ---
 
 ## Session 2026-02-12 (Session 275) - Regression Verification
