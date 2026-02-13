@@ -61,63 +61,35 @@ export default function SharedTestRunPage() {
  return { passed, failed, total, passRate: total > 0 ? Math.round((passed / total) * 100) : 0 };
  }, [run]);
 
- // Feature #2006: Generate mock screenshots for gallery demo
+ // Feature #869: Build gallery from real test result screenshots instead of canvas placeholders
  const galleryScreenshots: GalleryScreenshot[] = useMemo(() => {
  if (!run?.results) return [];
 
- // Generate demo screenshots for each test type
- const demoColors: Record<string, string> = {
- 'E2E': '#3b82f6', // blue
- 'Visual': '#8b5cf6', // purple
- 'Accessibility': '#10b981', // green
- 'Performance': '#f59e0b', // amber
- 'Load': '#ef4444', // red
- };
-
  const screenshots: GalleryScreenshot[] = [];
- const testTypes: Array<'E2E' | 'Visual' | 'Accessibility'> = ['E2E', 'Visual', 'Accessibility'];
 
- // Create demo screenshots
- testTypes.forEach((testType, typeIdx) => {
- const color = demoColors[testType];
- const count = testType === 'E2E' ? 4 : testType === 'Visual' ? 3 : 2;
+ run.results.forEach((result, idx) => {
+ if (!result.screenshot_base64) return;
 
- for (let i = 0; i < count; i++) {
- // Create a simple colored placeholder image as base64
- const canvas = document.createElement('canvas');
- canvas.width = 400;
- canvas.height = 300;
- const ctx = canvas.getContext('2d');
- if (ctx) {
- // Background gradient
- const gradient = ctx.createLinearGradient(0, 0, 400, 300);
- gradient.addColorStop(0, color);
- gradient.addColorStop(1, `${color}88`);
- ctx.fillStyle = gradient;
- ctx.fillRect(0, 0, 400, 300);
-
- // Add text
- ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 24px sans-serif';
- ctx.textAlign = 'center';
- ctx.fillText(`${testType} Test`, 200, 130);
- ctx.font = '18px sans-serif';
- ctx.fillText(`Screenshot ${i + 1}`, 200, 170);
- ctx.font = '14px sans-serif';
- ctx.fillText(`Step ${i + 1} of ${count}`, 200, 200);
- }
+ // Map test_type to gallery testType
+ const testTypeMap: Record<string, 'E2E' | 'Visual' | 'Accessibility' | 'Performance' | 'Load'> = {
+ 'e2e': 'E2E',
+ 'visual': 'Visual',
+ 'accessibility': 'Accessibility',
+ 'performance': 'Performance',
+ 'load': 'Load',
+ };
+ const testType = testTypeMap[result.test_type?.toLowerCase() || ''] || 'E2E';
 
  screenshots.push({
- id: `screenshot-${testType.toLowerCase()}-${i}`,
- url: canvas.toDataURL('image/png'),
- title: `${testType} Test - Step ${i + 1}`,
- testName: `${testType} Test Suite`,
+ id: `screenshot-${result.test_id || idx}`,
+ url: `data:image/png;base64,${result.screenshot_base64}`,
+ title: result.test_name || `Test ${idx + 1}`,
+ testName: result.test_name || `Test ${idx + 1}`,
  testType,
- status: i === 1 && testType === 'Visual' ? 'failed' : 'passed',
- type: testType === 'Visual' && i === 2 ? 'diff' : testType === 'Visual' && i === 1 ? 'baseline' : 'final',
- timestamp: Date.now() - (typeIdx * 1000000) - (i * 10000),
+ status: result.status === 'passed' ? 'passed' : 'failed',
+ type: 'final',
+ timestamp: Date.now() - idx * 1000,
  });
- }
  });
 
  return screenshots;
