@@ -17,6 +17,8 @@ import { Layout } from '../components/Layout';
 import { useQuickTestSocket, WaveState, QuickTestSummary } from '../hooks/useQuickTestSocket';
 import { useQuickTestPageState, type HistoryEntry as ReducerHistoryEntry } from '../hooks/useQuickTestPageState';
 import { useAuthStore } from '../stores/authStore';
+// Feature #712: React Query hooks for history and scheduling
+import { useQuickTestHistory, useCreateQuickTestSchedule } from '../hooks/api/useQuickTest';
 import {
   PageHeader,
   AnimatedCard,
@@ -244,7 +246,10 @@ export function QuickTestPage() {
     summary: summary || undefined,
   } : null;
 
-  // Load recent URLs from localStorage and history from API
+  // Feature #712: Use React Query hook for history
+  const { data: historyData } = useQuickTestHistory(20, 'completed');
+
+  // Load recent URLs from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem(RECENT_URLS_KEY);
@@ -254,42 +259,24 @@ export function QuickTestPage() {
     } catch {
       // Ignore localStorage errors
     }
+  }, []);
 
-    // Feature #542: Fetch history from backend API
-    const fetchHistory = async () => {
+  // Feature #712: Sync React Query history data to reducer state
+  useEffect(() => {
+    if (historyData?.results) {
+      const apiHistory: HistoryEntry[] = historyData.results.map((r) => ({
+        runId: r.id,
+        url: r.url,
+        timestamp: new Date(r.startedAt),
+        score: r.overallScore ?? undefined,
+      }));
+      actions.setHistory(apiHistory);
+      // Sync back to localStorage for offline access
       try {
-        const response = await fetch('/api/v1/quick-test/history?limit=20&status=completed', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const apiHistory: HistoryEntry[] = (data.results || []).map((r: { id: string; url: string; startedAt: string; overallScore: number | null }) => ({
-            runId: r.id,
-            url: r.url,
-            timestamp: new Date(r.startedAt),
-            score: r.overallScore ?? undefined,
-          }));
-          actions.setHistory(apiHistory);
-          // Sync back to localStorage for offline access
-          try {
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(apiHistory.slice(0, MAX_HISTORY)));
-          } catch { /* ignore */ }
-        }
-      } catch {
-        // Fallback to localStorage if API unavailable
-        try {
-          const savedHistory = localStorage.getItem(HISTORY_KEY);
-          if (savedHistory) {
-            actions.setHistory(JSON.parse(savedHistory).map((h: HistoryEntry) => ({
-              ...h,
-              timestamp: new Date(h.timestamp),
-            })) as ReducerHistoryEntry[]);
-          }
-        } catch { /* ignore */ }
-      }
-    };
-    if (token) fetchHistory();
-  }, [token]);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(apiHistory.slice(0, MAX_HISTORY)));
+      } catch { /* ignore */ }
+    }
+  }, [historyData]);
 
   // Update history when test completes
   useEffect(() => {
@@ -537,6 +524,9 @@ export function QuickTestPage() {
     };
   }, [result, summary, waves]);
 
+  // Feature #712: Use React Query mutation for schedule creation
+  const createScheduleMutation = useCreateQuickTestSchedule();
+
   // Feature #474: Schedule Quick Test handlers - Feature #608: Using reducer actions
   const openScheduleModal = () => {
     actions.resetScheduleModal();
@@ -552,48 +542,39 @@ export function QuickTestPage() {
 
     actions.updateScheduleModal({ isSubmitting: true, error: null });
 
-    try {
-      // Convert frequency to cron expression
-      const cronMap: Record<string, string> = {
-        '1h': '0 * * * *',      // Every hour at minute 0
-        '6h': '0 */6 * * *',    // Every 6 hours
-        '12h': '0 */12 * * *',  // Every 12 hours
-        '24h': '0 9 * * *',     // Daily at 9 AM
-        'weekly': '0 9 * * 1',  // Weekly on Monday at 9 AM
-      };
+    // Convert frequency to cron expression
+    const cronMap: Record<string, string> = {
+      '1h': '0 * * * *',      // Every hour at minute 0
+      '6h': '0 */6 * * *',    // Every 6 hours
+      '12h': '0 */12 * * *',  // Every 12 hours
+      '24h': '0 9 * * *',     // Daily at 9 AM
+      'weekly': '0 9 * * 1',  // Weekly on Monday at 9 AM
+    };
 
-      const response = await fetch('/api/v1/quick-test/schedules', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+    createScheduleMutation.mutate(
+      {
+        url: testingUrl,
+        name: `Quick Test: ${new URL(testingUrl).hostname}`,
+        cron_expression: cronMap[scheduleModal.frequency],
+        notify_on_score_drop: scheduleModal.notifyOnDrop,
+        score_threshold: scheduleModal.threshold,
+      },
+      {
+        onSuccess: () => {
+          actions.updateScheduleModal({ isSubmitting: false, success: true });
+          // Auto-close after success
+          setTimeout(() => {
+            closeScheduleModal();
+          }, 2000);
         },
-        body: JSON.stringify({
-          url: testingUrl,
-          name: `Quick Test: ${new URL(testingUrl).hostname}`,
-          cron_expression: cronMap[scheduleModal.frequency],
-          notify_on_score_drop: scheduleModal.notifyOnDrop,
-          score_threshold: scheduleModal.threshold,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create schedule');
+        onError: (err) => {
+          actions.updateScheduleModal({
+            isSubmitting: false,
+            error: err instanceof Error ? err.message : 'Failed to create schedule',
+          });
+        },
       }
-
-      actions.updateScheduleModal({ isSubmitting: false, success: true });
-
-      // Auto-close after success
-      setTimeout(() => {
-        closeScheduleModal();
-      }, 2000);
-    } catch (err) {
-      actions.updateScheduleModal({
-        isSubmitting: false,
-        error: err instanceof Error ? err.message : 'Failed to create schedule',
-      });
-    }
+    );
   };
 
   return (
