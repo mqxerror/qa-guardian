@@ -218,6 +218,11 @@ export {
   // npm Audit hooks (Feature #725)
   useNpmAuditScan,
   useRunNpmAuditScan,
+  // License Compliance hooks (Feature #868)
+  useLicenseCompliance,
+  useRunLicenseScan,
+  useLicensePolicy,
+  useUpdateLicensePolicy,
   // Invalidation helper
   useInvalidateDependencySecurity,
   dependencySecurityKeys,
@@ -227,4 +232,9 @@ export {
   type NpmAuditUpgradeSuggestion,
   type NpmAuditRecommendation,
   type NpmAuditScanResult,
+  // License Compliance types (Feature #868)
+  type LicenseViolation,
+  type LicensePackage,
+  type LicenseComplianceResult,
+  type OrgLicensePolicy,
 } from './useDependencySecurity';

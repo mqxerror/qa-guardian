@@ -11,7 +11,7 @@
  *   - AutoPRPage hooks (Feature #771 page removed)
  */
 
-import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
 import { fetchWithAuth } from './fetchWithAuth';
 
@@ -98,12 +98,76 @@ export interface NpmAuditScanResult {
 }
 
 // ============================================================================
+// Types - LicenseCompliancePage (Feature #868)
+// ============================================================================
+
+/** Violation returned by the license compliance API */
+export interface LicenseViolation {
+  package: string;
+  version: string;
+  license: string;
+  spdx_id: string | null;
+  violation_type: 'blocklist' | 'not_in_allowlist' | 'unknown_license';
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  reason: string;
+}
+
+/** Package info from license compliance scan */
+export interface LicensePackage {
+  name: string;
+  version: string;
+  license: string;
+  spdx_id: string | null;
+  repository?: string;
+  publisher?: string;
+}
+
+/** Full response from GET /api/v1/projects/:projectId/license-compliance */
+export interface LicenseComplianceResult {
+  project_id: string;
+  project_name: string;
+  scanned_at: string;
+  summary: {
+    total_packages: number;
+    compliant_packages: number;
+    violation_count: number;
+    unknown_license_count: number;
+    compliance_percentage: number;
+  };
+  violations: LicenseViolation[];
+  license_summary: Record<string, number>;
+  policy_applied: {
+    name: string;
+    allowlist: string[];
+    blocklist: string[];
+  };
+  severity_breakdown: { critical: number; high: number; medium: number; low: number };
+  packages?: LicensePackage[];
+}
+
+/** Organization license policy from GET /api/v1/license-policy */
+export interface OrgLicensePolicy {
+  id: string;
+  organization_id: string;
+  name: string;
+  description?: string;
+  allowlist: string[];
+  blocklist: string[];
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
 // Query Keys
 // ============================================================================
 
 export const dependencySecurityKeys = {
   // npm Audit keys (Feature #725)
   npmAudit: (projectId: string, includeDev: boolean) => ['npm-audit', projectId, includeDev] as const,
+  // License compliance keys (Feature #868)
+  licenseCompliance: (projectId: string) => ['license-compliance', projectId] as const,
+  licensePolicy: () => ['license-policy'] as const,
 };
 
 // ============================================================================
@@ -155,6 +219,91 @@ export function useRunNpmAuditScan(projectId: string, includeDev: boolean = true
 }
 
 // ============================================================================
+// Hooks - LicenseCompliancePage (Feature #868)
+// ============================================================================
+
+/**
+ * Fetch license compliance scan results for a specific project.
+ * Calls GET /api/v1/projects/:projectId/license-compliance?include_packages=true
+ */
+export function useLicenseCompliance(
+  projectId: string,
+  enabled: boolean = true,
+): UseQueryResult<LicenseComplianceResult> {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: dependencySecurityKeys.licenseCompliance(projectId),
+    queryFn: async () => {
+      const response = await fetchWithAuth<LicenseComplianceResult>(
+        `/api/v1/projects/${projectId}/license-compliance?include_packages=true`,
+        token
+      );
+      return response;
+    },
+    enabled: !!token && !!projectId && enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Trigger a fresh license compliance scan (invalidates the cached query).
+ */
+export function useRunLicenseScan(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return {
+    runScan: () => queryClient.invalidateQueries({
+      queryKey: dependencySecurityKeys.licenseCompliance(projectId),
+    }),
+  };
+}
+
+/**
+ * Fetch organization's license policy.
+ * Calls GET /api/v1/license-policy
+ */
+export function useLicensePolicy(): UseQueryResult<OrgLicensePolicy> {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: dependencySecurityKeys.licensePolicy(),
+    queryFn: async () => {
+      const response = await fetchWithAuth<OrgLicensePolicy>(
+        '/api/v1/license-policy',
+        token
+      );
+      return response;
+    },
+    enabled: !!token,
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+/**
+ * Update organization's license policy.
+ * Calls PUT /api/v1/license-policy
+ */
+export function useUpdateLicensePolicy() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (updates: { name?: string; description?: string; allowlist?: string[]; blocklist?: string[] }) => {
+      const response = await fetchWithAuth<{ success: boolean; policy: OrgLicensePolicy; message: string }>(
+        '/api/v1/license-policy',
+        token,
+        { method: 'PUT', body: JSON.stringify(updates), headers: { 'Content-Type': 'application/json' } }
+      );
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dependencySecurityKeys.licensePolicy() });
+    },
+  });
+}
+
+// ============================================================================
 // Cache Invalidation Helper
 // ============================================================================
 
@@ -164,8 +313,14 @@ export function useInvalidateDependencySecurity() {
   return {
     invalidateNpmAudit: (projectId: string, includeDev: boolean) =>
       queryClient.invalidateQueries({ queryKey: dependencySecurityKeys.npmAudit(projectId, includeDev) }),
+    invalidateLicenseCompliance: (projectId: string) =>
+      queryClient.invalidateQueries({ queryKey: dependencySecurityKeys.licenseCompliance(projectId) }),
+    invalidateLicensePolicy: () =>
+      queryClient.invalidateQueries({ queryKey: dependencySecurityKeys.licensePolicy() }),
     invalidateAll: () => {
       queryClient.invalidateQueries({ queryKey: ['npm-audit'] });
+      queryClient.invalidateQueries({ queryKey: ['license-compliance'] });
+      queryClient.invalidateQueries({ queryKey: ['license-policy'] });
     },
   };
 }
