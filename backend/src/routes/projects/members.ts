@@ -7,6 +7,15 @@ import { getProject, getProjectMembers, addProjectMember, removeProjectMember } 
 import { createLogger } from '../../services/logger.js';
 
 import { sendError } from '../../utils/errors.js';
+// Feature #732: Zod validation for project members
+import {
+  validateBody,
+  validateParams,
+  projectSettingsParamsSchema,
+  projectMemberParamsSchema,
+  addProjectMemberBodySchema,
+  updateProjectMemberRoleBodySchema,
+} from '../../validation/index.js';
 const log = createLogger('projects-members');
 
 export async function memberRoutes(app: FastifyInstance) {
@@ -37,10 +46,12 @@ export async function memberRoutes(app: FastifyInstance) {
   });
 
   // Add member to project
+  // Feature #732: Zod validation for add member
   app.post<{ Params: { projectId: string }; Body: { user_id: string; role: 'developer' | 'viewer' } }>(
     '/api/v1/projects/:projectId/members',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(projectSettingsParamsSchema), validateBody(addProjectMemberBodySchema)],
     },
     async (request, reply) => {
       const { projectId } = request.params;
@@ -98,10 +109,12 @@ export async function memberRoutes(app: FastifyInstance) {
   );
 
   // Remove member from project
+  // Feature #732: Zod validation for member params
   app.delete<{ Params: { projectId: string; memberId: string } }>(
     '/api/v1/projects/:projectId/members/:memberId',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(projectMemberParamsSchema)],
     },
     async (request, reply) => {
       const { projectId, memberId } = request.params;
@@ -140,10 +153,12 @@ export async function memberRoutes(app: FastifyInstance) {
   );
 
   // Update member role on project
+  // Feature #732: Zod validation for member role update
   app.patch<{ Params: { projectId: string; memberId: string }; Body: { role: 'developer' | 'viewer' } }>(
     '/api/v1/projects/:projectId/members/:memberId',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(projectMemberParamsSchema), validateBody(updateProjectMemberRoleBodySchema)],
     },
     async (request, reply) => {
       const { projectId, memberId } = request.params;

@@ -1213,6 +1213,932 @@ export const auditLogsQuerySchema = z.object({
 });
 
 // ============================================================================
+// Feature #732: Edge Case & Coverage Verification Schemas
+// ============================================================================
+
+// --- Project Settings ---
+
+/**
+ * Project visual settings update body
+ */
+export const projectVisualSettingsBodySchema = z.object({
+  default_diff_threshold: z.number().min(0).max(100).optional(),
+  default_diff_threshold_mode: z.enum(['percentage', 'pixel_count']).optional(),
+  default_diff_pixel_threshold: z.number().min(0).optional(),
+  default_capture_mode: z.enum(['full_page', 'viewport', 'element']).optional(),
+  default_viewport_width: z.number().int().min(100).max(10000).optional(),
+  default_viewport_height: z.number().int().min(100).max(10000).optional(),
+});
+
+/**
+ * Project healing settings update body
+ */
+export const projectHealingSettingsBodySchema = z.object({
+  healing_enabled: z.boolean().optional(),
+  healing_timeout: z.number().int().min(5).max(120).optional(),
+  max_healing_attempts: z.number().int().min(1).max(10).optional(),
+  healing_strategies: z.array(
+    z.enum(['selector_fallback', 'visual_match', 'text_match', 'attribute_match', 'css_selector', 'xpath'])
+  ).optional(),
+  notify_on_healing: z.boolean().optional(),
+  auto_heal_confidence_threshold: z.number().min(0.5).max(1.0).optional(),
+});
+
+/**
+ * Project settings projectId param
+ */
+export const projectSettingsParamsSchema = z.object({
+  projectId: z.string().min(1, 'Project ID is required'),
+});
+
+// --- Project Members ---
+
+/**
+ * Project member params
+ */
+export const projectMemberParamsSchema = z.object({
+  projectId: z.string().min(1),
+  memberId: z.string().min(1),
+});
+
+/**
+ * Add project member body
+ */
+export const addProjectMemberBodySchema = z.object({
+  user_id: z.string().min(1, 'User ID is required'),
+  role: z.enum(['developer', 'viewer']),
+});
+
+/**
+ * Update project member role body
+ */
+export const updateProjectMemberRoleBodySchema = z.object({
+  role: z.enum(['developer', 'viewer']),
+});
+
+// --- Run Control ---
+
+/**
+ * Run ID params (shared across run-control, run-data, etc.)
+ */
+export const runIdParamSchema = z.object({
+  runId: z.string().min(1, 'Run ID is required'),
+});
+
+/**
+ * Cancel run body
+ */
+export const cancelRunBodySchema = z.object({
+  force: z.boolean().optional(),
+  save_partial_results: z.boolean().optional(),
+  reason: z.string().max(1000).optional(),
+});
+
+/**
+ * Prioritize run body
+ */
+export const prioritizeRunBodySchema = z.object({
+  priority: z.number().int().min(1).max(1000),
+});
+
+// --- Run Data ---
+
+/**
+ * Run logs query params
+ */
+export const runLogsQuerySchema = z.object({
+  level: z.enum(['all', 'error', 'warn', 'info', 'debug', 'log']).optional(),
+  limit: z.coerce.number().int().min(1).max(10000).optional(),
+  offset: z.coerce.number().int().min(0).optional(),
+});
+
+/**
+ * Set run environment variables body
+ */
+export const setRunEnvVarsBodySchema = z.object({
+  env_vars: z.record(z.string()),
+  merge: z.boolean().optional(),
+});
+
+/**
+ * Delete run environment variables body
+ */
+export const deleteRunEnvVarsBodySchema = z.object({
+  keys: z.array(z.string()).optional(),
+});
+
+/**
+ * Compare runs query params
+ */
+export const compareRunsQuerySchema = z.object({
+  baseRunId: z.string().min(1, 'baseRunId is required'),
+  compareRunId: z.string().min(1, 'compareRunId is required'),
+});
+
+/**
+ * Run result params (runId + testId)
+ */
+export const runResultParamsSchema = z.object({
+  runId: z.string().min(1),
+  testId: z.string().min(1),
+});
+
+// --- Run Trigger ---
+
+/**
+ * Suite run trigger params
+ */
+export const suiteRunParamsSchema = z.object({
+  suiteId: z.string().min(1, 'Suite ID is required'),
+});
+
+/**
+ * Test run trigger params
+ */
+export const testRunTriggerParamsSchema = z.object({
+  testId: z.string().min(1, 'Test ID is required'),
+});
+
+/**
+ * Run trigger body
+ */
+export const runTriggerBodySchema = z.object({
+  browser: z.enum(['chromium', 'firefox', 'webkit']).optional(),
+  branch: z.string().max(255).optional(),
+});
+
+/**
+ * Rerun body
+ */
+export const rerunBodySchema = z.object({
+  suite_id: z.string().min(1, 'Suite ID is required'),
+  test_ids: z.array(z.string().min(1)).min(1, 'At least one test ID is required'),
+  browser: z.enum(['chromium', 'firefox', 'webkit']).optional(),
+  branch: z.string().max(255).optional(),
+});
+
+// --- Visual Approval ---
+
+/**
+ * Approve baseline body (by testId param)
+ */
+export const approveBaselineBodySchema = z.object({
+  runId: z.string().optional(),
+  viewport: z.string().optional(),
+  branch: z.string().optional(),
+  expectedVersion: z.number().int().min(0).optional(),
+});
+
+/**
+ * Approve baseline body (convenience route)
+ */
+export const approveBaselineConvenienceBodySchema = z.object({
+  test_id: z.string().min(1, 'test_id is required'),
+  run_id: z.string().optional(),
+  viewport_id: z.string().optional(),
+});
+
+/**
+ * Reject baseline body (convenience route)
+ */
+export const rejectBaselineConvenienceBodySchema = z.object({
+  test_id: z.string().min(1, 'test_id is required'),
+  run_id: z.string().optional(),
+  viewport_id: z.string().optional(),
+  reason: z.string().max(2000).optional(),
+});
+
+/**
+ * Reject visual body (by testId param)
+ */
+export const rejectVisualBodySchema = z.object({
+  runId: z.string().min(1, 'runId is required'),
+  viewport: z.string().optional(),
+  reason: z.string().max(2000).optional(),
+});
+
+/**
+ * Merge baseline body
+ */
+export const mergeBaselineBodySchema = z.object({
+  sourceBranch: z.string().min(1, 'Source branch is required'),
+  targetBranch: z.string().optional(),
+  viewport: z.string().optional(),
+});
+
+// --- Review & Export ---
+
+/**
+ * Review result body
+ */
+export const reviewResultBodySchema = z.object({
+  notes: z.string().max(5000).optional(),
+});
+
+/**
+ * Bug report body
+ */
+export const bugReportBodySchema = z.object({
+  format: z.string().optional(),
+  include_screenshots: z.boolean().optional(),
+  include_trace: z.boolean().optional(),
+  additional_context: z.string().max(5000).optional(),
+});
+
+// --- Results annotations ---
+
+/**
+ * Annotation body
+ */
+export const annotationBodySchema = z.object({
+  text: z.string().min(1, 'Annotation text is required').max(5000),
+  type: z.string().max(50).optional(),
+  priority: z.string().max(50).optional(),
+});
+
+/**
+ * Annotation ID params
+ */
+export const annotationIdParamsSchema = z.object({
+  runId: z.string().min(1),
+  testId: z.string().min(1),
+  annotationId: z.string().min(1),
+});
+
+/**
+ * Share result body
+ */
+export const shareResultBodySchema = z.object({
+  expires_in_hours: z.number().min(1).max(720).optional(),
+  include_artifacts: z.boolean().optional(),
+});
+
+// --- Visual Storage ---
+
+/**
+ * Cleanup baselines body
+ */
+export const cleanupBaselinesBodySchema = z.object({
+  olderThanDays: z.number().int().min(1).max(365).optional(),
+  dryRun: z.boolean().optional(),
+});
+
+// --- Baseline Routes ---
+
+/**
+ * Restore baseline body
+ */
+export const restoreBaselineBodySchema = z.object({
+  viewport: z.string().optional(),
+  branch: z.string().optional(),
+});
+
+/**
+ * Baseline history restore params
+ */
+export const baselineHistoryRestoreParamsSchema = z.object({
+  testId: z.string().min(1),
+  historyId: z.string().min(1),
+});
+
+/**
+ * Upload retry params
+ */
+export const uploadRetryParamsSchema = z.object({
+  uploadId: z.string().min(1),
+});
+
+/**
+ * Delete baseline query
+ */
+export const deleteBaselineQuerySchema = z.object({
+  viewport: z.string().optional(),
+  branch: z.string().optional(),
+});
+
+// --- Visual Batch Mock ---
+
+/**
+ * Mock pending visual diffs body
+ */
+export const mockPendingVisualBodySchema = z.object({
+  count: z.number().int().min(1).max(100).optional(),
+  test_ids: z.array(z.string()).optional(),
+});
+
+// --- Alert Channels ---
+
+/**
+ * Alert channel project params
+ */
+export const alertChannelProjectParamsSchema = z.object({
+  projectId: z.string().min(1),
+});
+
+/**
+ * Alert channel ID params
+ */
+export const alertChannelIdParamsSchema = z.object({
+  projectId: z.string().min(1),
+  channelId: z.string().min(1),
+});
+
+/**
+ * Create alert channel body
+ */
+export const createAlertChannelBodySchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  type: z.enum(['email', 'slack', 'webhook', 'pagerduty', 'teams']),
+  config: z.record(z.unknown()),
+  events: z.array(z.string()).optional(),
+  enabled: z.boolean().optional(),
+});
+
+/**
+ * Update alert channel body
+ */
+export const updateAlertChannelBodySchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  type: z.enum(['email', 'slack', 'webhook', 'pagerduty', 'teams']).optional(),
+  config: z.record(z.unknown()).optional(),
+  events: z.array(z.string()).optional(),
+  enabled: z.boolean().optional(),
+});
+
+// --- Organization Settings ---
+
+/**
+ * Org settings params
+ */
+export const orgSettingsParamsSchema = z.object({
+  orgId: z.string().min(1, 'Organization ID is required'),
+});
+
+/**
+ * Retention policy body
+ */
+export const retentionPolicyBodySchema = z.object({
+  retention_days: z.number().int().min(1).max(365),
+});
+
+/**
+ * Diff color settings body
+ */
+export const diffColorSettingsBodySchema = z.object({
+  diff_color: z.array(z.number().int().min(0).max(255)).length(3).optional(),
+  diff_color_alt: z.array(z.number().int().min(0).max(255)).length(3).optional(),
+  preset: z.string().max(50).optional(),
+});
+
+// --- Selector Override ---
+
+/**
+ * Selector override params
+ */
+export const selectorOverrideParamsSchema = z.object({
+  testId: z.string().min(1),
+  stepId: z.string().min(1),
+});
+
+/**
+ * Update selector override body
+ */
+export const updateSelectorOverrideBodySchema = z.object({
+  selector: z.string().min(1, 'Selector is required'),
+  strategy: z.string().optional(),
+  notes: z.string().max(1000).optional(),
+});
+
+// --- Slack Integration ---
+
+/**
+ * Slack org params
+ */
+export const slackOrgParamsSchema = z.object({
+  orgId: z.string().min(1, 'Organization ID is required'),
+});
+
+/**
+ * Slack connect body
+ */
+export const slackConnectBodySchema = z.object({
+  workspace_name: z.string().max(255).optional(),
+});
+
+// --- Security (basic) ---
+
+/**
+ * Security scan trigger body
+ */
+export const securityScanTriggerBodySchema = z.object({
+  scan_type: z.string().optional(),
+  target_url: z.string().url().optional(),
+  branch: z.string().max(255).optional(),
+});
+
+/**
+ * Dismiss vulnerability body
+ */
+export const dismissVulnerabilityBodySchema = z.object({
+  reason: z.string().min(1, 'Reason is required').max(2000),
+  comment: z.string().max(5000).optional(),
+  expires_at: z.string().optional(),
+});
+
+/**
+ * License policy body
+ */
+export const licensePolicyBodySchema = z.object({
+  name: z.string().max(255).optional(),
+  description: z.string().max(2000).optional(),
+  allowlist: z.array(z.string()).optional(),
+  blocklist: z.array(z.string()).optional(),
+});
+
+/**
+ * Validate license body
+ */
+export const validateLicenseBodySchema = z.object({
+  license: z.string().min(1, 'License is required'),
+});
+
+// --- Security Advanced ---
+
+/**
+ * DAST scan body (security-advanced)
+ */
+export const securityDastScanBodySchema = z.object({
+  target_url: z.string().url('Invalid target URL'),
+  scan_type: z.enum(['baseline', 'full', 'api']).optional(),
+  authentication: z.record(z.unknown()).optional(),
+});
+
+/**
+ * Security report body
+ */
+export const securityReportBodySchema = z.object({
+  format: z.enum(['pdf', 'html', 'json']).optional(),
+  include_resolved: z.boolean().optional(),
+  severity_filter: z.array(z.string()).optional(),
+});
+
+/**
+ * Security policy body
+ */
+export const securityPolicyBodySchema = z.object({
+  auto_scan_enabled: z.boolean().optional(),
+  scan_on_push: z.boolean().optional(),
+  severity_threshold: z.enum(['critical', 'high', 'medium', 'low']).optional(),
+  block_on_critical: z.boolean().optional(),
+  notification_channels: z.array(z.string()).optional(),
+});
+
+/**
+ * Container scan query
+ */
+export const containerScanQuerySchema = z.object({
+  image: z.string().min(1, 'Image is required'),
+  project_id: z.string().optional(),
+  severity: z.string().optional(),
+  include_layers: z.string().optional(),
+  include_base: z.string().optional(),
+  skip_cache: z.string().optional(),
+});
+
+/**
+ * Security scan schedule body
+ */
+export const securityScanScheduleBodySchema = z.object({
+  name: z.string().min(1).max(255),
+  project_id: z.string().min(1),
+  scan_type: z.string().optional(),
+  cron_expression: z.string().optional(),
+  enabled: z.boolean().optional(),
+});
+
+// --- Webhook Delivery ---
+
+/**
+ * Webhook test subscription params
+ */
+export const webhookTestSubscriptionParamsSchema = z.object({
+  subscriptionId: z.string().min(1),
+});
+
+/**
+ * Webhook delivery body
+ */
+export const webhookDeliveryRetryBodySchema = z.object({
+  subscription_id: z.string().optional(),
+  event_type: z.string().optional(),
+});
+
+// --- Flaky Tests ---
+
+/**
+ * Flaky test quarantine body
+ */
+export const flakyTestQuarantineBodySchema = z.object({
+  test_id: z.string().min(1, 'Test ID is required'),
+  reason: z.string().max(1000).optional(),
+});
+
+/**
+ * Flaky test unquarantine body
+ */
+export const flakyTestUnquarantineBodySchema = z.object({
+  test_id: z.string().min(1, 'Test ID is required'),
+});
+
+// --- Test Suite Review ---
+
+/**
+ * Review test body
+ */
+export const reviewTestBodySchema = z.object({
+  action: z.enum(['approve', 'reject']),
+  notes: z.string().max(5000).optional(),
+});
+
+/**
+ * Bulk review body
+ */
+export const bulkReviewBodySchema = z.object({
+  test_ids: z.array(z.string().min(1)).min(1),
+  action: z.enum(['approve', 'reject']),
+  notes: z.string().max(5000).optional(),
+});
+
+/**
+ * Suite review settings body
+ */
+export const suiteReviewSettingsBodySchema = z.object({
+  require_human_review: z.boolean(),
+});
+
+// --- AI Generation common body schemas ---
+
+/**
+ * Generic AI request body (used by multiple AI endpoints)
+ */
+export const aiGenericRequestBodySchema = z.object({
+  description: z.string().optional(),
+  test_type: z.string().optional(),
+  code: z.string().optional(),
+  steps: z.array(z.record(z.unknown())).optional(),
+  context: z.record(z.unknown()).optional(),
+  url: z.string().optional(),
+  name: z.string().optional(),
+  config: z.record(z.unknown()).optional(),
+});
+
+// --- MCP Routes (api-keys/mcp-routes) ---
+
+/**
+ * MCP connect body
+ */
+export const mcpConnectBodySchema = z.object({
+  api_key: z.string().min(1, 'API key is required'),
+  client_name: z.string().max(255).optional(),
+  client_version: z.string().max(50).optional(),
+});
+
+/**
+ * MCP heartbeat body
+ */
+export const mcpHeartbeatBodySchema = z.object({
+  connection_id: z.string().min(1, 'Connection ID is required'),
+});
+
+/**
+ * MCP disconnect body
+ */
+export const mcpDisconnectBodySchema = z.object({
+  connection_id: z.string().min(1, 'Connection ID is required'),
+});
+
+/**
+ * MCP track tool body
+ */
+export const mcpTrackToolBodySchema = z.object({
+  connection_id: z.string().min(1),
+  tool_name: z.string().min(1),
+  duration_ms: z.number().int().min(0).optional(),
+  success: z.boolean().optional(),
+  error: z.string().optional(),
+});
+
+/**
+ * MCP audit log body
+ */
+export const mcpAuditLogBodySchema = z.object({
+  api_key: z.string().min(1, 'API key is required'),
+  connection_id: z.string().optional(),
+  client_name: z.string().optional(),
+  client_version: z.string().optional(),
+  method: z.string().min(1, 'Method is required'),
+  tool_name: z.string().optional(),
+  resource_uri: z.string().optional(),
+  request_params: z.record(z.unknown()).optional(),
+  response_type: z.enum(['success', 'error']),
+  response_error_code: z.number().int().optional(),
+  response_error_message: z.string().optional(),
+  response_data_preview: z.string().optional(),
+  duration_ms: z.number().int().min(0).optional(),
+});
+
+// --- Errors ---
+
+/**
+ * Error report body (frontend error boundary)
+ */
+export const errorReportBodySchema = z.object({
+  message: z.string().min(1, 'Error message is required').max(5000),
+  stack: z.string().max(20000).optional(),
+  componentStack: z.string().max(20000).optional(),
+  url: z.string().max(2000).optional(),
+  userAgent: z.string().max(500).optional(),
+  browser: z.string().max(100).optional(),
+  os: z.string().max(100).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+// --- Monitoring: Uptime ---
+
+/**
+ * Create uptime check body
+ */
+export const createUptimeCheckBodySchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  url: z.string().url('Valid URL is required'),
+  check_interval: z.number().int().min(30).max(86400).optional(),
+  timeout: z.number().int().min(1000).max(60000).optional(),
+  regions: z.array(z.string()).optional(),
+  expected_status: z.number().int().min(100).max(599).optional(),
+  method: z.enum(['GET', 'HEAD', 'POST']).optional(),
+  headers: z.record(z.string()).optional(),
+  body: z.string().optional(),
+  assertions: z.array(z.record(z.unknown())).optional(),
+  tags: z.array(z.string()).optional(),
+  notification_channels: z.array(z.string()).optional(),
+  ssl_check: z.boolean().optional(),
+  follow_redirects: z.boolean().optional(),
+});
+
+/**
+ * Update uptime check body
+ */
+export const updateUptimeCheckBodySchema = createUptimeCheckBodySchema.partial();
+
+/**
+ * Bulk uptime check action body
+ */
+export const bulkUptimeCheckActionBodySchema = z.object({
+  action: z.enum(['enable', 'disable', 'delete', 'run']),
+  checkIds: z.array(z.string()).optional(),
+  group: z.string().optional(),
+});
+
+/**
+ * Uptime check ID params
+ */
+export const uptimeCheckIdParamsSchema = z.object({
+  checkId: z.string().min(1, 'Check ID is required'),
+});
+
+// --- Monitoring: Maintenance ---
+
+/**
+ * Create maintenance window body
+ */
+export const createMaintenanceWindowBodySchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  reason: z.string().max(1000).optional(),
+  start_time: z.string().optional(),
+  end_time: z.string().optional(),
+  duration_hours: z.number().min(0.1).max(168).optional(),
+  recurring: z.boolean().optional(),
+  cron_expression: z.string().optional(),
+});
+
+/**
+ * Maintenance window params
+ */
+export const maintenanceWindowParamsSchema = z.object({
+  checkId: z.string().min(1),
+  windowId: z.string().min(1),
+});
+
+/**
+ * Mute check body
+ */
+export const muteCheckBodySchema = z.object({
+  reason: z.string().max(1000).optional(),
+  duration_hours: z.number().min(0.1).max(168).optional(),
+});
+
+// --- SAST sub-routes ---
+
+/**
+ * SAST project + pattern/rule params
+ */
+export const sastProjectSubParamsSchema = z.object({
+  projectId: z.string().min(1),
+  patternId: z.string().min(1).optional(),
+  ruleId: z.string().min(1).optional(),
+  fpId: z.string().min(1).optional(),
+});
+
+/**
+ * Create secret pattern body
+ */
+export const createSecretPatternBodySchema = z.object({
+  name: z.string().min(1, 'Pattern name is required').max(255),
+  pattern: z.string().min(1, 'Pattern is required'),
+  description: z.string().max(1000).optional(),
+  severity: z.enum(['critical', 'high', 'medium', 'low']).optional(),
+  enabled: z.boolean().optional(),
+});
+
+/**
+ * Update secret pattern body
+ */
+export const updateSecretPatternBodySchema = createSecretPatternBodySchema.partial();
+
+/**
+ * Create custom SAST rule body
+ */
+export const createCustomSastRuleBodySchema = z.object({
+  name: z.string().min(1, 'Rule name is required').max(255),
+  pattern: z.string().min(1, 'Pattern is required'),
+  description: z.string().max(1000).optional(),
+  severity: z.enum(['critical', 'high', 'medium', 'low']).optional(),
+  language: z.string().optional(),
+  category: z.string().optional(),
+  enabled: z.boolean().optional(),
+});
+
+/**
+ * Update custom SAST rule body
+ */
+export const updateCustomSastRuleBodySchema = createCustomSastRuleBodySchema.partial();
+
+/**
+ * Gitleaks config body
+ */
+export const gitleaksConfigBodySchema = z.object({
+  enabled: z.boolean().optional(),
+  scan_on_push: z.boolean().optional(),
+  severity_threshold: z.enum(['critical', 'high', 'medium', 'low']).optional(),
+  full_history: z.boolean().optional(),
+  custom_patterns: z.array(z.record(z.unknown())).optional(),
+});
+
+/**
+ * Gitleaks scan body
+ */
+export const gitleaksScanBodySchema = z.object({
+  branch: z.string().max(255).optional(),
+  full_history: z.boolean().optional(),
+});
+
+/**
+ * SAST false positive body
+ */
+export const sastFalsePositiveBodySchema = z.object({
+  finding_id: z.string().min(1).optional(),
+  reason: z.string().min(1, 'Reason is required').max(2000),
+  pattern: z.string().optional(),
+  file_path: z.string().optional(),
+});
+
+// --- GitHub sub-routes ---
+
+/**
+ * GitHub connect body
+ */
+export const githubConnectBodySchema = z.object({
+  token: z.string().optional(),
+  installation_id: z.string().optional(),
+});
+
+/**
+ * GitHub PR status body
+ */
+export const githubPrStatusBodySchema = z.object({
+  status: z.string().min(1),
+  description: z.string().optional(),
+  test_run_id: z.string().optional(),
+});
+
+/**
+ * GitHub PR comment body
+ */
+export const githubPrCommentBodySchema = z.object({
+  passed: z.number().int().min(0),
+  failed: z.number().int().min(0),
+  skipped: z.number().int().min(0),
+  test_run_id: z.string().optional(),
+});
+
+/**
+ * GitHub branch update body
+ */
+export const githubBranchUpdateBodySchema = z.object({
+  branch: z.string().min(1, 'Branch is required').max(255),
+});
+
+/**
+ * GitHub PR checks toggle body
+ */
+export const githubPrChecksToggleBodySchema = z.object({
+  pr_checks_enabled: z.boolean(),
+});
+
+/**
+ * GitHub PR comments toggle body
+ */
+export const githubPrCommentsToggleBodySchema = z.object({
+  pr_comments_enabled: z.boolean(),
+});
+
+/**
+ * GitHub project + PR params
+ */
+export const githubProjectPrParamsSchema = z.object({
+  projectId: z.string().min(1),
+  prNumber: z.string().min(1),
+});
+
+// --- Dependency Lists ---
+
+/**
+ * Dependency allowlist/blocklist entry body
+ */
+export const dependencyListEntryBodySchema = z.object({
+  package_name: z.string().min(1, 'Package name is required'),
+  version_pattern: z.string().optional(),
+  reason: z.string().min(1, 'Reason is required').max(2000),
+  severity_override: z.string().optional(),
+  expires_at: z.string().optional(),
+});
+
+/**
+ * Dependency age config body
+ */
+export const dependencyAgeConfigBodySchema = z.object({
+  enabled: z.boolean().optional(),
+  warning_threshold_days: z.number().int().min(1).optional(),
+  critical_threshold_days: z.number().int().min(1).optional(),
+  auto_create_issues: z.boolean().optional(),
+});
+
+// --- Dependency Auto-PR ---
+
+/**
+ * Auto-PR config body
+ */
+export const autoPrConfigBodySchema = z.object({
+  enabled: z.boolean().optional(),
+  auto_merge: z.boolean().optional(),
+  branch_prefix: z.string().max(100).optional(),
+  commit_message_template: z.string().max(500).optional(),
+  labels: z.array(z.string()).optional(),
+  reviewers: z.array(z.string()).optional(),
+  max_prs_per_day: z.number().int().min(0).max(50).optional(),
+});
+
+// --- Artifact Delete ---
+
+/**
+ * Delete artifacts body
+ */
+export const deleteArtifactsBodySchema = z.object({
+  test_id: z.string().optional(),
+  artifact_types: z.array(z.string()).optional(),
+  older_than_days: z.number().int().min(1).optional(),
+  dry_run: z.boolean().optional(),
+});
+
+// --- Healing sub-routes (partial) ---
+
+/**
+ * Healing event feedback body
+ */
+export const healingEventFeedbackBodySchema = z.object({
+  accepted: z.boolean(),
+  notes: z.string().max(2000).optional(),
+});
+
+/**
+ * Healing event params
+ */
+export const healingEventParamsSchema = z.object({
+  testId: z.string().min(1),
+  eventId: z.string().min(1),
+});
+
+// ============================================================================
 // Validation Helper
 // ============================================================================
 
@@ -2034,3 +2960,30 @@ export type IncidentIdParams = z.infer<typeof incidentIdParamsSchema>;
 export type StatusPageIdParams = z.infer<typeof statusPageIdParamsSchema>;
 export type OnCallScheduleIdParams = z.infer<typeof onCallScheduleIdParamsSchema>;
 export type EscalationPolicyIdParams = z.infer<typeof escalationPolicyIdParamsSchema>;
+
+// Feature #732: Edge Case & Coverage Verification Types
+export type ProjectVisualSettingsBody = z.infer<typeof projectVisualSettingsBodySchema>;
+export type ProjectHealingSettingsBody = z.infer<typeof projectHealingSettingsBodySchema>;
+export type AddProjectMemberBody = z.infer<typeof addProjectMemberBodySchema>;
+export type UpdateProjectMemberRoleBody = z.infer<typeof updateProjectMemberRoleBodySchema>;
+export type CancelRunBody = z.infer<typeof cancelRunBodySchema>;
+export type PrioritizeRunBody = z.infer<typeof prioritizeRunBodySchema>;
+export type SetRunEnvVarsBody = z.infer<typeof setRunEnvVarsBodySchema>;
+export type DeleteRunEnvVarsBody = z.infer<typeof deleteRunEnvVarsBodySchema>;
+export type RunTriggerBody = z.infer<typeof runTriggerBodySchema>;
+export type RerunBody = z.infer<typeof rerunBodySchema>;
+export type ApproveBaselineBody = z.infer<typeof approveBaselineBodySchema>;
+export type ReviewResultBody = z.infer<typeof reviewResultBodySchema>;
+export type AnnotationBody = z.infer<typeof annotationBodySchema>;
+export type ShareResultBody = z.infer<typeof shareResultBodySchema>;
+export type CleanupBaselinesBody = z.infer<typeof cleanupBaselinesBodySchema>;
+export type CreateAlertChannelBody = z.infer<typeof createAlertChannelBodySchema>;
+export type UpdateAlertChannelBody = z.infer<typeof updateAlertChannelBodySchema>;
+export type RetentionPolicyBody = z.infer<typeof retentionPolicyBodySchema>;
+export type SecurityDastScanBody = z.infer<typeof securityDastScanBodySchema>;
+export type SecurityReportBody = z.infer<typeof securityReportBodySchema>;
+export type SecurityPolicyBody = z.infer<typeof securityPolicyBodySchema>;
+export type ErrorReportBody = z.infer<typeof errorReportBodySchema>;
+export type CreateUptimeCheckBody = z.infer<typeof createUptimeCheckBodySchema>;
+export type UpdateUptimeCheckBody = z.infer<typeof updateUptimeCheckBodySchema>;
+export type CreateMaintenanceWindowBody = z.infer<typeof createMaintenanceWindowBodySchema>;

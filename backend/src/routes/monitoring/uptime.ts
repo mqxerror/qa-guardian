@@ -35,6 +35,15 @@ import { MONITORING_LOCATIONS, runCheckFromAllLocations, startCheckInterval, sto
 import { getCache, CacheKeys } from '../../services/cache.js';
 
 import { sendError } from '../../utils/errors.js';
+// Feature #732: Zod validation for uptime routes
+import {
+  validateBody,
+  validateParams,
+  createUptimeCheckBodySchema,
+  updateUptimeCheckBodySchema,
+  uptimeCheckIdParamsSchema,
+  bulkUptimeCheckActionBodySchema,
+} from '../../validation/index.js';
 export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
   // Get available monitoring locations
   app.get(
@@ -120,6 +129,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/checks',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateBody(createUptimeCheckBodySchema)],
     },
     async (request, reply) => {
       const user = request.user as JwtPayload | ApiKeyPayload;
@@ -237,6 +247,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
   );
 
   // Update an uptime check
+  // Feature #732: Zod validation
   app.put<{
     Params: { checkId: string };
     Body: {
@@ -258,6 +269,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/checks/:checkId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(uptimeCheckIdParamsSchema), validateBody(updateUptimeCheckBodySchema)],
     },
     async (request, reply) => {
       const { checkId } = request.params;
@@ -330,10 +342,12 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
 
   // Delete an uptime check
   // Feature #943: Support preserve_history query parameter
+  // Feature #732: Zod validation
   app.delete<{ Params: { checkId: string }; Querystring: { preserve_history?: string } }>(
     '/api/v1/monitoring/checks/:checkId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(uptimeCheckIdParamsSchema)],
     },
     async (request, reply) => {
       const { checkId } = request.params;
@@ -456,10 +470,12 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
   );
 
   // Duplicate an uptime check
+  // Feature #732: Zod validation
   app.post<{ Params: { checkId: string }; Body: { name?: string } }>(
     '/api/v1/monitoring/checks/:checkId/duplicate',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(uptimeCheckIdParamsSchema)],
     },
     async (request, reply) => {
       const { checkId } = request.params;
@@ -508,6 +524,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
   );
 
   // Bulk operations on checks (by group or selected IDs)
+  // Feature #732: Zod validation
   app.post<{
     Body: {
       action: 'enable' | 'disable' | 'delete' | 'run';
@@ -518,6 +535,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/checks/bulk',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateBody(bulkUptimeCheckActionBodySchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);

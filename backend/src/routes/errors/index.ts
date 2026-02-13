@@ -14,6 +14,8 @@ import { pool } from '../../services/database.js';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
 
 import { sendError } from '../../utils/errors.js';
+// Feature #732: Zod validation for error reporting
+import { validateBody, errorReportBodySchema } from '../../validation/index.js';
 // Feature #653: Payload size limits for error reporting endpoint
 const MAX_PAYLOAD_SIZE_BYTES = 10 * 1024; // 10KB max payload
 const MAX_METADATA_SIZE_BYTES = 2 * 1024; // 2KB max for metadata field
@@ -117,8 +119,10 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
    * Feature #653: Payload size validation (10KB max) enforced here
    */
   // Feature #653: Enforce 10KB max payload size at Fastify level
+  // Feature #732: Zod validation
   app.post('/api/v1/errors', {
     bodyLimit: MAX_PAYLOAD_SIZE_BYTES,
+    preValidation: [validateBody(errorReportBodySchema)],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     if (!pool) {
       return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Database not available');

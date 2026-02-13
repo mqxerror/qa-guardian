@@ -17,6 +17,13 @@ import {
 import { createLogger } from '../../services/logger.js';
 
 import { sendError } from '../../utils/errors.js';
+// Feature #732: Zod validation for Slack integration
+import {
+  validateBody,
+  validateParams,
+  slackOrgParamsSchema,
+  slackConnectBodySchema,
+} from '../../validation/index.js';
 const logger = createLogger('slack-integration');
 
 // ============================================================================
@@ -56,10 +63,12 @@ export async function slackIntegrationRoutes(app: FastifyInstance) {
 
   // Connect Slack workspace (simulated OAuth flow for development)
   // In production, this would redirect to Slack OAuth and handle the callback
+  // Feature #732: Zod validation
   app.post<{ Params: { orgId: string }; Body: { workspace_name?: string } }>(
     '/api/v1/organizations/:orgId/slack/connect',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(slackOrgParamsSchema), validateBody(slackConnectBodySchema)],
     },
     async (request, reply) => {
       const { orgId } = request.params;
@@ -121,8 +130,10 @@ export async function slackIntegrationRoutes(app: FastifyInstance) {
   );
 
   // Disconnect Slack workspace
+  // Feature #732: Zod validation
   app.delete<{ Params: { orgId: string } }>('/api/v1/organizations/:orgId/slack', {
     preHandler: [authenticate],
+    preValidation: [validateParams(slackOrgParamsSchema)],
   }, async (request, reply) => {
     const { orgId } = request.params;
     const userOrgId = getOrganizationId(request);

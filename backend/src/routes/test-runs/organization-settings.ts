@@ -23,6 +23,14 @@ import { getTestSuite } from '../test-suites.js';
 import { getProject as dbGetProject } from '../projects/stores.js';
 
 import { sendError } from '../../utils/errors.js';
+// Feature #732: Zod validation for org settings
+import {
+  validateBody,
+  validateParams,
+  orgSettingsParamsSchema,
+  retentionPolicyBodySchema,
+  diffColorSettingsBodySchema,
+} from '../../validation/index.js';
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
  */
@@ -75,10 +83,12 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
   });
 
   // Update artifact retention policy for organization (owner/admin only)
+  // Feature #732: Zod validation
   app.put<{ Params: { orgId: string }; Body: { retention_days: number } }>(
     '/api/v1/organizations/:orgId/artifact-retention',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(orgSettingsParamsSchema), validateBody(retentionPolicyBodySchema)],
     },
     async (request, reply) => {
       const { orgId } = request.params;
@@ -151,10 +161,12 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
   });
 
   // Feature #449: Update diff highlight color settings for organization
+  // Feature #732: Zod validation
   app.put<{ Params: { orgId: string }; Body: { diff_color?: [number, number, number]; diff_color_alt?: [number, number, number]; preset?: string } }>(
     '/api/v1/organizations/:orgId/visual-settings/diff-colors',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(orgSettingsParamsSchema), validateBody(diffColorSettingsBodySchema)],
     },
     async (request, reply) => {
       const { orgId } = request.params;
@@ -304,7 +316,9 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
   });
 
   // Execute artifact cleanup for organization (owner/admin only)
+  // Feature #732: Zod validation
   app.post<{ Params: { orgId: string } }>('/api/v1/organizations/:orgId/artifact-cleanup', {
+    preValidation: [validateParams(orgSettingsParamsSchema)],
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { orgId } = request.params;

@@ -24,6 +24,15 @@ import { testRuns, TestRun } from './execution.js';
 import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
 
 import { sendError } from '../../utils/errors.js';
+// Feature #732: Zod validation for results routes
+import {
+  validateBody,
+  validateParams,
+  runResultParamsSchema,
+  annotationBodySchema,
+  annotationIdParamsSchema,
+  shareResultBodySchema,
+} from '../../validation/index.js';
 // Helper: get test run from Map first, then fall back to DB
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
   const fromMap = testRuns.get(runId);
@@ -332,8 +341,10 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Add annotation to a test result
+  // Feature #732: Zod validation
   app.post<{ Params: { runId: string; testId: string }; Body: { text: string; type?: string; priority?: string } }>('/api/v1/runs/:runId/results/:testId/annotations', {
     preHandler: [authenticate],
+    preValidation: [validateParams(runResultParamsSchema), validateBody(annotationBodySchema)],
   }, async (request, reply) => {
     const { runId, testId } = request.params;
     const { text, type = 'note', priority = 'normal' } = request.body;
@@ -409,8 +420,10 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Delete annotation
+  // Feature #732: Zod validation
   app.delete<{ Params: { runId: string; testId: string; annotationId: string } }>('/api/v1/runs/:runId/results/:testId/annotations/:annotationId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(annotationIdParamsSchema)],
   }, async (request, reply) => {
     const { runId, testId, annotationId } = request.params;
     const orgId = getOrganizationId(request);
@@ -441,8 +454,10 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Create share link for a test result
+  // Feature #732: Zod validation
   app.post<{ Params: { runId: string; testId: string }; Body: { expires_in_hours?: number; include_artifacts?: boolean } }>('/api/v1/runs/:runId/results/:testId/share', {
     preHandler: [authenticate],
+    preValidation: [validateParams(runResultParamsSchema), validateBody(shareResultBodySchema)],
   }, async (request, reply) => {
     const { runId, testId } = request.params;
     const { expires_in_hours = 24, include_artifacts = true } = request.body || {};

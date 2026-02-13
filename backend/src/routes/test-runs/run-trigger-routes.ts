@@ -21,6 +21,15 @@ import { enqueueOrExecute } from '../../services/execution-queue.js';
 import { createLogger } from '../../services/logger.js';
 
 import { sendError } from '../../utils/errors.js';
+// Feature #732: Zod validation for run trigger routes
+import {
+  validateBody,
+  validateParams,
+  suiteRunParamsSchema,
+  testRunTriggerParamsSchema,
+  runTriggerBodySchema,
+  rerunBodySchema,
+} from '../../validation/index.js';
 const logger = createLogger('route:test-runs:run-trigger');
 
 // Type definitions for route params/body
@@ -66,8 +75,10 @@ type RunTestsForRunFn = (runId: string) => Promise<void>;
 export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
   return async function runTriggerRoutes(app: FastifyInstance) {
     // Trigger test run for a suite
+    // Feature #732: Zod validation for suite run trigger
     app.post<{ Params: RunParams; Body: RunBody }>('/api/v1/suites/:suiteId/runs', {
       preHandler: [authenticate, requireScopes(['execute'])],
+      preValidation: [validateParams(suiteRunParamsSchema), validateBody(runTriggerBodySchema)],
     }, async (request, reply) => {
       const { suiteId } = request.params;
       const { browser: requestBrowser, branch: requestBranch } = request.body || {};
@@ -144,8 +155,10 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
     });
 
     // Trigger test run for a single test
+    // Feature #732: Zod validation for test run trigger
     app.post<{ Params: TestIdParams; Body: RunBody }>('/api/v1/tests/:testId/runs', {
       preHandler: [authenticate, requireScopes(['execute'])],
+      preValidation: [validateParams(testRunTriggerParamsSchema), validateBody(runTriggerBodySchema)],
     }, async (request, reply) => {
       const { testId } = request.params;
       const { browser: requestBrowser, branch: requestBranch } = request.body || {};
@@ -221,8 +234,10 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
     });
 
     // Rerun specific tests (e.g. failed tests from a previous run)
+    // Feature #732: Zod validation for rerun body
     app.post<{ Body: RerunBody }>('/api/v1/runs/rerun', {
       preHandler: [authenticate, requireScopes(['execute'])],
+      preValidation: [validateBody(rerunBodySchema)],
     }, async (request, reply) => {
       const { suite_id, test_ids, browser: requestBrowser, branch: requestBranch } = request.body || {};
       const orgId = getOrganizationId(request);

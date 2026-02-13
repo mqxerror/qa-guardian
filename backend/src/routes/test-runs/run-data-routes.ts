@@ -17,6 +17,18 @@ import { TestSuite, Test } from '../test-suites/types.js';
 import { createLogger } from '../../services/logger.js';
 
 import { sendError } from '../../utils/errors.js';
+// Feature #732: Zod validation for run data routes
+import {
+  validateBody,
+  validateParams,
+  validateQuery,
+  runIdParamSchema,
+  runLogsQuerySchema,
+  setRunEnvVarsBodySchema,
+  deleteRunEnvVarsBodySchema,
+  compareRunsQuerySchema,
+  runResultParamsSchema,
+} from '../../validation/index.js';
 const log = createLogger('run-data-routes');
 
 // Helper: get test run from Map first, then fall back to DB
@@ -541,8 +553,10 @@ export async function runDataRoutes(app: FastifyInstance) {
   });
 
   // Feature #894: Set environment variables for a test run
+  // Feature #732: Zod validation for run env vars
   app.post<{ Params: TestRunParams; Body: SetRunEnvVarsBody }>('/api/v1/runs/:runId/environment', {
     preHandler: [authenticate],
+    preValidation: [validateParams(runIdParamSchema), validateBody(setRunEnvVarsBodySchema)],
   }, async (request, reply) => {
     const { runId } = request.params;
     const orgId = getOrganizationId(request);
@@ -676,8 +690,10 @@ export async function runDataRoutes(app: FastifyInstance) {
   });
 
   // Feature #894: Delete environment variables from a test run
+  // Feature #732: Zod validation for delete env vars
   app.delete<{ Params: TestRunParams; Body: DeleteRunEnvVarsBody }>('/api/v1/runs/:runId/environment', {
     preHandler: [authenticate],
+    preValidation: [validateParams(runIdParamSchema), validateBody(deleteRunEnvVarsBodySchema)],
   }, async (request, reply) => {
     const { runId } = request.params;
     const orgId = getOrganizationId(request);

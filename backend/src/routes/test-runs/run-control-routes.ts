@@ -12,6 +12,14 @@ import { getTestRun as dbGetTestRun, updateTestRun as dbUpdateTestRun } from '..
 import { createLogger } from '../../services/logger.js';
 
 import { sendError } from '../../utils/errors.js';
+// Feature #732: Zod validation for run control routes
+import {
+  validateBody,
+  validateParams,
+  runIdParamSchema,
+  cancelRunBodySchema,
+  prioritizeRunBodySchema,
+} from '../../validation/index.js';
 const logger = createLogger('route:test-runs:run-control');
 
 // Helper: get test run from Map first, then fall back to DB
@@ -60,8 +68,10 @@ export function setRunControlEmitter(emitter: EmitRunEventFn) {
 export async function runControlRoutes(app: FastifyInstance) {
   // Cancel a running test (enhanced with options)
   // Feature #885: Enhanced cancel-run with force option and partial results control
+  // Feature #732: Zod validation for cancel run
   app.post<{ Params: TestRunParams; Body: CancelRunBody }>('/api/v1/runs/:runId/cancel', {
     preHandler: [authenticate],
+    preValidation: [validateParams(runIdParamSchema), validateBody(cancelRunBodySchema)],
   }, async (request, reply) => {
     const { runId } = request.params;
     const orgId = getOrganizationId(request);
@@ -192,8 +202,10 @@ export async function runControlRoutes(app: FastifyInstance) {
   });
 
   // Feature #886: Pause a running test
+  // Feature #732: Zod validation for pause run params
   app.post<{ Params: TestRunParams }>('/api/v1/runs/:runId/pause', {
     preHandler: [authenticate],
+    preValidation: [validateParams(runIdParamSchema)],
   }, async (request, reply) => {
     const { runId } = request.params;
     const orgId = getOrganizationId(request);
@@ -239,8 +251,10 @@ export async function runControlRoutes(app: FastifyInstance) {
   });
 
   // Feature #886: Resume a paused test
+  // Feature #732: Zod validation for resume run params
   app.post<{ Params: TestRunParams }>('/api/v1/runs/:runId/resume', {
     preHandler: [authenticate],
+    preValidation: [validateParams(runIdParamSchema)],
   }, async (request, reply) => {
     const { runId } = request.params;
     const orgId = getOrganizationId(request);
@@ -379,8 +393,10 @@ export async function runControlRoutes(app: FastifyInstance) {
   });
 
   // Prioritize a pending run
+  // Feature #732: Zod validation for prioritize run
   app.post<{ Params: TestRunParams; Body: PrioritizeRunBody }>('/api/v1/runs/:runId/prioritize', {
     preHandler: [authenticate],
+    preValidation: [validateParams(runIdParamSchema), validateBody(prioritizeRunBodySchema)],
   }, async (request, reply) => {
     const { runId } = request.params;
     const { priority } = request.body;

@@ -37,9 +37,21 @@ import { trackMcpToolCall, getMcpAnalytics } from './mcp-analytics.js';
 import { logMcpAuditEntry, getMcpAuditLogs } from './mcp-audit.js';
 
 import { sendError } from '../../utils/errors.js';
+// Feature #732: Zod validation for MCP routes
+import {
+  validateBody,
+  mcpConnectBodySchema,
+  mcpHeartbeatBodySchema,
+  mcpDisconnectBodySchema,
+  mcpTrackToolBodySchema,
+  mcpAuditLogBodySchema,
+} from '../../validation/index.js';
 export async function registerMcpRoutes(app: FastifyInstance) {
   // Feature #405: Register MCP connection
-  app.post<{ Body: { api_key: string; client_name?: string; client_version?: string } }>('/api/v1/mcp/connect', async (request, reply) => {
+  // Feature #732: Zod validation
+  app.post<{ Body: { api_key: string; client_name?: string; client_version?: string } }>('/api/v1/mcp/connect', {
+    preValidation: [validateBody(mcpConnectBodySchema)],
+  }, async (request, reply) => {
     const { api_key, client_name, client_version } = request.body;
     const ip_address = request.ip;
 
@@ -78,7 +90,10 @@ export async function registerMcpRoutes(app: FastifyInstance) {
   });
 
   // Feature #405: Update MCP connection activity (heartbeat)
-  app.post<{ Body: { connection_id: string } }>('/api/v1/mcp/heartbeat', async (request, reply) => {
+  // Feature #732: Zod validation
+  app.post<{ Body: { connection_id: string } }>('/api/v1/mcp/heartbeat', {
+    preValidation: [validateBody(mcpHeartbeatBodySchema)],
+  }, async (request, reply) => {
     const { connection_id } = request.body;
 
     if (!connection_id) {
@@ -99,7 +114,10 @@ export async function registerMcpRoutes(app: FastifyInstance) {
   });
 
   // Feature #405: Disconnect MCP connection
-  app.post<{ Body: { connection_id: string } }>('/api/v1/mcp/disconnect', async (request, reply) => {
+  // Feature #732: Zod validation
+  app.post<{ Body: { connection_id: string } }>('/api/v1/mcp/disconnect', {
+    preValidation: [validateBody(mcpDisconnectBodySchema)],
+  }, async (request, reply) => {
     const { connection_id } = request.body;
 
     if (!connection_id) {
@@ -175,7 +193,10 @@ export async function registerMcpRoutes(app: FastifyInstance) {
   });
 
   // Feature #406: Track MCP tool call
-  app.post<{ Body: { connection_id: string; tool_name: string; duration_ms?: number; success?: boolean; error?: string } }>('/api/v1/mcp/track-tool', async (request, reply) => {
+  // Feature #732: Zod validation
+  app.post<{ Body: { connection_id: string; tool_name: string; duration_ms?: number; success?: boolean; error?: string } }>('/api/v1/mcp/track-tool', {
+    preValidation: [validateBody(mcpTrackToolBodySchema)],
+  }, async (request, reply) => {
     const { connection_id, tool_name, duration_ms, success = true, error } = request.body;
 
     if (!connection_id || !tool_name) {
@@ -366,6 +387,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
   });
 
   // Feature #846: Log an MCP request (called by MCP server)
+  // Feature #732: Zod validation
   app.post<{
     Body: {
       api_key: string;
@@ -382,7 +404,9 @@ export async function registerMcpRoutes(app: FastifyInstance) {
       response_data_preview?: string;
       duration_ms?: number;
     };
-  }>('/api/v1/mcp/audit-log', async (request, reply) => {
+  }>('/api/v1/mcp/audit-log', {
+    preValidation: [validateBody(mcpAuditLogBodySchema)],
+  }, async (request, reply) => {
     const {
       api_key,
       connection_id,

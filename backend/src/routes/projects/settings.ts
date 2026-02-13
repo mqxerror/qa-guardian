@@ -15,6 +15,14 @@ import {
 import { createLogger } from '../../services/logger.js';
 
 import { sendError } from '../../utils/errors.js';
+// Feature #732: Zod validation for project settings
+import {
+  validateBody,
+  validateParams,
+  projectSettingsParamsSchema,
+  projectVisualSettingsBodySchema,
+  projectHealingSettingsBodySchema,
+} from '../../validation/index.js';
 const log = createLogger('projects-settings');
 
 // Settings routes use :projectId param
@@ -50,6 +58,7 @@ export async function settingsRoutes(app: FastifyInstance) {
   });
 
   // Feature #454: Update project visual settings
+  // Feature #732: Zod validation for visual settings body
   app.put<{ Params: ProjectIdParams; Body: Partial<{
     default_diff_threshold: number;
     default_diff_threshold_mode: 'percentage' | 'pixel_count';
@@ -59,6 +68,7 @@ export async function settingsRoutes(app: FastifyInstance) {
     default_viewport_height: number;
   }> }>('/api/v1/projects/:projectId/visual-settings', {
     preHandler: [authenticate],
+    preValidation: [validateParams(projectSettingsParamsSchema), validateBody(projectVisualSettingsBodySchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const updates = request.body;
@@ -151,6 +161,7 @@ export async function settingsRoutes(app: FastifyInstance) {
 
   // Feature #1064: Update project healing settings (Set healing timeout duration)
   // Feature #1062: Added auto_heal_confidence_threshold
+  // Feature #732: Zod validation for healing settings body
   app.put<{ Params: ProjectIdParams; Body: Partial<{
     healing_enabled: boolean;
     healing_timeout: number;
@@ -160,6 +171,7 @@ export async function settingsRoutes(app: FastifyInstance) {
     auto_heal_confidence_threshold: number;
   }> }>('/api/v1/projects/:projectId/healing-settings', {
     preHandler: [authenticate],
+    preValidation: [validateParams(projectSettingsParamsSchema), validateBody(projectHealingSettingsBodySchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const updates = request.body;

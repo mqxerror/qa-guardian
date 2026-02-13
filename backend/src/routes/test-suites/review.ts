@@ -9,6 +9,17 @@ import { getTestSuite, getTest, updateTest, updateTestSuite, listTests, batchGet
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
 import { createLogger } from '../../services/logger.js';
 
+// Feature #732: Zod validation for review routes
+import {
+  validateBody,
+  validateParams,
+  testParamsSchema,
+  suiteParamsSchema,
+  reviewTestBodySchema,
+  bulkReviewBodySchema,
+  suiteReviewSettingsBodySchema,
+} from '../../validation/index.js';
+
 const logger = createLogger('review');
 
 // Review action body interface
@@ -42,8 +53,10 @@ export async function reviewRoutes(app: FastifyInstance) {
   });
 
   // Approve or reject an AI-generated test
+  // Feature #732: Zod validation
   app.post<{ Params: { testId: string }; Body: ReviewTestBody }>('/api/v1/tests/:testId/review', {
     preHandler: [authenticate],
+    preValidation: [validateParams(testParamsSchema), validateBody(reviewTestBodySchema)],
     schema: {
       body: {
         type: 'object',
@@ -87,8 +100,10 @@ export async function reviewRoutes(app: FastifyInstance) {
 
   // Bulk approve/reject tests
   // Feature #124: Use batchGetTests to fetch all tests in one query instead of N+1
+  // Feature #732: Zod validation
   app.post<{ Body: BulkReviewBody }>('/api/v1/tests/bulk-review', {
     preHandler: [authenticate],
+    preValidation: [validateBody(bulkReviewBodySchema)],
     schema: {
       body: {
         type: 'object',
@@ -145,8 +160,10 @@ export async function reviewRoutes(app: FastifyInstance) {
   });
 
   // Update suite's require_human_review setting
+  // Feature #732: Zod validation
   app.patch<{ Params: { suiteId: string }; Body: { require_human_review: boolean } }>('/api/v1/suites/:suiteId/review-settings', {
     preHandler: [authenticate],
+    preValidation: [validateParams(suiteParamsSchema), validateBody(suiteReviewSettingsBodySchema)],
     schema: {
       body: {
         type: 'object',

@@ -19,6 +19,8 @@ import {
   DEFAULT_STORAGE_QUOTA,
 } from './storage.js';
 import { BASELINES_DIR } from './visual-regression.js';
+// Feature #732: Zod validation for visual storage routes
+import { validateBody, cleanupBaselinesBodySchema } from '../../validation/index.js';
 
 const logger = createLogger('visual-storage');
 
@@ -63,8 +65,10 @@ export async function visualStorageRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Feature #604: Cleanup old baselines endpoint
+  // Feature #732: Zod validation
   app.post<{ Body: { olderThanDays?: number; dryRun?: boolean } }>('/api/v1/visual/cleanup-baselines', {
     preHandler: [authenticate],
+    preValidation: [validateBody(cleanupBaselinesBodySchema)],
   }, async (request, reply) => {
     const { olderThanDays = 90, dryRun = false } = request.body || {};
     const orgId = getOrganizationId(request);

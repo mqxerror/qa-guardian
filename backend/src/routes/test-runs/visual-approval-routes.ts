@@ -55,6 +55,17 @@ function getUser(request: FastifyRequest): JwtPayload | undefined {
 import { saveBaseline as saveBaselineToFile } from './visual-regression.js';
 
 import { sendError } from '../../utils/errors.js';
+// Feature #732: Zod validation for visual approval routes
+import {
+  validateBody,
+  validateParams,
+  testParamsSchema,
+  approveBaselineBodySchema,
+  approveBaselineConvenienceBodySchema,
+  rejectBaselineConvenienceBodySchema,
+  rejectVisualBodySchema,
+  mergeBaselineBodySchema,
+} from '../../validation/index.js';
 /**
  * Register visual approval routes
  */
@@ -62,8 +73,10 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
 
   // Approve a new screenshot as the baseline for a test
   // Feature #605: Added expectedVersion for optimistic locking
+  // Feature #732: Zod validation
   app.post<{ Params: { testId: string }; Body: { runId?: string; viewport?: string; branch?: string; expectedVersion?: number } }>('/api/v1/tests/:testId/baseline/approve', {
     preHandler: [authenticate],
+    preValidation: [validateParams(testParamsSchema), validateBody(approveBaselineBodySchema)],
   }, async (request, reply) => {
     const { testId } = request.params;
     const { runId, viewport: requestedViewport, branch: requestedBranch, expectedVersion } = request.body || {};
@@ -224,8 +237,10 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
 
   // Feature #14: Convenience route matching frontend's URL pattern
   // Frontend calls POST /api/v1/visual/approve-baseline with { test_id, run_id, viewport_id }
+  // Feature #732: Zod validation
   app.post<{ Body: { test_id: string; run_id?: string; viewport_id?: string } }>('/api/v1/visual/approve-baseline', {
     preHandler: [authenticate],
+    preValidation: [validateBody(approveBaselineConvenienceBodySchema)],
   }, async (request, reply) => {
     const { test_id, run_id, viewport_id } = request.body || {};
 
@@ -371,8 +386,10 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
   });
 
   // Convenience route for reject baseline (removes the baseline file)
+  // Feature #732: Zod validation
   app.post<{ Body: { test_id: string; run_id?: string; viewport_id?: string; reason?: string } }>('/api/v1/visual/reject-baseline', {
     preHandler: [authenticate],
+    preValidation: [validateBody(rejectBaselineConvenienceBodySchema)],
   }, async (request, reply) => {
     const { test_id, viewport_id, reason } = request.body || {};
     if (!test_id) {
@@ -394,8 +411,10 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
   });
 
   // Reject visual changes (mark as regression)
+  // Feature #732: Zod validation
   app.post<{ Params: { testId: string }; Body: { runId: string; viewport?: string; reason?: string } }>('/api/v1/tests/:testId/visual/reject', {
     preHandler: [authenticate],
+    preValidation: [validateParams(testParamsSchema), validateBody(rejectVisualBodySchema)],
   }, async (request, reply) => {
     const { testId } = request.params;
     const { runId, viewport, reason } = request.body;
@@ -561,8 +580,10 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
   });
 
   // Merge a baseline from one branch to another (copy baseline from source to target branch)
+  // Feature #732: Zod validation
   app.post<{ Params: { testId: string }; Body: { sourceBranch: string; targetBranch?: string; viewport?: string } }>('/api/v1/tests/:testId/baseline/merge', {
     preHandler: [authenticate],
+    preValidation: [validateParams(testParamsSchema), validateBody(mergeBaselineBodySchema)],
   }, async (request, reply) => {
     const { testId } = request.params;
     const { sourceBranch, targetBranch: requestTargetBranch, viewport: requestViewport } = request.body || {};

@@ -18,6 +18,14 @@ import { testRuns, TestRun } from './execution.js';
 import { getTestRun } from '../../services/repositories/test-runs.js';
 import { getTestSuite, getTest } from '../test-suites.js';
 import { sendError } from '../../utils/errors.js';
+// Feature #732: Zod validation for review/export routes
+import {
+  validateBody,
+  validateParams,
+  runResultParamsSchema,
+  reviewResultBodySchema,
+  bugReportBodySchema,
+} from '../../validation/index.js';
 // listTests available from test-suites.js if needed
 
 /**
@@ -35,8 +43,10 @@ async function getTestRunWithFallback(runId: string): Promise<TestRun | undefine
 export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
   // Feature #912: Mark a test result as reviewed
   // AI agent can mark results as reviewed with optional notes
+  // Feature #732: Zod validation
   app.post<{ Params: { runId: string; testId: string }; Body: { notes?: string } }>('/api/v1/runs/:runId/results/:testId/review', {
     preHandler: [authenticate],
+    preValidation: [validateParams(runResultParamsSchema), validateBody(reviewResultBodySchema)],
   }, async (request, reply) => {
     const { runId, testId } = request.params;
     const { notes } = request.body || {};
@@ -119,8 +129,10 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Feature #912: Clear review status for a test result
+  // Feature #732: Zod validation
   app.delete<{ Params: { runId: string; testId: string } }>('/api/v1/runs/:runId/results/:testId/review', {
     preHandler: [authenticate],
+    preValidation: [validateParams(runResultParamsSchema)],
   }, async (request, reply) => {
     const { runId, testId } = request.params;
     const orgId = getOrganizationId(request);
@@ -160,8 +172,10 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
 
   // Feature #913: Generate bug report from a test failure
   // AI agent can create structured bug report from test result
+  // Feature #732: Zod validation
   app.post<{ Params: { runId: string; testId: string }; Body: { format?: string; include_screenshots?: boolean; include_trace?: boolean; additional_context?: string } }>('/api/v1/runs/:runId/results/:testId/bug-report', {
     preHandler: [authenticate],
+    preValidation: [validateParams(runResultParamsSchema), validateBody(bugReportBodySchema)],
   }, async (request, reply) => {
     const { runId, testId } = request.params;
     const {

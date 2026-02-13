@@ -21,6 +21,15 @@ import {
 import { createLogger } from '../../services/logger.js';
 
 import { sendError } from '../../utils/errors.js';
+// Feature #732: Zod validation for alert channels
+import {
+  validateBody,
+  validateParams,
+  alertChannelProjectParamsSchema,
+  alertChannelIdParamsSchema,
+  createAlertChannelBodySchema,
+  updateAlertChannelBodySchema,
+} from '../../validation/index.js';
 const log = createLogger('alert-channels');
 
 // ============================================================================
@@ -79,6 +88,7 @@ export async function alertChannelRoutes(app: FastifyInstance) {
     };
   }>('/api/v1/projects/:projectId/alerts', {
     preHandler: [authenticate],
+    preValidation: [validateParams(alertChannelProjectParamsSchema), validateBody(createAlertChannelBodySchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const { name, type, condition, threshold_percent, email_addresses, webhook_url, slack_channel, enabled = true, suppress_on_retry_success = false } = request.body;
@@ -190,6 +200,7 @@ export async function alertChannelRoutes(app: FastifyInstance) {
     };
   }>('/api/v1/projects/:projectId/alerts/:channelId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(alertChannelIdParamsSchema), validateBody(updateAlertChannelBodySchema)],
   }, async (request, reply) => {
     const { projectId, channelId } = request.params;
     const { name, condition, threshold_percent, email_addresses, slack_channel, enabled, suppress_on_retry_success } = request.body;
@@ -247,10 +258,12 @@ export async function alertChannelRoutes(app: FastifyInstance) {
   });
 
   // Delete alert channel
+  // Feature #732: Zod validation
   app.delete<{ Params: { projectId: string; channelId: string } }>(
     '/api/v1/projects/:projectId/alerts/:channelId',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(alertChannelIdParamsSchema)],
     },
     async (request, reply) => {
       const { projectId, channelId } = request.params;
