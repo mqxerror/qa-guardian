@@ -16,6 +16,7 @@ import { TestSuite, Test } from '../test-suites/types.js';
 // Feature #484: Pino structured logging
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const log = createLogger('run-data-routes');
 
 // Helper: get test run from Map first, then fall back to DB
@@ -59,10 +60,7 @@ export async function runDataRoutes(app: FastifyInstance) {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Collect all console logs from all test results
@@ -140,18 +138,12 @@ export async function runDataRoutes(app: FastifyInstance) {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test result not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     const testInfo = await getTest(testId);
@@ -225,18 +217,12 @@ export async function runDataRoutes(app: FastifyInstance) {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test result not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     const testInfo = await getTest(testId);
@@ -310,45 +296,28 @@ export async function runDataRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     if (!baseRunId || !compareRunId) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Both baseRunId and compareRunId query parameters are required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Both baseRunId and compareRunId query parameters are required');
     }
 
     const baseRun = await getTestRunWithFallback(baseRunId);
     const compareRun = await getTestRunWithFallback(compareRunId);
 
     if (!baseRun || baseRun.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Base run with ID ${baseRunId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Base run with ID ${baseRunId} not found`);
     }
 
     if (!compareRun || compareRun.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Compare run with ID ${compareRunId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Compare run with ID ${compareRunId} not found`);
     }
 
     // Check if both runs are completed
     const completedStatuses = ['passed', 'failed', 'cancelled', 'error'];
     if (!completedStatuses.includes(baseRun.status)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Base run has not completed yet',
-        status: baseRun.status,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Base run has not completed yet', { status: baseRun.status });
     }
 
     if (!completedStatuses.includes(compareRun.status)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Compare run has not completed yet',
-        status: compareRun.status,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Compare run has not completed yet', { status: compareRun.status });
     }
 
     const baseResults = baseRun.results || [];
@@ -472,10 +441,7 @@ export async function runDataRoutes(app: FastifyInstance) {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const results = run.results || [];
@@ -584,42 +550,26 @@ export async function runDataRoutes(app: FastifyInstance) {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Can only set env vars on pending or paused runs
     if (run.status !== 'pending' && run.status !== 'paused') {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Cannot set environment variables for run with status "${run.status}". Only pending or paused runs can have environment variables modified.`,
-        current_status: run.status,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Cannot set environment variables for run with status "${run.status}". Only pending or paused runs can have environment variables modified.`, { current_status: run.status });
     }
 
     // Validate env_vars is an object
     if (!env_vars || typeof env_vars !== 'object' || Array.isArray(env_vars)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'env_vars must be an object with key-value pairs',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'env_vars must be an object with key-value pairs');
     }
 
     // Validate all values are strings
     for (const [key, value] of Object.entries(env_vars)) {
       if (typeof key !== 'string' || key.trim() === '') {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'All environment variable keys must be non-empty strings',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'All environment variable keys must be non-empty strings');
       }
       if (typeof value !== 'string') {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: `Environment variable "${key}" must have a string value`,
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', `Environment variable "${key}" must have a string value`);
       }
     }
 
@@ -664,10 +614,7 @@ export async function runDataRoutes(app: FastifyInstance) {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Get the suite and project env vars
@@ -738,19 +685,12 @@ export async function runDataRoutes(app: FastifyInstance) {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Can only modify env vars on pending or paused runs
     if (run.status !== 'pending' && run.status !== 'paused') {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Cannot modify environment variables for run with status "${run.status}". Only pending or paused runs can have environment variables modified.`,
-        current_status: run.status,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Cannot modify environment variables for run with status "${run.status}". Only pending or paused runs can have environment variables modified.`, { current_status: run.status });
     }
 
     if (!run.run_env_vars) {
@@ -802,10 +742,7 @@ export async function runDataRoutes(app: FastifyInstance) {
 
     // Validate required parameters
     if (!baseRunId || !compareRunId) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Both baseRunId and compareRunId query parameters are required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Both baseRunId and compareRunId query parameters are required');
     }
 
     // Get both test runs
@@ -813,32 +750,20 @@ export async function runDataRoutes(app: FastifyInstance) {
     const compareRun = await getTestRunWithFallback(compareRunId);
 
     if (!baseRun || baseRun.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Base run with ID ${baseRunId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Base run with ID ${baseRunId} not found`);
     }
 
     if (!compareRun || compareRun.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Compare run with ID ${compareRunId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Compare run with ID ${compareRunId} not found`);
     }
 
     // Ensure both runs have completed
     if (baseRun.status === 'running' || baseRun.status === 'pending') {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Base run has not completed yet',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Base run has not completed yet');
     }
 
     if (compareRun.status === 'running' || compareRun.status === 'pending') {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Compare run has not completed yet',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Compare run has not completed yet');
     }
 
     // Type alias for local use
@@ -868,17 +793,11 @@ export async function runDataRoutes(app: FastifyInstance) {
     const compareLoadTest = findLoadTestResult(compareRun);
 
     if (!baseLoadTest) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Base run does not contain K6 load test results',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Base run does not contain K6 load test results');
     }
 
     if (!compareLoadTest) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Compare run does not contain K6 load test results',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Compare run does not contain K6 load test results');
     }
 
     // Helper to calculate delta and improvement status

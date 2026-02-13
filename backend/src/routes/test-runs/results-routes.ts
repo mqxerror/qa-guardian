@@ -23,6 +23,7 @@ import { getProject as dbGetProject } from '../projects/stores.js';
 import { testRuns, TestRun } from './execution.js';
 import { getTestRun as dbGetTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
 
+import { sendError } from '../../utils/errors.js';
 // Helper: get test run from Map first, then fall back to DB
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
   const fromMap = testRuns.get(runId);
@@ -201,46 +202,31 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
     const [compareRunId, compareTestId] = compare_result_id.split(':');
 
     if (!baseRunId || !baseTestId || !compareRunId || !compareTestId) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Invalid result ID format. Expected format: runId:testId',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Invalid result ID format. Expected format: runId:testId');
     }
 
     // Get base run
     const baseRun = await getTestRunWithFallback(baseRunId);
     if (!baseRun || baseRun.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Base run ${baseRunId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Base run ${baseRunId} not found`);
     }
 
     // Get compare run
     const compareRun = await getTestRunWithFallback(compareRunId);
     if (!compareRun || compareRun.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Compare run ${compareRunId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Compare run ${compareRunId} not found`);
     }
 
     // Get base result
     const baseResult = baseRun.results?.find(r => r.test_id === baseTestId);
     if (!baseResult) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Base result ${baseTestId} not found in run ${baseRunId}`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Base result ${baseTestId} not found in run ${baseRunId}`);
     }
 
     // Get compare result
     const compareResult = compareRun.results?.find(r => r.test_id === compareTestId);
     if (!compareResult) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Compare result ${compareTestId} not found in run ${compareRunId}`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Compare result ${compareTestId} not found in run ${compareRunId}`);
     }
 
     // Calculate differences
@@ -257,7 +243,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
       changed_count: number;
       added: { action: string; selector: string | undefined }[];
       removed: { action: string; selector: string | undefined }[];
-      changed: { action: string; selector: string | undefined; base_status: string; compare_status: string; base_value: any; compare_value: any }[];
+      changed: { action: string; selector: string | undefined; base_status: string; compare_status: string; base_value: string | undefined; compare_value: string | undefined }[];
     } | null = null;
     if (includeSteps && baseResult.steps && compareResult.steps) {
       const baseSteps = baseResult.steps;
@@ -355,18 +341,12 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test result not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     const annotation: Annotation = {
@@ -408,10 +388,7 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const key = `${runId}:${testId}`;
@@ -440,28 +417,19 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const key = `${runId}:${testId}`;
     const resultAnnotations = annotations.get(key);
 
     if (!resultAnnotations) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Annotation not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Annotation not found');
     }
 
     const index = resultAnnotations.findIndex(a => a.id === annotationId);
     if (index === -1) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Annotation not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Annotation not found');
     }
 
     resultAnnotations.splice(index, 1);
@@ -482,18 +450,12 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test result not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     const token = crypto.randomBytes(32).toString('hex');
@@ -530,34 +492,22 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
 
     const shared = sharedResults.get(shareToken);
     if (!shared) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Share link not found or expired',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Share link not found or expired');
     }
 
     if (new Date() > shared.expires_at) {
       sharedResults.delete(shareToken);
-      return reply.status(410).send({
-        error: 'Gone',
-        message: 'Share link has expired',
-      });
+      return sendError(reply, 410, 'ERROR', 'Share link has expired');
     }
 
     const run = await getTestRunWithFallback(shared.run_id);
     if (!run) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const result = run.results?.find(r => r.test_id === shared.test_id);
     if (!result) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test result not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     const suite = await getTestSuite(run.suite_id);
@@ -598,18 +548,12 @@ export async function resultsRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Result with test_id ${testId} not found in run ${runId}`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Result with test_id ${testId} not found in run ${runId}`);
     }
 
     const bottleneckThresholdMs = parseInt(bottleneck_threshold_ms || '1000', 10);

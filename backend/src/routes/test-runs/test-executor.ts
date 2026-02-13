@@ -588,7 +588,7 @@ async function executeTest(
       // Store lighthouse results in test run data
       const run = testRuns.get(runId);
       if (run && lighthouseResult.lighthouseResults) {
-        run.lighthouseResults = lighthouseResult.lighthouseResults as Record<string, unknown>;
+        run.lighthouseResults = lighthouseResult.lighthouseResults as unknown as Record<string, unknown>;
       }
     } else if (test.test_type === 'load' && test.target_url) {
       // K6 Load Test execution
@@ -664,7 +664,7 @@ async function executeTest(
       // Store accessibility results in test run data
       const a11yRun = testRuns.get(runId);
       if (a11yRun && a11yResult.a11yResults) {
-        a11yRun.a11yResults = a11yResult.a11yResults as Record<string, unknown>;
+        a11yRun.a11yResults = a11yResult.a11yResults as unknown as Record<string, unknown>;
       }
     } else {
       // Standard E2E test execution - execute each step

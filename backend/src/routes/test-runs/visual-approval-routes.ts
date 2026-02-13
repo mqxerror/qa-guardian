@@ -54,6 +54,7 @@ function getUser(request: FastifyRequest): JwtPayload | undefined {
 // For now, we'll import the simpler version and add quota handling inline
 import { saveBaseline as saveBaselineToFile } from './visual-regression.js';
 
+import { sendError } from '../../utils/errors.js';
 /**
  * Register visual approval routes
  */
@@ -73,10 +74,7 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     // Verify test exists and belongs to user's organization
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     // Get the test runs to find the screenshot
@@ -93,8 +91,7 @@ export async function visualApprovalRoutes(app: FastifyInstance) {
     );
 
     // Find the specific run or use the most recent one
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let targetRun: any;
+    let targetRun: TestRun | undefined;
     if (runId) {
       targetRun = allTestRuns.find(r => r.id === runId);
     } else {
@@ -107,19 +104,13 @@ let targetRun: any;
     }
 
     if (!targetRun) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No test run found. Run the test first to generate a screenshot.',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No test run found. Run the test first to generate a screenshot.');
     }
 
     // Find the test result with the screenshot
     const testResult = targetRun.results?.find((r: TestRunResult) => r.test_id === testId);
     if (!testResult || !testResult.screenshot_base64) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'No screenshot found in the test run result.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'No screenshot found in the test run result.');
     }
 
     // Determine the viewport ID
@@ -134,16 +125,7 @@ let targetRun: any;
       const modifiedBy = currentMetadata?.approvedBy || 'another user';
       const modifiedAt = currentMetadata?.approvedAt ? new Date(currentMetadata.approvedAt).toLocaleString() : 'recently';
       logger.info(`[Visual] Concurrent modification detected for test ${testId}: expected version ${expectedVersion}, current version ${currentVersion}`);
-      return reply.status(409).send({
-        error: 'Conflict',
-        message: 'Baseline was modified by another user',
-        details: `The baseline was updated by ${modifiedBy} at ${modifiedAt}. Please refresh and review the changes before continuing.`,
-        currentVersion,
-        expectedVersion,
-        modifiedBy,
-        modifiedAt: currentMetadata?.approvedAt,
-        requiresRefresh: true,
-      });
+      return sendError(reply, 409, 'CONFLICT', 'Baseline was modified by another user', { details: `The baseline was updated by ${modifiedBy} at ${modifiedAt}. Please refresh and review the changes before continuing.` });
     }
 
     // Save the screenshot as the new baseline (for this branch)
@@ -154,12 +136,7 @@ let targetRun: any;
 
     // Feature #604: Handle storage quota exceeded
     if (!saveResult.success && saveResult.isQuotaExceeded) {
-      return reply.status(507).send({
-        error: 'Storage quota exceeded',
-        message: 'Unable to approve baseline due to storage quota limits.',
-        isQuotaExceeded: true,
-        suggestions: saveResult.suggestions,
-      });
+      return sendError(reply, 507, 'ERROR', 'Unable to approve baseline due to storage quota limits.', { isQuotaExceeded: true, suggestions: saveResult.suggestions });
     }
 
     // Record approval metadata - Feature #266: Include full metadata
@@ -189,7 +166,7 @@ let targetRun: any;
       // Feature #266: Record browser info
       browser: {
         name: targetRun.browser || 'chromium',
-        version: targetRun.browser_version || 'latest',
+        version: (targetRun as unknown as Record<string, unknown>).browser_version as string || 'latest',
       },
       // Feature #605: Version for optimistic locking
       version: newVersion,
@@ -253,10 +230,7 @@ let targetRun: any;
     const { test_id, run_id, viewport_id } = request.body || {};
 
     if (!test_id) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'test_id is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'test_id is required');
     }
 
     const orgId = getOrganizationId(request);
@@ -265,10 +239,7 @@ let targetRun: any;
     // Verify test exists and belongs to user's organization
     const test = await getTest(test_id);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     // Get the test runs to find the screenshot
@@ -283,8 +254,7 @@ let targetRun: any;
     );
 
     // Find the specific run or use the most recent one
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let targetRun: any;
+    let targetRun: TestRun | undefined;
     if (run_id) {
       targetRun = allTestRuns.find(r => r.id === run_id);
     } else {
@@ -296,27 +266,21 @@ let targetRun: any;
     }
 
     if (!targetRun) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No test run found. Run the test first to generate a screenshot.',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No test run found. Run the test first to generate a screenshot.');
     }
 
     // Find the test result with the screenshot
     const testResult = targetRun.results?.find((r: TestRunResult) => r.test_id === test_id);
-    // For multi-viewport tests, the screenshot may be in viewportResults
+    // For multi-viewport tests, the screenshot may be in viewport_results
     let screenshotBase64 = testResult?.screenshot_base64;
-    if (!screenshotBase64 && testResult?.viewportResults) {
+    if (!screenshotBase64 && testResult?.viewport_results) {
       const vpResult = viewport_id
-        ? testResult.viewportResults.find((v: any) => v.viewportId === viewport_id || v.viewportLabel === viewport_id)
-        : testResult.viewportResults[0];
-      screenshotBase64 = vpResult?.screenshotBase64 || vpResult?.screenshot_base64;
+        ? testResult.viewport_results.find(v => v.viewportId === viewport_id || v.viewportLabel === viewport_id)
+        : testResult.viewport_results[0];
+      screenshotBase64 = vpResult?.screenshotBase64;
     }
     if (!testResult || !screenshotBase64) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'No screenshot found in the test run result.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'No screenshot found in the test run result.');
     }
 
     const viewportId = viewport_id || 'single';
@@ -332,12 +296,7 @@ let targetRun: any;
     const saveResult = saveBaselineToFile(test_id, screenshotBuffer, viewportId, branch);
 
     if (!saveResult.success && saveResult.isQuotaExceeded) {
-      return reply.status(507).send({
-        error: 'Storage quota exceeded',
-        message: 'Unable to approve baseline due to storage quota limits.',
-        isQuotaExceeded: true,
-        suggestions: saveResult.suggestions,
-      });
+      return sendError(reply, 507, 'ERROR', 'Unable to approve baseline due to storage quota limits.', { isQuotaExceeded: true, suggestions: saveResult.suggestions });
     }
 
     const approvedAt = new Date().toISOString();
@@ -359,7 +318,7 @@ let targetRun: any;
       },
       browser: {
         name: targetRun.browser || 'chromium',
-        version: targetRun.browser_version || 'latest',
+        version: (targetRun as unknown as Record<string, unknown>).browser_version as string || 'latest',
       },
       version: newVersion,
     };
@@ -417,7 +376,7 @@ let targetRun: any;
   }, async (request, reply) => {
     const { test_id, viewport_id, reason } = request.body || {};
     if (!test_id) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'test_id is required' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'test_id is required');
     }
     const viewportId = viewport_id || 'single';
     const branch = 'main';
@@ -444,37 +403,25 @@ let targetRun: any;
     const user = request.user as JwtPayload;
 
     if (!runId) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'runId is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'runId is required');
     }
 
     // Verify test exists and belongs to user's organization
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     // Find the target run
     const targetRun = await getTestRunWithFallback(runId);
     if (!targetRun || targetRun.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Find the result for this test
     const testResult = targetRun.results?.find((r: TestRunResult) => r.test_id === testId);
     if (!testResult) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test result not found in the specified run',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found in the specified run');
     }
 
     // Record rejection metadata
@@ -517,19 +464,13 @@ let targetRun: any;
     const orgId = getOrganizationId(request);
 
     if (!runId) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'runId is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'runId is required');
     }
 
     // Verify test exists and belongs to user's organization
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     const viewportId = viewport || 'single';
@@ -562,10 +503,7 @@ let targetRun: any;
     // Verify test exists and belongs to user's organization
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     // Get metadata for the target branch baseline (if exists)
@@ -636,33 +574,21 @@ let targetRun: any;
     // Verify test exists and belongs to user's organization
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     if (!sourceBranch) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Source branch is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Source branch is required');
     }
 
     if (sourceBranch === targetBranch) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Source and target branches must be different',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Source and target branches must be different');
     }
 
     // Check that source baseline exists
     const sourceBaselinePath = getBaselinePath(testId, viewportId, sourceBranch);
     if (!fs.existsSync(sourceBaselinePath)) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `No baseline found for test ${testId} on branch '${sourceBranch}'`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `No baseline found for test ${testId} on branch '${sourceBranch}'`);
     }
 
     // Read source baseline
@@ -674,12 +600,7 @@ let targetRun: any;
 
     // Feature #604: Handle storage quota exceeded
     if (!saveResult.success && saveResult.isQuotaExceeded) {
-      return reply.status(507).send({
-        error: 'Storage quota exceeded',
-        message: 'Unable to merge baseline due to storage quota limits.',
-        isQuotaExceeded: true,
-        suggestions: saveResult.suggestions,
-      });
+      return sendError(reply, 507, 'ERROR', 'Unable to merge baseline due to storage quota limits.', { isQuotaExceeded: true, suggestions: saveResult.suggestions });
     }
 
     // Update baseline metadata for target branch - Feature #266: Include full metadata

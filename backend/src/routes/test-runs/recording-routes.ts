@@ -12,13 +12,14 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { getTestSuite } from '../test-suites.js';
-import { chromium, Browser, Page, BrowserContext } from 'playwright';
+import { chromium, Browser, Page, BrowserContext, type BrowserContextOptions } from 'playwright';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 // Feature #36: Import device presets for mobile emulation
 import { TestDeviceConfig, resolveDeviceConfig } from './device-presets.js';
 import { createLogger } from '../../services/logger.js';
 import { validateBody, validateParams, recordingIdParamsSchema, startRecordingBodySchema, stopRecordingBodySchema } from '../../validation/index.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('route:test-runs:recording');
 
 // Max concurrent recording sessions (configurable via env var)
@@ -861,29 +862,20 @@ export async function recordingRoutes(app: FastifyInstance) {
     // Validate suite exists
     const suite = await getTestSuite(suite_id);
     if (!suite) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test suite not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     // Validate URL
     try {
       new URL(target_url);
     } catch {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Invalid target URL',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Invalid target URL');
     }
 
     // Check max concurrent recording sessions limit
     const activeSessionCount = Array.from(recordingSessions.values()).filter(s => s.status === 'recording').length;
     if (activeSessionCount >= MAX_RECORDING_SESSIONS) {
-      return reply.status(429).send({
-        error: 'Too Many Requests',
-        message: `Maximum concurrent recording sessions (${MAX_RECORDING_SESSIONS}) reached. Please stop an existing recording first.`,
-      });
+      return sendError(reply, 429, 'RATE_LIMITED', `Maximum concurrent recording sessions (${MAX_RECORDING_SESSIONS}) reached. Please stop an existing recording first.`);
     }
 
     const sessionId = `rec-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -923,7 +915,7 @@ export async function recordingRoutes(app: FastifyInstance) {
       const resolvedDevice = device_config ? resolveDeviceConfig(device_config) : null;
 
       // Build context options with optional device emulation
-      const contextOptions: any = {
+      const contextOptions: BrowserContextOptions = {
         viewport: resolvedDevice
           ? { width: resolvedDevice.viewport.width, height: resolvedDevice.viewport.height }
           : { width: 1280, height: 720 },
@@ -981,10 +973,7 @@ export async function recordingRoutes(app: FastifyInstance) {
       session.status = 'error';
       await cleanupSession(session);
 
-      return reply.status(500).send({
-        error: 'Server Error',
-        message: `Failed to launch browser: ${err instanceof Error ? err.message : 'Unknown error'}`,
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', `Failed to launch browser: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
 
     return {
@@ -1005,18 +994,12 @@ export async function recordingRoutes(app: FastifyInstance) {
 
     const session = recordingSessions.get(sessionId);
     if (!session) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Recording session not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Recording session not found');
     }
 
     // Verify organization ownership
     if (session.organization_id !== orgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this recording session',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this recording session');
     }
 
     return {
@@ -1038,18 +1021,12 @@ export async function recordingRoutes(app: FastifyInstance) {
 
     const session = recordingSessions.get(sessionId);
     if (!session) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Recording session not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Recording session not found');
     }
 
     // Verify organization ownership
     if (session.organization_id !== orgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this recording session',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this recording session');
     }
 
     session.status = 'stopped';
@@ -1080,21 +1057,18 @@ export async function recordingRoutes(app: FastifyInstance) {
     Params: { sessionId: string };
     Querystring: { url: string };
   }>('/api/v1/recording/:sessionId/browse', async (request, reply) => {
-    return reply.status(410).send({
-      error: 'Gone',
-      message: 'Proxy-based recording has been replaced with live browser streaming. Please use the updated recording UI.',
-    });
+    return sendError(reply, 410, 'ERROR', 'Proxy-based recording has been replaced with live browser streaming. Please use the updated recording UI.');
   });
 
   // Keep action endpoint for backwards compatibility
   app.post<{
     Params: { sessionId: string };
-    Body: any;
+    Body: Record<string, unknown>;
   }>('/api/v1/recording/:sessionId/action', async (request, reply) => {
     const { sessionId } = request.params;
     const session = recordingSessions.get(sessionId);
     if (!session) {
-      return reply.status(404).send({ error: 'Session not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Session not found');
     }
     // Allow CORS
     reply.header('Access-Control-Allow-Origin', '*');

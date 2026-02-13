@@ -17,6 +17,7 @@ import { createLogger } from '../../services/logger.js';
 
 import {
   StepResult,
+  AccessibilityRunResults,
 } from './execution.js';
 
 import {
@@ -48,6 +49,21 @@ export interface AccessibilityTestConfig {
 }
 
 /**
+ * Accessibility scan results returned by axe-core analysis
+ */
+export interface A11yScanResults {
+  score: number;
+  violations: A11yViolation[];
+  violation_counts: Record<string, number>;
+  wcag_level: string;
+  total_elements_scanned: number;
+  test_engines: { name: string; version: string };
+  javascript_disabled: boolean;
+  passes: Array<{ id: string; description: string }>;
+  incomplete: Array<{ id: string; description: string }>;
+}
+
+/**
  * Context provided to the accessibility test executor
  */
 export interface AccessibilityTestContext {
@@ -55,7 +71,7 @@ export interface AccessibilityTestContext {
   browser: Browser;
   runId: string;
   orgId: string;
-  emitRunEvent: (runId: string, orgId: string, event: string, data: any) => void;
+  emitRunEvent: (runId: string, orgId: string, event: string, data: Record<string, unknown>) => void;
 }
 
 /**
@@ -66,7 +82,7 @@ export interface AccessibilityTestResult {
   testStatus: 'passed' | 'failed' | 'warning' | 'error';
   testError?: string;
   stepResults: StepResult[];
-  a11yResults?: any;
+  a11yResults?: A11yScanResults;
   screenshot_base64?: string;
 }
 
@@ -83,7 +99,7 @@ export async function executeAccessibilityTest(
   // Feature #1979: Added 'warning' status for violations that don't exceed thresholds
   let testStatus: 'passed' | 'failed' | 'warning' | 'error' = 'passed';
   let testError: string | undefined;
-  let a11yResults: any;
+  let a11yResults: A11yScanResults | undefined;
   let screenshot_base64: string | undefined;
 
   const javascriptDisabled = test.disable_javascript === true;

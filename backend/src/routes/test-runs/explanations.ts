@@ -20,6 +20,8 @@ import type {
   ExecutiveSummary,
 } from './root-cause-helpers.js';
 
+import type { TestRunResult, StepResult, TestRun } from './execution.js';
+
 // Re-export types for convenience (must use 'export type' for ESM compatibility with Node.js 20+)
 export type {
   AffectedTest,
@@ -485,8 +487,8 @@ export function generateHumanReadableExplanation(
 export function generateTechnicalExplanation(
   errorMessage: string,
   testName: string,
-  testResult: any,
-  failedStep?: any
+  testResult: TestRunResult,
+  failedStep?: StepResult
 ): TechnicalExplanation {
   // Parse stack trace from error message if available
   const stackLines = errorMessage.split('\n').filter(line =>
@@ -805,12 +807,12 @@ const value = response.data.items[0].name;`,
 
 // Feature #1085: Generate executive summary
 export function generateExecutiveSummary(
-  testRun: any,
+  testRun: TestRun,
   patternType?: string
 ): ExecutiveSummary {
   const results = testRun.results || [];
-  const failedTests = results.filter((r: any) => r.status === 'failed');
-  const passedTests = results.filter((r: any) => r.status === 'passed');
+  const failedTests = results.filter(r => r.status === 'failed');
+  const passedTests = results.filter(r => r.status === 'passed');
   const totalTests = results.length;
   const failureCount = failedTests.length;
   const passRate = totalTests > 0 ? ((passedTests.length / totalTests) * 100).toFixed(1) : '0';

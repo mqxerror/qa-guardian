@@ -20,6 +20,7 @@ import { getTestRun } from '../../services/repositories/test-runs.js';
 import { getTest } from '../test-suites.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('route:test-runs:selector-override');
 
 // Type-safe user accessor for authenticated requests
@@ -68,18 +69,18 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     // Get the test run
     const run = await getTestRunWithFallback(runId);
     if (!run) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test run not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Check organization
     if (run.organization_id !== orgId) {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Access denied' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
     }
 
     // Find the test result
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test result not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     // Collect healed selector information from step results
@@ -144,33 +145,30 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     const orgId = getOrganizationId(request);
 
     if (!new_selector || typeof new_selector !== 'string') {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'new_selector is required and must be a string',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'new_selector is required and must be a string');
     }
 
     // Get the test run
     const run = await getTestRunWithFallback(runId);
     if (!run) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test run not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Check organization
     if (run.organization_id !== orgId) {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Access denied' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
     }
 
     // Find the test result
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test result not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     // Find the step
     const step = result.steps.find(s => s.id === stepId);
     if (!step) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Step not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Step not found');
     }
 
     // Store the original selector before overriding
@@ -211,7 +209,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     if (apply_to_test) {
       const test = await getTest(testId);
       if (test) {
-        const testStep = test.steps.find((s: any) => s.id === stepId);
+        const testStep = test.steps.find(s => s.id === stepId);
         if (testStep) {
           testStep.selector = new_selector;
           test.updated_at = new Date();
@@ -253,31 +251,28 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     // Get the test run
     const run = await getTestRunWithFallback(runId);
     if (!run) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test run not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Check organization
     if (run.organization_id !== orgId) {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Access denied' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
     }
 
     // Find the test result
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test result not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     // Find the step
     const step = result.steps.find(s => s.id === stepId);
     if (!step) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Step not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Step not found');
     }
 
     if (!step.was_healed || !step.healed_selector) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'This step was not healed. Nothing to accept.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'This step was not healed. Nothing to accept.');
     }
 
     // Update healed selector history
@@ -294,7 +289,7 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     if (apply_to_test) {
       const test = await getTest(testId);
       if (test) {
-        const testStep = test.steps.find((s: any) => s.id === stepId);
+        const testStep = test.steps.find(s => s.id === stepId);
         if (testStep) {
           testStep.selector = step.healed_selector;
           test.updated_at = new Date();
@@ -337,31 +332,28 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     // Get the test run
     const run = await getTestRunWithFallback(runId);
     if (!run) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test run not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Check organization
     if (run.organization_id !== orgId) {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Access denied' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
     }
 
     // Find the test result
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test result not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     // Find the step
     const step = result.steps.find(s => s.id === stepId);
     if (!step) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Step not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Step not found');
     }
 
     if (!step.was_healed || !step.healed_selector) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'This step was not healed. Nothing to reject.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'This step was not healed. Nothing to reject.');
     }
 
     // Update healed selector history to mark as rejected
@@ -434,11 +426,11 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     // Check if test exists and belongs to the organization
     const test = await getTest(testId);
     if (!test) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     if (test.organization_id !== orgId) {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Access denied' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
     }
 
     // Get all overrides for this test
@@ -468,22 +460,22 @@ export async function selectorOverrideRoutes(app: FastifyInstance): Promise<void
     // Check if test exists and belongs to the organization
     const test = await getTest(testId);
     if (!test) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     if (test.organization_id !== orgId) {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Access denied' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
     }
 
     // Find the override
     const overrideKey = `${testId}-${stepId}`;
     const override = selectorOverrides.get(overrideKey);
     if (!override) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Selector override not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Selector override not found');
     }
 
     // Restore the original selector in the test definition
-    const testStep = test.steps.find((s: any) => s.id === stepId);
+    const testStep = test.steps.find(s => s.id === stepId);
     if (testStep) {
       testStep.selector = override.original_selector;
       test.updated_at = new Date();

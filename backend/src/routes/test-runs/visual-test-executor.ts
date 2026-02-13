@@ -85,7 +85,7 @@ export interface VisualTestContext {
   browser: Browser;
   runId: string;
   orgId: string;
-  emitRunEvent: (runId: string, orgId: string, event: string, data: any) => void;
+  emitRunEvent: (runId: string, orgId: string, event: string, data: Record<string, unknown>) => void;
 }
 
 /**

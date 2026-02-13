@@ -8,15 +8,16 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { getTest, getTestSuite, getTestsMap, getTestSuitesMap, getTestsMapByOrg, getTestSuitesMapByOrg, listTests, batchGetTests, batchGetTestSuites } from '../test-suites.js';
+import type { Test } from '../test-suites/types.js';
 import { testRuns, runningBrowsers, TestRun, TestRunResult, TestRunStatus } from './execution.js';
-// BrowserType available from execution.js if needed
 
 // Feature #414: Valid TestRunStatus values for validation
 const validStatuses: TestRunStatus[] = ['pending', 'running', 'paused', 'passed', 'failed', 'warning', 'error', 'cancelled', 'cancelling', 'visual_approved', 'visual_rejected'];
-import { getTestRun as dbGetTestRun, listTestRunsBySuite as dbListTestRunsBySuite, listTestRunsByOrg as dbListTestRunsByOrg, listTestRunsByTestId as dbListTestRunsByTestId, listTestRunsPaginated } from '../../services/repositories/test-runs.js';
+import { getTestRun as dbGetTestRun, listTestRunsBySuite as dbListTestRunsBySuite, listTestRunsByOrg as dbListTestRunsByOrg, listTestRunsByTestId as dbListTestRunsByTestId, listTestRunsPaginated, type PaginatedTestRunsResult } from '../../services/repositories/test-runs.js';
 // Feature #61: Redis caching
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
 
+import { sendError } from '../../utils/errors.js';
 // Helper: get test run from Map first, then fall back to DB
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
   const fromMap = testRuns.get(runId);
@@ -74,10 +75,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     return {
@@ -107,10 +105,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     let results = run.results || [];
@@ -162,18 +157,12 @@ export async function runCoreRoutes(app: FastifyInstance) {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const idx = parseInt(resultIndex, 10);
     if (isNaN(idx) || idx < 0 || !run.results || idx >= run.results.length) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Result not found at specified index',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Result not found at specified index');
     }
 
     const result = run.results![idx];
@@ -211,10 +200,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Check if there's an active browser for this run
@@ -243,14 +229,11 @@ export async function runCoreRoutes(app: FastifyInstance) {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Get tests to run for this run
-    let testsToRun: any[] = [];
+    let testsToRun: Test[] = [];
     if (run.test_id) {
       const test = await getTest(run.test_id);
       if (test) testsToRun = [test];
@@ -330,15 +313,12 @@ export async function runCoreRoutes(app: FastifyInstance) {
     // Verify suite exists
     const suite = await getTestSuite(suiteId);
     if (!suite || suite.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test suite not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     // Feature #61: Try to get runs list from cache first
     const cacheKey = CacheKeys.runs.bySuite(suiteId);
-    let allSuiteRuns = await cache.get<any[]>(cacheKey);
+    let allSuiteRuns = await cache.get<TestRun[]>(cacheKey);
     if (!allSuiteRuns) {
       allSuiteRuns = await dbListTestRunsBySuite(suiteId, orgId);
       // Cache with SHORT TTL since runs change frequently
@@ -388,10 +368,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
     // Verify test exists
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     // Feature #61: Try to get runs list from cache first
@@ -452,7 +429,7 @@ export async function runCoreRoutes(app: FastifyInstance) {
 
     // Feature #61: Build cache key from org and filters
     const cacheKey = `runs:list:${orgId}:p${page}:l${limit}:o${offset || 0}:s${status || 'all'}:suite${suite_id || 'all'}:proj${project_id || 'all'}`;
-    let result = await cache.get<any>(cacheKey);
+    let result = await cache.get<PaginatedTestRunsResult>(cacheKey);
 
     if (!result) {
       // Use new paginated function for efficient server-side pagination

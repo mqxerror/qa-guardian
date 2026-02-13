@@ -15,6 +15,9 @@ import { Page, Browser } from 'playwright';
 
 import {
   StepResult,
+  LighthouseOpportunityItem,
+  LighthouseDiagnosticItem,
+  LighthousePassedAuditItem,
 } from './execution.js';
 
 import {
@@ -60,7 +63,7 @@ export interface LighthouseTestContext {
   browser: Browser;
   runId: string;
   orgId: string;
-  emitRunEvent: (runId: string, orgId: string, event: string, data: any) => void;
+  emitRunEvent: (runId: string, orgId: string, event: string, data: Record<string, unknown>) => void;
 }
 
 /**
@@ -90,9 +93,35 @@ export interface DeviceLighthouseResults {
     time_to_interactive?: number;
     time_to_first_byte?: number;
   };
-  opportunities: any[];
-  diagnostics: any[];
-  passed_audits: any[];
+  opportunities: LighthouseOpportunityItem[];
+  diagnostics: LighthouseDiagnosticItem[];
+  passed_audits: LighthousePassedAuditItem[];
+  filmstrip?: FilmstripFrame[];
+}
+
+/**
+ * Aggregated Lighthouse results combining primary device scores with both device breakdowns
+ */
+export interface LighthouseAggregatedResults {
+  performance_score: number;
+  accessibility_score: number;
+  best_practices_score: number;
+  seo_score: number;
+  metrics: {
+    first_contentful_paint: number;
+    largest_contentful_paint: number;
+    cumulative_layout_shift: number;
+    total_blocking_time: number;
+    speed_index: number;
+  };
+  opportunities: LighthouseOpportunityItem[];
+  diagnostics: LighthouseDiagnosticItem[];
+  passed_audits: LighthousePassedAuditItem[];
+  device_preset: 'mobile' | 'desktop';
+  // Feature #67: Both mobile and desktop results
+  mobileResults: DeviceLighthouseResults;
+  desktopResults: DeviceLighthouseResults;
+  // Feature #1893: Filmstrip view
   filmstrip?: FilmstripFrame[];
 }
 
@@ -103,7 +132,7 @@ export interface LighthouseTestResult {
   testStatus: 'passed' | 'failed' | 'error';
   testError?: string;
   stepResults: StepResult[];
-  lighthouseResults?: any;
+  lighthouseResults?: LighthouseAggregatedResults;
   // Feature #67: Both mobile and desktop results
   mobileResults?: DeviceLighthouseResults;
   desktopResults?: DeviceLighthouseResults;
@@ -124,7 +153,7 @@ export async function executeLighthouseTest(
   const stepResults: StepResult[] = [];
   let testStatus: 'passed' | 'failed' | 'error' = 'passed';
   let testError: string | undefined;
-  let lighthouseResults: any;
+  let lighthouseResults: LighthouseAggregatedResults | undefined;
   let screenshot_base64: string | undefined;
 
   logger.info({ testName: test.name }, 'Starting Lighthouse performance audit');
@@ -427,8 +456,8 @@ export async function executeLighthouseTest(
         passedAudits: Array.isArray(lighthouseResults.passed_audits) ? lighthouseResults.passed_audits : undefined,
         filmstrip: lighthouseResults.filmstrip,
         // Feature #67: Include both device results
-        mobileResults: lighthouseResults.mobileResults,
-        desktopResults: lighthouseResults.desktopResults,
+        mobileResults: lighthouseResults.mobileResults as typeof lighthouseResults.mobileResults & { device: 'mobile' },
+        desktopResults: lighthouseResults.desktopResults as typeof lighthouseResults.desktopResults & { device: 'desktop' },
       } : undefined,
     });
 

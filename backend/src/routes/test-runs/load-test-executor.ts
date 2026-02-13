@@ -462,7 +462,7 @@ interface K6Summary {
     iterations?: { count: number; rate: number };
     data_received?: { count: number; rate: number };
     data_sent?: { count: number; rate: number };
-    [key: string]: any;
+    [key: string]: unknown;
   };
   root_group?: {
     checks?: Record<string, { name: string; passes: number; fails: number }>;

@@ -25,6 +25,7 @@ import { runCombinedSastScan } from '../../services/sast-scanner.js';
 // Feature #562: Real dependency scanner using npm audit (replaces simulated dependency data)
 import { runDependencyScan } from '../../services/dependency-scanner.js';
 
+import { sendError } from '../../utils/errors.js';
 const log = createLogger('security');
 // Feature #268: Import SBOM generator service
 import {
@@ -358,28 +359,19 @@ export async function securityRoutes(app: FastifyInstance) {
     // Validate project exists
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Project with ID ${projectId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${projectId} not found`);
     }
 
     // Validate scan type
     const validScanTypes = ['sast', 'dast', 'dependency', 'secrets', 'full'];
     const selectedScanType = (scan_type || 'full') as SecurityScanType;
     if (!validScanTypes.includes(selectedScanType)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Invalid scan_type. Must be one of: ${validScanTypes.join(', ')}`,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Invalid scan_type. Must be one of: ${validScanTypes.join(', ')}`);
     }
 
     // DAST requires a target URL
     if ((selectedScanType === 'dast' || selectedScanType === 'full') && !target_url && !project.base_url) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'DAST scan requires a target_url or project base_url',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'DAST scan requires a target_url or project base_url');
     }
 
     // Create the scan record
@@ -456,10 +448,7 @@ export async function securityRoutes(app: FastifyInstance) {
 
     const scan = securityScans.get(scanId);
     if (!scan || scan.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Security scan with ID ${scanId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Security scan with ID ${scanId} not found`);
     }
 
     return {
@@ -608,11 +597,7 @@ export async function securityRoutes(app: FastifyInstance) {
     }
 
     if (!foundScan || !foundFinding) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Vulnerability with ID ${vulnerabilityId} not found`,
-        hint: 'Vulnerability IDs are in format: scan_id-vuln-index. Use get_vulnerabilities to list available vulnerabilities.',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Vulnerability with ID ${vulnerabilityId} not found`, { hint: 'Vulnerability IDs are in format: scan_id-vuln-index. Use get_vulnerabilities to list available vulnerabilities.' });
     }
 
     // Generate affected files info
@@ -696,19 +681,13 @@ export async function securityRoutes(app: FastifyInstance) {
     // Validate reason
     const validReasons: DismissReason[] = ['false_positive', 'accepted_risk', 'not_applicable', 'will_not_fix', 'mitigated'];
     if (!reason || !validReasons.includes(reason as DismissReason)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Invalid or missing reason. Must be one of: ${validReasons.join(', ')}`,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Invalid or missing reason. Must be one of: ${validReasons.join(', ')}`);
     }
 
     // Parse vulnerability ID to find the vulnerability
     const vulnMatch = vulnerabilityId.match(/^(.+)-vuln-(\d+)$/);
     if (!vulnMatch || !vulnMatch[1] || !vulnMatch[2]) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Invalid vulnerability ID format. Expected format: scan_id-vuln-index',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Invalid vulnerability ID format. Expected format: scan_id-vuln-index');
     }
 
     const scanId = vulnMatch[1];
@@ -717,18 +696,12 @@ export async function securityRoutes(app: FastifyInstance) {
     // Verify vulnerability exists
     const scan = securityScans.get(scanId);
     if (!scan || scan.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Vulnerability with ID ${vulnerabilityId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Vulnerability with ID ${vulnerabilityId} not found`);
     }
 
     const finding = scan.findings[findingIndex];
     if (!finding) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Vulnerability with ID ${vulnerabilityId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Vulnerability with ID ${vulnerabilityId} not found`);
     }
 
     // Check if already dismissed
@@ -740,10 +713,7 @@ export async function securityRoutes(app: FastifyInstance) {
     if (expires_at) {
       expiresAtDate = new Date(expires_at);
       if (isNaN(expiresAtDate.getTime())) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Invalid expires_at date format. Use ISO format (YYYY-MM-DD)',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid expires_at date format. Use ISO format (YYYY-MM-DD)');
       }
     }
 
@@ -875,10 +845,7 @@ export async function securityRoutes(app: FastifyInstance) {
 
     const dismissal = dismissedVulnerabilities.get(vulnerabilityId);
     if (!dismissal || dismissal.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `No dismissal found for vulnerability ${vulnerabilityId}`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `No dismissal found for vulnerability ${vulnerabilityId}`);
     }
 
     // Remove the dismissal
@@ -915,10 +882,7 @@ export async function securityRoutes(app: FastifyInstance) {
     // Verify project exists
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Project with ID ${projectId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${projectId} not found`);
     }
 
     // Feature #562: Run real npm audit against the backend project directory
@@ -1106,10 +1070,7 @@ export async function securityRoutes(app: FastifyInstance) {
 
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Project with ID ${projectId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${projectId} not found`);
     }
 
     // Calculate security score (0-100)
@@ -1125,7 +1086,20 @@ export async function securityRoutes(app: FastifyInstance) {
     const score = Math.max(0, baseScore - deductions);
     const grade = score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 70 ? 'C' : score >= 60 ? 'D' : 'F';
 
-    const result: any = {
+    // Security score result with optional history for trend analysis
+    interface SecurityScoreResult {
+      project_id: string;
+      project_name: string;
+      score: number;
+      grade: string;
+      calculated_at: string;
+      breakdown: { vulnerability_score: number; dependency_score: number; configuration_score: number; compliance_score: number };
+      factors: Array<{ name: string; impact: number; details: string }>;
+      recommendations: Array<{ priority: number; action: string }>;
+      history?: Array<{ date: string; score: number }>;
+    }
+
+    const result: SecurityScoreResult = {
       project_id: projectId,
       project_name: project.name,
       score,
@@ -1185,10 +1159,7 @@ export async function securityRoutes(app: FastifyInstance) {
     // Verify project exists
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Project with ID ${projectId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${projectId} not found`);
     }
 
     try {
@@ -1198,8 +1169,42 @@ export async function securityRoutes(app: FastifyInstance) {
 
       const result = await checkLicenseCompliance(projectId, projectPath, orgId);
 
+      // License compliance response with optional package list for performance
+      interface LicenseComplianceResponse {
+        project_id: string;
+        project_name: string;
+        scanned_at: string;
+        summary: {
+          total_packages: number;
+          compliant_packages: number;
+          violation_count: number;
+          unknown_license_count: number;
+          compliance_percentage: number;
+        };
+        violations: Array<{
+          package: string;
+          version: string;
+          license: string;
+          spdx_id: string | null;
+          violation_type: string;
+          severity: string;
+          reason: string;
+        }>;
+        license_summary: Record<string, number>;
+        policy_applied: unknown;
+        severity_breakdown: { critical: number; high: number; medium: number; low: number };
+        packages?: Array<{
+          name: string;
+          version: string;
+          license: string;
+          spdx_id: string | null;
+          repository: string | undefined;
+          publisher: string | undefined;
+        }>;
+      }
+
       // Return response (optionally without full package list for performance)
-      const response: any = {
+      const response: LicenseComplianceResponse = {
         project_id: projectId,
         project_name: project.name,
         scanned_at: result.scanned_at.toISOString(),
@@ -1243,11 +1248,7 @@ export async function securityRoutes(app: FastifyInstance) {
       return response;
     } catch (error) {
       log.error({ err: error, code: 'LICENSE_SCAN_FAILED' }, 'Error scanning licenses');
-      return reply.status(500).send({
-        error: 'Internal Server Error',
-        message: 'Failed to scan license compliance',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to scan license compliance', { details: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -1308,10 +1309,7 @@ export async function securityRoutes(app: FastifyInstance) {
     );
 
     if (overlap.length > 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Licenses cannot be in both allowlist and blocklist: ${overlap.join(', ')}`,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Licenses cannot be in both allowlist and blocklist: ${overlap.join(', ')}`);
     }
 
     setLicensePolicy(updatedPolicy);
@@ -1340,10 +1338,7 @@ export async function securityRoutes(app: FastifyInstance) {
     const { license } = request.body || {};
 
     if (!license) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'license field is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'license field is required');
     }
 
     const policy = getLicensePolicy(orgId);
@@ -1470,10 +1465,7 @@ export async function securityRoutes(app: FastifyInstance) {
     // Verify project exists and belongs to organization
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Project with ID ${projectId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${projectId} not found`);
     }
 
     try {
@@ -1489,10 +1481,7 @@ export async function securityRoutes(app: FastifyInstance) {
       return result;
     } catch (error: unknown) {
       log.error({ err: error, code: 'SBOM_GENERATION_FAILED' }, 'SBOM generation failed');
-      return reply.status(500).send({
-        error: 'Internal Server Error',
-        message: `Failed to generate SBOM: ${error instanceof Error ? error.message : String(error)}`,
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', `Failed to generate SBOM: ${error instanceof Error ? error.message : String(error)}`);
     }
   });
 
@@ -1532,10 +1521,7 @@ export async function securityRoutes(app: FastifyInstance) {
     // Verify project exists and belongs to organization
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Project with ID ${projectId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${projectId} not found`);
     }
 
     const sboms = listSbomsByProject(projectId);
@@ -1584,28 +1570,19 @@ export async function securityRoutes(app: FastifyInstance) {
     // Verify project exists and belongs to organization
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Project with ID ${projectId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${projectId} not found`);
     }
 
     // Get SBOM metadata
     const sbomMeta = getSbomById(sbomId);
     if (!sbomMeta || sbomMeta.project_id !== projectId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `SBOM with ID ${sbomId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `SBOM with ID ${sbomId} not found`);
     }
 
     // Retrieve SBOM content
     const sbomData = await retrieveSbom(sbomId);
     if (!sbomData) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'SBOM content not found - may have expired or been deleted',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'SBOM content not found - may have expired or been deleted');
     }
 
     // Set response headers for file download
@@ -1643,19 +1620,13 @@ export async function securityRoutes(app: FastifyInstance) {
     // Verify project exists and belongs to organization
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Project with ID ${projectId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${projectId} not found`);
     }
 
     // Get SBOM metadata
     const sbomMeta = getSbomById(sbomId);
     if (!sbomMeta || sbomMeta.project_id !== projectId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `SBOM with ID ${sbomId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `SBOM with ID ${sbomId} not found`);
     }
 
     return {

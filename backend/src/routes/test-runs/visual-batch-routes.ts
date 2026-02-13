@@ -23,13 +23,14 @@ import {
 } from './visual-regression.js';
 
 // Import testRuns store from execution module
-import { testRuns, TestRun } from './execution.js';
+import { testRuns, TestRun, TestRunResult } from './execution.js';
 import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg, ListTestRunsByOrgOptions } from '../../services/repositories/test-runs.js';
 // Feature #88: Redis caching for pending count
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
 import { createLogger } from '../../services/logger.js';
 import { validateBody, visualBatchApproveBodySchema, visualBatchRejectBodySchema } from '../../validation/index.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('route:test-runs:visual-batch');
 
 /**
@@ -307,52 +308,43 @@ export async function visualBatchRoutes(app: FastifyInstance) {
     }
 
     if (!visualTestId || !suiteId) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'No visual regression test found in this organization. Create one first.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'No visual regression test found in this organization. Create one first.');
     }
 
     // Create mock test runs with visual diff detected
     const createdRuns: string[] = [];
     for (let i = 0; i < count; i++) {
       const runId = `mock-visual-run-${Date.now()}-${i}`;
-      const testRun: any = {
+      const testRun: TestRun = {
         id: runId,
         suite_id: suiteId,
         organization_id: orgId,
-        status: 'failed' as const,
-        trigger: 'manual' as const,
-        triggered_by: user.id,
+        browser: 'chromium',
+        branch: 'main',
+        status: 'failed',
+        triggered_by: 'manual',
+        user_id: user.id,
         created_at: new Date(),
         started_at: new Date(),
         completed_at: new Date(),
         results: [{
           test_id: visualTestId,
-          status: 'failed' as const,
+          test_name: 'Mock Visual Test',
+          status: 'failed',
           duration_ms: 1000,
-          started_at: new Date().toISOString(),
-          completed_at: new Date().toISOString(),
           visual_comparison: {
+            hasBaseline: true,
             diffPercentage: 5 + Math.random() * 10, // 5-15% diff
             mismatchedPixels: Math.floor(1000 + Math.random() * 5000),
-            comparisonStatus: 'diff_detected',
-            message: `Mock diff detected: ${(5 + Math.random() * 10).toFixed(2)}%`,
           },
           steps: [{
-            index: 0,
-            name: 'Visual Comparison',
+            id: 'mock-step-visual-comparison',
+            action: 'visual_comparison',
             status: 'failed',
             duration_ms: 1000,
             error: 'Visual difference detected',
           }],
         }],
-        summary: {
-          total: 1,
-          passed: 0,
-          failed: 1,
-          skipped: 0,
-        },
       };
       testRuns.set(runId, testRun);
       createdRuns.push(runId);
@@ -395,10 +387,7 @@ export async function visualBatchRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     if (!changes || !Array.isArray(changes) || changes.length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'changes array is required and must not be empty',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'changes array is required and must not be empty');
     }
 
     const results: BatchResult[] = [];
@@ -423,7 +412,7 @@ export async function visualBatchRoutes(app: FastifyInstance) {
         }
 
         // Find the test result with the screenshot
-        const testResult = targetRun.results?.find((r: any) => r.test_id === testId);
+        const testResult = targetRun.results?.find(r => r.test_id === testId);
         if (!testResult || !testResult.screenshot_base64) {
           results.push({ runId, testId, success: false, error: 'No screenshot found' });
           continue;
@@ -518,10 +507,7 @@ export async function visualBatchRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     if (!changes || !Array.isArray(changes) || changes.length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'changes array is required and must not be empty',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'changes array is required and must not be empty');
     }
 
     const results: BatchResult[] = [];

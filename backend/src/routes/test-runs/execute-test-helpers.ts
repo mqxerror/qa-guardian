@@ -43,6 +43,9 @@ import { failedUploads } from './baseline-routes.js';
 // Import IgnoreRegion from test-suites
 import { IgnoreRegion } from '../test-suites.js';
 
+// Import StepResult for crash dump data typing
+import type { StepResult } from './execution.js';
+
 // ============================================================================
 // Types and Interfaces
 // ============================================================================
@@ -59,7 +62,7 @@ export interface CrashDumpData {
   targetUrl?: string;
   viewportWidth?: number;
   viewportHeight?: number;
-  stepResults?: any[];
+  stepResults?: StepResult[];
   suggestion: string;
 }
 
