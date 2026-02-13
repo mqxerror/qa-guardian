@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '../components/ui/button';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { useAuthStore } from '../stores/authStore';
 import {
   Shield,
@@ -168,13 +171,14 @@ export function ContainerScanPage() {
           breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Container Scan' }]}
           actions={
             scanResult && (
-              <button
+              <Button
                 onClick={exportReport}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+                variant="outline"
+                className="flex items-center gap-2"
               >
                 <Download className="h-4 w-4" />
                 Export Report
-              </button>
+              </Button>
             )
           }
         />
@@ -197,10 +201,10 @@ export function ContainerScanPage() {
               />
             </div>
             <div className="flex items-end">
-              <button
+              <Button
                 onClick={handleScan}
                 disabled={scanning}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2"
               >
                 {scanning ? (
                   <>
@@ -213,7 +217,7 @@ export function ContainerScanPage() {
                     Scan Image
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
           {error && (
@@ -272,56 +276,36 @@ export function ContainerScanPage() {
             <div className="rounded-lg border border-border bg-card p-6 mb-6">
               <h3 className="text-lg font-semibold text-foreground mb-4">Severity Breakdown</h3>
               <div className="flex gap-4 flex-wrap">
-                <button
+                <Button
                   onClick={() => setSeverityFilter('all')}
-                  className={`px-4 py-2 rounded-lg border transition-colors ${
-                    severityFilter === 'all'
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-border hover:bg-muted'
-                  }`}
+                  variant={severityFilter === 'all' ? 'default' : 'outline'}
                 >
                   All ({scanResult.summary.total_vulnerabilities})
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setSeverityFilter('critical')}
-                  className={`px-4 py-2 rounded-lg border transition-colors ${
-                    severityFilter === 'critical'
-                      ? 'bg-destructive text-primary-foreground border-destructive'
-                      : 'border-destructive text-destructive hover:bg-destructive/10'
-                  }`}
+                  variant={severityFilter === 'critical' ? 'destructive' : 'outline'}
                 >
                   Critical ({scanResult.summary.by_severity.critical})
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setSeverityFilter('high')}
-                  className={`px-4 py-2 rounded-lg border transition-colors ${
-                    severityFilter === 'high'
-                      ? 'bg-warning text-primary-foreground border-warning'
-                      : 'border-warning text-warning hover:bg-warning/10'
-                  }`}
+                  variant={severityFilter === 'high' ? 'secondary' : 'outline'}
                 >
                   High ({scanResult.summary.by_severity.high})
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setSeverityFilter('medium')}
-                  className={`px-4 py-2 rounded-lg border transition-colors ${
-                    severityFilter === 'medium'
-                      ? 'bg-warning text-warning-foreground border-warning'
-                      : 'border-warning text-warning hover:bg-warning/10'
-                  }`}
+                  variant={severityFilter === 'medium' ? 'secondary' : 'outline'}
                 >
                   Medium ({scanResult.summary.by_severity.medium})
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setSeverityFilter('low')}
-                  className={`px-4 py-2 rounded-lg border transition-colors ${
-                    severityFilter === 'low'
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-primary text-primary hover:bg-primary/10'
-                  }`}
+                  variant={severityFilter === 'low' ? 'default' : 'outline'}
                 >
                   Low ({scanResult.summary.by_severity.low})
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -349,14 +333,15 @@ export function ContainerScanPage() {
             {/* Layer Analysis */}
             {scanResult.layers && scanResult.layers.length > 0 && (
               <div className="rounded-lg border border-border bg-card p-6 mb-6">
-                <button
+                <Button
                   onClick={() => setShowLayers(!showLayers)}
-                  className="flex items-center gap-2 text-lg font-semibold text-foreground mb-4 hover:text-primary transition-colors"
+                  variant="ghost"
+                  className="flex items-center gap-2 text-lg font-semibold mb-4"
                 >
                   {showLayers ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
                   <Layers className="h-5 w-5" />
                   Layer Analysis
-                </button>
+                </Button>
                 {showLayers && (
                   <div className="space-y-2">
                     {scanResult.layers.map((layer, index) => (
@@ -395,11 +380,14 @@ export function ContainerScanPage() {
               <h3 className="text-lg font-semibold text-foreground mb-4">
                 Vulnerabilities ({filteredVulnerabilities.length})
               </h3>
+              {/* Feature #728: EmptyState adoption */}
               {filteredVulnerabilities.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <CheckCircle className="h-12 w-12 mx-auto mb-3 text-success" />
-                  <p>No vulnerabilities found for the selected severity filter</p>
-                </div>
+                <EmptyState
+                  icon={EmptyStateIcons.security}
+                  title="No vulnerabilities found"
+                  description="No vulnerabilities found for the selected severity filter."
+                  size="sm"
+                />
               ) : (
                 <div className="space-y-3">
                   {filteredVulnerabilities.map((vuln) => (
@@ -407,9 +395,10 @@ export function ContainerScanPage() {
                       key={vuln.id}
                       className={`rounded-lg border-l-4 ${severityBorderColors[vuln.severity]} bg-muted/50 overflow-hidden`}
                     >
-                      <button
+                      <Button
                         onClick={() => toggleVulnExpand(vuln.id)}
-                        className="w-full p-4 text-left flex items-center justify-between hover:bg-muted/80 transition-colors"
+                        variant="ghost"
+                        className="w-full p-4 text-left flex items-center justify-between"
                       >
                         <div className="flex items-center gap-4">
                           <span className={`px-2 py-1 rounded text-xs font-medium uppercase ${severityColors[vuln.severity]}`}>
@@ -432,7 +421,7 @@ export function ContainerScanPage() {
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           )}
                         </div>
-                      </button>
+                      </Button>
                       {expandedVulns.has(vuln.id) && (
                         <div className="px-4 pb-4 border-t border-border">
                           <div className="grid grid-cols-2 gap-4 pt-4">
@@ -470,22 +459,14 @@ export function ContainerScanPage() {
           </>
         )}
 
-        {/* Empty State */}
+        {/* Feature #728: EmptyState adoption */}
         {!scanResult && !scanning && (
-          <div className="rounded-lg border border-border bg-card p-12 text-center">
-            <Shield className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold text-foreground mb-2">Scan Container Images</h2>
-            <p className="text-muted-foreground max-w-md mx-auto mb-6">
-              Enter a Docker image name above to scan for OS-level vulnerabilities,
-              outdated packages, and security issues in your container images.
-            </p>
-            <div className="flex flex-wrap gap-2 justify-center text-sm">
-              <span className="px-3 py-1 rounded-full bg-muted text-muted-foreground">nginx:latest</span>
-              <span className="px-3 py-1 rounded-full bg-muted text-muted-foreground">node:18-alpine</span>
-              <span className="px-3 py-1 rounded-full bg-muted text-muted-foreground">python:3.11-slim</span>
-              <span className="px-3 py-1 rounded-full bg-muted text-muted-foreground">postgres:15</span>
-            </div>
-          </div>
+          <EmptyState
+            icon={EmptyStateIcons.security}
+            title="Scan Container Images"
+            description="Enter a Docker image name above to scan for OS-level vulnerabilities, outdated packages, and security issues in your container images."
+            size="lg"
+          />
         )}
       </div>
     </Layout>

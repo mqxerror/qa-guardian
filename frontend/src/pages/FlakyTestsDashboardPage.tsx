@@ -15,6 +15,9 @@ import {
  StatusPill,
 } from '../components/ui';
 import { RefreshCw, Settings2 } from 'lucide-react';
+import { Button } from '../components/ui/button';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import {
  useFlakyTests,
@@ -131,13 +134,14 @@ function FlakyTestsFilterBar({
            <option value="name">Test Name</option>
            <option value="runs">Total Runs</option>
          </select>
-         <button
+         <Button
+           variant="outline"
+           size="sm"
            onClick={filters.toggleSortOrder}
-           className="px-2 py-1.5 rounded-md border border-input bg-background hover:bg-muted transition-colors"
            title={filters.sortOrder === 'asc' ? 'Ascending' : 'Descending'}
          >
            {filters.sortOrder === 'asc' ? '↑' : '↓'}
-         </button>
+         </Button>
        </div>
      </div>
    </div>
@@ -177,15 +181,14 @@ function FlakyTestsTable({
    );
  }
 
+ /* Feature #728: EmptyState adoption */
  if (tests.length === 0) {
    return (
-     <div className="rounded-lg border border-border bg-card p-8 text-center">
-       <div className="text-4xl mb-3">✅</div>
-       <p className="text-foreground font-medium">No flaky tests found!</p>
-       <p className="text-sm text-muted-foreground mt-2">
-         {allTests.length > 0 ? 'Try adjusting your filters.' : 'Your tests are running consistently. Keep up the good work!'}
-       </p>
-     </div>
+     <EmptyState
+       icon={EmptyStateIcons.test}
+       title="No flaky tests found!"
+       description={allTests.length > 0 ? 'Try adjusting your filters.' : 'Your tests are running consistently. Keep up the good work!'}
+     />
    );
  }
 
@@ -206,7 +209,7 @@ function FlakyTestsTable({
        return (
          <div key={test.test_id} className="grid grid-cols-12 gap-4 p-4 border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors items-center">
            <div className="col-span-4">
-             <button onClick={() => onInvestigate(test.test_id)} className="font-medium text-foreground hover:text-primary text-left">{test.test_name}</button>
+             <Button variant="ghost" size="sm" onClick={() => onInvestigate(test.test_id)} className="font-medium text-foreground hover:text-primary text-left p-0 h-auto">{test.test_name}</Button>
              <p className="text-xs text-muted-foreground mt-0.5">{test.suite_name} / {test.project_name}</p>
              <div className="flex items-center gap-1.5 mt-1">
                <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${severity.class}`}>{severity.label}</span>
@@ -231,14 +234,14 @@ function FlakyTestsTable({
            </div>
            <div className="col-span-3 flex justify-end gap-2">
              {test.quarantined ? (
-               <button onClick={() => onRelease(test.test_id, test.test_name)} className="px-2 py-1 text-xs font-medium rounded border border-success/30 bg-success/5 text-success hover:bg-success/10 transition-colors" title="Release from quarantine">🔓 Release</button>
+               <Button variant="outline" size="sm" onClick={() => onRelease(test.test_id, test.test_name)} className="border-success/30 bg-success/5 text-success hover:bg-success/10 text-xs" title="Release from quarantine">🔓 Release</Button>
              ) : (
-               <button onClick={() => onQuarantine(test.test_id)} className="px-2 py-1 text-xs font-medium rounded border border-warning/30 bg-warning/5 text-warning hover:bg-warning/10 transition-colors" title="Quarantine this test">🏥 Quarantine</button>
+               <Button variant="outline" size="sm" onClick={() => onQuarantine(test.test_id)} className="border-warning/30 bg-warning/5 text-warning hover:bg-warning/10 text-xs" title="Quarantine this test">🏥 Quarantine</Button>
              )}
-             <button onClick={() => onAnalyzeFlakiness(test)} className="px-2 py-1 text-xs font-medium rounded border border-accent/30 bg-gradient-to-r from-accent/10 to-accent/5 text-accent hover:from-accent/20 hover:to-accent/10 transition-colors" title="AI analysis: why is this test flaky?">🤖 Why Flaky?</button>
-             <button onClick={() => onGetSuggestions(test.test_id)} className="px-2 py-1 text-xs font-medium rounded border border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 transition-colors" title="Get AI suggestions to fix this flaky test">💡 Suggestions</button>
-             <button onClick={() => onInvestigate(test.test_id)} className="px-2 py-1 text-xs font-medium rounded border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors" title="Investigate test details">🔍 Investigate</button>
-             <button onClick={() => onIgnore(test.test_id)} className="px-2 py-1 text-xs font-medium rounded border border-border bg-muted text-foreground hover:bg-muted transition-colors" title="Ignore this test">🙈 Ignore</button>
+             <Button variant="outline" size="sm" onClick={() => onAnalyzeFlakiness(test)} className="border-accent/30 bg-gradient-to-r from-accent/10 to-accent/5 text-accent hover:from-accent/20 hover:to-accent/10 text-xs" title="AI analysis: why is this test flaky?">🤖 Why Flaky?</Button>
+             <Button variant="outline" size="sm" onClick={() => onGetSuggestions(test.test_id)} className="border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 text-xs" title="Get AI suggestions to fix this flaky test">💡 Suggestions</Button>
+             <Button variant="outline" size="sm" onClick={() => onInvestigate(test.test_id)} className="border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 text-xs" title="Investigate test details">🔍 Investigate</Button>
+             <Button variant="secondary" size="sm" onClick={() => onIgnore(test.test_id)} className="text-xs" title="Ignore this test">🙈 Ignore</Button>
            </div>
          </div>
        );
@@ -288,7 +291,7 @@ function AutoQuarantinePanel({ settings, onClose, onUpdate, onRun, isRunning, re
    <div className="rounded-lg border border-warning/30 bg-warning/5 p-4 mb-6">
      <div className="flex items-center justify-between mb-4">
        <h2 className="text-lg font-semibold text-warning flex items-center gap-2"><span>🤖</span> Auto-Quarantine Settings</h2>
-       <button onClick={onClose} className="text-warning hover:text-warning">×</button>
+       <Button variant="ghost" size="icon" onClick={onClose} className="text-warning hover:text-warning h-8 w-8">×</Button>
      </div>
      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-warning/20">
@@ -319,9 +322,9 @@ function AutoQuarantinePanel({ settings, onClose, onUpdate, onRun, isRunning, re
        </div>
      </div>
      <div className="flex items-center gap-4">
-       <button onClick={onRun} disabled={!settings.enabled || isRunning} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${settings.enabled && !isRunning ? 'bg-warning text-primary-foreground hover:bg-warning' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}>
+       <Button variant="outline" onClick={onRun} disabled={!settings.enabled || isRunning} className={`${settings.enabled && !isRunning ? 'bg-warning text-primary-foreground hover:bg-warning' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}>
          {isRunning ? <><div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> Running...</> : <><span>🚀</span> Run Auto-Quarantine Now</>}
-       </button>
+       </Button>
        <p className="text-xs text-muted-foreground">Tests with flakiness score ≥ {(settings.threshold * 100).toFixed(0)}% and at least {settings.min_runs} runs will be automatically quarantined</p>
      </div>
      {result && result.tests_quarantined > 0 && (
@@ -352,7 +355,7 @@ function RetryStrategyPanel({ settings, preview, onClose, onUpdate }: {
    <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 mb-6">
      <div className="flex items-center justify-between mb-4">
        <h2 className="text-lg font-semibold text-primary flex items-center gap-2"><span>🔄</span> Retry Strategy Settings</h2>
-       <button onClick={onClose} className="text-primary hover:text-primary">×</button>
+       <Button variant="ghost" size="icon" onClick={onClose} className="text-primary hover:text-primary h-8 w-8">×</Button>
      </div>
      <p className="text-sm text-primary mb-4">Configure how many retries to apply to tests based on their flakiness score.</p>
      <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-primary/20 mb-4 w-fit">
@@ -424,12 +427,12 @@ function ImpactReportSection({ show, onClose, isLoading, impactReport, onNavigat
    <div className="mt-8 rounded-lg border border-border bg-card p-6">
      <div className="flex items-center justify-between mb-6">
        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2"><span className="text-xl">💰</span> Flaky Test Impact Report</h2>
-       <button onClick={onClose} className="text-muted-foreground hover:text-foreground" title="Hide section">×</button>
+       <Button variant="ghost" size="icon" onClick={onClose} className="text-muted-foreground hover:text-foreground h-8 w-8" title="Hide section">×</Button>
      </div>
      {isLoading ? (
        <div className="flex items-center justify-center py-8"><div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" /><span className="ml-2 text-muted-foreground">Loading impact data...</span></div>
      ) : !impactReport ? (
-       <div className="text-center py-8 text-muted-foreground"><p>No impact data available</p></div>
+       <EmptyState icon={EmptyStateIcons.analytics} title="No impact data available" description="Run more tests to generate impact analysis." size="sm" />
      ) : (
        <div className="space-y-6">
          <div className="text-sm text-muted-foreground">📅 Report period: {new Date(impactReport.report_period.start).toLocaleDateString()} - {new Date(impactReport.report_period.end).toLocaleDateString()} ({impactReport.report_period.days} days)</div>
@@ -618,14 +621,14 @@ export function FlakyTestsDashboardPage() {
          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'AI Insights', href: '/ai-insights' }, { label: 'Flaky Tests' }]}
          actions={
            <div className="flex items-center gap-4">
-             <button onClick={() => { modals.setShowRetryStrategySettings(!modals.showRetryStrategySettings); if (!modals.showRetryStrategySettings) refetchRetryPreview(); }} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors" title="Configure retry strategy based on flakiness level">
+             <Button variant="outline" onClick={() => { modals.setShowRetryStrategySettings(!modals.showRetryStrategySettings); if (!modals.showRetryStrategySettings) refetchRetryPreview(); }} className="border-primary/30 bg-primary/10 text-primary hover:bg-primary/20" title="Configure retry strategy based on flakiness level">
                <RefreshCw className="h-4 w-4" /> Retry Strategy
                {retryStrategySettings?.enabled && <StatusPill status="passed" className="text-[10px]">ON</StatusPill>}
-             </button>
-             <button onClick={() => modals.setShowAutoQuarantineSettings(!modals.showAutoQuarantineSettings)} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-warning/30 bg-warning/10 text-warning hover:bg-warning/20 transition-colors" title="Configure auto-quarantine settings">
+             </Button>
+             <Button variant="outline" onClick={() => modals.setShowAutoQuarantineSettings(!modals.showAutoQuarantineSettings)} className="border-warning/30 bg-warning/10 text-warning hover:bg-warning/20" title="Configure auto-quarantine settings">
                <Settings2 className="h-4 w-4" /> Auto-Quarantine
                {autoQuarantineSettings?.enabled && <StatusPill status="passed" className="text-[10px]">ON</StatusPill>}
-             </button>
+             </Button>
              <AnimatedCard variant="hero" className="px-4 py-2">
                <div className="text-right"><span className="text-3xl font-bold text-warning">{filters.filteredTests.length}</span><p className="text-sm text-muted-foreground">Flaky Tests</p></div>
              </AnimatedCard>
@@ -661,10 +664,10 @@ export function FlakyTestsDashboardPage() {
            {autoQuarantineSettings?.enabled && <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm"><div className="flex items-center gap-2 text-primary"><span>🤖</span><span className="font-medium">Auto-Quarantine Active</span></div><p className="text-primary mt-1">If this test exceeds {(autoQuarantineSettings.threshold * 100).toFixed(0)}% flakiness after {autoQuarantineSettings.min_runs} runs, it will be automatically re-quarantined.</p></div>}
          </ModalBody>
          <ModalFooter>
-           <button onClick={modals.closeReleaseConfirmModal} className="flex-1 px-4 py-2 rounded-lg border border-border text-foreground hover:bg-muted transition-colors" disabled={modals.isReleasingFromQuarantine}>Cancel</button>
-           <button onClick={confirmReleaseFromQuarantine} disabled={modals.isReleasingFromQuarantine} className="flex-1 px-4 py-2 rounded-lg bg-success text-primary-foreground hover:bg-success transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+           <Button variant="outline" onClick={modals.closeReleaseConfirmModal} className="flex-1" disabled={modals.isReleasingFromQuarantine}>Cancel</Button>
+           <Button variant="default" onClick={confirmReleaseFromQuarantine} disabled={modals.isReleasingFromQuarantine} className="flex-1 bg-success hover:bg-success">
              {modals.isReleasingFromQuarantine ? <><div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> Releasing...</> : <><span>🔓</span> Confirm Release</>}
-           </button>
+           </Button>
          </ModalFooter>
        </Modal>
 
@@ -678,11 +681,11 @@ export function FlakyTestsDashboardPage() {
              <div className="bg-muted/50 rounded-lg p-2 text-center"><div className="text-lg font-bold text-foreground flex items-center justify-center gap-1">{modals.selectedTestForAnalysis?.has_time_pattern && <span title="Time pattern">⏰</span>}{modals.selectedTestForAnalysis?.has_environment_pattern && <span title="Env pattern">🖥️</span>}{modals.selectedTestForAnalysis?.is_retry_flaky && <span title="Retry flaky">🔄</span>}{!modals.selectedTestForAnalysis?.has_time_pattern && !modals.selectedTestForAnalysis?.has_environment_pattern && !modals.selectedTestForAnalysis?.is_retry_flaky && '—'}</div><div className="text-xs text-muted-foreground">Patterns</div></div>
            </div>
            {modals.isLoadingFlakinessAnalysis ? <div className="flex flex-col items-center justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-2 border-accent border-t-transparent mb-3" /><p className="text-sm text-muted-foreground">Analyzing flakiness patterns...</p></div> : modals.flakinessAnalysis ? <div className="prose prose-sm max-w-none"><div className="bg-gradient-to-r from-accent/10 to-accent/5 rounded-lg p-4 border border-accent/20"><div className="whitespace-pre-wrap text-sm text-foreground">{modals.flakinessAnalysis}</div></div></div> : null}
-           {modals.selectedTestForAnalysis && modals.flakinessAnalysisCache[modals.selectedTestForAnalysis.test_id] && !modals.isLoadingFlakinessAnalysis && <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground"><span className="flex items-center gap-1"><span>💾</span> Cached analysis (24hr)</span><button onClick={() => modals.refreshFlakinessAnalysis(modals.selectedTestForAnalysis!)} className="text-accent hover:text-accent/80">🔄 Refresh</button></div>}
+           {modals.selectedTestForAnalysis && modals.flakinessAnalysisCache[modals.selectedTestForAnalysis.test_id] && !modals.isLoadingFlakinessAnalysis && <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground"><span className="flex items-center gap-1"><span>💾</span> Cached analysis (24hr)</span><Button variant="ghost" size="sm" onClick={() => modals.refreshFlakinessAnalysis(modals.selectedTestForAnalysis!)} className="text-accent hover:text-accent/80 h-auto p-0">🔄 Refresh</Button></div>}
          </ModalBody>
          <ModalFooter>
-           <button onClick={() => modals.selectedTestForAnalysis && modals.openSuggestionsModal(modals.selectedTestForAnalysis.test_id)} className="px-4 py-2 text-sm font-medium rounded-lg border border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 transition-colors">💡 Get Fix Suggestions</button>
-           <button onClick={() => modals.setShowFlakinessAnalysisModal(false)} className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">Close</button>
+           <Button variant="outline" onClick={() => modals.selectedTestForAnalysis && modals.openSuggestionsModal(modals.selectedTestForAnalysis.test_id)} className="border-accent/30 bg-accent/10 text-accent hover:bg-accent/20">💡 Get Fix Suggestions</Button>
+           <Button variant="default" onClick={() => modals.setShowFlakinessAnalysisModal(false)}>Close</Button>
          </ModalFooter>
        </Modal>
      </div>

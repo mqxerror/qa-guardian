@@ -6,6 +6,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+// Feature #728: EmptyState adoption
+import { Button } from '../components/ui/button';
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
 // License types and their characteristics
 interface LicenseInfo {
@@ -427,12 +430,13 @@ export function LicenseCompliancePage() {
    description="Detect dependencies with non-compliant licenses"
    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'License Compliance' }]}
    actions={
-     <button
+     <Button
+       variant={showPolicyConfig ? 'default' : 'outline'}
        onClick={() => setShowPolicyConfig(!showPolicyConfig)}
-       className={`px-4 py-2 rounded-md flex items-center gap-2 ${showPolicyConfig ? 'bg-primary text-primary-foreground' : 'border border-border hover:bg-muted'}`}
+       className="flex items-center gap-2"
      >
        &#x2699;&#xFE0F; Configure Policy
-     </button>
+     </Button>
    }
  />
 
@@ -559,14 +563,14 @@ export function LicenseCompliancePage() {
  <h2 className="text-lg font-semibold text-foreground">Dependency License Scan</h2>
  <p className="text-sm text-muted-foreground">Scan all dependencies and check license compliance</p>
  </div>
- <button
+ <Button
  onClick={runScan}
  disabled={isScanning}
- className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+ className="flex items-center gap-2"
  >
  {isScanning && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
  {isScanning ? 'Scanning...' : 'Run License Scan'}
- </button>
+ </Button>
  </div>
 
  {/* Scan Progress */}
@@ -742,25 +746,25 @@ export function LicenseCompliancePage() {
  ))}
  </div>
 
+ {/* Feature #728: EmptyState adoption */}
  {filteredDeps.length === 0 && (
- <div className="text-center py-12 text-muted-foreground">
- <p className="text-4xl mb-2">&#x2705;</p>
- <p className="text-lg font-medium">All dependencies are compliant!</p>
- <p className="text-sm">No license issues found matching your filter criteria.</p>
- </div>
+ <EmptyState
+ icon={EmptyStateIcons.security}
+ title="All dependencies are compliant!"
+ description="No license issues found matching your filter criteria."
+ />
  )}
  </>
  )}
 
- {/* Empty state */}
+ {/* Feature #728: EmptyState adoption */}
  {!scanResult && (
- <div className="rounded-lg border border-border bg-card p-12 text-center">
- <span className="text-5xl mb-4 block">&#x1F4DC;</span>
- <p className="text-lg font-medium text-foreground mb-2">Run a license compliance scan</p>
- <p className="text-muted-foreground">
- Scan your project dependencies to detect license types and compliance issues.
- </p>
- </div>
+ <EmptyState
+ icon={EmptyStateIcons.document}
+ title="Run a license compliance scan"
+ description="Scan your project dependencies to detect license types and compliance issues."
+ size="lg"
+ />
  )}
  </div>
  </Layout>

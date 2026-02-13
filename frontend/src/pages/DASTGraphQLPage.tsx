@@ -5,6 +5,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
+import { Button } from '../components/ui/button';
 import { useAuthStore } from '../stores/authStore';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -330,12 +333,14 @@ export function DASTGraphQLPage() {
  </div>
 
  {/* Advanced Settings Toggle */}
- <button
+ <Button
+ variant="link"
+ size="sm"
  onClick={() => setShowAdvanced(!showAdvanced)}
- className="text-sm text-primary hover:underline flex items-center gap-1"
+ className="flex items-center gap-1"
  >
  {showAdvanced ? '\u25BC' : '\u25B6'} Advanced Settings
- </button>
+ </Button>
 
  {showAdvanced && (
  <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
@@ -381,14 +386,14 @@ export function DASTGraphQLPage() {
  </div>
 
  <div className="mt-6">
- <button
+ <Button
  onClick={runScan}
  disabled={!config.endpoint || isScanning}
- className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+ className="flex items-center gap-2"
  >
  {isScanning && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
  {isScanning ? 'Scanning...' : 'Start GraphQL Scan'}
- </button>
+ </Button>
  </div>
  </div>
 
@@ -466,24 +471,27 @@ export function DASTGraphQLPage() {
  {/* Tabs */}
  <div className="rounded-lg border border-border bg-card">
  <div className="flex border-b border-border">
- <button
+ <Button
+ variant="ghost"
  onClick={() => setActiveTab('schema')}
- className={`flex-1 px-4 py-3 text-sm font-medium ${activeTab === 'schema' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'}`}
+ className={`flex-1 rounded-none ${activeTab === 'schema' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'}`}
  >
  Schema ({scanResult.schema?.types.length || 0} types)
- </button>
- <button
+ </Button>
+ <Button
+ variant="ghost"
  onClick={() => setActiveTab('operations')}
- className={`flex-1 px-4 py-3 text-sm font-medium ${activeTab === 'operations' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'}`}
+ className={`flex-1 rounded-none ${activeTab === 'operations' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'}`}
  >
  Operations ({scanResult.operationsTested.length})
- </button>
- <button
+ </Button>
+ <Button
+ variant="ghost"
  onClick={() => setActiveTab('findings')}
- className={`flex-1 px-4 py-3 text-sm font-medium ${activeTab === 'findings' ? 'text-destructive border-b-2 border-destructive' : 'text-muted-foreground hover:text-foreground'}`}
+ className={`flex-1 rounded-none ${activeTab === 'findings' ? 'text-destructive border-b-2 border-destructive' : 'text-muted-foreground'}`}
  >
  Findings ({scanResult.findings.length})
- </button>
+ </Button>
  </div>
 
  <div className="p-4">
@@ -546,11 +554,9 @@ export function DASTGraphQLPage() {
  {/* Findings Tab */}
  {activeTab === 'findings' && (
  <div className="space-y-4">
+ {/* Feature #728: EmptyState adoption */}
  {scanResult.findings.length === 0 ? (
- <div className="text-center py-8">
- <p className="text-4xl mb-2">&#127881;</p>
- <p className="text-muted-foreground">No security vulnerabilities found!</p>
- </div>
+ <EmptyState icon={EmptyStateIcons.security} title="No security vulnerabilities found!" description="Your GraphQL endpoint passed all security checks." size="sm" />
  ) : (
  scanResult.findings.map((finding) => (
  <div key={finding.id} className="p-4 border border-border rounded-lg">
@@ -599,15 +605,14 @@ export function DASTGraphQLPage() {
  </>
  )}
 
- {/* Empty State */}
+ {/* Feature #728: EmptyState adoption */}
  {!scanResult && !isScanning && (
- <div className="rounded-lg border border-dashed border-border bg-muted/20 p-12 text-center">
- <p className="text-4xl mb-4">&#128302;</p>
- <p className="text-lg font-medium text-foreground mb-2">Configure and run a GraphQL security scan</p>
- <p className="text-muted-foreground">
- Enter your GraphQL endpoint above and enable introspection to automatically discover and test all queries and mutations for security vulnerabilities.
- </p>
- </div>
+ <EmptyState
+ icon={EmptyStateIcons.security}
+ title="Configure and run a GraphQL security scan"
+ description="Enter your GraphQL endpoint above and enable introspection to automatically discover and test all queries and mutations for security vulnerabilities."
+ size="lg"
+ />
  )}
  </div>
  </Layout>

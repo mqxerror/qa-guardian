@@ -4,7 +4,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { PageHeader } from '../components/ui';
+import { Button } from '../components/ui/button';
 import { ChevronRight, AlertCircle, Package, Shield, AlertTriangle, Search, Loader2, CheckCircle } from 'lucide-react';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
 // Types for dependency data
 interface Vulnerability {
@@ -276,26 +279,18 @@ export function DependencyTreePage() {
         >
           {/* Expand/collapse button */}
           {hasChildren ? (
-            <button
+            <Button
               onClick={(e) => { e.stopPropagation(); toggleNode(node.id); }}
-              style={{
-                width: '24px',
-                height: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: 'none',
-                background: 'transparent',
-                cursor: 'pointer',
-                marginRight: '8px',
-              }}
+              variant="ghost"
+              size="icon"
+              className="mr-2 h-6 w-6"
             >
               <ChevronRight
                 size={16}
                 color="#6b7280"
                 style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}
               />
-            </button>
+            </Button>
           ) : (
             <div style={{ width: '32px' }} />
           )}
@@ -596,22 +591,18 @@ export function DependencyTreePage() {
                 const config = languageConfig[lang] || { color: 'hsl(var(--muted-foreground))', icon: '?' };
 
                 return (
-                  <button
+                  <Button
                     key={lang}
                     onClick={() => setSelectedLanguage(lang)}
+                    variant={isActive ? 'outline' : 'ghost'}
+                    size="sm"
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      border: isActive ? `2px solid ${config.color}` : '1px solid #e5e7eb',
-                      backgroundColor: isActive ? `${config.color}15` : 'white',
-                      cursor: 'pointer',
-                      fontSize: '13px',
+                      border: isActive ? `2px solid ${config.color}` : undefined,
+                      backgroundColor: isActive ? `${config.color}15` : undefined,
                       fontWeight: isActive ? 600 : 400,
                       color: isActive ? config.color : '#6b7280',
                     }}
+                    className="flex items-center gap-2"
                   >
                     <span style={{
                       width: '20px',
@@ -639,7 +630,7 @@ export function DependencyTreePage() {
                         {langData.total}
                       </span>
                     )}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -688,32 +679,20 @@ export function DependencyTreePage() {
 
             {/* Expand/Collapse buttons */}
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button
+              <Button
                 onClick={expandAll}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: '1px solid #d1d5db',
-                  backgroundColor: 'hsl(var(--card))',
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                }}
+                variant="outline"
+                size="sm"
               >
                 Expand All
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={collapseAll}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: '1px solid #d1d5db',
-                  backgroundColor: 'hsl(var(--card))',
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                }}
+                variant="outline"
+                size="sm"
               >
                 Collapse All
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -732,13 +711,13 @@ export function DependencyTreePage() {
             </div>
           )}
 
-          {/* Empty state */}
+          {/* Feature #728: EmptyState adoption */}
           {!loading && !error && filteredTree.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'hsl(var(--muted-foreground))' }}>
-              <Package size={48} style={{ margin: '0 auto 12px' }} />
-              <p>No dependencies found</p>
-              <p style={{ fontSize: '13px' }}>Select a project to view its dependency tree</p>
-            </div>
+            <EmptyState
+              icon={EmptyStateIcons.folder}
+              title="No dependencies found"
+              description="Select a project to view its dependency tree"
+            />
           )}
 
           {/* Tree view */}

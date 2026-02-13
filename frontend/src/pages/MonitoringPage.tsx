@@ -47,6 +47,7 @@ import {
   useReducedMotion,
 } from "../components/ui";
 import { Plus, Activity, CreditCard, Webhook, Gauge, Settings } from "lucide-react";
+import { Button } from '@/components/ui/button';
 
 // Feature #47: Import modular components and types for performance optimization
 // Eliminates ~600 lines of duplicate type definitions
@@ -741,18 +742,17 @@ function MonitoringPage() {
           breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Monitoring' }]}
           actions={
             activeTab !== 'settings' && (
-              <button
+              <Button
                 onClick={() => {
                   if (activeTab === 'checks') setShowCreateModal(true);
                   else if (activeTab === 'transactions') setShowTransactionModal(true);
                   else if (activeTab === 'webhooks') setShowWebhookModal(true);
                   else setShowPerformanceModal(true);
                 }}
-                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 {activeTab === 'checks' ? 'Create Check' : activeTab === 'transactions' ? 'Create Transaction' : activeTab === 'webhooks' ? 'Create Webhook' : 'Create Performance Check'}
-              </button>
+              </Button>
             )
           }
         />
@@ -760,48 +760,58 @@ function MonitoringPage() {
         {/* Tabs */}
         <div className="mb-6 border-b border-border">
           <nav className="-mb-px flex gap-4">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setActiveTab('checks')}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`pb-3 border-b-2 rounded-none ${
                 activeTab === 'checks'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               Uptime Checks ({checks.length})
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setActiveTab('transactions')}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`pb-3 border-b-2 rounded-none ${
                 activeTab === 'transactions'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               Transactions ({transactions.length})
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setActiveTab('performance')}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`pb-3 border-b-2 rounded-none ${
                 activeTab === 'performance'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               Performance ({performanceChecks.length})
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setActiveTab('webhooks')}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`pb-3 border-b-2 rounded-none ${
                 activeTab === 'webhooks'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               Webhooks ({webhookChecks.length})
-            </button>
+            </Button>
             {/* DNS and TCP tabs removed - infrastructure monitoring, not QA testing */}
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 setActiveTab('settings');
                 fetchMonitoringSettings();
@@ -814,14 +824,14 @@ function MonitoringPage() {
                 fetchAlertRoutingLogs();
                 fetchManagedIncidents();
               }}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`pb-3 border-b-2 rounded-none ${
                 activeTab === 'settings'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               ⚙️ Settings
-            </button>
+            </Button>
           </nav>
         </div>
 

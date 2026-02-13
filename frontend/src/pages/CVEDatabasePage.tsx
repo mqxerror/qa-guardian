@@ -4,9 +4,12 @@
 
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '../components/ui/button';
 
 // CVE vulnerability interface with NVD details
 interface CVEVulnerability {
@@ -377,13 +380,12 @@ export function CVEDatabasePage() {
    description="Scan dependencies against the National Vulnerability Database (NVD)"
    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'CVE Database' }]}
    actions={
-     <button
+     <Button
        onClick={runScan}
        disabled={isScanning}
-       className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 font-medium"
      >
        {isScanning ? 'Scanning...' : '🔍 Run CVE Scan'}
-     </button>
+     </Button>
    }
  />
 
@@ -455,9 +457,10 @@ export function CVEDatabasePage() {
  <div className="space-y-3">
  {filteredVulns.map((vuln) => (
  <div key={vuln.id} className="rounded-lg border border-border bg-card overflow-hidden">
- <button
+ <Button
  onClick={() => toggleExpand(vuln.id)}
- className="w-full p-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
+ variant="ghost"
+ className="w-full p-4 flex items-center justify-between"
  >
  <div className="flex items-center gap-3">
  <span className={`px-2.5 py-1 rounded text-xs font-bold ${getSeverityColor(vuln.severity)}`}>
@@ -491,7 +494,7 @@ export function CVEDatabasePage() {
  </span>
  <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${expandedVulns.has(vuln.id) ? 'rotate-180' : ''}`} />
  </div>
- </button>
+ </Button>
 
  {expandedVulns.has(vuln.id) && (
  <div className="p-4 border-t border-border bg-muted/20">
@@ -647,13 +650,13 @@ export function CVEDatabasePage() {
  🏛️ View NVD Details
  </a>
  {vuln.fixedVersion && (
- <button className="px-3 py-1.5 bg-success text-primary-foreground rounded text-sm hover:bg-success">
+ <Button variant="default" size="sm">
  Auto-fix to {vuln.fixedVersion}
- </button>
+ </Button>
  )}
- <button className="px-3 py-1.5 border border-border rounded text-sm hover:bg-muted">
+ <Button variant="outline" size="sm">
  Add to Ignore List
- </button>
+ </Button>
  </div>
  </div>
  )}
@@ -663,16 +666,14 @@ export function CVEDatabasePage() {
  </>
  )}
 
- {/* Empty State */}
+ {/* Feature #728: EmptyState adoption */}
  {!scanResult && !isScanning && (
- <div className="rounded-lg border border-dashed border-border bg-muted/20 p-12 text-center">
- <p className="text-4xl mb-4">🛡️</p>
- <p className="text-lg font-medium text-foreground mb-2">Scan for CVE Vulnerabilities</p>
- <p className="text-muted-foreground max-w-md mx-auto">
- Run a dependency scan to match your packages against the National Vulnerability Database (NVD).
- View CVE details, CVSS scores, and remediation guidance.
- </p>
- </div>
+ <EmptyState
+ icon={EmptyStateIcons.security}
+ title="Scan for CVE Vulnerabilities"
+ description="Run a dependency scan to match your packages against the National Vulnerability Database (NVD). View CVE details, CVSS scores, and remediation guidance."
+ size="lg"
+ />
  )}
  </div>
  </Layout>

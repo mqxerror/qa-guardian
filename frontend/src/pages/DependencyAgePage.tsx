@@ -7,6 +7,9 @@ import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
 import { Clock, RefreshCw, Settings, AlertTriangle, Check } from 'lucide-react';
+import { Button } from '../components/ui/button';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 // Feature #710: React Query hooks
 import {
@@ -212,7 +215,13 @@ export function DependencyAgePage() {
             {isLoadingDeps ? (
               <div className="text-center py-8 text-muted-foreground">Loading dependencies...</div>
             ) : filteredDependencies.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No dependencies found</div>
+              /* Feature #728: EmptyState adoption */
+              <EmptyState
+                icon={EmptyStateIcons.folder}
+                title="No dependencies found"
+                description="Select a project to view its dependency age analysis."
+                size="sm"
+              />
             ) : (
               <table className="w-full">
                 <thead className="bg-muted/50">
@@ -339,19 +348,18 @@ export function DependencyAgePage() {
           </div>
         </ModalBody>
         <ModalFooter>
-          <button
+          <Button
+            variant="outline"
             onClick={() => setShowConfigModal(false)}
-            className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSaveConfig}
             disabled={updateConfigMutation.isPending}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
             {updateConfigMutation.isPending ? 'Saving...' : 'Save'}
-          </button>
+          </Button>
         </ModalFooter>
       </Modal>
     </Layout>

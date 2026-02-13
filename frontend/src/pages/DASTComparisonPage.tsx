@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '../components/ui/button';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { useAuthStore } from '../stores/authStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
@@ -379,14 +382,15 @@ export function DASTComparisonPage() {
  )}
 
  <div className="flex items-center gap-4">
- <button
+ <Button
  onClick={runNewScan}
  disabled={isScanning || !selectedProject || !scanTarget}
- className="px-6 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 disabled:opacity-50 flex items-center gap-2"
+ variant="destructive"
+ className="flex items-center gap-2"
  >
  {isScanning && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
  {isScanning ? 'Scanning...' : 'Run DAST Scan'}
- </button>
+ </Button>
  {scanProgress && (
  <span className="text-sm text-muted-foreground">{scanProgress}</span>
  )}
@@ -520,14 +524,14 @@ export function DASTComparisonPage() {
  </div>
 
  <div className="mt-4 flex justify-center">
- <button
+ <Button
  onClick={compareScans}
  disabled={!selectedScan1 || !selectedScan2 || selectedScan1 === selectedScan2 || isComparing}
- className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+ className="flex items-center gap-2"
  >
  {isComparing && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
  {isComparing ? 'Comparing...' : 'Compare Scans'}
- </button>
+ </Button>
  </div>
  </div>
  )}
@@ -603,46 +607,50 @@ export function DASTComparisonPage() {
  {/* Tabs for Findings */}
  <div className="rounded-lg border border-border bg-card">
  <div className="flex border-b border-border">
- <button
+ <Button
  onClick={() => setActiveTab('new')}
- className={`flex-1 px-4 py-3 text-sm font-medium ${
+ variant="ghost"
+ size="sm"
+ className={`flex-1 ${
  activeTab === 'new'
  ? 'text-destructive border-b-2 border-destructive'
- : 'text-muted-foreground hover:text-foreground'
+ : 'text-muted-foreground'
  }`}
  >
  New Findings ({comparisonResult.newFindings.length})
- </button>
- <button
+ </Button>
+ <Button
  onClick={() => setActiveTab('fixed')}
- className={`flex-1 px-4 py-3 text-sm font-medium ${
+ variant="ghost"
+ size="sm"
+ className={`flex-1 ${
  activeTab === 'fixed'
  ? 'text-success border-b-2 border-success'
- : 'text-muted-foreground hover:text-foreground'
+ : 'text-muted-foreground'
  }`}
  >
  Fixed Findings ({comparisonResult.fixedFindings.length})
- </button>
- <button
+ </Button>
+ <Button
  onClick={() => setActiveTab('unchanged')}
- className={`flex-1 px-4 py-3 text-sm font-medium ${
+ variant="ghost"
+ size="sm"
+ className={`flex-1 ${
  activeTab === 'unchanged'
  ? 'text-foreground border-b-2 border-primary'
- : 'text-muted-foreground hover:text-foreground'
+ : 'text-muted-foreground'
  }`}
  >
  Unchanged ({comparisonResult.unchangedFindings.length})
- </button>
+ </Button>
  </div>
 
  <div className="p-4">
  {activeTab === 'new' && (
  <div className="space-y-4">
+ {/* Feature #728: EmptyState adoption */}
  {comparisonResult.newFindings.length === 0 ? (
- <div className="text-center py-8 text-muted-foreground">
- <p className="text-4xl mb-2">🎉</p>
- <p>No new vulnerabilities found!</p>
- </div>
+ <EmptyState icon={EmptyStateIcons.security} title="No new vulnerabilities found!" description="No new security issues were detected in this scan." size="sm" />
  ) : (
  comparisonResult.newFindings.map(alert => renderAlertCard(alert, 'new'))
  )}
@@ -651,11 +659,9 @@ export function DASTComparisonPage() {
 
  {activeTab === 'fixed' && (
  <div className="space-y-4">
+ {/* Feature #728: EmptyState adoption */}
  {comparisonResult.fixedFindings.length === 0 ? (
- <div className="text-center py-8 text-muted-foreground">
- <p className="text-4xl mb-2">📋</p>
- <p>No vulnerabilities were fixed between these scans.</p>
- </div>
+ <EmptyState icon={EmptyStateIcons.document} title="No fixed vulnerabilities" description="No vulnerabilities were fixed between these scans." size="sm" />
  ) : (
  comparisonResult.fixedFindings.map(alert => renderAlertCard(alert, 'fixed'))
  )}
@@ -664,11 +670,9 @@ export function DASTComparisonPage() {
 
  {activeTab === 'unchanged' && (
  <div className="space-y-4">
+ {/* Feature #728: EmptyState adoption */}
  {comparisonResult.unchangedFindings.length === 0 ? (
- <div className="text-center py-8 text-muted-foreground">
- <p className="text-4xl mb-2">✨</p>
- <p>All findings have changed between scans!</p>
- </div>
+ <EmptyState icon={EmptyStateIcons.security} title="All findings changed" description="All findings have changed between scans!" size="sm" />
  ) : (
  comparisonResult.unchangedFindings.map(alert => renderAlertCard(alert, 'unchanged'))
  )}
@@ -679,15 +683,14 @@ export function DASTComparisonPage() {
  </>
  )}
 
- {/* Empty State - No scans yet */}
+ {/* Feature #728: EmptyState adoption */}
  {availableScans.length === 0 && !loadingScans && !isScanning && (
- <div className="rounded-lg border border-dashed border-border bg-muted/20 p-12 text-center">
- <p className="text-4xl mb-4">🔐</p>
- <p className="text-lg font-medium text-foreground mb-2">No DAST scans yet</p>
- <p className="text-muted-foreground mb-4">
- Run your first DAST scan above to analyze your application for security vulnerabilities.
- </p>
- </div>
+ <EmptyState
+ icon={EmptyStateIcons.security}
+ title="No DAST scans yet"
+ description="Run your first DAST scan above to analyze your application for security vulnerabilities."
+ size="lg"
+ />
  )}
 
  {loadingScans && (

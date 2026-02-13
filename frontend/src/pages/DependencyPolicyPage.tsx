@@ -6,7 +6,10 @@ import { useState } from 'react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
+import { Button } from '../components/ui/button';
 import { Shield, Plus, Play, Check, X, ChevronDown, ChevronRight } from 'lucide-react'; // AlertTriangle unused
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 // Feature #710: React Query hooks
 import {
@@ -204,20 +207,21 @@ export function DependencyPolicyPage() {
           breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Dependency Policy' }]}
           actions={
             <div className="flex items-center gap-3">
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setShowSimulateBuildModal(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+                className="flex items-center gap-2"
               >
                 <Play className="h-4 w-4" />
                 Simulate Build
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                className="flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
                 Create Policy
-              </button>
+              </Button>
             </div>
           }
         />
@@ -255,15 +259,13 @@ export function DependencyPolicyPage() {
             {isLoadingPolicies ? (
               <div className="text-center py-8 text-muted-foreground">Loading policies...</div>
             ) : policies.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-muted-foreground mb-4">No policies configured yet</div>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                >
-                  Create Your First Policy
-                </button>
-              </div>
+              /* Feature #728: EmptyState adoption */
+              <EmptyState
+                icon={EmptyStateIcons.security}
+                title="No policies configured yet"
+                description="Define dependency policies to enforce compliance across your projects."
+                action={{ label: 'Create Your First Policy', onClick: () => setShowCreateModal(true) }}
+              />
             ) : (
               <div className="space-y-4">
                 {policies.map(policy => (
@@ -294,13 +296,15 @@ export function DependencyPolicyPage() {
                           {policy.block_deployments && <span className="px-2 py-1 bg-muted rounded text-muted-foreground">Deployments</span>}
                           {policy.block_pr_merge && <span className="px-2 py-1 bg-muted rounded text-muted-foreground">PR Merge</span>}
                         </div>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleDeletePolicy(policy.id)}
                           disabled={deletePolicyMutation.isPending}
-                          className="text-destructive hover:text-destructive/70 transition-colors disabled:opacity-50"
+                          className="text-destructive"
                         >
                           <X className="h-4 w-4" />
-                        </button>
+                        </Button>
                       </div>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2 text-sm text-muted-foreground">
@@ -341,9 +345,13 @@ export function DependencyPolicyPage() {
             {isLoadingViolations ? (
               <div className="text-center py-8 text-muted-foreground">Loading violations...</div>
             ) : filteredViolations.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No violations found. {policies.filter(p => p.enabled).length === 0 && 'Create and enable a policy first.'}
-              </div>
+              /* Feature #728: EmptyState adoption */
+              <EmptyState
+                icon={EmptyStateIcons.security}
+                title="No violations found"
+                description={policies.filter(p => p.enabled).length === 0 ? 'Create and enable a policy first.' : 'All dependencies comply with your policies.'}
+                size="sm"
+              />
             ) : (
               <div className="space-y-3">
                 {filteredViolations.map(violation => (
@@ -402,16 +410,16 @@ export function DependencyPolicyPage() {
                         </div>
                         {violation.status === 'blocked' && (
                           <div className="mt-4">
-                            <button
+                            <Button
+                              variant="secondary"
                               onClick={() => {
                                 const reason = prompt('Enter override reason:');
                                 if (reason) handleOverrideViolation(violation.id, reason);
                               }}
                               disabled={overrideViolationMutation.isPending}
-                              className="px-4 py-2 bg-accent text-primary-foreground rounded-lg hover:bg-accent transition-colors disabled:opacity-50"
                             >
                               {overrideViolationMutation.isPending ? 'Processing...' : 'Override & Allow Build'}
-                            </button>
+                            </Button>
                           </div>
                         )}
                         {violation.overridden_by && (
@@ -561,19 +569,18 @@ export function DependencyPolicyPage() {
           </div>
         </ModalBody>
         <ModalFooter>
-          <button
+          <Button
+            variant="outline"
             onClick={() => setShowCreateModal(false)}
-            className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleCreatePolicy}
             disabled={!newPolicy.name || createPolicyMutation.isPending}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
             {createPolicyMutation.isPending ? 'Creating...' : 'Create Policy'}
-          </button>
+          </Button>
         </ModalFooter>
       </Modal>
 
@@ -619,20 +626,20 @@ export function DependencyPolicyPage() {
           </div>
         </ModalBody>
         <ModalFooter>
-          <button
+          <Button
+            variant="outline"
             onClick={() => { setShowSimulateBuildModal(false); setSimulationResult(null); }}
-            className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
           >
             Close
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSimulateBuild}
             disabled={simulateBuildMutation.isPending || policies.filter(p => p.enabled).length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2"
           >
             <Play className="h-4 w-4" />
             {simulateBuildMutation.isPending ? 'Checking...' : 'Run Build Check'}
-          </button>
+          </Button>
         </ModalFooter>
       </Modal>
     </Layout>
