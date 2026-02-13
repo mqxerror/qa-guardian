@@ -11,6 +11,8 @@
  */
 
 import { Browser, chromium, firefox, webkit } from 'playwright';
+// Feature #719: Import VisualComparisonResult for typed visual comparison fields
+import { VisualComparisonResult } from './visual-regression.js';
 // Feature #484: Pino structured logging
 import { createLogger } from '../../services/logger.js';
 
@@ -19,6 +21,61 @@ const log = createLogger('execution');
 // ============================================================================
 // Type Definitions
 // ============================================================================
+
+/**
+ * Feature #719: Lighthouse audit item types for mobileResults/desktopResults
+ * Defined locally to avoid circular dependency with lighthouse-executor.ts
+ * These match the shapes of LighthouseOpportunity, LighthouseDiagnostic, LighthousePassedAudit
+ */
+export interface LighthouseOpportunityItem {
+  id: string;
+  title: string;
+  savings: number;
+  description: string;
+}
+
+export interface LighthouseDiagnosticItem {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export interface LighthousePassedAuditItem {
+  id: string;
+  title: string;
+  description: string;
+  category?: string;
+}
+
+/**
+ * Feature #719: Accessibility run-level results shape
+ * Matches the structure built in accessibility-test-executor.ts
+ */
+export interface AccessibilityRunResults {
+  score?: number;
+  violations?: AccessibilityViolationItem[] | { items?: AccessibilityViolationItem[]; count?: number; critical?: number; serious?: number; moderate?: number; minor?: number };
+  violation_counts?: Record<string, number>;
+  wcag_level?: string;
+  total_elements_scanned?: number;
+  test_engines?: { name: string; version: string };
+  javascript_disabled?: boolean;
+  // passes may be a count (from StepResult.accessibility) or detailed array (from accessibility-test-executor)
+  passes?: number | Array<{ id: string; description: string }>;
+  // incomplete may be a count (from StepResult.accessibility) or detailed array
+  incomplete?: number | Array<{ id: string; description: string }>;
+  [key: string]: unknown; // Allow additional fields
+}
+
+export interface AccessibilityViolationItem {
+  id: string;
+  impact?: string;
+  description?: string;
+  help?: string;
+  helpUrl?: string;
+  wcagTags?: string[];
+  nodes?: Array<{ html: string; target: string[] }>;
+  source?: string;
+}
 
 /**
  * Browser type supported by the execution engine
@@ -182,9 +239,9 @@ export interface StepResult {
         time_to_interactive?: number;
         time_to_first_byte?: number;
       };
-      opportunities?: any[];
-      diagnostics?: any[];
-      passed_audits?: any[];
+      opportunities?: LighthouseOpportunityItem[];
+      diagnostics?: LighthouseDiagnosticItem[];
+      passed_audits?: LighthousePassedAuditItem[];
     };
     desktopResults?: {
       device: 'desktop';
@@ -201,14 +258,14 @@ export interface StepResult {
         time_to_interactive?: number;
         time_to_first_byte?: number;
       };
-      opportunities?: any[];
-      diagnostics?: any[];
-      passed_audits?: any[];
+      opportunities?: LighthouseOpportunityItem[];
+      diagnostics?: LighthouseDiagnosticItem[];
+      passed_audits?: LighthousePassedAuditItem[];
     };
   };
   // Feature #1137: Additional step metadata for detailed reporting
   name?: string; // Human-readable step name
-  metadata?: Record<string, any>; // Arbitrary metadata for the step
+  metadata?: Record<string, unknown>; // Arbitrary metadata for the step
   // Feature #1136: Accessibility test results
   accessibility?: {
     violations: Array<{
@@ -229,19 +286,21 @@ export interface StepResult {
     axeVersion?: string; // Version of axe-core used
   };
   // Feature #1296: Load test results - flexible structure for K6 results
+  // Index signature allows additional fields from LoadTestResults (in load-test-executor.ts)
+  // without circular dependency, while preserving typed access on known properties.
   load_test?: {
     summary?: {
       total_requests?: number;
       failed_requests?: number;
       success_rate?: string;
       requests_per_second?: string;
-      data_transferred?: number; // Feature #414: Added for run comparison
+      data_transferred?: number;
     };
     response_times?: {
       min?: number;
       avg?: number;
-      median?: number; // Feature #414: Added for run comparison
-      p90?: number; // Feature #414: Added for run comparison
+      median?: number;
+      p90?: number;
       p95?: number;
       p99?: number;
       max?: number;
@@ -255,7 +314,7 @@ export interface StepResult {
       actual?: number;
       ramp_up?: number;
     };
-    custom_metrics?: Record<string, any>;
+    custom_metrics?: unknown[];
     server_unavailable?: {
       detected?: boolean;
       failureRate?: number;
@@ -283,6 +342,8 @@ export interface StepResult {
       value: number;
       threshold: string;
     }>;
+    // Index signature for additional fields from LoadTestResults
+    [key: string]: unknown;
   };
 }
 
@@ -307,7 +368,7 @@ export interface TestRunResult {
   console_logs?: ConsoleLog[]; // Console messages captured during test execution
   network_requests?: NetworkRequest[]; // Network requests captured during test execution
   // Visual regression comparison results
-  visual_comparison?: any; // VisualComparisonResult from visual-regression module
+  visual_comparison?: VisualComparisonResult;
   baseline_screenshot_base64?: string; // Baseline image for comparison
   diff_image_base64?: string; // Diff image showing pixel differences
   diff_percentage?: number; // Percentage of pixels that differ
@@ -317,7 +378,7 @@ export interface TestRunResult {
     viewportLabel: string;
     width: number;
     height: number;
-    visualComparison?: any;
+    visualComparison?: VisualComparisonResult;
     screenshotBase64?: string;
     baselineScreenshotBase64?: string;
     diffImageBase64?: string;
@@ -332,7 +393,9 @@ export interface TestRunResult {
   // Feature #414: Browser info for artifact routes
   browser?: string;
   // Feature #1968: Load test results for UI display
-  load_test?: any;
+  // Uses Record<string, unknown> because LoadTestResults (in load-test-executor.ts) cannot be
+  // imported here due to circular dependency. Assignment is safe via spread or cast.
+  load_test?: { [key: string]: unknown };
   // Feature #912: Review status
   reviewed?: boolean;
   reviewed_at?: Date;
@@ -341,7 +404,7 @@ export interface TestRunResult {
   // Feature #2069: Timing and network properties for results-routes
   started_at?: Date;
   completed_at?: Date;
-  network_logs?: any[]; // Network logs for timeline generation
+  network_logs?: NetworkRequest[]; // Network logs for timeline generation
 }
 
 /**
@@ -366,7 +429,7 @@ export interface TestRun {
   created_at: Date;
   results?: TestRunResult[];
   error?: string;
-  accessibility_results?: any; // Results from accessibility testing
+  accessibility_results?: AccessibilityRunResults; // Results from accessibility testing
   // Feature #414: Test type specific results for executor
   lighthouseResults?: Record<string, unknown>; // Lighthouse audit results
   loadTestResults?: Record<string, unknown>; // K6 load test results

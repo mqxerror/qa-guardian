@@ -525,8 +525,16 @@ export async function runEslintSecurityScan(
       '../..'
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ESLint v8 Config type doesn't include parser in its TS definition
-    const overrideConfig: any = {
+    // ESLint v8 override config - typed as Record to avoid 'any' while accommodating
+    // the parser field that ESLint v8's TS definition doesn't expose
+    interface EslintOverrideConfig {
+      parser: string;
+      parserOptions: { ecmaVersion: number; sourceType: string };
+      plugins: string[];
+      rules: Record<string, string>;
+    }
+
+    const overrideConfig: EslintOverrideConfig = {
       parser: '@typescript-eslint/parser',
       parserOptions: {
         ecmaVersion: 2022,
@@ -557,13 +565,20 @@ export async function runEslintSecurityScan(
       },
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ESLint v8 types are incomplete
-    const eslintOptions: any = {
+    // ESLint v8 constructor options - cast through unknown because ESLint v8's
+    // TypeScript definitions are incomplete and don't include all valid fields
+    interface EslintSecurityOptions {
+      useEslintrc: boolean;
+      overrideConfig: EslintOverrideConfig;
+      resolvePluginsRelativeTo: string;
+    }
+
+    const eslintOptions: EslintSecurityOptions = {
       useEslintrc: false,
       overrideConfig,
       resolvePluginsRelativeTo: backendDir,
     };
-    const eslint = new ESLint(eslintOptions);
+    const eslint = new ESLint(eslintOptions as unknown as ConstructorParameters<typeof ESLint>[0]);
 
     // Run ESLint on collected files
     const results = await eslint.lintFiles(sourceFiles);

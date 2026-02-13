@@ -541,7 +541,9 @@ export async function analyticsRoutes(app: FastifyInstance) {
         // Get violations from accessibility results
         const a11yResults = run.accessibility_results;
         if (a11yResults && a11yResults.violations) {
-          const violations = a11yResults.violations.items || [];
+          // violations can be an array directly or an object with items property
+          const rawViolations = a11yResults.violations;
+          const violations = Array.isArray(rawViolations) ? rawViolations : (rawViolations.items || []);
           const violationCount = violations.length;
 
           if (violationCount > 0) {

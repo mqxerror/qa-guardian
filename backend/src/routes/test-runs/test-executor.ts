@@ -11,7 +11,7 @@
  * - E2E testing
  */
 
-import { Browser, BrowserContext, Page, chromium, firefox, webkit } from 'playwright';
+import { Browser, BrowserContext, BrowserContextOptions, Page, chromium, firefox, webkit } from 'playwright';
 import { AxeBuilder } from '@axe-core/playwright';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -152,9 +152,9 @@ import { getTestSuite, IgnoreRegion } from '../test-suites.js';
 import { getProject, getProjectVisualSettings, getProjectHealingSettings } from '../projects.js';
 
 // Import extracted test type executors
-import { executeVisualTest, VisualTestConfig } from './visual-test-executor.js';
+import { executeVisualTest, VisualTestConfig, ViewportResult } from './visual-test-executor.js';
 import { executeLighthouseTest, LighthouseTestConfig } from './lighthouse-test-executor.js';
-import { executeLoadTest, LoadTestConfig } from './load-test-executor.js';
+import { executeLoadTest, LoadTestConfig, LoadTestResults } from './load-test-executor.js';
 import { executeAccessibilityTest, AccessibilityTestConfig } from './accessibility-test-executor.js';
 // Feature #249: E2E step executor module (available for future migration)
 // The E2E step execution logic below can be migrated to this module
@@ -333,9 +333,9 @@ async function executeTest(
   let isQuotaExceeded: boolean = false;
   let quotaExceededSuggestions: string[] | undefined;
   // Feature #1913: Multi-viewport results
-  let viewportResults: any[] | undefined;
+  let viewportResults: ViewportResult[] | undefined;
   // Feature #1968: Load test results for UI display
-  let loadTestResultsData: any | undefined;
+  let loadTestResultsData: LoadTestResults | undefined;
   // Store screenshot buffers for baseline comparison (populated during visual regression tests)
   const capturedScreenshotBuffers: Map<string, Buffer> = new Map();
   // Branch for baseline comparison (default to 'main')
@@ -373,7 +373,7 @@ async function executeTest(
     }
 
     // Feature #36: Build context options with device emulation
-    const contextOptions: any = {
+    const contextOptions: BrowserContextOptions = {
       recordVideo: {
         dir: VIDEOS_DIR,
         size: { width: viewportWidth, height: viewportHeight },
@@ -704,10 +704,12 @@ async function executeTest(
                 try {
                   await page.waitForLoadState('networkidle', { timeout: 3000 });
                 } catch { /* Ignore timeout - some clicks don't trigger AJAX */ }
-              } catch (clickErr: any) {
+              } catch (clickErr: unknown) {
+                // Feature #719: Type-narrow the unknown error to extract message
+                const clickErrMsg = clickErr instanceof Error ? clickErr.message : String(clickErr);
                 // Feature #1052: Detect element not found and initiate healing
-                if (clickErr.message?.includes('strict mode') || clickErr.message?.includes('not found') ||
-                    clickErr.message?.includes('timeout') || clickErr.message?.includes('waiting for')) {
+                if (clickErrMsg.includes('strict mode') || clickErrMsg.includes('not found') ||
+                    clickErrMsg.includes('timeout') || clickErrMsg.includes('waiting for')) {
                   log.info({ selector: step.selector, action: 'click' }, 'Element not found, initiating healing');
 
                   // Feature #1059: Get project ID for stats tracking
@@ -725,7 +727,7 @@ async function executeTest(
                     step_index: stepIndex,
                     original_selector: step.selector,
                     error_type: 'element_not_found',
-                    error_message: clickErr.message,
+                    error_message: clickErrMsg,
                     alt_selectors: step.selectorStrategies || [],
                     healing_initiated: true,
                   };
@@ -738,9 +740,9 @@ async function executeTest(
                   const projectAutoHealThreshold = await getAutoHealThreshold(healingProjectId);
                   const enabledStrategies = await getEnabledStrategies(healingProjectId);
                   log.debug({ projectId: healingProjectId, threshold: projectAutoHealThreshold, enabledStrategies }, 'Healing configuration loaded');
-                  const altSelectors = step.selectorStrategies?.filter((s: any) => s.selector !== step.selector) || [];
+                  const altSelectors = step.selectorStrategies?.filter((s: SelectorStrategy) => s.selector !== step.selector) || [];
                   let healed = false;
-                  for (const alt of altSelectors.sort((a: any, b: any) => b.confidence - a.confidence)) {
+                  for (const alt of altSelectors.sort((a: SelectorStrategy, b: SelectorStrategy) => (b.confidence ?? 0) - (a.confidence ?? 0))) {
                     // Skip visual-match strategy in this loop - try it last
                     if (alt.strategy === 'visual-match') continue;
                     // Feature #1063: Skip if strategy is disabled for this project
@@ -871,10 +873,12 @@ async function executeTest(
             if (step.selector && step.value) {
               try {
                 await page.fill(step.selector, step.value, { timeout: stepTimeout });
-              } catch (fillErr: any) {
+              } catch (fillErr: unknown) {
+                // Feature #719: Type-narrow the unknown error to extract message
+                const fillErrMsg = fillErr instanceof Error ? fillErr.message : String(fillErr);
                 // Feature #1052: Detect element not found and initiate healing
-                if (fillErr.message?.includes('strict mode') || fillErr.message?.includes('not found') ||
-                    fillErr.message?.includes('timeout') || fillErr.message?.includes('waiting for')) {
+                if (fillErrMsg.includes('strict mode') || fillErrMsg.includes('not found') ||
+                    fillErrMsg.includes('timeout') || fillErrMsg.includes('waiting for')) {
                   log.info({ selector: step.selector, action: 'fill' }, 'Element not found, initiating healing for fill');
 
                   // Feature #1059: Get project ID for stats tracking
@@ -891,7 +895,7 @@ async function executeTest(
                     step_index: stepIndex,
                     original_selector: step.selector,
                     error_type: 'element_not_found',
-                    error_message: fillErr.message,
+                    error_message: fillErrMsg,
                     alt_selectors: step.selectorStrategies || [],
                     healing_initiated: true,
                   };
@@ -904,9 +908,9 @@ async function executeTest(
                   const fillProjectThreshold = await getAutoHealThreshold(fillHealingProjectId);
                   const fillEnabledStrategies = await getEnabledStrategies(fillHealingProjectId);
                   log.debug({ projectId: fillHealingProjectId, threshold: fillProjectThreshold, enabledStrategies: fillEnabledStrategies }, 'Healing configuration for fill');
-                  const fillAltSelectors = step.selectorStrategies?.filter((s: any) => s.selector !== step.selector) || [];
+                  const fillAltSelectors = step.selectorStrategies?.filter((s: SelectorStrategy) => s.selector !== step.selector) || [];
                   let fillHealed = false;
-                  for (const alt of fillAltSelectors.sort((a: any, b: any) => b.confidence - a.confidence)) {
+                  for (const alt of fillAltSelectors.sort((a: SelectorStrategy, b: SelectorStrategy) => (b.confidence ?? 0) - (a.confidence ?? 0))) {
                     // Skip visual-match strategy in this loop - try it last
                     if (alt.strategy === 'visual-match') continue;
                     // Feature #1063: Skip if strategy is disabled for this project
@@ -1485,7 +1489,7 @@ async function executeTest(
     viewport_width: test.viewport_width || 1280,
     viewport_height: test.viewport_height || 720,
     // Feature #1968: Load test results for UI display
-    load_test: loadTestResultsData,
+    load_test: loadTestResultsData as Record<string, unknown> | undefined,
   };
 
   // Emit test complete event

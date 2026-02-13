@@ -13,7 +13,7 @@
  */
 
 import { Queue, Worker, Job, QueueEvents, JobsOptions } from 'bullmq';
-import { Redis as IORedis } from 'ioredis';
+import { Redis as IORedis, type RedisOptions } from 'ioredis';
 import { createLogger } from './logger.js';
 
 // Feature #439: Structured logging for execution queue
@@ -107,7 +107,7 @@ export async function initializeExecutionQueue(): Promise<boolean> {
 
     // Parse Redis URL
     const url = new URL(redisUrl);
-    const redisOptions: any = {
+    const redisOptions: RedisOptions = {
       host: url.hostname,
       port: parseInt(url.port || '6379', 10),
       maxRetriesPerRequest: null, // Required by BullMQ

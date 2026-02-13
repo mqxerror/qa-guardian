@@ -51,7 +51,7 @@ const logger = createLogger('route:test-runs:load-test-executor');
 /**
  * Result of evaluating a single threshold
  */
-interface ThresholdEvalResult {
+export interface ThresholdEvalResult {
   metric: string;
   expression: string;
   passed: boolean;
@@ -73,7 +73,7 @@ interface ThresholdEvaluation {
 /**
  * Check result from K6 load test
  */
-interface LoadTestCheck {
+export interface LoadTestCheck {
   name: string;
   passes: number;
   fails: number;
@@ -83,7 +83,7 @@ interface LoadTestCheck {
 /**
  * Custom metric from K6 load test
  */
-interface LoadTestCustomMetric {
+export interface LoadTestCustomMetric {
   name: string;
   type: 'counter' | 'gauge' | 'rate' | 'trend';
   value: number | {
@@ -98,7 +98,7 @@ interface LoadTestCustomMetric {
 /**
  * Complete load test results structure
  */
-interface LoadTestResults {
+export interface LoadTestResults {
   summary?: {
     total_requests?: number;
     failed_requests?: number;
@@ -1038,7 +1038,7 @@ export async function executeLoadTest(
       status: testStatus === 'passed' ? 'passed' : 'failed',
       duration_ms: Date.now() - loadTestStepStart,
       error: testError,
-      load_test: loadTestResults,
+      load_test: loadTestResults as Record<string, unknown>,
     });
 
   } catch (err) {

@@ -4,7 +4,7 @@
  * Contains: Baseline approval, visual rejection, rejection status, mergeable baselines, baseline merge
  */
 
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest } from 'fastify';
 import * as fs from 'fs';
 import * as path from 'path';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
@@ -44,10 +44,9 @@ import { createLogger } from '../../services/logger.js';
 
 const logger = createLogger('route:test-runs:visual-approval');
 
-// Helper to get user from request
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getUser(request: any): JwtPayload | undefined {
-  return request.user as JwtPayload | undefined;
+// Helper to get user from request (typed via FastifyRequest with optional user field)
+function getUser(request: FastifyRequest): JwtPayload | undefined {
+  return (request as FastifyRequest & { user?: JwtPayload }).user;
 }
 
 // Import saveBaseline from test-runs.ts - we need to re-export it
