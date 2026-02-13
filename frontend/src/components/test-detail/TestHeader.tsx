@@ -3,7 +3,7 @@
 // Feature #581: Added browser notification toggle for long-running tests
 // Displays breadcrumb navigation, test title, status badge, and action buttons
 
-import { Bell, BellOff } from 'lucide-react';
+import { Bell, BellOff, Share2 } from 'lucide-react';
 import { TestType } from './types';
 import { PageHeader } from '../ui';
 
@@ -29,6 +29,8 @@ export interface TestHeaderProps {
   onEditTest: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  // Feature #760: Share test
+  onShare?: () => void;
   // Error states
   runError?: string;
   duplicateError?: string;
@@ -58,6 +60,8 @@ export function TestHeader({
   onEditTest,
   onDuplicate,
   onDelete,
+  // Feature #760: Share test
+  onShare,
   runError,
   duplicateError,
   // Feature #581: Browser notification toggle
@@ -193,6 +197,18 @@ export function TestHeader({
               className="rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50"
             >
               {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+            </button>
+          )}
+
+          {/* Feature #760: Share test button */}
+          {onShare && (
+            <button
+              onClick={onShare}
+              className="flex items-center gap-1.5 rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80"
+              title="Share test results"
+            >
+              <Share2 className="h-4 w-4" />
+              Share
             </button>
           )}
 

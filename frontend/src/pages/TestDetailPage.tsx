@@ -3,7 +3,7 @@
 // Feature #68: Added React Query caching for faster loading
 // Feature #337: Dark-first design system redesign
 // Feature #569: Removed useState - all state now managed by useTestDetailState hook
-import { useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState as useReactState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 // Feature #571: Lucide icons for page-level tab navigation (replaces emoji)
 import { Button } from '../components/ui/button';
@@ -55,6 +55,7 @@ import {
   AIExplainModal,
   UnsavedChangesConfirmModal,
   QuickScheduleModal,
+  ShareTestModal,
   ViewCodeTab,
   K6ScriptTab,
   TestDetailsCard,
@@ -95,6 +96,8 @@ function TestDetailPage() {
   const { notificationsEnabled, notificationsSupported, toggleNotifications, notifyTestComplete } = useTestNotifications();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  // Feature #760: Share test modal state
+  const [showShareModal, setShowShareModal] = useReactState(false);
 
   // Feature #68: React Query hooks for caching - data loads instantly on second visit
   // Feature #513: Removed unused refetchTest, runsLoading
@@ -1039,6 +1042,8 @@ function TestDetailPage() {
           onEditTest={handleOpenEditModal}
           onDuplicate={handleDuplicate}
           onDelete={() => setShowDeleteModal(true)}
+          // Feature #760: Share test
+          onShare={() => setShowShareModal(true)}
           runError={runError}
           duplicateError={duplicateError}
           // Feature #581: Browser notification toggle
@@ -1174,6 +1179,17 @@ function TestDetailPage() {
           onClose={() => setShowQuickScheduleModal(false)}
           onSubmit={handleCreateQuickSchedule}
         />
+
+        {/* Feature #760: Share Test Modal */}
+        {showShareModal && (
+          <ShareTestModal
+            testName={test?.name || ''}
+            testId={testId || ''}
+            latestRunId={runs.length > 0 ? runs[0].id : null}
+            token={token || ''}
+            onClose={() => setShowShareModal(false)}
+          />
+        )}
 
         {/* Approve Baseline Confirmation Modal - Feature #48: Using extracted component */}
         {showApproveBaselineModal && (
