@@ -26,7 +26,6 @@ export { DASTComparisonPage } from './DASTComparisonPage';
 export { DASTGraphQLPage } from './DASTGraphQLPage';
 export { TrivyDependencyScanPage } from './TrivyDependencyScanPage';
 export { NpmAuditPage } from './NpmAuditPage';
-export { CVEDatabasePage } from './CVEDatabasePage';
 export { LicenseCompliancePage } from './LicenseCompliancePage';
 // Feature #268: SBOM Generation Page
 export { SbomPage } from './SbomPage';

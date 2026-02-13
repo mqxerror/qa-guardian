@@ -38,7 +38,6 @@ const DASTComparisonPage = lazy(() => import('./pages/DASTComparisonPage').then(
 const DASTGraphQLPage = lazy(() => import('./pages/DASTGraphQLPage').then(m => ({ default: m.DASTGraphQLPage })));
 const TrivyDependencyScanPage = lazy(() => import('./pages/TrivyDependencyScanPage').then(m => ({ default: m.TrivyDependencyScanPage })));
 const NpmAuditPage = lazy(() => import('./pages/NpmAuditPage').then(m => ({ default: m.NpmAuditPage })));
-const CVEDatabasePage = lazy(() => import('./pages/CVEDatabasePage').then(m => ({ default: m.CVEDatabasePage })));
 const LicenseCompliancePage = lazy(() => import('./pages/LicenseCompliancePage').then(m => ({ default: m.LicenseCompliancePage })));
 const SbomPage = lazy(() => import('./pages/SbomPage').then(m => ({ default: m.SbomPage })));
 const ContainerScanPage = lazy(() => import('./pages/ContainerScanPage').then(m => ({ default: m.ContainerScanPage })));
@@ -359,16 +358,6 @@ function App() {
             <ProtectedRoute>
               <PageErrorBoundary>
                 <NpmAuditPage />
-              </PageErrorBoundary>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/security/cve-database"
-          element={
-            <ProtectedRoute>
-              <PageErrorBoundary>
-                <CVEDatabasePage />
               </PageErrorBoundary>
             </ProtectedRoute>
           }
