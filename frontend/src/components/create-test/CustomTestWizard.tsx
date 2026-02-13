@@ -1,6 +1,7 @@
 /**
  * CustomTestWizard Component
  * Feature #1807: CustomTestWizard with MethodSelection
+ * Feature #691: Migrated to shared Modal component
  *
  * A 3-step wizard for creating custom tests:
  * - Step 1: Method Selection (AI Generate vs Manual Setup)
@@ -15,12 +16,14 @@
  */
 
 import React, { useState, useCallback, memo } from 'react';
-import { Check, Lightbulb, Settings, Video, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, Lightbulb, Settings, Video, ChevronLeft, ChevronRight } from 'lucide-react';
+// Note: X icon removed - Modal handles close button
 import { useAuthStore } from '../../stores/authStore';
 import { AIGenerateStep } from './AIGenerateStep';
 import { ManualSetupStep, type ManualSetupFormState } from './ManualSetupStep';
 import { RecordStep, type RecordConfig } from './RecordStep';
 import { ReviewStep, type WizardConfig, type AIGeneratedConfig, type ManualSetupConfig } from './ReviewStep';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 
 /**
  * Configuration method - AI Generate, Manual Setup, or Record
@@ -96,6 +99,7 @@ StepIndicator.displayName = 'StepIndicator';
 
 /**
  * Feature #613: Semantic color mapping for method cards
+ * Feature #692: Added checkmark foreground token for proper contrast
  * Uses CSS variables defined in index.css and tailwind.config.js
  * Replaces hardcoded purple/blue/rose with method-ai/method-manual/method-record
  */
@@ -107,6 +111,7 @@ const methodColorMap = {
   title: 'text-method-ai',
   check: 'text-method-ai',
   indicator: 'border-method-ai bg-method-ai',
+  checkmark: 'text-method-ai-foreground',
  },
  manual: {
   selected: 'border-method-manual bg-method-manual-muted shadow-lg',
@@ -115,6 +120,7 @@ const methodColorMap = {
   title: 'text-method-manual',
   check: 'text-method-manual',
   indicator: 'border-method-manual bg-method-manual',
+  checkmark: 'text-method-manual-foreground',
  },
  record: {
   selected: 'border-method-record bg-method-record-muted shadow-lg',
@@ -123,6 +129,7 @@ const methodColorMap = {
   title: 'text-method-record',
   check: 'text-method-record',
   indicator: 'border-method-record bg-method-record',
+  checkmark: 'text-method-record-foreground',
  },
 };
 
@@ -228,7 +235,7 @@ const MethodCard = memo<MethodCardProps>(({ method, isSelected, onSelect }) => {
  `}
  >
  {isSelected && (
- <Check className="w-3 h-3 text-white" strokeWidth={3} />
+ <Check className={`w-3 h-3 ${colors.checkmark}`} strokeWidth={3} />
  )}
  </div>
  </button>
@@ -430,31 +437,17 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  };
 
  return (
- <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
- <div className="relative z-[61] bg-card rounded-xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
- {/* Header */}
- <div className="px-6 py-4 border-b border-border">
- <div className="flex items-center justify-between">
+ <Modal isOpen={true} onClose={onClose} title="Custom Test Wizard" size="lg">
+ <ModalHeader onClose={onClose}>
  <div>
- <h2 className="text-xl font-semibold text-foreground">
- Custom Test Wizard
- </h2>
- <p className="text-sm text-muted-foreground">
+ <span className="font-semibold text-foreground">Custom Test Wizard</span>
+ <p className="text-sm text-muted-foreground font-normal">
  Step {wizardStep}: {stepTitles[wizardStep]}
  </p>
  </div>
- <button
- onClick={onClose}
- className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors"
- aria-label="Close wizard"
- >
- <X className="w-5 h-5" />
- </button>
- </div>
- </div>
+ </ModalHeader>
 
- {/* Body */}
- <div className="flex-1 overflow-y-auto p-6">
+ <ModalBody>
  {/* Step Indicator */}
  <StepIndicator currentStep={wizardStep} totalSteps={3} />
 
@@ -518,11 +511,12 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  }}
  />
  )}
- </div>
+ </ModalBody>
 
  {/* Footer - hidden on Step 3 since ReviewStep has its own buttons */}
  {wizardStep !== 3 && (
- <div className="px-6 py-3 bg-muted/50 border-t border-border flex items-center justify-between">
+ <ModalFooter>
+ <div className="flex items-center justify-between w-full">
  <button
  type="button"
  onClick={handleBack}
@@ -547,9 +541,9 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  </button>
  </div>
  </div>
+ </ModalFooter>
  )}
- </div>
- </div>
+ </Modal>
  );
 };
 

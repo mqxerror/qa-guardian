@@ -81,15 +81,22 @@ export async function runVisualPerformance(url: string, browser: Browser): Promi
     }
 
     // Feature #564: Measure CLS (Cumulative Layout Shift) via PerformanceObserver
+    // Feature #699: Use proper LayoutShift type instead of as any
     try {
       const cls = await page.evaluate(() => {
+        // Type definition for LayoutShift entry (browser API)
+        interface LayoutShiftEntry extends PerformanceEntry {
+          hadRecentInput: boolean;
+          value: number;
+        }
         return new Promise<number | undefined>((resolve) => {
           let clsValue = 0;
           const observer = new PerformanceObserver((list) => {
             for (const entry of list.getEntries()) {
+              const layoutShift = entry as LayoutShiftEntry;
               // Only count layout shifts that aren't triggered by user input
-              if (!(entry as any).hadRecentInput) {
-                clsValue += (entry as any).value;
+              if (!layoutShift.hadRecentInput) {
+                clsValue += layoutShift.value;
               }
             }
           });
@@ -110,16 +117,21 @@ export async function runVisualPerformance(url: string, browser: Browser): Promi
     // Feature #564: Measure INP (Interaction to Next Paint) via PerformanceObserver
     // INP replaced FID as a Core Web Vital in March 2024
     // For synthetic tests, we simulate a click interaction and measure processing time
+    // Feature #699: Use proper PerformanceEventTiming type instead of as any
     try {
       const inp = await page.evaluate(() => {
+        // Type definition for PerformanceEventTiming entry (browser API)
+        interface EventTimingEntry extends PerformanceEntry {
+          duration: number;
+        }
         return new Promise<number | undefined>((resolve) => {
           let maxDuration = 0;
           const observer = new PerformanceObserver((list) => {
             for (const entry of list.getEntries()) {
               // event entries have duration property representing interaction latency
-              const duration = (entry as any).duration;
-              if (duration && duration > maxDuration) {
-                maxDuration = duration;
+              const eventTiming = entry as EventTimingEntry;
+              if (eventTiming.duration && eventTiming.duration > maxDuration) {
+                maxDuration = eventTiming.duration;
               }
             }
           });

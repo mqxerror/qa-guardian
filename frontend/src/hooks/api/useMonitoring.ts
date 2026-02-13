@@ -392,3 +392,512 @@ export function useStatusSubscribe() {
     },
   });
 }
+
+// ============== Monitoring Settings Hooks ==============
+// Feature #708: React Query hooks for MonitoringPage settings
+
+export interface MonitoringSettings {
+  retention_days: 30 | 90 | 365;
+  auto_cleanup_enabled: boolean;
+}
+
+export interface RetentionStats {
+  total_results: number;
+  oldest_result: string;
+  results_by_type: Record<string, number>;
+}
+
+export interface CleanupResult {
+  success: boolean;
+  cleaned_results: {
+    total: number;
+    by_type: Record<string, number>;
+  };
+}
+
+// Extended query keys for settings
+export const monitoringSettingsKeys = {
+  all: ['monitoring', 'settings'] as const,
+  settings: () => [...monitoringSettingsKeys.all, 'config'] as const,
+  stats: () => [...monitoringSettingsKeys.all, 'stats'] as const,
+  statusPages: () => [...monitoringSettingsKeys.all, 'status-pages'] as const,
+  availableChecks: () => [...monitoringSettingsKeys.all, 'available-checks'] as const,
+  onCallSchedules: () => [...monitoringSettingsKeys.all, 'on-call'] as const,
+  escalationPolicies: () => [...monitoringSettingsKeys.all, 'escalation-policies'] as const,
+  alertHistory: (params: AlertHistoryParams) => [...monitoringSettingsKeys.all, 'alert-history', params] as const,
+  alertRoutingRules: () => [...monitoringSettingsKeys.all, 'alert-routing', 'rules'] as const,
+  alertRoutingLogs: () => [...monitoringSettingsKeys.all, 'alert-routing', 'logs'] as const,
+};
+
+/**
+ * Hook to fetch monitoring settings
+ * Feature #708: Migrate MonitoringPage settings fetch to React Query
+ */
+export function useMonitoringSettings() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: monitoringSettingsKeys.settings(),
+    queryFn: () => fetchWithAuth('/api/v1/monitoring/settings', token) as Promise<MonitoringSettings>,
+    enabled: !!token,
+    staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook to fetch retention stats
+ * Feature #708: Migrate MonitoringPage stats fetch to React Query
+ */
+export function useMonitoringRetentionStats() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: monitoringSettingsKeys.stats(),
+    queryFn: () => fetchWithAuth('/api/v1/monitoring/settings/stats', token) as Promise<RetentionStats>,
+    enabled: !!token,
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 60 * 1000,
+  });
+}
+
+/**
+ * Hook to save monitoring settings
+ * Feature #708: Migrate MonitoringPage settings save to React Query mutation
+ */
+export function useSaveMonitoringSettings() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (settings: Partial<MonitoringSettings>) =>
+      fetchWithAuth('/api/v1/monitoring/settings', token, {
+        method: 'PUT',
+        body: JSON.stringify(settings),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.settings() });
+    },
+  });
+}
+
+/**
+ * Hook to run retention cleanup
+ * Feature #708: Migrate MonitoringPage cleanup to React Query mutation
+ */
+export function useRunRetentionCleanup() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () =>
+      fetchWithAuth('/api/v1/monitoring/settings/cleanup', token, {
+        method: 'POST',
+      }) as Promise<CleanupResult>,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.stats() });
+    },
+  });
+}
+
+// ============== Status Pages Hooks ==============
+// Feature #708: React Query hooks for status pages
+
+export interface StatusPage {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  is_public: boolean;
+  logo_url?: string;
+  primary_color?: string;
+  custom_domain?: string;
+  check_ids: string[];
+}
+
+export interface AvailableCheck {
+  id: string;
+  name: string;
+  type: string;
+}
+
+/**
+ * Hook to fetch status pages
+ * Feature #708: Migrate MonitoringPage status pages fetch to React Query
+ */
+export function useStatusPages() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: monitoringSettingsKeys.statusPages(),
+    queryFn: () => fetchWithAuth('/api/v1/monitoring/status-pages', token) as Promise<{ status_pages: StatusPage[] }>,
+    enabled: !!token,
+    staleTime: 30 * 1000,
+    gcTime: 60 * 1000,
+  });
+}
+
+/**
+ * Hook to fetch available checks for status pages
+ * Feature #708: Migrate available checks fetch to React Query
+ */
+export function useAvailableChecksForStatus() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: monitoringSettingsKeys.availableChecks(),
+    queryFn: () => fetchWithAuth('/api/v1/monitoring/status-pages/available-checks', token) as Promise<{ checks: AvailableCheck[] }>,
+    enabled: !!token,
+    staleTime: 60 * 1000,
+    gcTime: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook to delete status page
+ * Feature #708: Migrate status page delete to React Query mutation
+ */
+export function useDeleteStatusPage() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (pageId: string) =>
+      fetchWithAuth(`/api/v1/monitoring/status-pages/${pageId}`, token, {
+        method: 'DELETE',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.statusPages() });
+    },
+  });
+}
+
+// ============== On-Call Schedule Hooks ==============
+// Feature #708: React Query hooks for on-call schedules
+
+export interface OnCallSchedule {
+  id: string;
+  name: string;
+  members: string[];
+  rotation_type: 'daily' | 'weekly' | 'custom';
+  rotation_interval?: number;
+  current_index: number;
+  timezone?: string;
+  start_date?: string;
+}
+
+/**
+ * Hook to fetch on-call schedules
+ * Feature #708: Migrate on-call fetch to React Query
+ */
+export function useOnCallSchedules() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: monitoringSettingsKeys.onCallSchedules(),
+    queryFn: () => fetchWithAuth('/api/v1/monitoring/on-call', token) as Promise<{ schedules: OnCallSchedule[] }>,
+    enabled: !!token,
+    staleTime: 30 * 1000,
+    gcTime: 60 * 1000,
+  });
+}
+
+/**
+ * Hook to delete on-call schedule
+ * Feature #708: Migrate on-call delete to React Query mutation
+ */
+export function useDeleteOnCallSchedule() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (scheduleId: string) =>
+      fetchWithAuth(`/api/v1/monitoring/on-call/${scheduleId}`, token, {
+        method: 'DELETE',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.onCallSchedules() });
+    },
+  });
+}
+
+/**
+ * Hook to rotate on-call schedule
+ * Feature #708: Migrate on-call rotate to React Query mutation
+ */
+export function useRotateOnCallSchedule() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (scheduleId: string) =>
+      fetchWithAuth(`/api/v1/monitoring/on-call/${scheduleId}/rotate`, token, {
+        method: 'POST',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.onCallSchedules() });
+    },
+  });
+}
+
+// ============== Escalation Policy Hooks ==============
+// Feature #708: React Query hooks for escalation policies
+
+export interface EscalationPolicy {
+  id: string;
+  name: string;
+  description?: string;
+  steps: {
+    delay_minutes: number;
+    notify: string[];
+    on_call_schedule_id?: string;
+  }[];
+}
+
+/**
+ * Hook to fetch escalation policies
+ * Feature #708: Migrate escalation policies fetch to React Query
+ */
+export function useEscalationPolicies() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: monitoringSettingsKeys.escalationPolicies(),
+    queryFn: () => fetchWithAuth('/api/v1/monitoring/escalation-policies', token) as Promise<{ policies: EscalationPolicy[] }>,
+    enabled: !!token,
+    staleTime: 30 * 1000,
+    gcTime: 60 * 1000,
+  });
+}
+
+/**
+ * Hook to delete escalation policy
+ * Feature #708: Migrate escalation policy delete to React Query mutation
+ */
+export function useDeleteEscalationPolicy() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (policyId: string) =>
+      fetchWithAuth(`/api/v1/monitoring/escalation-policies/${policyId}`, token, {
+        method: 'DELETE',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.escalationPolicies() });
+    },
+  });
+}
+
+/**
+ * Hook to test escalation policy
+ * Feature #708: Migrate escalation policy test to React Query mutation
+ */
+export function useTestEscalationPolicy() {
+  const token = useAuthStore(state => state.token);
+
+  return useMutation({
+    mutationFn: (policyId: string) =>
+      fetchWithAuth(`/api/v1/monitoring/escalation-policies/${policyId}/test`, token, {
+        method: 'POST',
+      }),
+  });
+}
+
+// ============== Alert History Hooks ==============
+// Feature #708: React Query hooks for alert history
+
+export interface AlertHistoryParams {
+  severity?: string;
+  source?: string;
+}
+
+export interface AlertHistoryItem {
+  id: string;
+  check_id: string;
+  check_name: string;
+  severity: string;
+  source: string;
+  message: string;
+  resolved: boolean;
+  created_at: string;
+  resolved_at?: string;
+}
+
+export interface AlertHistoryStats {
+  total_alerts: number;
+  by_severity: Record<string, number>;
+  by_source: Record<string, number>;
+  mttr_seconds?: number;
+}
+
+export interface AlertsOverTimeData {
+  date: string;
+  count: number;
+}
+
+export interface AlertHistoryResponse {
+  alerts: AlertHistoryItem[];
+  stats: AlertHistoryStats;
+  alerts_over_time: AlertsOverTimeData[];
+}
+
+/**
+ * Hook to fetch alert history
+ * Feature #708: Migrate alert history fetch to React Query
+ */
+export function useAlertHistory(params: AlertHistoryParams = {}) {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: monitoringSettingsKeys.alertHistory(params),
+    queryFn: () => {
+      const searchParams = new URLSearchParams();
+      if (params.severity) searchParams.set('severity', params.severity);
+      if (params.source) searchParams.set('source', params.source);
+
+      const queryString = searchParams.toString();
+      const url = `/api/v1/monitoring/alert-history${queryString ? `?${queryString}` : ''}`;
+      return fetchWithAuth(url, token) as Promise<AlertHistoryResponse>;
+    },
+    enabled: !!token,
+    staleTime: 30 * 1000,
+    gcTime: 60 * 1000,
+  });
+}
+
+/**
+ * Hook to export alert history
+ * Feature #708: Migrate alert history export to React Query mutation
+ */
+export function useExportAlertHistory() {
+  const token = useAuthStore(state => state.token);
+
+  return useMutation({
+    mutationFn: async ({ format, severity, source }: { format: 'csv' | 'json'; severity?: string; source?: string }) => {
+      const params = new URLSearchParams();
+      if (severity) params.append('severity', severity);
+      if (source) params.append('source', source);
+      params.append('format', format);
+
+      const response = await fetch(`/api/v1/monitoring/alert-history/export?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export alert history');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `alert-history.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      return { success: true };
+    },
+  });
+}
+
+// ============== Alert Routing Hooks ==============
+// Feature #708: React Query hooks for alert routing
+
+export interface AlertRoutingRule {
+  id: string;
+  name: string;
+  conditions: {
+    field: string;
+    operator: string;
+    value: string;
+  }[];
+  destinations: {
+    type: string;
+    target: string;
+  }[];
+  enabled: boolean;
+  priority: number;
+}
+
+export interface AlertRoutingLog {
+  id: string;
+  rule_id: string;
+  rule_name: string;
+  alert_id: string;
+  matched: boolean;
+  destinations_notified: string[];
+  created_at: string;
+}
+
+/**
+ * Hook to fetch alert routing rules
+ * Feature #708: Migrate alert routing rules fetch to React Query
+ */
+export function useAlertRoutingRules() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: monitoringSettingsKeys.alertRoutingRules(),
+    queryFn: () => fetchWithAuth('/api/v1/monitoring/alert-routing/rules', token) as Promise<{ rules: AlertRoutingRule[] }>,
+    enabled: !!token,
+    staleTime: 30 * 1000,
+    gcTime: 60 * 1000,
+  });
+}
+
+/**
+ * Hook to fetch alert routing logs
+ * Feature #708: Migrate alert routing logs fetch to React Query
+ */
+export function useAlertRoutingLogs() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: monitoringSettingsKeys.alertRoutingLogs(),
+    queryFn: () => fetchWithAuth('/api/v1/monitoring/alert-routing/logs', token) as Promise<{ logs: AlertRoutingLog[] }>,
+    enabled: !!token,
+    staleTime: 30 * 1000,
+    gcTime: 60 * 1000,
+  });
+}
+
+/**
+ * Hook to delete alert routing rule
+ * Feature #708: Migrate alert routing rule delete to React Query mutation
+ */
+export function useDeleteAlertRoutingRule() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ruleId: string) =>
+      fetchWithAuth(`/api/v1/monitoring/alert-routing/rules/${ruleId}`, token, {
+        method: 'DELETE',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.alertRoutingRules() });
+    },
+  });
+}
+
+/**
+ * Hook to invalidate all monitoring settings queries
+ * Feature #708: Utility hook for cache invalidation
+ */
+export function useInvalidateMonitoringSettings() {
+  const queryClient = useQueryClient();
+
+  return {
+    invalidateSettings: () => queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.settings() }),
+    invalidateStats: () => queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.stats() }),
+    invalidateStatusPages: () => queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.statusPages() }),
+    invalidateOnCallSchedules: () => queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.onCallSchedules() }),
+    invalidateEscalationPolicies: () => queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.escalationPolicies() }),
+    invalidateAlertRoutingRules: () => queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.alertRoutingRules() }),
+    invalidateAlertRoutingLogs: () => queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.alertRoutingLogs() }),
+    invalidateAll: () => queryClient.invalidateQueries({ queryKey: monitoringSettingsKeys.all }),
+  };
+}

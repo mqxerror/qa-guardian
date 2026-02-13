@@ -15,6 +15,9 @@
 // Types
 export * from './types.js';
 
+// Feature #698: Shared SSRF validation utilities
+export { validateResolvedIPs, validateRedirectURL } from './ssrf-utils.js';
+
 // Wave modules
 export { runHealthCheck } from './health.js';
 export { runVisualPerformance } from './visual.js';

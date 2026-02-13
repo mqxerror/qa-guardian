@@ -1,6 +1,7 @@
 /**
  * Quick Test Wave 1: Health Check
  * Feature #672: Extracted from quick-test-runner.ts
+ * Feature #698: SSRF validation moved to ssrf-utils.ts
  *
  * DNS, HTTP, SSL, response time, redirects (1-2s)
  */
@@ -10,34 +11,9 @@ import tls from 'tls';
 import https from 'https';
 import http from 'http';
 import { URL } from 'url';
-import { isPrivateIP, validateURLForSSRF } from '../../utils/index.js';
 import type { HealthCheckResult } from './types.js';
-
-// Feature #433: SSRF protection - check if resolved IPs are private
-function validateResolvedIPs(addresses: string[]): { safe: boolean; error?: string } {
-  for (const ip of addresses) {
-    const result = isPrivateIP(ip);
-    if (result.isPrivate) {
-      return {
-        safe: false,
-        error: `DNS resolved to private IP address (${ip}${result.details ? ': ' + result.details : ''})`
-      };
-    }
-  }
-  return { safe: true };
-}
-
-// Feature #433: SSRF protection - validate redirect URLs
-function validateRedirectURL(redirectUrl: string, isProduction: boolean): { safe: boolean; error?: string } {
-  const validation = validateURLForSSRF(redirectUrl, {
-    requireHttps: false,
-    allowLocalhost: !isProduction,
-  });
-  if (!validation.safe) {
-    return { safe: false, error: `Redirect to blocked URL: ${validation.error}` };
-  }
-  return { safe: true };
-}
+// Feature #698: Import shared SSRF validation utilities
+import { validateResolvedIPs, validateRedirectURL } from './ssrf-utils.js';
 
 /**
  * Run health check wave

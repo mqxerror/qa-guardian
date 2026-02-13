@@ -459,3 +459,74 @@ export function useInvalidateRuns() {
     },
   };
 }
+
+// ============================================================
+// Feature #701: Run Result Selector Update Hooks
+// ============================================================
+
+/**
+ * Feature #701: Hook to update a selector for a run result step
+ * Used for manual selector editing from run results
+ */
+export function useUpdateRunSelector() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      runId,
+      testId,
+      stepId,
+      newSelector,
+      notes,
+      applyToTest,
+    }: {
+      runId: string;
+      testId: string;
+      stepId: string;
+      newSelector: string;
+      notes?: string;
+      applyToTest?: boolean;
+    }) =>
+      fetchWithAuth(`/api/v1/runs/${runId}/results/${testId}/steps/${stepId}/selector`, token, {
+        method: 'PUT',
+        body: JSON.stringify({
+          new_selector: newSelector,
+          notes,
+          apply_to_test: applyToTest,
+        }),
+      }),
+    onSuccess: (_, { runId }) => {
+      queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) });
+    },
+  });
+}
+
+/**
+ * Feature #701: Hook to accept a healed selector from run results
+ */
+export function useAcceptHealedSelector() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      runId,
+      testId,
+      stepId,
+      applyToTest,
+    }: {
+      runId: string;
+      testId: string;
+      stepId: string;
+      applyToTest?: boolean;
+    }) =>
+      fetchWithAuth(`/api/v1/runs/${runId}/results/${testId}/steps/${stepId}/accept-healed`, token, {
+        method: 'POST',
+        body: JSON.stringify({ apply_to_test: applyToTest }),
+      }),
+    onSuccess: (_, { runId }) => {
+      queryClient.invalidateQueries({ queryKey: runKeys.detail(runId) });
+    },
+  });
+}

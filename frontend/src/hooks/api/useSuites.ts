@@ -80,6 +80,40 @@ export interface UpdateSuiteInput {
   retry_count?: number;
 }
 
+// Feature #701: Review settings response types
+// Matches TestSuitePage's reviewStats state type
+export interface ReviewStats {
+  total_tests?: number;
+  ai_generated?: number;
+  pending_review: number;
+  approved: number;
+  rejected: number;
+  total?: number;
+}
+
+export interface ReviewSettingsResponse {
+  require_human_review: boolean;
+  stats: ReviewStats;
+}
+
+// Feature #701: AI Health Check report type
+// Matches TestSuitePage's aiHealthReport state type
+export interface AIHealthReport {
+  health_score: number;
+  trend: 'improving' | 'stable' | 'degrading';
+  ai_summary: string;
+  recommendations: Array<{
+    id: string;
+    severity: 'critical' | 'warning' | 'info';
+    category: string;
+    title: string;
+    description: string;
+    suggested_action: string;
+    affected_tests?: string[];
+  }>;
+  generated_at: string;
+}
+
 // Query keys factory
 export const suiteKeys = {
   all: ['suites'] as const,
@@ -88,6 +122,9 @@ export const suiteKeys = {
     [...suiteKeys.lists(), 'project', projectId, params] as const,
   details: () => [...suiteKeys.all, 'detail'] as const,
   detail: (id: string) => [...suiteKeys.details(), id] as const,
+  // Feature #701: Review settings and AI health check keys
+  reviewSettings: (id: string) => [...suiteKeys.detail(id), 'review-settings'] as const,
+  aiHealthCheck: (id: string) => [...suiteKeys.detail(id), 'ai-health'] as const,
 };
 
 /**
@@ -366,4 +403,64 @@ export function useInvalidateSuites() {
     invalidateByProject: (projectId: string) =>
       queryClient.invalidateQueries({ queryKey: suiteKeys.listByProject(projectId) }),
   };
+}
+
+// ============================================================
+// Feature #701: Review Settings Hooks
+// ============================================================
+
+/**
+ * Hook to fetch suite review settings
+ */
+export function useReviewSettings(suiteId: string | undefined) {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: suiteKeys.reviewSettings(suiteId || ''),
+    queryFn: () => fetchWithAuth(`/api/v1/suites/${suiteId}/review-settings`, token) as Promise<ReviewSettingsResponse>,
+    enabled: !!token && !!suiteId,
+    staleTime: 30 * 1000,
+    gcTime: 60 * 1000,
+  });
+}
+
+/**
+ * Hook to toggle human review requirement
+ */
+export function useToggleHumanReview() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ suiteId, requireHumanReview }: { suiteId: string; requireHumanReview: boolean }) =>
+      fetchWithAuth(`/api/v1/suites/${suiteId}/review-settings`, token, {
+        method: 'PATCH',
+        body: JSON.stringify({ require_human_review: requireHumanReview }),
+      }),
+    onSuccess: (_, { suiteId }) => {
+      queryClient.invalidateQueries({ queryKey: suiteKeys.reviewSettings(suiteId) });
+    },
+  });
+}
+
+// ============================================================
+// Feature #701: AI Health Check Hooks
+// ============================================================
+
+/**
+ * Hook to run AI health check on a suite
+ */
+export function useAIHealthCheck() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ suiteId }: { suiteId: string }) =>
+      fetchWithAuth(`/api/v1/suites/${suiteId}/ai-health-check`, token, {
+        method: 'POST',
+      }) as Promise<{ report: AIHealthReport }>,
+    onSuccess: (_, { suiteId }) => {
+      queryClient.invalidateQueries({ queryKey: suiteKeys.aiHealthCheck(suiteId) });
+    },
+  });
 }

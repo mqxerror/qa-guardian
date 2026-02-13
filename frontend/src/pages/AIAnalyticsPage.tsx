@@ -9,6 +9,8 @@ import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { ArrowLeft, RefreshCw, DollarSign, Zap, FileInput, FileOutput, Building2, Brain, TrendingUp, Settings } from 'lucide-react';
 import { PageHeader } from '../components/ui';
+// Feature #691: Migrated budget modal to shared Modal component
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 
 // Feature #317: API base URL from environment
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -774,40 +776,38 @@ export function AIAnalyticsPage() {
           </>
         )}
 
-        {/* Budget Edit Modal */}
-        {showBudgetModal && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-            <div className="bg-card border border-border rounded-xl p-6 w-96">
-              <h3 className="text-xl font-bold mb-4 text-foreground">Edit Monthly Budget</h3>
-              <div className="mb-4">
-                <label className="block text-sm text-muted-foreground mb-1">Monthly Budget ($)</label>
-                <input
-                  type="number"
-                  value={newBudget}
-                  onChange={(e) => setNewBudget(parseInt(e.target.value) || 0)}
-                  className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg"
-                  min="0"
-                  step="100"
-                />
-              </div>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setShowBudgetModal(false)}
-                  className="px-4 py-2 border border-border text-foreground rounded-lg hover:bg-muted"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={updateBudget}
-                  disabled={isSavingBudget}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
-                >
-                  {isSavingBudget ? 'Saving...' : 'Save'}
-                </button>
-              </div>
+        {/* Budget Edit Modal - Feature #691: Using shared Modal component */}
+        <Modal isOpen={showBudgetModal} onClose={() => setShowBudgetModal(false)} title="Edit Monthly Budget" size="sm">
+          <ModalHeader onClose={() => setShowBudgetModal(false)}>Edit Monthly Budget</ModalHeader>
+          <ModalBody>
+            <div>
+              <label className="block text-sm text-muted-foreground mb-1">Monthly Budget ($)</label>
+              <input
+                type="number"
+                value={newBudget}
+                onChange={(e) => setNewBudget(parseInt(e.target.value) || 0)}
+                className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg"
+                min="0"
+                step="100"
+              />
             </div>
-          </div>
-        )}
+          </ModalBody>
+          <ModalFooter>
+            <button
+              onClick={() => setShowBudgetModal(false)}
+              className="px-4 py-2 border border-border text-foreground rounded-lg hover:bg-muted"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={updateBudget}
+              disabled={isSavingBudget}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+            >
+              {isSavingBudget ? 'Saving...' : 'Save'}
+            </button>
+          </ModalFooter>
+        </Modal>
       </div>
     </Layout>
   );

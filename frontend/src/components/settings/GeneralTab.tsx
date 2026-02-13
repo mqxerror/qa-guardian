@@ -86,7 +86,7 @@ export function GeneralTab() {
                   <button
                     type="button"
                     onClick={handleRemoveLogo}
-                    className="absolute -top-2 -right-2 rounded-full bg-destructive p-1 text-white hover:bg-destructive/90"
+                    className="absolute -top-2 -right-2 rounded-full bg-destructive p-1 text-destructive-foreground hover:bg-destructive/90"
                     aria-label="Remove logo"
                   >
                     <X className="h-3 w-3" />

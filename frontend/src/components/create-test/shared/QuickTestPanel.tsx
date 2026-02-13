@@ -17,6 +17,7 @@ import { GeneratedTestPreview } from '../types';
 
 /**
  * Test type configuration for checkbox cards
+ * Feature #692: Added checkmark color for proper foreground tokens
  */
 interface TestTypeConfig {
  id: QuickTestType;
@@ -27,6 +28,7 @@ interface TestTypeConfig {
  selected: string;
  checkbox: string;
  text: string;
+ checkmark: string;
  };
 }
 
@@ -56,6 +58,7 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  selected: 'border-primary bg-primary/5',
  checkbox: 'border-primary bg-primary',
  text: 'text-primary',
+ checkmark: 'text-primary-foreground',
  },
  },
  {
@@ -67,6 +70,7 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  selected: 'border-accent bg-accent/5',
  checkbox: 'border-accent bg-accent/50',
  text: 'text-accent',
+ checkmark: 'text-accent-foreground',
  },
  },
  {
@@ -78,6 +82,7 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  selected: 'border-warning bg-warning/5',
  checkbox: 'border-warning bg-warning',
  text: 'text-warning',
+ checkmark: 'text-warning-foreground',
  },
  },
  {
@@ -89,6 +94,7 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  selected: 'border-success bg-success/5',
  checkbox: 'border-success bg-success',
  text: 'text-success',
+ checkmark: 'text-success-foreground',
  },
  },
  {
@@ -100,6 +106,7 @@ const TEST_TYPE_CONFIGS: TestTypeConfig[] = [
  selected: 'border-destructive bg-destructive/5',
  checkbox: 'border-destructive bg-destructive',
  text: 'text-destructive',
+ checkmark: 'text-destructive-foreground',
  },
  },
 ];
@@ -249,7 +256,7 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
  `}
  >
  {isSelected && (
- <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+ <Check className={`w-2.5 h-2.5 ${config.colorClasses.checkmark}`} strokeWidth={3} />
  )}
  </div>
  {/* Icon */}

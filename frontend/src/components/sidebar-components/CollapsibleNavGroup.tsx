@@ -45,11 +45,11 @@ export function CollapsibleNavGroup({
   showShortcutHint = false,
   sectionId
 }: CollapsibleNavGroupProps) {
-  // Badge color class mapping
+  // Badge color class mapping - Feature #692: Use proper foreground tokens
   const badgeColorClass = {
-    amber: 'bg-warning',
-    red: 'bg-destructive',
-    primary: 'bg-primary'
+    amber: 'bg-warning text-warning-foreground',
+    red: 'bg-destructive text-destructive-foreground',
+    primary: 'bg-primary text-primary-foreground'
   }[badgeColor];
 
   // When sidebar is collapsed, show just the icon or a small indicator
@@ -70,13 +70,13 @@ export function CollapsibleNavGroup({
           )}
           {/* Feature #1505: Shortcut hint when G is pressed */}
           {showShortcutHint && shortcutKey && (
-            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] text-white font-bold animate-pulse shadow-lg">
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] text-primary-foreground font-bold animate-pulse shadow-lg">
               {shortcutKey}
             </span>
           )}
           {/* Badge when collapsed - takes priority over active indicator (when not showing shortcut) */}
           {!showShortcutHint && badgeCount > 0 ? (
-            <span className={`absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full ${badgeColorClass} text-[10px] text-white font-bold`}>
+            <span className={`absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full ${badgeColorClass} text-[10px] font-bold`}>
               {badgeCount > 9 ? '!' : badgeCount}
             </span>
           ) : !showShortcutHint && hasActiveChild && (
@@ -103,13 +103,13 @@ export function CollapsibleNavGroup({
           <span className="text-xs font-semibold uppercase tracking-wider">{label}</span>
           {/* Feature #1505: Shortcut hint when G is pressed */}
           {showShortcutHint && shortcutKey && (
-            <span className="flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] text-white font-bold animate-pulse">
+            <span className="flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] text-primary-foreground font-bold animate-pulse">
               {shortcutKey}
             </span>
           )}
           {/* Badge - takes priority over active indicator (when not showing shortcut) */}
           {!showShortcutHint && badgeCount > 0 ? (
-            <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full ${badgeColorClass} text-xs text-white font-bold px-1`}>
+            <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full ${badgeColorClass} text-xs font-bold px-1`}>
               {badgeCount > 99 ? '99+' : badgeCount}
             </span>
           ) : !showShortcutHint && !isExpanded && hasActiveChild && (

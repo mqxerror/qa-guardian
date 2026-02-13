@@ -4,9 +4,10 @@
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ClipboardCheck, CheckCircle } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { EmptyState } from '../components/ui/EmptyState';
 
 interface ApprovalInfo {
   status: 'pending' | 'approved' | 'rejected';
@@ -295,9 +296,12 @@ export function AITestReviewPage() {
                   </div>
                 ))}
                 {(activeTab === 'pending' ? queueData?.pending : queueData?.recently_reviewed)?.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    {activeTab === 'pending' ? 'No tests pending review' : 'No recently reviewed tests'}
-                  </div>
+                  <EmptyState
+                    icon={activeTab === 'pending' ? <ClipboardCheck className="h-12 w-12" strokeWidth={1.5} /> : <CheckCircle className="h-12 w-12" strokeWidth={1.5} />}
+                    title={activeTab === 'pending' ? 'No tests pending review' : 'No recently reviewed tests'}
+                    description={activeTab === 'pending' ? 'AI-generated tests will appear here for your review.' : 'Tests you review will appear here.'}
+                    size="sm"
+                  />
                 )}
               </div>
             )}

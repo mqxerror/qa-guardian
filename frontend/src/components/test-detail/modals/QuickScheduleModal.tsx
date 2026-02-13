@@ -3,6 +3,7 @@
 // Feature #633: Migrated to Modal/ModalHeader/ModalBody/ModalFooter
 
 import React, { useState } from 'react';
+import { Clock } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 
 interface QuickScheduleModalProps {
@@ -52,9 +53,7 @@ export function QuickScheduleModal({
  {/* Custom Header with icon */}
  <div className="flex items-center gap-3 p-4 sm:p-6 border-b border-border">
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
- <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
- </svg>
+ <Clock className="h-6 w-6 text-primary" />
  </div>
  <h2 className="text-lg font-semibold text-foreground">Schedule Test</h2>
  </div>

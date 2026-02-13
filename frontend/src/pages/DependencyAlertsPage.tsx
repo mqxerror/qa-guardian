@@ -8,6 +8,7 @@ import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
 // Type definitions
 interface DependencyAlertConfig {
@@ -433,13 +434,11 @@ export function DependencyAlertsPage() {
  {isLoadingAlerts ? (
  <p className="text-center text-muted-foreground py-8">Loading alerts...</p>
  ) : filteredAlerts.length === 0 ? (
- <div className="rounded-lg border border-border bg-card p-12 text-center">
- <span className="text-5xl mb-4 block">{'\u{1F6E1}'}</span>
- <p className="text-lg font-medium text-foreground mb-2">No alerts found</p>
- <p className="text-muted-foreground">
- {config.enabled ? 'No vulnerability alerts match your filters. Simulate a CVE to test the alerting system.' : 'Enable dependency alerts to start receiving CVE notifications.'}
- </p>
- </div>
+ <EmptyState
+ icon={EmptyStateIcons.security}
+ title="No alerts found"
+ description={config.enabled ? 'No vulnerability alerts match your filters. Simulate a CVE to test the alerting system.' : 'Enable dependency alerts to start receiving CVE notifications.'}
+ />
  ) : (
  filteredAlerts.map((alert) => (
  <div key={alert.id} className="rounded-lg border border-border bg-card overflow-hidden">

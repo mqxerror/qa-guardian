@@ -524,3 +524,88 @@ export function useUpdateSelector() {
     },
   });
 }
+
+// ============================================================
+// Feature #701: Step Template Hooks
+// ============================================================
+
+// Step template type
+// Matches InsertTemplateModal.StepTemplate
+export interface StepTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  suite_id?: string;
+  organization_id?: string;
+  steps: Array<{
+    action: string;
+    selector?: string;
+    value?: string;
+    text?: string;
+    url?: string;
+  }>;
+  tags: string[];
+  created_at: string;
+  updated_at?: string;
+}
+
+// Step template query keys
+export const stepTemplateKeys = {
+  all: ['step-templates'] as const,
+  listBySuite: (suiteId: string) => [...stepTemplateKeys.all, 'suite', suiteId] as const,
+};
+
+/**
+ * Feature #701: Hook to fetch step templates for a suite
+ */
+export function useStepTemplates(suiteId: string | undefined) {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: stepTemplateKeys.listBySuite(suiteId || ''),
+    queryFn: () => fetchWithAuth(`/api/v1/step-templates?suite_id=${suiteId}`, token) as Promise<{ templates: StepTemplate[] }>,
+    enabled: !!token && !!suiteId,
+    staleTime: 60 * 1000, // 1 minute
+    gcTime: 120 * 1000,
+  });
+}
+
+/**
+ * Feature #701: Hook to insert template steps into an existing test
+ */
+export function useInsertTemplateSteps() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ testId, steps }: { testId: string; steps: TestStep[]; suiteId?: string }) =>
+      fetchWithAuth(`/api/v1/tests/${testId}/append-steps`, token, {
+        method: 'POST',
+        body: JSON.stringify({ steps }),
+      }),
+    onSuccess: (_, { testId, suiteId }) => {
+      queryClient.invalidateQueries({ queryKey: testKeys.detail(testId) });
+      if (suiteId) {
+        queryClient.invalidateQueries({ queryKey: testKeys.listBySuite(suiteId) });
+      }
+    },
+  });
+}
+
+/**
+ * Feature #701: Hook to delete a step template
+ */
+export function useDeleteStepTemplate() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ templateId, suiteId }: { templateId: string; suiteId: string }) =>
+      fetchWithAuth(`/api/v1/step-templates/${templateId}`, token, {
+        method: 'DELETE',
+      }),
+    onSuccess: (_, { suiteId }) => {
+      queryClient.invalidateQueries({ queryKey: stepTemplateKeys.listBySuite(suiteId) });
+    },
+  });
+}

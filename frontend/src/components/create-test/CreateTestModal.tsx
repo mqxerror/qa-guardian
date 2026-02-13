@@ -53,13 +53,14 @@ const TEST_TYPE_ICON_MAP: Record<string, LucideIcon> = {
   load: BarChart3,
 };
 
-const TEST_TYPE_COLOR_MAP: Record<string, { selected: string; checkbox: string }> = {
-  blue: { selected: 'border-primary bg-primary/5 text-primary', checkbox: 'border-primary bg-primary' },
-  purple: { selected: 'border-accent bg-accent/5 text-accent', checkbox: 'border-accent bg-accent' },
-  green: { selected: 'border-success bg-success/5 text-success', checkbox: 'border-success bg-success' },
-  amber: { selected: 'border-warning bg-warning/5 text-warning', checkbox: 'border-warning bg-warning' },
-  orange: { selected: 'border-warning bg-warning/5 text-warning', checkbox: 'border-warning bg-warning' },
-  red: { selected: 'border-destructive bg-destructive/5 text-destructive', checkbox: 'border-destructive bg-destructive' },
+// Feature #692: Added checkmark token for proper foreground colors on checkbox backgrounds
+const TEST_TYPE_COLOR_MAP: Record<string, { selected: string; checkbox: string; checkmark: string }> = {
+  blue: { selected: 'border-primary bg-primary/5 text-primary', checkbox: 'border-primary bg-primary', checkmark: 'text-primary-foreground' },
+  purple: { selected: 'border-accent bg-accent/5 text-accent', checkbox: 'border-accent bg-accent', checkmark: 'text-accent-foreground' },
+  green: { selected: 'border-success bg-success/5 text-success', checkbox: 'border-success bg-success', checkmark: 'text-success-foreground' },
+  amber: { selected: 'border-warning bg-warning/5 text-warning', checkbox: 'border-warning bg-warning', checkmark: 'text-warning-foreground' },
+  orange: { selected: 'border-warning bg-warning/5 text-warning', checkbox: 'border-warning bg-warning', checkmark: 'text-warning-foreground' },
+  red: { selected: 'border-destructive bg-destructive/5 text-destructive', checkbox: 'border-destructive bg-destructive', checkmark: 'text-destructive-foreground' },
 };
 
 /**
@@ -97,7 +98,7 @@ const TestTypeGrid: React.FC<TestTypeGridProps> = ({ testSelection, toggleTestTy
               }`}
             >
               {testSelection[key] && (
-                <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                <Check className={`w-2.5 h-2.5 ${(TEST_TYPE_COLOR_MAP[config.color] || TEST_TYPE_COLOR_MAP.blue).checkmark}`} strokeWidth={3} />
               )}
             </div>
             <Icon className="w-4 h-4" />

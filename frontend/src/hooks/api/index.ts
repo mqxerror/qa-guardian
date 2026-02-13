@@ -28,6 +28,9 @@ export {
   useStartRun,
   useCancelRun,
   useStartSuiteRun,  // Feature #143
+  // Feature #701: Run result selector update hooks
+  useUpdateRunSelector,
+  useAcceptHealedSelector,
   useInvalidateRuns,
   runKeys,
   type TestRun,
@@ -83,12 +86,20 @@ export {
   useUpdateSuite,
   useDeleteSuite,
   useInvalidateSuites,
+  // Feature #701: Review settings and AI health check hooks
+  useReviewSettings,
+  useToggleHumanReview,
+  useAIHealthCheck,
   suiteKeys,
   type TestSuite,
   type PaginatedSuitesResponse,
   type SuitesQueryParams,
   type CreateSuiteInput,
   type UpdateSuiteInput,
+  // Feature #701: Review settings types
+  type ReviewStats,
+  type ReviewSettingsResponse,
+  type AIHealthReport,
 } from './useSuites';
 
 // Tests hooks
@@ -104,6 +115,11 @@ export {
   useBatchReviewTests,  // Feature #143
   useDuplicateTest,     // Feature #143
   useUpdateSelector,    // Feature #143
+  // Feature #701: Step template hooks
+  useStepTemplates,
+  useInsertTemplateSteps,
+  useDeleteStepTemplate,
+  stepTemplateKeys,
   useInvalidateTests,
   testKeys,
   type Test,
@@ -112,6 +128,8 @@ export {
   type TestsQueryParams,
   type CreateTestInput,
   type UpdateTestInput,
+  // Feature #701: Step template type
+  type StepTemplate,
 } from './useTests';
 
 // Dashboard hooks (Feature #70)
@@ -137,3 +155,33 @@ export {
 
 // Real-time cache invalidation (Feature #96)
 export { useRealtimeCacheInvalidation } from './useRealtimeCacheInvalidation';
+
+// Organization hooks (Feature #84, #690)
+export {
+  useAuditLogs,
+  useAuditLogActions,
+  useAuditLogResourceTypes,
+  useApiKeys,
+  useCreateApiKey,
+  useDeleteApiKey,
+  useWebhooks,
+  useCreateWebhook,
+  useUpdateWebhook,
+  useDeleteWebhook,
+  useWebhookLogs,
+  useInvalidateOrganization,
+  organizationKeys,
+  // Feature #690: Invitation hooks
+  useInvitation,
+  useAcceptInvitation,
+  invitationKeys,
+  type AuditLogEntry,
+  type AuditLogsResponse,
+  type AuditLogsParams,
+  type ApiKey,
+  type CreateApiKeyParams,
+  type WebhookSubscription,
+  type WebhookDeliveryLog,
+  type CreateWebhookParams,
+  type Invitation,
+} from './useOrganization';

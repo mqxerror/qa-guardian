@@ -18,6 +18,8 @@ import {
  type CreateScheduleInput,
 } from '../hooks/api/useSchedules';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
+import { EmptyState } from '../components/ui/EmptyState';
+import { Clock } from 'lucide-react';
 import { PageHeader } from '../components/ui';
 import { Loader2, X } from 'lucide-react';
 
@@ -425,20 +427,12 @@ export function SchedulesPage() {
  )}
 
  {schedules.length === 0 ? (
- <div className="rounded-lg border border-border bg-card p-8 text-center">
- <h3 className="text-lg font-semibold text-foreground">No schedules yet</h3>
- <p className="mt-2 text-muted-foreground">
- Create a schedule to automatically run your test suites.
- </p>
- {canCreateSchedule && (
- <button
- onClick={() => setShowCreateModal(true)}
- className="mt-4 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
- >
- Create Schedule
- </button>
- )}
- </div>
+ <EmptyState
+ icon={<Clock className="h-12 w-12" strokeWidth={1.5} />}
+ title="No schedules yet"
+ description="Create a schedule to automatically run your test suites at regular intervals."
+ action={canCreateSchedule ? { label: 'Create Schedule', onClick: () => setShowCreateModal(true) } : undefined}
+ />
  ) : (
  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
  {schedules.map((schedule) => (

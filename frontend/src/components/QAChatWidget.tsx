@@ -556,9 +556,9 @@ function QAChatWidget() {
         aria-label={isOpen ? 'Close QA Chat' : 'Open QA Chat'}
       >
         {isOpen ? (
-          <X className="h-6 w-6 text-white" />
+          <X className="h-6 w-6 text-destructive-foreground" />
         ) : (
-          <MessageSquare className="h-6 w-6 text-white" />
+          <MessageSquare className="h-6 w-6 text-primary-foreground" />
         )}
       </button>
 

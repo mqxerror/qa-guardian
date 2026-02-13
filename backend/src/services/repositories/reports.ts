@@ -177,7 +177,7 @@ function parseSummaryRow(row: ReportSummaryRow): ReportSummary {
  */
 export async function storeReport(report: ComprehensiveReport): Promise<ComprehensiveReport> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<ReportRow>(
       `INSERT INTO reports (
         id, project_id, project_name, created_at, created_by,
         title, description, period, executive_summary, sections,
@@ -213,7 +213,7 @@ export async function storeReport(report: ComprehensiveReport): Promise<Comprehe
  */
 export async function getReport(reportId: string): Promise<ComprehensiveReport | undefined> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<ReportRow>(
       `SELECT ${REPORT_FULL_COLUMNS} FROM reports WHERE id = $1`,
       [reportId]
     );
@@ -244,7 +244,7 @@ export async function listReports(projectId?: string, limit: number = 100): Prom
     sql += ` ORDER BY created_at DESC LIMIT $${paramIndex}`;
     params.push(limit);
 
-    const result = await query<any>(sql, params);
+    const result = await query<ReportSummaryRow>(sql, params);
     if (result) {
       return result.rows.map(parseSummaryRow);
     }
@@ -282,7 +282,7 @@ export async function getReportCount(projectId?: string): Promise<number> {
       params.push(projectId);
     }
 
-    const result = await query<any>(sql, params);
+    const result = await query<{ count: string }>(sql, params);
     if (result && result.rows[0]) {
       return parseInt(result.rows[0].count, 10);
     }
@@ -299,7 +299,7 @@ export async function getReportCount(projectId?: string): Promise<number> {
  */
 export async function getReportsByOrganization(organizationId: string, limit: number = 100): Promise<ReportSummary[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<ReportSummaryRow>(
       `SELECT ${REPORT_SUMMARY_COLUMNS} FROM reports WHERE organization_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [organizationId, limit]
     );
@@ -318,7 +318,7 @@ export async function getReportsByOrganization(organizationId: string, limit: nu
  */
 export async function getRecentReports(limit: number = 10): Promise<ReportSummary[]> {
   if (isDatabaseConnected()) {
-    const result = await query<any>(
+    const result = await query<ReportSummaryRow>(
       `SELECT ${REPORT_SUMMARY_COLUMNS} FROM reports ORDER BY created_at DESC LIMIT $1`,
       [limit]
     );
@@ -362,7 +362,7 @@ export async function updateReport(
     }
 
     values.push(reportId);
-    const result = await query<any>(
+    const result = await query<ReportRow>(
       `UPDATE reports SET ${setClauses.join(', ')}, updated_at = NOW() WHERE id = $${paramIndex} RETURNING *`,
       values
     );

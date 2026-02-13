@@ -1,6 +1,7 @@
 /**
  * LighthouseSharedSections - Shared sections for Lighthouse results
  * Feature #103: Extracted from MetricsTab.tsx
+ * Feature #691: Migrated filmstrip lightbox to shared Modal component
  *
  * Contains:
  * - FilmstripSection
@@ -8,9 +9,10 @@
  * - DiagnosticsSection
  * - SecurityInsightsSection
  */
-import React from 'react';
-import { ChevronRight, ChevronDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronRight, ChevronDown, X } from 'lucide-react';
 import { LighthouseResult } from '../types';
+import { Modal, ModalBody } from '../../ui/Modal';
 
 // Opportunity item from Lighthouse audit
 interface LighthouseOpportunity {
@@ -39,8 +41,12 @@ interface LighthouseWithFilmstrip {
   filmstrip?: FilmstripFrame[];
 }
 
-// Filmstrip Section
-export const FilmstripSection: React.FC<{ lighthouse: LighthouseWithFilmstrip }> = ({ lighthouse }) => (
+// Filmstrip Section - Feature #691: Converted from DOM manipulation to React state + Modal
+export const FilmstripSection: React.FC<{ lighthouse: LighthouseWithFilmstrip }> = ({ lighthouse }) => {
+ const [selectedFrame, setSelectedFrame] = useState<FilmstripFrame | null>(null);
+
+ return (
+ <>
  <div className="border border-border rounded-xl p-5 mb-6 shadow-sm bg-card">
  <h4 className="font-semibold text-foreground flex items-center gap-2 mb-4">
  <span className="text-lg">🎬</span> Page Load Filmstrip
@@ -49,20 +55,11 @@ export const FilmstripSection: React.FC<{ lighthouse: LighthouseWithFilmstrip }>
  </span>
  </h4>
  <div className="flex gap-2 overflow-x-auto pb-2">
- {lighthouse.filmstrip?.map((frame: { timestamp_ms: number; screenshot_base64: string; label?: string }, idx: number) => (
+ {lighthouse.filmstrip?.map((frame: FilmstripFrame, idx: number) => (
  <div
  key={idx}
  className="flex-shrink-0 cursor-pointer group"
- onClick={() => {
- const img = document.createElement('img');
- img.src = `data:image/png;base64,${frame.screenshot_base64}`;
- img.className = 'max-w-full max-h-full';
- const modal = document.createElement('div');
- modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4';
- modal.onclick = () => modal.remove();
- modal.appendChild(img);
- document.body.appendChild(modal);
- }}
+ onClick={() => setSelectedFrame(frame)}
  >
  <div className="relative">
  <img
@@ -90,7 +87,28 @@ export const FilmstripSection: React.FC<{ lighthouse: LighthouseWithFilmstrip }>
  ))}
  </div>
  </div>
-);
+
+ {/* Lightbox Modal */}
+ <Modal
+ isOpen={selectedFrame !== null}
+ onClose={() => setSelectedFrame(null)}
+ title="Filmstrip Frame"
+ size="full"
+ className="bg-black/90 border-none"
+ >
+ <ModalBody className="flex items-center justify-center p-4 min-h-[60vh]">
+ {selectedFrame && (
+ <img
+ src={`data:image/png;base64,${selectedFrame.screenshot_base64}`}
+ alt={`Frame at ${selectedFrame.timestamp_ms}ms`}
+ className="max-w-full max-h-[80vh] object-contain"
+ />
+ )}
+ </ModalBody>
+ </Modal>
+ </>
+ );
+};
 
 // Opportunities Section
 export interface OpportunitiesSectionProps {
