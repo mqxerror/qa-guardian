@@ -113,7 +113,7 @@ export function TestImprovementAnalyzerPage() {
    description="Analyze your tests for best practices, selectors, assertions, and flakiness risks"
    breadcrumbs={[
      { label: 'Home', href: '/' },
-     { label: 'Tools', href: '/openapi-generator' },
+     { label: 'AI Features', href: '/ai/flaky-tests' },
      { label: 'Test Analyzer' }
    ]}
  />

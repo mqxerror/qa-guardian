@@ -67,7 +67,7 @@ const SuiteRunHistoryPage = lazy(() => import('./pages/SuiteRunHistoryPage').the
 const ProjectRunHistoryPage = lazy(() => import('./pages/ProjectRunHistoryPage').then(m => ({ default: m.ProjectRunHistoryPage })));
 const RunHistoryPage = lazy(() => import('./pages/RunHistoryPage').then(m => ({ default: m.RunHistoryPage })));
 const ServicesPage = lazy(() => import('./pages/ServicesPage').then(m => ({ default: m.ServicesPage })));
-const OpenAPITestGeneratorPage = lazy(() => import('./pages/OpenAPITestGeneratorPage').then(m => ({ default: m.OpenAPITestGeneratorPage })));
+// Feature #886: OpenAPITestGeneratorPage removed - very niche feature
 const QuickTestPage = lazy(() => import('./pages/QuickTestPage').then(m => ({ default: m.QuickTestPage })));
 const CompareQuickTestPage = lazy(() => import('./pages/CompareQuickTestPage').then(m => ({ default: m.CompareQuickTestPage })));
 
@@ -426,16 +426,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/ai/openapi-generator"
-          element={
-            <ProtectedRoute>
-              <PageErrorBoundary>
-                <OpenAPITestGeneratorPage />
-              </PageErrorBoundary>
-            </ProtectedRoute>
-          }
-        />
+        {/* Feature #886: /ai/openapi-generator route removed - very niche feature */}
         <Route
           path="/monitoring"
           element={

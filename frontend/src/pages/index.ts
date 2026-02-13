@@ -70,7 +70,7 @@ export { ProjectRunHistoryPage } from './ProjectRunHistoryPage'; // Feature #185
 export { RunHistoryPage } from './RunHistoryPage'; // Feature #1855: Global run history
 export { ServicesPage } from './ServicesPage'; // Feature #2128: Platform Services Dashboard
 export { WebhookIntegrationGuidesPage } from './WebhookIntegrationGuidesPage'; // Feature #323: Integration guides
-export { OpenAPITestGeneratorPage } from './OpenAPITestGeneratorPage'; // Feature #324: OpenAPI to Playwright test generation
+// Feature #886: OpenAPITestGeneratorPage removed - very niche feature
 
 // All major pages have been extracted from App.tsx
 // Feature #1441: Split App.tsx into logical modules - COMPLETE
