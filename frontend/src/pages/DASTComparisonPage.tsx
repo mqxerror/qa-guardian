@@ -1,7 +1,7 @@
 // Feature #756: DAST Comparison Between Scans
 // Feature #7: Real DAST scanning with lightweight scanner fallback
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { Button } from '../components/ui/button';
@@ -11,7 +11,6 @@ import { useAuthStore } from '../stores/authStore';
 
 import type {
   DASTCompareRisk,
-  DASTCompareConfidence,
   DASTCompareAlert,
   DASTCompareScan,
   DASTComparisonResult,
@@ -21,7 +20,6 @@ import type { ProjectOption } from '@/types/organization';
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 export function DASTComparisonPage() {
- const navigate = useNavigate();
  const [searchParams] = useSearchParams();
  const { token } = useAuthStore();
  const [selectedScan1, setSelectedScan1] = useState<string>('');

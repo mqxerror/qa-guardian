@@ -28,7 +28,7 @@ function AIRouterPage() {
 
   // Feature #1327: Provider Hot-Swap State
   const [activeProvider, setActiveProvider] = useState<ActiveProviderState | null>(null);
-  const [changeLogs, setChangeLogs] = useState<ProviderChangeLog[]>([]);
+  const [, setChangeLogs] = useState<ProviderChangeLog[]>([]);
   const [isSwitching, setIsSwitching] = useState(false);
   const [switchResult, setSwitchResult] = useState<ProviderSwitchResult | null>(null);
   const [showSwitchModal, setShowSwitchModal] = useState(false);

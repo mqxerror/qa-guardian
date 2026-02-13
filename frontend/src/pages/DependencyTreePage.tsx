@@ -1,7 +1,6 @@
 // DependencyTreePage - Feature #271
 // Interactive dependency tree visualization with vulnerability highlighting
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { PageHeader } from '../components/ui';
 import { Button } from '../components/ui/button';
@@ -10,7 +9,6 @@ import { ChevronRight, AlertCircle, Package, Shield, AlertTriangle, Search, Load
 import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
 import type {
-  DependencyVulnerability as Vulnerability,
   Dependency,
   TreeNode,
   AllDependenciesResponse,
@@ -86,7 +84,6 @@ const languageConfig: Record<string, { color: string; icon: string }> = {
 };
 
 export function DependencyTreePage() {
-  const navigate = useNavigate();
   const { token } = useAuthStore();
 
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);

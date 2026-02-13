@@ -1,7 +1,6 @@
 // Container Image Scanning with Trivy - Feature #269
 // Scan Docker images for OS-level vulnerabilities
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { Button } from '../components/ui/button';
@@ -24,8 +23,6 @@ import {
 } from 'lucide-react';
 
 import type {
-  ContainerVulnerability as Vulnerability,
-  ContainerLayer as Layer,
   ContainerScanResult as ScanResult,
 } from '@/types/security';
 
@@ -44,7 +41,6 @@ const severityBorderColors = {
 };
 
 export function ContainerScanPage() {
-  const navigate = useNavigate();
   const { token } = useAuthStore();
   const [imageName, setImageName] = useState('nginx:latest');
   const [scanning, setScanning] = useState(false);

@@ -20,7 +20,6 @@ import type {
   GeneratedTest,
   VersionHistory,
   GenerationOptions,
-  ApprovalInfo,
   SavedGeneration,
 } from '@/types/ai';
 
@@ -169,14 +168,6 @@ export function AITestGeneratorPage() {
  setError(`Generation failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
  } finally {
  setIsGenerating(false);
- }
- };
-
- const handleCopy = async () => {
- if (generatedTest?.test_code) {
- await navigator.clipboard.writeText(generatedTest.test_code);
- setCopied(true);
- setTimeout(() => setCopied(false), 2000);
  }
  };
 

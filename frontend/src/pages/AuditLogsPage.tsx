@@ -1,7 +1,7 @@
 // AuditLogsPage extracted from App.tsx for code quality compliance (Feature #1357)
 // Feature #689: Migrated from raw fetch to React Query hooks
 import { useState } from 'react';
-import { Loader2, FileText } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { Button } from '@/components/ui/button';

@@ -7,7 +7,6 @@ import { useState } from 'react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 import { useApiKeys, useCreateApiKey, useDeleteApiKey } from '../hooks/api/useOrganization';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
@@ -18,7 +17,6 @@ import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import type { ApiKey } from '@/types/organization';
 
 export function ApiKeysPage() {
-  const { user } = useAuthStore();
   const { formatDate } = useTimezoneStore();
 
   // Feature #690: React Query hooks for data fetching and mutations

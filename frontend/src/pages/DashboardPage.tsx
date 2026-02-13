@@ -97,10 +97,6 @@ export function DashboardPage() {
     return trends.slice(-14);
   }, [trendsData]);
 
-  // Calculate trend based on pass rate
-  const _passRateTrend = displayStats.pass_rate >= 80 ? 'up' as const :
-    displayStats.pass_rate >= 50 ? 'neutral' as const : 'down' as const;
-
   // Feature #871: Calculate if attention is needed
   const needsAttention = recentFailures.length > 0 || topFlakyTests.length > 0;
 

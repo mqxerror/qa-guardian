@@ -4,12 +4,11 @@
 // FEATURE #711: Migrated to React Query hooks
 // ============================================================================
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
-import { ArrowLeft, RefreshCw, DollarSign, Zap, FileInput, FileOutput, Building2, Brain, TrendingUp, Settings } from 'lucide-react';
+import { RefreshCw, DollarSign, Zap, FileInput, FileOutput, Building2, Brain, TrendingUp, Settings } from 'lucide-react';
 import { PageHeader } from '../components/ui';
 import { Button } from '@/components/ui/button';
 // Feature #691: Migrated budget modal to shared Modal component
@@ -41,7 +40,6 @@ import type {
 // ============================================================================
 
 export function AIAnalyticsPage() {
-  const navigate = useNavigate();
   const token = useAuthStore(state => state.token);
   const queryClient = useQueryClient();
 

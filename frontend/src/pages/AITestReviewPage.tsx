@@ -15,7 +15,6 @@ import { useAuthStore } from '../stores/authStore';
 import { fetchWithAuth } from '../hooks/api/fetchWithAuth';
 
 import type {
-  ApprovalInfo,
   PendingTest,
   ReviewQueueData,
   ApprovalStats,

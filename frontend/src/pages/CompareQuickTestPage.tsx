@@ -25,9 +25,6 @@ import { Button } from '@/components/ui/button';
 import {
   // Zap, // Unused
   Globe,
-  Shield,
-  Gauge,
-  Brain,
   CheckCircle2,
   XCircle,
   Loader2,
@@ -39,8 +36,6 @@ import {
   TrendingDown,
   Minus,
   AlertCircle,
-  Accessibility,
-  Network,
   ArrowLeft,
 } from 'lucide-react';
 
@@ -49,7 +44,6 @@ import type {
   WaveState,
   QuickTestSummary,
   CompareState,
-  ScoreDelta,
 } from '@/types/tests';
 
 // ============================================================

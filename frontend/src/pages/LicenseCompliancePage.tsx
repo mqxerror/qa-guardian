@@ -130,17 +130,6 @@ export function LicenseCompliancePage() {
     });
   }, [scanResult]);
 
-  // Compute summary from category perspective
-  const categorySummary = useMemo(() => {
-    const byCat: Record<string, number> = {};
-    const byRisk = { low: 0, medium: 0, high: 0 };
-    for (const pkg of displayPackages) {
-      byCat[pkg.display.category] = (byCat[pkg.display.category] || 0) + 1;
-      byRisk[pkg.display.riskLevel]++;
-    }
-    return { byCat, byRisk };
-  }, [displayPackages]);
-
   // Filter packages
   const filteredDeps = useMemo(() => {
     return displayPackages.filter(d => {
