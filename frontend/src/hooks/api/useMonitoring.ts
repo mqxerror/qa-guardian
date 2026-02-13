@@ -408,6 +408,23 @@ export function useStatusSubscribe() {
   });
 }
 
+/**
+ * Hook to verify a status page subscription (dev mode)
+ * Feature #712: Add hook to eliminate raw fetch() in PublicStatusPage
+ */
+export function useStatusVerify() {
+  return useMutation({
+    mutationFn: async (verifyUrl: string) => {
+      const response = await fetch(verifyUrl);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to verify subscription');
+      }
+      return data as { message: string };
+    },
+  });
+}
+
 // ============== Monitoring Settings Hooks ==============
 // Feature #708: React Query hooks for MonitoringPage settings
 // Types imported from components/monitoring/types.ts for compatibility

@@ -1,51 +1,15 @@
 // ServicesPage - Platform Services Dashboard
 // Feature #2128: Services Dashboard page with card grid layout
 // Feature #2130: Auto-refresh, health history dots, toast notifications
+// Feature #712: Migrated from raw fetch() to React Query
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronRight, RefreshCw, AlertCircle } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
-import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
-
-interface ServiceCapability {
-  name: string;
-  status: 'implemented' | 'simulated' | 'planned' | 'not_available';
-}
-
-interface ContainerInfo {
-  container_name: string;
-  container_status: string;
-  uptime: string;
-  ports: string;
-  image: string;
-}
-
-interface ServiceInfo {
-  name: string;
-  category: string;
-  status: 'healthy' | 'degraded' | 'unavailable' | 'not_configured';
-  latency_ms: number | null;
-  version: string | null;
-  last_checked: string;
-  error?: string;
-  capabilities: ServiceCapability[];
-  config_hints?: string[];
-  details?: { label: string; value: string }[];
-  container?: ContainerInfo | null;
-}
-
-interface ServicesResponse {
-  overall_status: string;
-  total_services: number;
-  healthy_count: number;
-  degraded_count: number;
-  unavailable_count: number;
-  not_configured_count: number;
-  checked_at: string;
-  services: ServiceInfo[];
-}
+// Feature #712: React Query hook for services status
+import { useServicesStatus, type ServiceInfo, type ServicesResponse } from '../hooks/api/useServices';
 
 type HealthStatus = 'healthy' | 'degraded' | 'unavailable' | 'not_configured';
 
@@ -232,88 +196,62 @@ function LoadingSkeleton() {
 }
 
 export function ServicesPage() {
-  const { token } = useAuthStore();
-  const [data, setData] = useState<ServicesResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [nextRefreshIn, setNextRefreshIn] = useState(AUTO_REFRESH_INTERVAL / 1000);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const previousStatusRef = useRef<Record<string, HealthStatus>>({});
   const [healthHistory, setHealthHistory] = useState<Record<string, HealthStatus[]>>({});
 
-  const fetchServices = useCallback(async (isAutoRefresh = false) => {
-    try {
-      if (!isAutoRefresh) setLoading(true);
-      setError(null);
-      const response = await fetch('/api/v1/services/status', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch services: ${response.status} ${response.statusText}`);
-      }
-      const json: ServicesResponse = await response.json();
+  // Feature #712: React Query hook for services status with auto-refresh
+  const {
+    data,
+    isLoading: loading,
+    error: queryError,
+    refetch,
+    dataUpdatedAt,
+  } = useServicesStatus({
+    refetchInterval: autoRefresh ? AUTO_REFRESH_INTERVAL : false,
+  });
 
-      // Check for status changes and show toast notifications
-      const prevStatuses = previousStatusRef.current;
-      json.services.forEach((service) => {
-        const prev = prevStatuses[service.name];
-        if (prev && prev !== service.status) {
-          const wasHealthy = prev === 'healthy';
-          const isHealthy = service.status === 'healthy';
-          if (wasHealthy && !isHealthy) {
-            toast.error(`${service.name} is now ${service.status}`);
-          } else if (!wasHealthy && isHealthy) {
-            toast.success(`${service.name} is now healthy`);
-          }
+  const error = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load services') : null;
+
+  // Handle status change notifications when data updates
+  useEffect(() => {
+    if (!data) return;
+
+    // Check for status changes and show toast notifications
+    const prevStatuses = previousStatusRef.current;
+    data.services.forEach((service) => {
+      const prev = prevStatuses[service.name];
+      if (prev && prev !== service.status) {
+        const wasHealthy = prev === 'healthy';
+        const isHealthy = service.status === 'healthy';
+        if (wasHealthy && !isHealthy) {
+          toast.error(`${service.name} is now ${service.status}`);
+        } else if (!wasHealthy && isHealthy) {
+          toast.success(`${service.name} is now healthy`);
         }
-      });
-
-      // Update previous statuses
-      const newStatuses: Record<string, HealthStatus> = {};
-      json.services.forEach((s) => { newStatuses[s.name] = s.status; });
-      previousStatusRef.current = newStatuses;
-
-      // Update health history (last MAX_HISTORY checks per service)
-      setHealthHistory((prev) => {
-        const updated = { ...prev };
-        json.services.forEach((s) => {
-          const existing = updated[s.name] || [];
-          updated[s.name] = [...existing, s.status].slice(-MAX_HISTORY);
-        });
-        return updated;
-      });
-
-      setData(json);
-      setNextRefreshIn(AUTO_REFRESH_INTERVAL / 1000);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load services';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchServices();
-  }, [fetchServices]);
-
-  // Auto-refresh interval
-  useEffect(() => {
-    if (autoRefresh) {
-      intervalRef.current = setInterval(() => {
-        fetchServices(true);
-      }, AUTO_REFRESH_INTERVAL);
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
       }
-    };
-  }, [autoRefresh, fetchServices]);
+    });
+
+    // Update previous statuses
+    const newStatuses: Record<string, HealthStatus> = {};
+    data.services.forEach((s) => { newStatuses[s.name] = s.status; });
+    previousStatusRef.current = newStatuses;
+
+    // Update health history (last MAX_HISTORY checks per service)
+    setHealthHistory((prev) => {
+      const updated = { ...prev };
+      data.services.forEach((s) => {
+        const existing = updated[s.name] || [];
+        updated[s.name] = [...existing, s.status].slice(-MAX_HISTORY);
+      });
+      return updated;
+    });
+
+    // Reset countdown on data update
+    setNextRefreshIn(AUTO_REFRESH_INTERVAL / 1000);
+  }, [data, dataUpdatedAt]);
 
   // Countdown timer
   useEffect(() => {
@@ -373,7 +311,7 @@ export function ServicesPage() {
                 {autoRefresh && <span className="text-muted-foreground">({nextRefreshIn}s)</span>}
               </label>
               <button
-                onClick={() => fetchServices()}
+                onClick={() => refetch()}
                 disabled={loading}
                 className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-muted/50 disabled:opacity-50 transition-colors"
               >
@@ -428,7 +366,7 @@ export function ServicesPage() {
               <AlertCircle className="w-5 h-5 text-destructive" />
               <p className="text-sm text-destructive">{error}</p>
             </div>
-            <button onClick={() => fetchServices()} className="mt-2 text-sm text-destructive hover:underline">
+            <button onClick={() => refetch()} className="mt-2 text-sm text-destructive hover:underline">
               Try Again
             </button>
           </div>

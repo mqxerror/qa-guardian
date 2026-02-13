@@ -219,6 +219,70 @@ export function useUpdateProject() {
 }
 
 /**
+ * Hook to archive/unarchive a project
+ * Feature #712: React Query migration for archive action
+ */
+export function useArchiveProject() {
+  const token = useAuthStore(state => state.token);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
+      fetchWithAuth(`/api/v1/projects/${id}/archive`, token, {
+        method: 'POST',
+        body: JSON.stringify({ archived }),
+      }),
+    // Optimistic update: toggle archived status immediately
+    onMutate: async ({ id, archived }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: projectKeys.lists() });
+
+      // Snapshot previous values for rollback
+      const previousProjectsFalse = queryClient.getQueryData<ProjectsResponse>(
+        projectKeys.list(false)
+      );
+      const previousProjectsTrue = queryClient.getQueryData<ProjectsResponse>(
+        projectKeys.list(true)
+      );
+
+      // Optimistically update project in both lists
+      const updateList = (projects: Project[] | undefined) =>
+        projects?.map((p) =>
+          p.id === id
+            ? { ...p, archived, archived_at: archived ? new Date().toISOString() : undefined }
+            : p
+        );
+
+      if (previousProjectsFalse) {
+        queryClient.setQueryData<ProjectsResponse>(projectKeys.list(false), {
+          projects: updateList(previousProjectsFalse.projects) || [],
+        });
+      }
+      if (previousProjectsTrue) {
+        queryClient.setQueryData<ProjectsResponse>(projectKeys.list(true), {
+          projects: updateList(previousProjectsTrue.projects) || [],
+        });
+      }
+
+      return { previousProjectsFalse, previousProjectsTrue };
+    },
+    // Rollback on error
+    onError: (_err, _vars, context) => {
+      if (context?.previousProjectsFalse) {
+        queryClient.setQueryData(projectKeys.list(false), context.previousProjectsFalse);
+      }
+      if (context?.previousProjectsTrue) {
+        queryClient.setQueryData(projectKeys.list(true), context.previousProjectsTrue);
+      }
+    },
+    // Always refetch after error or success
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
+    },
+  });
+}
+
+/**
  * Hook to delete a project
  * Feature #109: Added optimistic updates for immediate UI feedback
  */

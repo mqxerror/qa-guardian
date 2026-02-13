@@ -10,7 +10,8 @@ import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { getErrorMessage, isNetworkError, isOffline } from '../utils/errorHandling';
 // Feature #71: Import React Query hooks for caching
-import { useProjects, useCreateProject, useInvalidateProjects } from '../hooks/api/useProjects';
+// Feature #712: Added useArchiveProject to eliminate raw fetch()
+import { useProjects, useCreateProject, useArchiveProject } from '../hooks/api/useProjects';
 // Feature #126: Empty state component
 import { EmptyStates } from '../components/ui/EmptyState';
 // Feature #337: Design system components
@@ -50,9 +51,10 @@ export function ProjectsPage() {
   const navigate = useNavigate();
 
   // Feature #71: React Query hooks for caching - projects load instantly on revisit
-  const { data: projectsData, isLoading, refetch: refetchProjects } = useProjects(showArchived);
+  // Feature #712: Added archiveProjectMutation to eliminate raw fetch()
+  const { data: projectsData, isLoading } = useProjects(showArchived);
   const createProjectMutation = useCreateProject();
-  const { invalidateLists } = useInvalidateProjects();
+  const archiveProjectMutation = useArchiveProject();
 
   // Derive projects from React Query data
   const projects = (projectsData?.projects || []) as Project[];
@@ -95,27 +97,20 @@ export function ProjectsPage() {
   // Feature #71: React Query handles fetching automatically based on showArchived
   // No manual useEffect needed - query key changes when showArchived changes
 
-  // Handle archive/unarchive - Feature #71: Invalidate cache after archive
-  const handleArchiveProject = async (projectId: string, archive: boolean) => {
+  // Feature #712: Handle archive/unarchive using React Query mutation
+  const handleArchiveProject = (projectId: string, archive: boolean) => {
     setArchivingProjectId(projectId);
-    try {
-      const response = await fetch(`/api/v1/projects/${projectId}/archive`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+    archiveProjectMutation.mutate(
+      { id: projectId, archived: archive },
+      {
+        onSettled: () => {
+          setArchivingProjectId(null);
         },
-        body: JSON.stringify({ archived: archive }),
-      });
-      if (response.ok) {
-        // Feature #71: Invalidate cache to refetch with updated data
-        invalidateLists();
+        onError: (err) => {
+          toast.error(`Failed to ${archive ? 'archive' : 'unarchive'} project`);
+        },
       }
-    } catch (err) {
-      console.error('Failed to archive project:', err);
-    } finally {
-      setArchivingProjectId(null);
-    }
+    );
   };
 
   // Escape key handling moved to Modal component

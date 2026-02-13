@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 // Feature #690: React Query hooks for data fetching
-import { usePublicStatus, useStatusSubscribe } from '../hooks/api/useMonitoring';
+// Feature #712: Added useStatusVerify to eliminate raw fetch()
+import { usePublicStatus, useStatusSubscribe, useStatusVerify } from '../hooks/api/useMonitoring';
 
 // Feature #1296: Public Status Page
 // Feature #636: Adopt Modal component in page-level inline modals
@@ -11,8 +12,10 @@ export function PublicStatusPage() {
   const { slug } = useParams<{ slug: string }>();
 
   // Feature #690: React Query hooks for data fetching and mutations
+  // Feature #712: Added verifyMutation to eliminate raw fetch()
   const { data: statusData, isLoading, error: fetchError } = usePublicStatus(slug);
   const subscribeMutation = useStatusSubscribe();
+  const verifyMutation = useStatusVerify();
 
   // Subscribe modal state
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
@@ -55,23 +58,19 @@ export function PublicStatusPage() {
     }
   };
 
-  // Handle verification (for dev mode)
+  // Feature #712: Handle verification using React Query mutation
   const handleVerify = async () => {
     if (!subscribeResult?.dev_verify_url) return;
 
     try {
-      const response = await fetch(subscribeResult.dev_verify_url);
-      const data = await response.json();
-
-      if (response.ok) {
-        setSubscribeResult({
-          success: true,
-          message: data.message || 'Subscription verified! You will now receive incident notifications.',
-        });
-        setSubscribeEmail('');
-      }
+      const data = await verifyMutation.mutateAsync(subscribeResult.dev_verify_url);
+      setSubscribeResult({
+        success: true,
+        message: data.message || 'Subscription verified! You will now receive incident notifications.',
+      });
+      setSubscribeEmail('');
     } catch (err) {
-      console.error('Verification failed:', err);
+      // Mutation handles error internally
     }
   };
 
