@@ -23,7 +23,6 @@ export { OrganizationMembersPage } from './OrganizationMembersPage';
 export { AuditLogsPage } from './AuditLogsPage';
 export { WebhookConfigurationPage } from './WebhookConfigurationPage';
 export { DASTComparisonPage } from './DASTComparisonPage';
-export { DASTGraphQLPage } from './DASTGraphQLPage';
 export { TrivyDependencyScanPage } from './TrivyDependencyScanPage';
 export { NpmAuditPage } from './NpmAuditPage';
 export { LicenseCompliancePage } from './LicenseCompliancePage';

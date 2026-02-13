@@ -35,7 +35,6 @@ const PublicStatusPage = lazy(() => import('./pages/PublicStatusPage').then(m =>
 const SharedTestRunPage = lazy(() => import('./pages/SharedTestRunPage'));
 const WebhookIntegrationGuidesPage = lazy(() => import('./pages/WebhookIntegrationGuidesPage').then(m => ({ default: m.WebhookIntegrationGuidesPage })));
 const DASTComparisonPage = lazy(() => import('./pages/DASTComparisonPage').then(m => ({ default: m.DASTComparisonPage })));
-const DASTGraphQLPage = lazy(() => import('./pages/DASTGraphQLPage').then(m => ({ default: m.DASTGraphQLPage })));
 const TrivyDependencyScanPage = lazy(() => import('./pages/TrivyDependencyScanPage').then(m => ({ default: m.TrivyDependencyScanPage })));
 const NpmAuditPage = lazy(() => import('./pages/NpmAuditPage').then(m => ({ default: m.NpmAuditPage })));
 const LicenseCompliancePage = lazy(() => import('./pages/LicenseCompliancePage').then(m => ({ default: m.LicenseCompliancePage })));
@@ -323,16 +322,6 @@ function App() {
             <ProtectedRoute>
               <PageErrorBoundary>
                 <DASTComparisonPage />
-              </PageErrorBoundary>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/security/dast-graphql"
-          element={
-            <ProtectedRoute>
-              <PageErrorBoundary>
-                <DASTGraphQLPage />
               </PageErrorBoundary>
             </ProtectedRoute>
           }
