@@ -1,7 +1,9 @@
 // Feature #338: Dark-first auth page with premium design
 // Feature #402: Lazy-load framer-motion for reduced bundle size
+// Feature #712: Migrated to React Query - useResetPassword mutation
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { LazyMotionWrapper, m } from '../components/LazyMotion';
 import { BackgroundBeams, Input } from '../components/aceternity';
 import { ArrowLeft, KeyRound, CheckCircle, XCircle, CheckCircle2, Loader2 } from 'lucide-react';
@@ -14,9 +16,33 @@ export function ResetPasswordPage() {
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // React Query mutation for reset password
+  const resetPasswordMutation = useMutation({
+    mutationFn: async ({ token, password }: { token: string; password: string }) => {
+      const response = await fetch('/api/v1/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to reset password');
+      }
+      return data;
+    },
+    onSuccess: () => {
+      setIsSuccess(true);
+    },
+    onError: (err: Error) => {
+      setError(err.message || 'Failed to reset password');
+    },
+  });
+
+  const isLoading = resetPasswordMutation.isPending;
 
   // Get password strength for visual indicator
   const getPasswordStrength = (pwd: string): { score: number; label: string; color: string } => {
@@ -35,7 +61,7 @@ export function ResetPasswordPage() {
 
   const passwordStrength = getPasswordStrength(password);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -64,29 +90,12 @@ export function ResetPasswordPage() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('/api/v1/auth/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to reset password');
-      }
-
-      setIsSuccess(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reset password');
-    } finally {
-      setIsLoading(false);
+    if (!token) {
+      setError('Invalid reset token');
+      return;
     }
+
+    resetPasswordMutation.mutate({ token, password });
   };
 
   // Invalid token state

@@ -1,10 +1,12 @@
 // Feature #1350: AI Test Improvement Analyzer
 // Extracted from App.tsx for code quality compliance
+// Feature #712: Migrated to React Query - useAnalyzeTestImprovements mutation
 
 import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
-// import { devLog } from '../utils/logger'; // Unused
+import { fetchWithAuth } from '../hooks/api/fetchWithAuth';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 
@@ -44,7 +46,7 @@ interface TestImprovementAnalysis {
 }
 
 export function TestImprovementAnalyzerPage() {
- const { token } = useAuthStore();
+ const token = useAuthStore(state => state.token);
  const [testCode, setTestCode] = useState<string>(`test('user can login successfully', async ({ page }) => {
  await page.goto('https://example.com/login');
  await page.fill('.email-input', 'user@example.com');
@@ -58,43 +60,46 @@ export function TestImprovementAnalyzerPage() {
  const [testType, setTestType] = useState<'e2e' | 'unit' | 'integration' | 'visual' | 'api'>('e2e');
  const [framework, setFramework] = useState<'playwright' | 'cypress' | 'selenium' | 'jest' | 'mocha'>('playwright');
  const [analysis, setAnalysis] = useState<TestImprovementAnalysis | null>(null);
- const [isAnalyzing, setIsAnalyzing] = useState(false);
  const [activeTab, setActiveTab] = useState<'best-practices' | 'selectors' | 'assertions' | 'flakiness'>('best-practices');
 
- const analyzeTest = async () => {
- if (!testCode.trim()) return;
-
- setIsAnalyzing(true);
- try {
- const response = await fetch('/api/v1/ai/analyze-test-improvements', {
- method: 'POST',
- headers: {
- 'Content-Type': 'application/json',
- 'Authorization': `Bearer ${token}`,
- },
- body: JSON.stringify({
- test_code: testCode,
- test_name: testName,
- test_type: testType,
- framework,
- include_best_practices: true,
- include_selector_analysis: true,
- include_assertion_suggestions: true,
- include_flakiness_analysis: true,
- }),
+ // React Query mutation for test analysis
+ const analyzeMutation = useMutation({
+   mutationFn: async (data: {
+     test_code: string;
+     test_name: string;
+     test_type: string;
+     framework: string;
+   }) => {
+     const response = await fetchWithAuth('/api/v1/ai/analyze-test-improvements', token, {
+       method: 'POST',
+       body: JSON.stringify({
+         ...data,
+         include_best_practices: true,
+         include_selector_analysis: true,
+         include_assertion_suggestions: true,
+         include_flakiness_analysis: true,
+       }),
+     });
+     return response;
+   },
+   onSuccess: (data: { analysis: TestImprovementAnalysis }) => {
+     setAnalysis(data.analysis);
+   },
+   onError: (error: Error) => {
+     console.error('Error analyzing test:', error);
+   },
  });
 
- if (!response.ok) {
- throw new Error('Failed to analyze test');
- }
+ const isAnalyzing = analyzeMutation.isPending;
 
- const data = await response.json();
- setAnalysis(data.analysis);
- } catch (error) {
- console.error('Error analyzing test:', error);
- } finally {
- setIsAnalyzing(false);
- }
+ const analyzeTest = () => {
+   if (!testCode.trim()) return;
+   analyzeMutation.mutate({
+     test_code: testCode,
+     test_name: testName,
+     test_type: testType,
+     framework,
+   });
  };
 
  const getSeverityBadge = (severity: string) => {

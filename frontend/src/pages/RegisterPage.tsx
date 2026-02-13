@@ -1,7 +1,9 @@
 // Feature #338: Dark-first auth page with premium design
 // Feature #402: Lazy-load framer-motion for reduced bundle size
+// Feature #712: Migrated to React Query - useRegister mutation
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { LazyMotionWrapper, m } from '../components/LazyMotion';
 import { getErrorMessage } from '../utils/errorHandling';
 import { BackgroundBeams, Input } from '../components/aceternity';
@@ -17,7 +19,31 @@ export function RegisterPage() {
   const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+
+  // React Query mutation for registration
+  const registerMutation = useMutation({
+    mutationFn: async (data: { name: string; email: string; password: string }) => {
+      const response = await fetch('/api/v1/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.message || 'Registration failed');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      navigate('/login', { state: { message: 'Registration successful! Please login.' } });
+    },
+    onError: (err: Error) => {
+      setError(getErrorMessage(err, 'Registration failed. Please try again.'));
+    },
+  });
+
+  const isLoading = registerMutation.isPending;
 
   // Email validation helper
   const isValidEmail = (email: string) => {
@@ -89,7 +115,7 @@ export function RegisterPage() {
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -112,30 +138,7 @@ export function RegisterPage() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('/api/v1/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      // Redirect to login on success
-      navigate('/login', { state: { message: 'Registration successful! Please login.' } });
-    } catch (err) {
-      // Use enhanced error handling for network errors
-      setError(getErrorMessage(err, 'Registration failed. Please try again.'));
-    } finally {
-      setIsLoading(false);
-    }
+    registerMutation.mutate({ name, email, password });
   };
 
   const passwordStrength = getPasswordStrength(password);
