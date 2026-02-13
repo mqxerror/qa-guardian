@@ -18,6 +18,19 @@ import { createLogger } from '../../services/logger.js';
 // Create logger for this module
 const log = createLogger('route:status-pages');
 import { logAuditEntry } from '../audit-logs.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  statusPageIdParamsSchema,
+  statusPageIncidentParamsSchema,
+  statusPageSlugParamsSchema,
+  createStatusPageBodySchema,
+  updateStatusPageBodySchema,
+  createStatusPageIncidentBodySchema,
+  createStatusPageIncidentUpdateBodySchema,
+  statusPageSubscribeBodySchema,
+} from '../../validation/index.js';
 // generateId, generateSimpleId - imported but not used after refactoring
 import {
   StatusPage,
@@ -243,6 +256,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/status-pages',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateBody(createStatusPageBodySchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -317,6 +331,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/status-pages/:pageId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer', 'viewer'])],
+      preValidation: [validateParams(statusPageIdParamsSchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -336,6 +351,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/status-pages/:pageId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateParams(statusPageIdParamsSchema), validateBody(updateStatusPageBodySchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -393,6 +409,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/status-pages/:pageId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateParams(statusPageIdParamsSchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -499,6 +516,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/status-pages/:pageId/incidents',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateParams(statusPageIdParamsSchema), validateBody(createStatusPageIncidentBodySchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -601,6 +619,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/status-pages/:pageId/incidents/:incidentId/updates',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateParams(statusPageIncidentParamsSchema), validateBody(createStatusPageIncidentUpdateBodySchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -677,6 +696,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/status-pages/:pageId/incidents/:incidentId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateParams(statusPageIncidentParamsSchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -717,6 +737,9 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
   // Public status page view by slug
   app.get(
     '/api/v1/status/:slug',
+    {
+      preValidation: [validateParams(statusPageSlugParamsSchema)],
+    },
     async (request, reply) => {
       const { slug } = request.params as { slug: string };
 
@@ -825,6 +848,9 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
   // Subscribe to status page notifications
   app.post(
     '/api/v1/status/:slug/subscribe',
+    {
+      preValidation: [validateParams(statusPageSlugParamsSchema), validateBody(statusPageSubscribeBodySchema)],
+    },
     async (request, reply) => {
       const { slug } = request.params as { slug: string };
       const { email } = request.body as { email?: string };
@@ -915,6 +941,9 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
   // Verify subscription
   app.get(
     '/api/v1/status/:slug/verify',
+    {
+      preValidation: [validateParams(statusPageSlugParamsSchema)],
+    },
     async (request, reply) => {
       const { slug } = request.params as { slug: string };
       const { token } = request.query as { token?: string };
@@ -964,6 +993,9 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
   // Unsubscribe from status page
   app.get(
     '/api/v1/status/:slug/unsubscribe',
+    {
+      preValidation: [validateParams(statusPageSlugParamsSchema)],
+    },
     async (request, reply) => {
       const { slug } = request.params as { slug: string };
       const { token } = request.query as { token?: string };

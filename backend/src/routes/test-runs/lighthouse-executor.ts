@@ -71,6 +71,41 @@ function resolveLighthouseBin(): string {
 // ============================================================================
 
 /**
+ * Feature #719: Typed Lighthouse report from CLI JSON output.
+ * Represents the subset of the Lighthouse Result (LHR) we access.
+ */
+interface LighthouseReportAudit {
+  score?: number | null;
+  numericValue?: number;
+  title?: string;
+  description?: string;
+  details?: {
+    type?: string;
+    overallSavingsMs?: number;
+    items?: unknown[];
+  };
+}
+
+interface LighthouseReportCategory {
+  score?: number | null;
+}
+
+interface LighthouseReport {
+  categories: Record<string, LighthouseReportCategory>;
+  audits: Record<string, LighthouseReportAudit>;
+}
+
+/**
+ * Feature #719: Typed error object for classifyLighthouseError.
+ */
+interface LighthouseErrorContext {
+  isAuditTimeout?: boolean;
+  isBrowserCrash?: boolean;
+  isNonHtmlResponse?: boolean;
+  message?: string;
+}
+
+/**
  * Lighthouse test configuration
  */
 export interface LighthouseTestConfig {
@@ -97,12 +132,12 @@ export interface LighthouseExecutionContext {
   orgId: string;
   test: LighthouseTestConfig;
   networkRequests: NetworkRequest[];
-  emitRunEvent: (runId: string, orgId: string, event: string, data: any) => void;
+  emitRunEvent: (runId: string, orgId: string, event: string, data: Record<string, unknown>) => void;
   testSuites: Map<string, { id: string; name: string; project_id: string }>;
   // Simulation state getters
   getSimulatedLighthouseError: () => { enabled: boolean; errorType?: string; sslErrorCode?: string };
   setSimulatedLighthouseError: (value: { enabled: boolean }) => void;
-  getSimulatedAuditTimeout: () => { enabled: boolean; partialMetrics?: any };
+  getSimulatedAuditTimeout: () => { enabled: boolean; partialMetrics?: Partial<LighthouseMetrics> };
   setSimulatedAuditTimeout: (value: { enabled: boolean }) => void;
   getSimulatedLighthouseBrowserCrash: () => { enabled: boolean };
   setSimulatedLighthouseBrowserCrash: (value: { enabled: boolean }) => void;
@@ -592,7 +627,7 @@ export async function runRealLighthouseAudit(
     child.on('exit', () => clearTimeout(safetyTimer));
   });
 
-  let lhr: any;
+  let lhr: LighthouseReport;
   try {
     lhr = JSON.parse(lhrJson);
   } catch {
@@ -622,7 +657,7 @@ export async function runRealLighthouseAudit(
  * Extract category scores from the Lighthouse report.
  * Lighthouse scores are 0-1 floats; we convert to 0-100 integers.
  */
-function extractScores(lhr: any): RealLighthouseAuditResult['scores'] {
+function extractScores(lhr: LighthouseReport): RealLighthouseAuditResult['scores'] {
   const cat = lhr.categories;
   return {
     performance: Math.round((cat.performance?.score ?? 0) * 100),
@@ -636,7 +671,7 @@ function extractScores(lhr: any): RealLighthouseAuditResult['scores'] {
  * Extract core web vitals and timing metrics from the Lighthouse report.
  * Numeric values are in milliseconds (except CLS which is unitless).
  */
-function extractMetrics(lhr: any): LighthouseMetrics {
+function extractMetrics(lhr: LighthouseReport): LighthouseMetrics {
   const audits = lhr.audits;
   return {
     firstContentfulPaint: audits['first-contentful-paint']?.numericValue ?? 0,
@@ -654,17 +689,17 @@ function extractMetrics(lhr: any): LighthouseMetrics {
  * Extract performance opportunities from Lighthouse audits.
  * Opportunities are audits with details.type === 'opportunity' and positive savings.
  */
-function extractOpportunities(lhr: any): LighthouseOpportunity[] {
+function extractOpportunities(lhr: LighthouseReport): LighthouseOpportunity[] {
   const opportunities: LighthouseOpportunity[] = [];
-  for (const [id, audit] of Object.entries<any>(lhr.audits)) {
+  for (const [id, audit] of Object.entries(lhr.audits)) {
     if (
       audit.details?.type === 'opportunity' &&
-      audit.details?.overallSavingsMs > 0
+      (audit.details?.overallSavingsMs ?? 0) > 0
     ) {
       opportunities.push({
         id,
         title: audit.title ?? id,
-        savings: Math.round(audit.details.overallSavingsMs),
+        savings: Math.round(audit.details.overallSavingsMs ?? 0),
         description: audit.description ?? '',
       });
     }
@@ -678,9 +713,9 @@ function extractOpportunities(lhr: any): LighthouseOpportunity[] {
  * Extract diagnostics from Lighthouse audits.
  * Diagnostics are audits with details.type === 'table' and a score below 1.
  */
-function extractDiagnostics(lhr: any): LighthouseDiagnostic[] {
+function extractDiagnostics(lhr: LighthouseReport): LighthouseDiagnostic[] {
   const diagnostics: LighthouseDiagnostic[] = [];
-  for (const [id, audit] of Object.entries<any>(lhr.audits)) {
+  for (const [id, audit] of Object.entries(lhr.audits)) {
     if (
       audit.details?.type === 'table' &&
       typeof audit.score === 'number' &&
@@ -700,9 +735,9 @@ function extractDiagnostics(lhr: any): LighthouseDiagnostic[] {
  * Extract passed audits from Lighthouse audits.
  * Passed audits are those with a score of exactly 1.
  */
-function extractPassedAudits(lhr: any): LighthousePassedAudit[] {
+function extractPassedAudits(lhr: LighthouseReport): LighthousePassedAudit[] {
   const passed: LighthousePassedAudit[] = [];
-  for (const [id, audit] of Object.entries<any>(lhr.audits)) {
+  for (const [id, audit] of Object.entries(lhr.audits)) {
     if (audit.score === 1) {
       passed.push({
         id,
@@ -719,7 +754,7 @@ function extractPassedAudits(lhr: any): LighthousePassedAudit[] {
  */
 export function classifyLighthouseError(
   rawError: string,
-  err: any
+  err: LighthouseErrorContext
 ): {
   errorType: 'dns_resolution' | 'connection_timeout' | 'connection_refused' | 'ssl_error' | 'unreachable' | 'audit_timeout' | 'browser_crash' | 'non_html' | 'unknown';
   sslErrorCode?: string;

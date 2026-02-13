@@ -24,6 +24,9 @@ interface ProviderResponse {
 }
 import { authenticate } from '../../middleware/auth.js';
 
+// Feature #716: Zod validation middleware and schemas
+import { validateBody, aiProviderConfigBodySchema, aiChatBodySchema, aiEstimateCostBodySchema, aiRouterConfigBodySchema, aiRouterChatBodySchema } from '../../validation/index.js';
+
 // Import types and helpers from extracted module
 import {
   KieAIConfig,
@@ -109,6 +112,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
   // Update Kie.ai configuration
   app.patch('/api/v1/ai/kie/config', {
     preHandler: [authenticate],
+    preValidation: [validateBody(aiProviderConfigBodySchema)],
   }, async (request) => {
     const orgId = 'org-001';
     const updates = request.body as Partial<KieAIConfig>;
@@ -188,6 +192,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
   // Chat with Kie.ai
   app.post('/api/v1/ai/kie/chat', {
     preHandler: [authenticate],
+    preValidation: [validateBody(aiChatBodySchema)],
   }, async (request) => {
     const orgId = 'org-001';
     const config = kieAIConfigs.get(orgId);
@@ -320,6 +325,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
   // Calculate estimated cost
   app.post('/api/v1/ai/kie/estimate-cost', {
     preHandler: [authenticate],
+    preValidation: [validateBody(aiEstimateCostBodySchema)],
   }, async (request) => {
     const { input_tokens, output_tokens, thinking_tokens } = request.body as {
       input_tokens: number;
@@ -397,6 +403,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
   // Update Anthropic configuration
   app.patch('/api/v1/ai/anthropic/config', {
     preHandler: [authenticate],
+    preValidation: [validateBody(aiProviderConfigBodySchema)],
   }, async (request) => {
     const orgId = 'org-001';
     const updates = request.body as Partial<AnthropicConfig>;
@@ -481,6 +488,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
   // Chat with Anthropic
   app.post('/api/v1/ai/anthropic/chat', {
     preHandler: [authenticate],
+    preValidation: [validateBody(aiChatBodySchema)],
   }, async (request) => {
     const orgId = 'org-001';
     const config = anthropicConfigs.get(orgId);
@@ -628,6 +636,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
   // Calculate estimated cost
   app.post('/api/v1/ai/anthropic/estimate-cost', {
     preHandler: [authenticate],
+    preValidation: [validateBody(aiEstimateCostBodySchema)],
   }, async (request) => {
     const { model, input_tokens, output_tokens } = request.body as {
       model: string;
@@ -745,6 +754,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
   // Update router configuration
   app.patch('/api/v1/ai/router/config', {
     preHandler: [authenticate],
+    preValidation: [validateBody(aiRouterConfigBodySchema)],
   }, async (request) => {
     const orgId = 'org-001';
     const updates = request.body as Partial<AIRouterConfig>;
@@ -792,6 +802,7 @@ export async function aiProviderRoutes(app: FastifyInstance): Promise<void> {
   // Route a chat request through the AI router
   app.post('/api/v1/ai/router/chat', {
     preHandler: [authenticate],
+    preValidation: [validateBody(aiRouterChatBodySchema)],
   }, async (request) => {
     const orgId = 'org-001';
     const config = routerConfigs.get(orgId);

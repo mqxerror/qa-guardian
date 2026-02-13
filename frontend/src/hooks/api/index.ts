@@ -185,3 +185,77 @@ export {
   type CreateWebhookParams,
   type Invitation,
 } from './useOrganization';
+
+// Organization Settings hooks (Feature #709)
+export {
+  useSessions,
+  useLogoutSession,
+  useLogoutAllSessions,
+  useArtifactRetention,
+  useSaveArtifactRetention,
+  useCleanupPreview,
+  useRunCleanup,
+  useStorageUsage,
+  useMcpConnections,
+  useMcpAuditLogs,
+  useMcpAnalytics,
+  useExportMcpAnalytics,
+  useSlackConnection,
+  useConnectSlack,
+  useDisconnectSlack,
+  useOrgMembers,
+  useAdminMembers,
+  useTransferOwnership,
+  useDeleteOrganization,
+  useInvalidateOrgSettings,
+  orgSettingsKeys,
+  type McpAuditLogsParams,
+} from './useOrganizationSettings';
+
+// Dependency Security hooks (Feature #710)
+export {
+  // Dependency Policy hooks
+  useDependencyPolicies,
+  usePolicyViolations,
+  useCreateDependencyPolicy,
+  useTogglePolicyEnabled,
+  useDeleteDependencyPolicy,
+  useSimulateBuild,
+  useOverrideViolation,
+  // Dependency Alerts hooks
+  useDependencyAlertConfig,
+  useDependencyAlerts,
+  useUpdateDependencyAlertConfig,
+  useSimulateCVE,
+  useUpdateAlertStatus,
+  // Dependency Age hooks
+  useDependencyAgeConfig,
+  useProjectDependencies,
+  useUpdateDependencyAgeConfig,
+  useRefreshDependencies,
+  // Auto-PR hooks
+  useAutoPRConfig,
+  useAutoPRs,
+  useUpdateAutoPRConfig,
+  useScanAndCreatePRs,
+  useUpdateAutoPRStatus,
+  // Invalidation helper
+  useInvalidateDependencySecurity,
+  dependencySecurityKeys,
+  // Types
+  type DependencyPolicy,
+  type PolicyViolation,
+  type ViolationSummary,
+  type CreatePolicyInput,
+  type SimulateBuildResult,
+  type DependencyAlertConfig,
+  type CVEAlert,
+  type AlertSummary,
+  type DependencyAgeConfig,
+  type ProjectDependency,
+  type DependencySummary,
+  type AutoPRConfig,
+  type AutoPR,
+  type AutoPRSummary,
+  type ScanAndCreateResult,
+} from './useDependencySecurity';

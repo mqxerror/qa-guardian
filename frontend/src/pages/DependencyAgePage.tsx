@@ -1,60 +1,43 @@
 // Feature #772: Dependency Age Tracking Page
 // Extracted from App.tsx as part of Feature #1441
+// Feature #710: Migrated to React Query for data fetching
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
-import { useAuthStore } from '../stores/authStore';
-import { Clock, RefreshCw, Settings, AlertTriangle, Check, X } from 'lucide-react';
+import { Clock, RefreshCw, Settings, AlertTriangle, Check } from 'lucide-react';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
-
-// Feature #772: Dependency Age Tracking interfaces
-interface DependencyAgeConfig {
-  outdated_threshold_days: number;
-  critical_age_days: number;
-  track_direct_only: boolean;
-  notify_on_outdated: boolean;
-  auto_flag_outdated: boolean;
-}
-
-interface ProjectDependency {
-  id: string;
-  project_id: string;
-  name: string;
-  current_version: string;
-  latest_version: string;
-  current_release_date: string;
-  latest_release_date: string;
-  age_days: number;
-  versions_behind: number;
-  is_direct: boolean;
-  license: string;
-  status: 'current' | 'outdated' | 'critical' | 'up_to_date';
-  has_vulnerability: boolean;
-  vulnerability_count: number;
-  last_checked: string;
-}
+// Feature #710: React Query hooks
+import {
+  useDependencyAgeConfig,
+  useProjectDependencies,
+  useUpdateDependencyAgeConfig,
+  useRefreshDependencies,
+  type DependencyAgeConfig,
+} from '../hooks/api';
 
 export function DependencyAgePage() {
-  const navigate = useNavigate();
-  // Feature #232: Fixed to use Zustand auth store instead of non-existent localStorage token
-  const token = useAuthStore.getState().token;
+  // Feature #710: React Query hooks for data fetching
+  const { data: configData, isLoading: isLoadingConfig } = useDependencyAgeConfig();
+  // Use demo-project for now (could be parameterized later)
+  const projectId = 'demo-project';
+  const { data: depsData, isLoading: isLoadingDeps } = useProjectDependencies(projectId);
 
-  // Config state
-  const [config, setConfig] = useState<DependencyAgeConfig>({
+  // Mutations
+  const updateConfigMutation = useUpdateDependencyAgeConfig();
+  const refreshMutation = useRefreshDependencies(projectId);
+
+  // Derived data
+  const config = configData?.config || {
     outdated_threshold_days: 180,
     critical_age_days: 365,
     track_direct_only: false,
     notify_on_outdated: true,
     auto_flag_outdated: true,
-  });
-  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
-
-  // Dependencies state
-  const [dependencies, setDependencies] = useState<ProjectDependency[]>([]);
-  const [summary, setSummary] = useState({
+  };
+  const dependencies = depsData?.dependencies || [];
+  const summary = depsData?.summary || {
     total: 0,
     up_to_date: 0,
     current: 0,
@@ -65,9 +48,7 @@ export function DependencyAgePage() {
     transitive: 0,
     average_age_days: 0,
     oldest_days: 0,
-  });
-  const [isLoadingDeps, setIsLoadingDeps] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  };
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<'all' | 'up_to_date' | 'current' | 'outdated' | 'critical'>('all');
@@ -77,75 +58,17 @@ export function DependencyAgePage() {
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [editConfig, setEditConfig] = useState(config);
 
-  // Load config
-  useEffect(() => {
-    const loadConfig = async () => {
-      try {
-        const response = await fetch('/api/v1/organization/dependency-age/config', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setConfig(data.config);
-          setEditConfig(data.config);
-        }
-      } catch (error) {
-        console.error('Failed to load config:', error);
-      } finally {
-        setIsLoadingConfig(false);
-      }
-    };
-    loadConfig();
-  }, [token]);
-
-  // Load dependencies
-  useEffect(() => {
-    const loadDependencies = async () => {
-      try {
-        // Use a demo project ID
-        const response = await fetch('/api/v1/projects/demo-project/dependencies', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setDependencies(data.dependencies || []);
-          setSummary(data.summary);
-        }
-      } catch (error) {
-        console.error('Failed to load dependencies:', error);
-      } finally {
-        setIsLoadingDeps(false);
-      }
-    };
-    loadDependencies();
-  }, [token]);
+  // Update editConfig when config changes
+  if (configData?.config && editConfig.outdated_threshold_days !== configData.config.outdated_threshold_days) {
+    setEditConfig(configData.config);
+  }
 
   // Save config
   const handleSaveConfig = async () => {
     try {
-      const response = await fetch('/api/v1/organization/dependency-age/config', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(editConfig),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setConfig(data.config);
-        setShowConfigModal(false);
-        toast.success('Thresholds updated');
-        // Reload dependencies to reflect new thresholds
-        const depsResponse = await fetch('/api/v1/projects/demo-project/dependencies', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (depsResponse.ok) {
-          const depsData = await depsResponse.json();
-          setDependencies(depsData.dependencies || []);
-          setSummary(depsData.summary);
-        }
-      }
+      await updateConfigMutation.mutateAsync(editConfig);
+      setShowConfigModal(false);
+      toast.success('Thresholds updated');
     } catch (error) {
       toast.error('Failed to save configuration');
     }
@@ -153,26 +76,11 @@ export function DependencyAgePage() {
 
   // Refresh dependencies
   const handleRefresh = async () => {
-    setIsRefreshing(true);
     try {
-      await fetch('/api/v1/projects/demo-project/dependencies/refresh', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      // Reload dependencies
-      const response = await fetch('/api/v1/projects/demo-project/dependencies', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setDependencies(data.dependencies || []);
-        setSummary(data.summary);
-        toast.success('Dependencies refreshed');
-      }
+      await refreshMutation.mutateAsync();
+      toast.success('Dependencies refreshed');
     } catch (error) {
       toast.error('Failed to refresh dependencies');
-    } finally {
-      setIsRefreshing(false);
     }
   };
 
@@ -218,11 +126,11 @@ export function DependencyAgePage() {
               </button>
               <button
                 onClick={handleRefresh}
-                disabled={isRefreshing}
+                disabled={refreshMutation.isPending}
                 className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                <RefreshCw className={`h-4 w-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
+                {refreshMutation.isPending ? 'Refreshing...' : 'Refresh'}
               </button>
             </div>
           }
@@ -439,9 +347,10 @@ export function DependencyAgePage() {
           </button>
           <button
             onClick={handleSaveConfig}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            disabled={updateConfigMutation.isPending}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
-            Save
+            {updateConfigMutation.isPending ? 'Saving...' : 'Save'}
           </button>
         </ModalFooter>
       </Modal>

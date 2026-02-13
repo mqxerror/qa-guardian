@@ -17,6 +17,7 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 // Feature #36: Import device presets for mobile emulation
 import { TestDeviceConfig, resolveDeviceConfig } from './device-presets.js';
 import { createLogger } from '../../services/logger.js';
+import { validateBody, validateParams, recordingIdParamsSchema, startRecordingBodySchema, stopRecordingBodySchema } from '../../validation/index.js';
 
 const logger = createLogger('route:test-runs:recording');
 
@@ -851,6 +852,7 @@ export async function recordingRoutes(app: FastifyInstance) {
     Body: { target_url: string; suite_id: string; device_config?: TestDeviceConfig };
   }>('/api/v1/recording/start', {
     preHandler: [authenticate],
+    preValidation: [validateBody(startRecordingBodySchema)],
   }, async (request, reply) => {
     const { target_url, suite_id, device_config } = request.body;
     const user = request.user as JwtPayload;
@@ -996,6 +998,7 @@ export async function recordingRoutes(app: FastifyInstance) {
     Params: { sessionId: string };
   }>('/api/v1/recording/:sessionId/actions', {
     preHandler: [authenticate],
+    preValidation: [validateParams(recordingIdParamsSchema)],
   }, async (request, reply) => {
     const { sessionId } = request.params;
     const orgId = getOrganizationId(request);
@@ -1028,6 +1031,7 @@ export async function recordingRoutes(app: FastifyInstance) {
     Params: { sessionId: string };
   }>('/api/v1/recording/:sessionId/stop', {
     preHandler: [authenticate],
+    preValidation: [validateParams(recordingIdParamsSchema), validateBody(stopRecordingBodySchema)],
   }, async (request, reply) => {
     const { sessionId } = request.params;
     const orgId = getOrganizationId(request);

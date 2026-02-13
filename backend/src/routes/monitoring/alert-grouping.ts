@@ -41,6 +41,20 @@ import {
 
 import { createLogger } from '../../services/logger.js';
 
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  alertGroupingRuleIdParamsSchema,
+  alertGroupIdParamsSchema,
+  createAlertGroupingRuleBodySchema,
+  updateAlertGroupingRuleBodySchema,
+  alertGroupAcknowledgeBodySchema,
+  alertGroupResolveBodySchema,
+  alertGroupSnoozeBodySchema,
+  alertGroupingSimulateBodySchema,
+} from '../../validation/index.js';
+
 const logger = createLogger('alert-grouping');
 
 export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
@@ -73,6 +87,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-grouping/rules',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateBody(createAlertGroupingRuleBodySchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -157,6 +172,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-grouping/rules/:ruleId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer', 'viewer'])],
+      preValidation: [validateParams(alertGroupingRuleIdParamsSchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -182,6 +198,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-grouping/rules/:ruleId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(alertGroupingRuleIdParamsSchema), validateBody(updateAlertGroupingRuleBodySchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -254,6 +271,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-grouping/rules/:ruleId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateParams(alertGroupingRuleIdParamsSchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -322,6 +340,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-grouping/groups/:groupId/acknowledge',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(alertGroupIdParamsSchema), validateBody(alertGroupAcknowledgeBodySchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -379,6 +398,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-grouping/groups/:groupId/resolve',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(alertGroupIdParamsSchema), validateBody(alertGroupResolveBodySchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -440,6 +460,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-grouping/groups/:groupId/snooze',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(alertGroupIdParamsSchema), validateBody(alertGroupSnoozeBodySchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -501,6 +522,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-grouping/groups/:groupId/unsnooze',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(alertGroupIdParamsSchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -777,6 +799,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-grouping/simulate',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateBody(alertGroupingSimulateBodySchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);

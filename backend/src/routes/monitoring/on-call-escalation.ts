@@ -19,6 +19,17 @@ import {
   escalationPolicies,
 } from './stores.js';
 import { createLogger } from '../../services/logger.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  onCallScheduleIdParamsSchema,
+  escalationPolicyIdParamsSchema,
+  createOnCallScheduleBodySchema,
+  updateOnCallScheduleBodySchema,
+  createEscalationPolicyBodySchema,
+  updateEscalationPolicyBodySchema,
+} from '../../validation/index.js';
 
 const logger = createLogger('on-call-escalation');
 
@@ -57,6 +68,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/on-call',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateBody(createOnCallScheduleBodySchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -124,6 +136,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/on-call/:scheduleId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer', 'viewer'])],
+      preValidation: [validateParams(onCallScheduleIdParamsSchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -148,6 +161,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/on-call/:scheduleId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateParams(onCallScheduleIdParamsSchema), validateBody(updateOnCallScheduleBodySchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -221,6 +235,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/on-call/:scheduleId/rotate',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateParams(onCallScheduleIdParamsSchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -278,6 +293,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/on-call/:scheduleId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateParams(onCallScheduleIdParamsSchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -357,6 +373,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/escalation-policies',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateBody(createEscalationPolicyBodySchema)],
     },
     async (request, reply) => {
       const user = request.user as JwtPayload | ApiKeyPayload;
@@ -448,6 +465,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/escalation-policies/:policyId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer', 'viewer'])],
+      preValidation: [validateParams(escalationPolicyIdParamsSchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -473,6 +491,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/escalation-policies/:policyId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(escalationPolicyIdParamsSchema), validateBody(updateEscalationPolicyBodySchema)],
     },
     async (request, reply) => {
       const user = request.user as JwtPayload | ApiKeyPayload;
@@ -559,6 +578,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/escalation-policies/:policyId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateParams(escalationPolicyIdParamsSchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -590,6 +610,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/escalation-policies/:policyId/test',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(escalationPolicyIdParamsSchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);

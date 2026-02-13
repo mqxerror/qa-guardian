@@ -19,6 +19,20 @@ import { createLogger } from '../../services/logger.js';
 // Create logger for this module
 const logger = createLogger('route:monitoring:alert-correlation');
 
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  correlationIdParamsSchema,
+  alertCorrelationConfigBodySchema,
+  alertCorrelationTestBodySchema,
+  runbookIdParamsSchema,
+  createAlertRunbookBodySchema,
+  updateAlertRunbookBodySchema,
+  testRunbookMatchBodySchema,
+  testAlertDestinationBodySchema,
+} from '../../validation/index.js';
+
 import {
   AlertCorrelationConfig,
   CorrelatedAlert,
@@ -84,6 +98,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/alert-correlation/config',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateBody(alertCorrelationConfigBodySchema)],
     },
     async (request) => {
       const orgId = getOrganizationId(request);
@@ -149,6 +164,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/alert-correlation/correlations/:correlationId',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(correlationIdParamsSchema)],
     },
     async (request, reply) => {
       const { correlationId } = request.params;
@@ -170,6 +186,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/alert-correlation/correlations/:correlationId/acknowledge',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(correlationIdParamsSchema)],
     },
     async (request, reply) => {
       const { correlationId } = request.params;
@@ -197,6 +214,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/alert-correlation/correlations/:correlationId/resolve',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(correlationIdParamsSchema)],
     },
     async (request, reply) => {
       const { correlationId } = request.params;
@@ -224,6 +242,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/alert-correlation/test',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateBody(alertCorrelationTestBodySchema)],
     },
     async (request) => {
       const orgId = getOrganizationId(request);
@@ -427,6 +446,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/alert-runbooks',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateBody(createAlertRunbookBodySchema)],
     },
     async (request) => {
       const orgId = getOrganizationId(request);
@@ -466,6 +486,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/alert-runbooks/:runbookId',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(runbookIdParamsSchema)],
     },
     async (request, reply) => {
       const { runbookId } = request.params;
@@ -496,6 +517,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/alert-runbooks/:runbookId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(runbookIdParamsSchema), validateBody(updateAlertRunbookBodySchema)],
     },
     async (request, reply) => {
       const { runbookId } = request.params;
@@ -528,6 +550,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/alert-runbooks/:runbookId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(runbookIdParamsSchema)],
     },
     async (request, reply) => {
       const { runbookId } = request.params;
@@ -583,6 +606,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/alert-runbooks/test',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateBody(testRunbookMatchBodySchema)],
     },
     async (request) => {
       const orgId = getOrganizationId(request);
@@ -664,6 +688,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     '/api/v1/monitoring/alert-routing/test-destination',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateBody(testAlertDestinationBodySchema)],
     },
     async (request, reply) => {
       const { destination_type, config, test_alert } = request.body;

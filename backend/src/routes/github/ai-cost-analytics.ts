@@ -9,6 +9,8 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate } from '../../middleware/auth.js';
+// Feature #716: Zod validation middleware and schemas
+import { validateBody, aiCostBudgetBodySchema } from '../../validation/index.js';
 
 // =============================================================================
 // TYPES
@@ -468,6 +470,7 @@ export async function aiCostAnalyticsRoutes(app: FastifyInstance): Promise<void>
    */
   app.patch('/api/v1/ai/cost-analytics/budget', {
     preHandler: [authenticate],
+    preValidation: [validateBody(aiCostBudgetBodySchema)],
   }, async (request) => {
     const orgId = 'org-001';
     const { monthlyLimitUsd, alertThreshold } = request.body as {

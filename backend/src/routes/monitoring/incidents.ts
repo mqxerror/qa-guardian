@@ -12,6 +12,17 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload, ApiKeyPayload } from '../../middleware/auth.js';
 import { logAuditEntry } from '../audit-logs.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  incidentIdParamsSchema,
+  createIncidentBodySchema,
+  updateIncidentStatusBodySchema,
+  addIncidentResponderBodySchema,
+  addIncidentNoteBodySchema,
+  resolveIncidentBodySchema,
+} from '../../validation/index.js';
 
 import {
   IncidentNote,
@@ -95,6 +106,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/incidents',
     {
       preHandler: [authenticate],
+      preValidation: [validateBody(createIncidentBodySchema)],
     },
     async (request, reply) => {
       const orgId = getOrganizationId(request);
@@ -190,6 +202,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/incidents/:incidentId',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(incidentIdParamsSchema)],
     },
     async (request, reply) => {
       const { incidentId } = request.params as { incidentId: string };
@@ -229,6 +242,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/incidents/:incidentId/status',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(incidentIdParamsSchema), validateBody(updateIncidentStatusBodySchema)],
     },
     async (request, reply) => {
       const { incidentId } = request.params as { incidentId: string };
@@ -330,6 +344,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/incidents/:incidentId/responders',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(incidentIdParamsSchema), validateBody(addIncidentResponderBodySchema)],
     },
     async (request, reply) => {
       const { incidentId } = request.params as { incidentId: string };
@@ -434,6 +449,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/incidents/:incidentId/notes',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(incidentIdParamsSchema), validateBody(addIncidentNoteBodySchema)],
     },
     async (request, reply) => {
       const { incidentId } = request.params as { incidentId: string };
@@ -529,6 +545,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/incidents/:incidentId/resolve',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(incidentIdParamsSchema), validateBody(resolveIncidentBodySchema)],
     },
     async (request, reply) => {
       const { incidentId } = request.params as { incidentId: string };

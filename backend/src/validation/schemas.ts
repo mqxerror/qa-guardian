@@ -1860,6 +1860,170 @@ export const updateEscalationPolicyBodySchema = createEscalationPolicyBodySchema
   is_active: z.boolean().optional(),
 }).partial();
 
+// ============================================
+// Feature #716: Recording Routes Schemas
+// ============================================
+
+export const recordingIdParamsSchema = z.object({
+  sessionId: z.string().min(1, 'Session ID is required'),
+});
+
+export const startRecordingBodySchema = z.object({
+  url: z.string().url('Valid URL is required'),
+  name: z.string().optional(),
+  browser: browserSchema.optional(),
+  viewport: z.object({
+    width: z.number().int().positive().optional(),
+    height: z.number().int().positive().optional(),
+  }).optional(),
+});
+
+export const stopRecordingBodySchema = z.object({
+  name: z.string().optional(),
+  description: z.string().optional(),
+  suite_id: z.string().optional(),
+});
+
+// ============================================
+// Feature #716: Visual Batch Routes Schemas
+// ============================================
+
+export const visualBatchApproveBodySchema = z.object({
+  diff_ids: z.array(z.string().min(1)).min(1, 'At least one diff ID is required'),
+  note: z.string().optional(),
+});
+
+export const visualBatchRejectBodySchema = z.object({
+  diff_ids: z.array(z.string().min(1)).min(1, 'At least one diff ID is required'),
+  reason: z.string().optional(),
+});
+
+// ============================================
+// Feature #716: Dependency Scanning Schemas
+// ============================================
+
+export const depScanProjectIdParamsSchema = z.object({
+  projectId: z.string().min(1, 'Project ID is required'),
+});
+
+export const depScanIdParamsSchema = z.object({
+  scanId: z.string().min(1, 'Scan ID is required'),
+});
+
+export const depVulnIdParamsSchema = z.object({
+  vulnId: z.string().min(1, 'Vulnerability ID is required'),
+});
+
+export const triggerDepScanBodySchema = z.object({
+  project_id: z.string().min(1).optional(),
+  include_dev: z.boolean().optional(),
+  severity_threshold: z.enum(['critical', 'high', 'medium', 'low']).optional(),
+});
+
+export const depPolicyBodySchema = z.object({
+  name: z.string().min(1, 'Policy name is required'),
+  rules: z.array(z.object({
+    type: z.string().min(1),
+    severity: z.enum(['critical', 'high', 'medium', 'low']).optional(),
+    action: z.enum(['block', 'warn', 'allow']).optional(),
+  })).optional(),
+  enabled: z.boolean().optional(),
+});
+
+export const depPolicyIdParamsSchema = z.object({
+  policyId: z.string().min(1, 'Policy ID is required'),
+});
+
+export const depAlertIdParamsSchema = z.object({
+  alertId: z.string().min(1, 'Alert ID is required'),
+});
+
+export const depViolationIdParamsSchema = z.object({
+  violationId: z.string().min(1, 'Violation ID is required'),
+});
+
+export const depProjectPrParamsSchema = z.object({
+  projectId: z.string().min(1, 'Project ID is required'),
+  prNumber: z.string().min(1, 'PR number is required'),
+});
+
+// ============================================
+// Feature #716: Vulnerability Tracking Schemas
+// ============================================
+
+export const vulnerabilityIdParamsSchema = z.object({
+  vulnerabilityId: z.string().min(1, 'Vulnerability ID is required'),
+});
+
+export const multiLanguageConfigBodySchema = z.object({
+  languages: z.array(z.string().min(1)).optional(),
+  auto_detect: z.boolean().optional(),
+  scan_depth: z.number().int().positive().optional(),
+});
+
+// ============================================
+// Feature #716: AI Providers Schemas
+// ============================================
+
+export const aiProviderConfigBodySchema = z.object({
+  api_key: z.string().optional(),
+  model: z.string().optional(),
+  base_url: z.string().url().optional(),
+  enabled: z.boolean().optional(),
+  max_tokens: z.number().int().positive().optional(),
+  temperature: z.number().min(0).max(2).optional(),
+});
+
+export const aiChatBodySchema = z.object({
+  message: z.string().min(1, 'Message is required'),
+  context: z.string().optional(),
+  model: z.string().optional(),
+  max_tokens: z.number().int().positive().optional(),
+  temperature: z.number().min(0).max(2).optional(),
+});
+
+export const aiEstimateCostBodySchema = z.object({
+  prompt: z.string().min(1, 'Prompt is required'),
+  model: z.string().optional(),
+  max_tokens: z.number().int().positive().optional(),
+});
+
+export const aiRouterConfigBodySchema = z.object({
+  primary_provider: z.string().optional(),
+  fallback_provider: z.string().optional(),
+  failover_enabled: z.boolean().optional(),
+  max_retries: z.number().int().min(0).optional(),
+  timeout_ms: z.number().int().positive().optional(),
+});
+
+export const aiRouterChatBodySchema = z.object({
+  message: z.string().min(1, 'Message is required'),
+  context: z.string().optional(),
+  provider: z.string().optional(),
+  model: z.string().optional(),
+  max_tokens: z.number().int().positive().optional(),
+});
+
+// ============================================
+// Feature #716: AI Cost Analytics Schemas
+// ============================================
+
+export const aiCostBudgetBodySchema = z.object({
+  monthly_budget_usd: z.number().min(0).optional(),
+  daily_budget_usd: z.number().min(0).optional(),
+  alert_threshold_percent: z.number().min(0).max(100).optional(),
+});
+
+// ============================================
+// Feature #716: Test Simulation Schemas (generic)
+// ============================================
+
+export const testSimulationBodySchema = z.object({
+  url: z.string().optional(),
+  scenario: z.string().optional(),
+  config: z.record(z.unknown()).optional(),
+});
+
 // Monitoring Types
 export type AlertRoutingRuleIdParams = z.infer<typeof alertRoutingRuleIdParamsSchema>;
 export type AlertGroupingRuleIdParams = z.infer<typeof alertGroupingRuleIdParamsSchema>;

@@ -28,6 +28,7 @@ import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg, ListTestRunsByOrg
 // Feature #88: Redis caching for pending count
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
 import { createLogger } from '../../services/logger.js';
+import { validateBody, visualBatchApproveBodySchema, visualBatchRejectBodySchema } from '../../validation/index.js';
 
 const logger = createLogger('route:test-runs:visual-batch');
 
@@ -386,6 +387,7 @@ export async function visualBatchRoutes(app: FastifyInstance) {
 
   // Batch approve multiple visual changes
   app.post<{ Body: BatchApproveBody }>('/api/v1/visual/batch-approve', {
+    preValidation: [validateBody(visualBatchApproveBodySchema)],
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { changes } = request.body;
@@ -508,6 +510,7 @@ export async function visualBatchRoutes(app: FastifyInstance) {
 
   // Batch reject multiple visual changes
   app.post<{ Body: BatchRejectBody }>('/api/v1/visual/batch-reject', {
+    preValidation: [validateBody(visualBatchRejectBodySchema)],
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { changes, reason } = request.body;

@@ -14,13 +14,24 @@ import {
 } from './stores.js';
 import { generateApiKey } from './utils.js';
 import { createLogger } from '../../services/logger.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  apiKeyOrgParamsSchema,
+  apiKeyIdParamsSchema,
+  createApiKeyBodySchema,
+  validateMcpKeyBodySchema,
+} from '../../validation/index.js';
 
 const log = createLogger('api-keys');
 
 export async function registerApiKeyRoutes(app: FastifyInstance) {
   // List API keys for organization (only shows prefix, not full key)
+  // Feature #716: Zod validation for org ID param
   app.get<{ Params: OrgParams }>('/api/v1/organizations/:orgId/api-keys', {
     preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+    preValidation: [validateParams(apiKeyOrgParamsSchema)],
   }, async (request, reply) => {
     const { orgId } = request.params;
     const user = request.user as JwtPayload;
@@ -50,8 +61,10 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
   });
 
   // Create new API key (returns full key ONLY at creation time)
+  // Feature #716: Zod validation for org ID param and create body
   app.post<{ Params: OrgParams; Body: CreateApiKeyBody }>('/api/v1/organizations/:orgId/api-keys', {
     preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+    preValidation: [validateParams(apiKeyOrgParamsSchema), validateBody(createApiKeyBodySchema)],
   }, async (request, reply) => {
     const { orgId } = request.params;
     const { name, scopes = ['read'], expires_in_days, rate_limit, rate_limit_window, burst_limit, burst_window } = request.body;
@@ -131,8 +144,10 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
   });
 
   // Revoke (delete) API key
+  // Feature #716: Zod validation for key ID param
   app.delete<{ Params: KeyParams }>('/api/v1/api-keys/:id', {
     preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+    preValidation: [validateParams(apiKeyIdParamsSchema)],
   }, async (request, reply) => {
     const { id } = request.params;
     const user = request.user as JwtPayload;
@@ -160,8 +175,10 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
   });
 
   // Rotate API key (revoke old, create new with same settings)
+  // Feature #716: Zod validation for key ID param
   app.post<{ Params: KeyParams }>('/api/v1/api-keys/:id/rotate', {
     preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+    preValidation: [validateParams(apiKeyIdParamsSchema)],
   }, async (request, reply) => {
     const { id } = request.params;
     const user = request.user as JwtPayload;
@@ -219,7 +236,10 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
   });
 
   // Validate API key for MCP access (called by MCP server)
-  app.post<{ Body: { api_key: string; required_scope?: string } }>('/api/v1/mcp/validate-key', async (request, reply) => {
+  // Feature #716: Zod validation for MCP key validation body
+  app.post<{ Body: { api_key: string; required_scope?: string } }>('/api/v1/mcp/validate-key', {
+    preValidation: [validateBody(validateMcpKeyBodySchema)],
+  }, async (request, reply) => {
     const { api_key, required_scope = 'mcp' } = request.body;
 
     if (!api_key) {

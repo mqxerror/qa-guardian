@@ -1,94 +1,50 @@
 // Feature #770: Dependency Policy Enforcement Page
 // Extracted from App.tsx as part of Feature #1441
+// Feature #710: Migrated to React Query for data fetching
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
-import { useAuthStore } from '../stores/authStore';
 import { Shield, Plus, Play, Check, X, ChevronDown, ChevronRight } from 'lucide-react'; // AlertTriangle unused
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
-
-// Feature #770: Dependency Policy Enforcement interfaces
-interface DependencyPolicy {
-  id: string;
-  organization_id: string;
-  name: string;
-  description?: string;
-  enabled: boolean;
-  max_allowed_severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE';
-  fail_on_critical: boolean;
-  fail_on_high: boolean;
-  fail_on_medium: boolean;
-  fail_on_low: boolean;
-  block_builds: boolean;
-  block_deployments: boolean;
-  block_pr_merge: boolean;
-  grace_period_days: number;
-  exception_patterns: string[];
-  auto_create_fix_pr: boolean;
-  notify_on_violation: boolean;
-  notify_channels: ('slack' | 'email' | 'in_app')[];
-  created_at: string;
-  created_by: string;
-  updated_at: string;
-  updated_by: string;
-}
-
-interface PolicyViolation {
-  id: string;
-  organization_id: string;
-  policy_id: string;
-  policy_name: string;
-  project_id: string;
-  project_name: string;
-  build_id?: string;
-  pr_number?: number;
-  violation_type: 'build' | 'deployment' | 'pr_merge';
-  status: 'blocked' | 'warned' | 'overridden' | 'resolved';
-  violations: Array<{
-    package_name: string;
-    version: string;
-    severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-    cve_id: string;
-    title: string;
-    fixed_version?: string;
-  }>;
-  summary: {
-    total: number;
-    critical: number;
-    high: number;
-    medium: number;
-    low: number;
-  };
-  message: string;
-  overridden_by?: string;
-  overridden_at?: string;
-  override_reason?: string;
-  created_at: string;
-  resolved_at?: string;
-}
+// Feature #710: React Query hooks
+import {
+  useDependencyPolicies,
+  usePolicyViolations,
+  useCreateDependencyPolicy,
+  useTogglePolicyEnabled,
+  useDeleteDependencyPolicy,
+  useSimulateBuild,
+  useOverrideViolation,
+  type DependencyPolicy,
+  type PolicyViolation,
+} from '../hooks/api';
 
 export function DependencyPolicyPage() {
-  const navigate = useNavigate();
-  // Feature #232: Fixed to use Zustand auth store instead of non-existent localStorage token
-  const token = useAuthStore.getState().token;
+  // Feature #710: React Query hooks for data fetching
+  const { data: policiesData, isLoading: isLoadingPolicies } = useDependencyPolicies();
+  const { data: violationsData, isLoading: isLoadingViolations } = usePolicyViolations();
 
-  // Policies state
-  const [policies, setPolicies] = useState<DependencyPolicy[]>([]);
-  const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
+  // Mutations
+  const createPolicyMutation = useCreateDependencyPolicy();
+  const togglePolicyMutation = useTogglePolicyEnabled();
+  const deletePolicyMutation = useDeleteDependencyPolicy();
+  const simulateBuildMutation = useSimulateBuild();
+  const overrideViolationMutation = useOverrideViolation();
 
-  // Violations state
-  const [violations, setViolations] = useState<PolicyViolation[]>([]);
-  const [violationSummary, setViolationSummary] = useState({
+  // Derived data
+  const policies = policiesData?.policies || [];
+  const violations = violationsData?.violations || [];
+  const violationSummary = violationsData?.summary || {
     total: 0,
     blocked: 0,
     warned: 0,
     overridden: 0,
     resolved: 0,
-  });
-  const [isLoadingViolations, setIsLoadingViolations] = useState(true);
+  };
+
+  // UI state
   const [expandedViolation, setExpandedViolation] = useState<string | null>(null);
 
   // Create policy modal state
@@ -124,12 +80,10 @@ export function DependencyPolicyPage() {
     notify_on_violation: true,
     notify_channels: ['in_app'],
   });
-  const [isCreatingPolicy, setIsCreatingPolicy] = useState(false);
 
   // Simulate build modal state
   const [showSimulateBuildModal, setShowSimulateBuildModal] = useState(false);
   const [simulateBuildType, setSimulateBuildType] = useState<'ci' | 'deployment' | 'pr'>('ci');
-  const [isSimulating, setIsSimulating] = useState(false);
   const [simulationResult, setSimulationResult] = useState<{
     allowed: boolean;
     message: string;
@@ -139,125 +93,52 @@ export function DependencyPolicyPage() {
   // Filter state
   const [violationStatusFilter, setViolationStatusFilter] = useState<'all' | 'blocked' | 'warned' | 'overridden' | 'resolved'>('all');
 
-  // Load policies
-  useEffect(() => {
-    const loadPolicies = async () => {
-      try {
-        const response = await fetch('/api/v1/organization/dependency-policies', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setPolicies(data.policies || []);
-        }
-      } catch (error) {
-        console.error('Failed to load policies:', error);
-      } finally {
-        setIsLoadingPolicies(false);
-      }
-    };
-    loadPolicies();
-  }, [token]);
-
-  // Load violations
-  useEffect(() => {
-    const loadViolations = async () => {
-      try {
-        const response = await fetch('/api/v1/organization/dependency-policies/violations', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setViolations(data.violations || []);
-          setViolationSummary(data.summary);
-        }
-      } catch (error) {
-        console.error('Failed to load violations:', error);
-      } finally {
-        setIsLoadingViolations(false);
-      }
-    };
-    loadViolations();
-  }, [token]);
-
-  // Create policy
+  // Create policy handler
   const handleCreatePolicy = async () => {
-    setIsCreatingPolicy(true);
     try {
-      const response = await fetch('/api/v1/organization/dependency-policies', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...newPolicy,
-          exception_patterns: newPolicy.exception_patterns.split(',').map(p => p.trim()).filter(Boolean),
-        }),
+      await createPolicyMutation.mutateAsync({
+        ...newPolicy,
+        exception_patterns: newPolicy.exception_patterns.split(',').map(p => p.trim()).filter(Boolean),
       });
-      if (response.ok) {
-        const data = await response.json();
-        setPolicies([...policies, data.policy]);
-        setShowCreateModal(false);
-        setNewPolicy({
-          name: '',
-          description: '',
-          max_allowed_severity: 'MEDIUM',
-          fail_on_critical: true,
-          fail_on_high: true,
-          fail_on_medium: false,
-          fail_on_low: false,
-          block_builds: true,
-          block_deployments: true,
-          block_pr_merge: false,
-          grace_period_days: 0,
-          exception_patterns: '',
-          notify_on_violation: true,
-          notify_channels: ['in_app'],
-        });
-        toast.success('Policy created successfully');
-      } else {
-        toast.error('Failed to create policy');
-      }
+      setShowCreateModal(false);
+      setNewPolicy({
+        name: '',
+        description: '',
+        max_allowed_severity: 'MEDIUM',
+        fail_on_critical: true,
+        fail_on_high: true,
+        fail_on_medium: false,
+        fail_on_low: false,
+        block_builds: true,
+        block_deployments: true,
+        block_pr_merge: false,
+        grace_period_days: 0,
+        exception_patterns: '',
+        notify_on_violation: true,
+        notify_channels: ['in_app'],
+      });
+      toast.success('Policy created successfully');
     } catch (error) {
       toast.error('Failed to create policy');
-    } finally {
-      setIsCreatingPolicy(false);
     }
   };
 
   // Toggle policy enabled
-  const togglePolicyEnabled = async (policyId: string, enabled: boolean) => {
+  const handleTogglePolicyEnabled = async (policyId: string, enabled: boolean) => {
     try {
-      const response = await fetch(`/api/v1/organization/dependency-policies/${policyId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ enabled }),
-      });
-      if (response.ok) {
-        setPolicies(policies.map(p => p.id === policyId ? { ...p, enabled } : p));
-        toast.success(`Policy ${enabled ? 'enabled' : 'disabled'}`);
-      }
+      await togglePolicyMutation.mutateAsync({ policyId, enabled });
+      toast.success(`Policy ${enabled ? 'enabled' : 'disabled'}`);
     } catch (error) {
       toast.error('Failed to update policy');
     }
   };
 
   // Delete policy
-  const deletePolicy = async (policyId: string) => {
+  const handleDeletePolicy = async (policyId: string) => {
     if (!confirm('Are you sure you want to delete this policy?')) return;
     try {
-      const response = await fetch(`/api/v1/organization/dependency-policies/${policyId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        setPolicies(policies.filter(p => p.id !== policyId));
-        toast.success('Policy deleted');
-      }
+      await deletePolicyMutation.mutateAsync(policyId);
+      toast.success('Policy deleted');
     } catch (error) {
       toast.error('Failed to delete policy');
     }
@@ -265,57 +146,24 @@ export function DependencyPolicyPage() {
 
   // Simulate build
   const handleSimulateBuild = async () => {
-    setIsSimulating(true);
     setSimulationResult(null);
     try {
-      const response = await fetch('/api/v1/organization/dependency-policies/check-build', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          project_id: 'demo-project',
-          build_type: simulateBuildType,
-          pr_number: simulateBuildType === 'pr' ? 123 : undefined,
-        }),
+      const result = await simulateBuildMutation.mutateAsync({
+        project_id: 'demo-project',
+        build_type: simulateBuildType,
+        pr_number: simulateBuildType === 'pr' ? 123 : undefined,
       });
-      if (response.ok) {
-        const data = await response.json();
-        setSimulationResult(data);
-        // Reload violations to show new ones
-        const violationsResponse = await fetch('/api/v1/organization/dependency-policies/violations', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (violationsResponse.ok) {
-          const violationsData = await violationsResponse.json();
-          setViolations(violationsData.violations || []);
-          setViolationSummary(violationsData.summary);
-        }
-      }
+      setSimulationResult(result);
     } catch (error) {
       toast.error('Failed to simulate build');
-    } finally {
-      setIsSimulating(false);
     }
   };
 
   // Override violation
-  const overrideViolation = async (violationId: string, reason: string) => {
+  const handleOverrideViolation = async (violationId: string, reason: string) => {
     try {
-      const response = await fetch(`/api/v1/organization/dependency-policies/violations/${violationId}/override`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ reason }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setViolations(violations.map(v => v.id === violationId ? data.violation : v));
-        toast.success('Violation overridden');
-      }
+      await overrideViolationMutation.mutateAsync({ violationId, reason });
+      toast.success('Violation overridden');
     } catch (error) {
       toast.error('Failed to override violation');
     }
@@ -426,7 +274,8 @@ export function DependencyPolicyPage() {
                           <input
                             type="checkbox"
                             checked={policy.enabled}
-                            onChange={(e) => togglePolicyEnabled(policy.id, e.target.checked)}
+                            onChange={(e) => handleTogglePolicyEnabled(policy.id, e.target.checked)}
+                            disabled={togglePolicyMutation.isPending}
                             className="sr-only peer"
                           />
                           <div className="w-11 h-6 bg-muted peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -446,8 +295,9 @@ export function DependencyPolicyPage() {
                           {policy.block_pr_merge && <span className="px-2 py-1 bg-muted rounded text-muted-foreground">PR Merge</span>}
                         </div>
                         <button
-                          onClick={() => deletePolicy(policy.id)}
-                          className="text-destructive hover:text-destructive/70 transition-colors"
+                          onClick={() => handleDeletePolicy(policy.id)}
+                          disabled={deletePolicyMutation.isPending}
+                          className="text-destructive hover:text-destructive/70 transition-colors disabled:opacity-50"
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -555,11 +405,12 @@ export function DependencyPolicyPage() {
                             <button
                               onClick={() => {
                                 const reason = prompt('Enter override reason:');
-                                if (reason) overrideViolation(violation.id, reason);
+                                if (reason) handleOverrideViolation(violation.id, reason);
                               }}
-                              className="px-4 py-2 bg-accent text-primary-foreground rounded-lg hover:bg-accent transition-colors"
+                              disabled={overrideViolationMutation.isPending}
+                              className="px-4 py-2 bg-accent text-primary-foreground rounded-lg hover:bg-accent transition-colors disabled:opacity-50"
                             >
-                              Override &amp; Allow Build
+                              {overrideViolationMutation.isPending ? 'Processing...' : 'Override & Allow Build'}
                             </button>
                           </div>
                         )}
@@ -718,10 +569,10 @@ export function DependencyPolicyPage() {
           </button>
           <button
             onClick={handleCreatePolicy}
-            disabled={!newPolicy.name || isCreatingPolicy}
+            disabled={!newPolicy.name || createPolicyMutation.isPending}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
-            {isCreatingPolicy ? 'Creating...' : 'Create Policy'}
+            {createPolicyMutation.isPending ? 'Creating...' : 'Create Policy'}
           </button>
         </ModalFooter>
       </Modal>
@@ -776,11 +627,11 @@ export function DependencyPolicyPage() {
           </button>
           <button
             onClick={handleSimulateBuild}
-            disabled={isSimulating || policies.filter(p => p.enabled).length === 0}
+            disabled={simulateBuildMutation.isPending || policies.filter(p => p.enabled).length === 0}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
             <Play className="h-4 w-4" />
-            {isSimulating ? 'Checking...' : 'Run Build Check'}
+            {simulateBuildMutation.isPending ? 'Checking...' : 'Run Build Check'}
           </button>
         </ModalFooter>
       </Modal>

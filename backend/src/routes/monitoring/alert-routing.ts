@@ -13,6 +13,17 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { logAuditEntry } from '../audit-logs.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  alertRoutingRuleIdParamsSchema,
+  createAlertRoutingRuleBodySchema,
+  updateAlertRoutingRuleBodySchema,
+  alertRoutingSimulateBodySchema,
+  alertRateLimitConfigBodySchema,
+  alertRateLimitTestBodySchema,
+} from '../../validation/index.js';
 
 import {
   AlertRoutingCondition,
@@ -75,6 +86,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-routing/rules',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateBody(createAlertRoutingRuleBodySchema)],
     },
     async (request, reply) => {
       const { name, description, conditions, condition_match, destinations, enabled, priority } = request.body;
@@ -159,6 +171,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-routing/rules/:ruleId',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(alertRoutingRuleIdParamsSchema)],
     },
     async (request, reply) => {
       const { ruleId } = request.params;
@@ -196,6 +209,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-routing/rules/:ruleId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(alertRoutingRuleIdParamsSchema), validateBody(updateAlertRoutingRuleBodySchema)],
     },
     async (request, reply) => {
       const { ruleId } = request.params;
@@ -242,6 +256,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-routing/rules/:ruleId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(alertRoutingRuleIdParamsSchema)],
     },
     async (request, reply) => {
       const { ruleId } = request.params;
@@ -283,6 +298,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-routing/simulate',
     {
       preHandler: [authenticate],
+      preValidation: [validateBody(alertRoutingSimulateBodySchema)],
     },
     async (request) => {
       const { alert } = request.body;
@@ -486,6 +502,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-rate-limit/config',
     {
       preHandler: [authenticate],
+      preValidation: [validateBody(alertRateLimitConfigBodySchema)],
     },
     async (request) => {
       const orgId = getOrganizationId(request);
@@ -555,6 +572,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/alert-rate-limit/test',
     {
       preHandler: [authenticate],
+      preValidation: [validateBody(alertRateLimitTestBodySchema)],
     },
     async (request) => {
       const orgId = getOrganizationId(request);

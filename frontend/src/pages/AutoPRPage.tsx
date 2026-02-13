@@ -1,60 +1,34 @@
 // Feature #771: Auto-PR for Dependency Updates Page
 // Extracted from App.tsx as part of Feature #1441
+// Feature #710: Migrated to React Query for data fetching
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { toast } from '../stores/toastStore';
-import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
-
-// Feature #771: Auto-PR for Dependency Updates interfaces
-interface AutoPRConfig {
-  enabled: boolean;
-  auto_merge_patch: boolean;
-  auto_merge_minor: boolean;
-  require_tests_pass: boolean;
-  include_changelog: boolean;
-  assignees: string[];
-  labels: string[];
-  branch_prefix: string;
-  schedule: 'immediate' | 'daily' | 'weekly';
-  max_prs_per_day: number;
-}
-
-interface AutoPR {
-  id: string;
-  project_id: string;
-  project_name: string;
-  dependency_name: string;
-  current_version: string;
-  target_version: string;
-  update_type: 'patch' | 'minor' | 'major';
-  vulnerability?: {
-    cve_id: string;
-    severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-    title: string;
-  };
-  pr_number?: number;
-  pr_url?: string;
-  pr_title: string;
-  pr_body: string;
-  branch_name: string;
-  status: 'pending' | 'created' | 'merged' | 'closed' | 'failed';
-  changelog?: string;
-  tests_status?: 'pending' | 'running' | 'passed' | 'failed';
-  created_at: string;
-  updated_at: string;
-  merged_at?: string;
-}
+// Feature #710: React Query hooks
+import {
+  useAutoPRConfig,
+  useAutoPRs,
+  useUpdateAutoPRConfig,
+  useScanAndCreatePRs,
+  useUpdateAutoPRStatus,
+  type AutoPRConfig,
+  type AutoPR,
+} from '../hooks/api';
 
 export function AutoPRPage() {
-  const navigate = useNavigate();
-  // Feature #232: Fixed to use Zustand auth store instead of non-existent localStorage token
-  const token = useAuthStore.getState().token;
+  // Feature #710: React Query hooks for data fetching
+  const { data: configData, isLoading: isLoadingConfig } = useAutoPRConfig();
+  const { data: prsData, isLoading: isLoadingPRs } = useAutoPRs();
 
-  // Config state
-  const [config, setConfig] = useState<AutoPRConfig>({
+  // Mutations
+  const updateConfigMutation = useUpdateAutoPRConfig();
+  const scanAndCreateMutation = useScanAndCreatePRs();
+  const updateStatusMutation = useUpdateAutoPRStatus();
+
+  // Derived data
+  const config = configData?.config || {
     enabled: false,
     auto_merge_patch: false,
     auto_merge_minor: false,
@@ -63,27 +37,21 @@ export function AutoPRPage() {
     assignees: [],
     labels: ['dependencies', 'security'],
     branch_prefix: 'deps/',
-    schedule: 'immediate',
+    schedule: 'immediate' as const,
     max_prs_per_day: 10,
-  });
-  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
-  const [isSavingConfig, setIsSavingConfig] = useState(false);
-
-  // PRs state
-  const [prs, setPrs] = useState<AutoPR[]>([]);
-  const [prSummary, setPrSummary] = useState({
+  };
+  const prs = prsData?.prs || [];
+  const prSummary = prsData?.summary || {
     total: 0,
     pending: 0,
     created: 0,
     merged: 0,
     closed: 0,
     failed: 0,
-  });
-  const [isLoadingPRs, setIsLoadingPRs] = useState(true);
-  const [expandedPR, setExpandedPR] = useState<string | null>(null);
+  };
 
-  // Scan state
-  const [isScanning, setIsScanning] = useState(false);
+  // UI state
+  const [expandedPR, setExpandedPR] = useState<string | null>(null);
   const [scanResult, setScanResult] = useState<{
     prs_created: AutoPR[];
     total_scanned: number;
@@ -92,124 +60,35 @@ export function AutoPRPage() {
   // Filter state
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'created' | 'merged' | 'closed' | 'failed'>('all');
 
-  // Load config
-  useEffect(() => {
-    const loadConfig = async () => {
-      try {
-        const response = await fetch('/api/v1/organization/auto-pr/config', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setConfig(data.config);
-        }
-      } catch (error) {
-        console.error('Failed to load config:', error);
-      } finally {
-        setIsLoadingConfig(false);
-      }
-    };
-    loadConfig();
-  }, [token]);
-
-  // Load PRs
-  useEffect(() => {
-    const loadPRs = async () => {
-      try {
-        const response = await fetch('/api/v1/organization/auto-pr', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setPrs(data.prs || []);
-          setPrSummary(data.summary);
-        }
-      } catch (error) {
-        console.error('Failed to load PRs:', error);
-      } finally {
-        setIsLoadingPRs(false);
-      }
-    };
-    loadPRs();
-  }, [token]);
-
   // Save config
   const saveConfig = async (updates: Partial<AutoPRConfig>) => {
-    setIsSavingConfig(true);
     try {
-      const response = await fetch('/api/v1/organization/auto-pr/config', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(updates),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setConfig(data.config);
-        toast.success(data.message);
+      const result = await updateConfigMutation.mutateAsync(updates);
+      if (result.message) {
+        toast.success(result.message);
       }
     } catch (error) {
       toast.error('Failed to save configuration');
-    } finally {
-      setIsSavingConfig(false);
     }
   };
 
   // Scan and create PRs
   const handleScanAndCreate = async () => {
-    setIsScanning(true);
     setScanResult(null);
     try {
-      const response = await fetch('/api/v1/organization/auto-pr/scan-and-create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ project_id: 'demo-project' }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setScanResult(data);
-        // Reload PRs
-        const prsResponse = await fetch('/api/v1/organization/auto-pr', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (prsResponse.ok) {
-          const prsData = await prsResponse.json();
-          setPrs(prsData.prs || []);
-          setPrSummary(prsData.summary);
-        }
-        toast.success(data.message);
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || 'Failed to scan');
-      }
+      const result = await scanAndCreateMutation.mutateAsync({ project_id: 'demo-project' });
+      setScanResult(result);
+      toast.success(result.message);
     } catch (error) {
       toast.error('Failed to scan and create PRs');
-    } finally {
-      setIsScanning(false);
     }
   };
 
   // Update PR status (merge/close)
-  const updatePRStatus = async (prId: string, status: 'merged' | 'closed', testsStatus?: 'passed' | 'failed') => {
+  const handleUpdatePRStatus = async (prId: string, status: 'merged' | 'closed', testsStatus?: 'passed' | 'failed') => {
     try {
-      const response = await fetch(`/api/v1/organization/auto-pr/${prId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status, tests_status: testsStatus }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setPrs(prs.map(pr => pr.id === prId ? data.pr : pr));
-        toast.success(`PR ${status}`);
-      }
+      await updateStatusMutation.mutateAsync({ prId, status, tests_status: testsStatus });
+      toast.success(`PR ${status}`);
     } catch (error) {
       toast.error('Failed to update PR');
     }
@@ -262,10 +141,10 @@ export function AutoPRPage() {
         actions={
           <button
             onClick={handleScanAndCreate}
-            disabled={!config.enabled || isScanning}
+            disabled={!config.enabled || scanAndCreateMutation.isPending}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
           >
-            {isScanning ? 'Scanning...' : 'Scan & Create PRs'}
+            {scanAndCreateMutation.isPending ? 'Scanning...' : 'Scan & Create PRs'}
           </button>
         }
       />
@@ -320,6 +199,7 @@ export function AutoPRPage() {
                       type="checkbox"
                       checked={config.enabled}
                       onChange={(e) => saveConfig({ enabled: e.target.checked })}
+                      disabled={updateConfigMutation.isPending}
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-muted peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -338,6 +218,7 @@ export function AutoPRPage() {
                         type="checkbox"
                         checked={config.auto_merge_patch}
                         onChange={(e) => saveConfig({ auto_merge_patch: e.target.checked })}
+                        disabled={updateConfigMutation.isPending}
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-muted peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -353,6 +234,7 @@ export function AutoPRPage() {
                         type="checkbox"
                         checked={config.auto_merge_minor}
                         onChange={(e) => saveConfig({ auto_merge_minor: e.target.checked })}
+                        disabled={updateConfigMutation.isPending}
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-muted peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -372,6 +254,7 @@ export function AutoPRPage() {
                         type="checkbox"
                         checked={config.require_tests_pass}
                         onChange={(e) => saveConfig({ require_tests_pass: e.target.checked })}
+                        disabled={updateConfigMutation.isPending}
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-muted peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -387,6 +270,7 @@ export function AutoPRPage() {
                         type="checkbox"
                         checked={config.include_changelog}
                         onChange={(e) => saveConfig({ include_changelog: e.target.checked })}
+                        disabled={updateConfigMutation.isPending}
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-muted peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -400,6 +284,7 @@ export function AutoPRPage() {
                   <select
                     value={config.schedule}
                     onChange={(e) => saveConfig({ schedule: e.target.value as AutoPRConfig['schedule'] })}
+                    disabled={updateConfigMutation.isPending}
                     className="w-full max-w-xs px-3 py-2 border border-border rounded-lg bg-card text-foreground"
                   >
                     <option value="immediate">Immediate</option>
@@ -520,14 +405,16 @@ export function AutoPRPage() {
                           {pr.status === 'created' && (
                             <div className="flex space-x-2 pt-2">
                               <button
-                                onClick={() => updatePRStatus(pr.id, 'merged', 'passed')}
-                                className="px-3 py-1.5 bg-success text-primary-foreground text-sm rounded hover:bg-success"
+                                onClick={() => handleUpdatePRStatus(pr.id, 'merged', 'passed')}
+                                disabled={updateStatusMutation.isPending}
+                                className="px-3 py-1.5 bg-success text-primary-foreground text-sm rounded hover:bg-success disabled:opacity-50"
                               >
                                 Merge
                               </button>
                               <button
-                                onClick={() => updatePRStatus(pr.id, 'closed')}
-                                className="px-3 py-1.5 bg-muted text-foreground text-sm rounded hover:bg-muted/80"
+                                onClick={() => handleUpdatePRStatus(pr.id, 'closed')}
+                                disabled={updateStatusMutation.isPending}
+                                className="px-3 py-1.5 bg-muted text-foreground text-sm rounded hover:bg-muted/80 disabled:opacity-50"
                               >
                                 Close
                               </button>

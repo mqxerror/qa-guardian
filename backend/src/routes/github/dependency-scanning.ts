@@ -16,6 +16,17 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
 import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores.js';
 import { createLogger } from '../../services/logger.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  depScanProjectIdParamsSchema,
+  depPolicyIdParamsSchema,
+  depPolicyBodySchema,
+  depAlertIdParamsSchema,
+  depViolationIdParamsSchema,
+  depProjectPrParamsSchema,
+} from '../../validation/index.js';
 
 const logger = createLogger('dependency-scanning');
 
@@ -186,6 +197,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     pr_dependency_scan_block_on_critical?: boolean;
   } }>('/api/v1/projects/:projectId/github/pr-dependency-scan', {
     preHandler: [authenticate],
+    preValidation: [validateParams(depScanProjectIdParamsSchema)],
   }, async (request, reply) => {
     const user = request.user as JwtPayload;
     const { projectId } = request.params;
@@ -255,6 +267,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
   // Feature #768: Get PR dependency scan settings
   app.get<{ Params: ProjectParams }>('/api/v1/projects/:projectId/github/pr-dependency-scan', {
     preHandler: [authenticate],
+    preValidation: [validateParams(depScanProjectIdParamsSchema)],
   }, async (request, reply) => {
     const user = request.user as JwtPayload;
     const { projectId } = request.params;
@@ -293,6 +306,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
   // Feature #768: Trigger dependency scan for a PR (simulates webhook)
   app.post<{ Params: ProjectParams & { prNumber: string }; Body: { changed_files?: string[] } }>('/api/v1/projects/:projectId/github/pull-requests/:prNumber/dependency-scan', {
     preHandler: [authenticate],
+    preValidation: [validateParams(depProjectPrParamsSchema)],
   }, async (request, reply) => {
     const user = request.user as JwtPayload;
     const { projectId, prNumber } = request.params;
@@ -495,6 +509,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
   // Feature #768: Get dependency scan results for a PR
   app.get<{ Params: ProjectParams & { prNumber: string } }>('/api/v1/projects/:projectId/github/pull-requests/:prNumber/dependency-scan', {
     preHandler: [authenticate],
+    preValidation: [validateParams(depProjectPrParamsSchema)],
   }, async (request, reply) => {
     const user = request.user as JwtPayload;
     const { projectId, prNumber } = request.params;
@@ -727,6 +742,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     dismissed_reason?: string;
   } }>('/api/v1/organization/dependency-alerts/:alertId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(depAlertIdParamsSchema)],
   }, async (request, reply) => {
     const user = request.user as JwtPayload;
     const orgId = user.organization_id;
@@ -766,6 +782,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
   // Get alert details with affected projects
   app.get<{ Params: { alertId: string } }>('/api/v1/organization/dependency-alerts/:alertId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(depAlertIdParamsSchema)],
   }, async (request, reply) => {
     const user = request.user as JwtPayload;
     const orgId = user.organization_id;
@@ -815,6 +832,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     '/api/v1/organization/dependency-policies',
     {
       preHandler: [authenticate],
+      preValidation: [validateBody(depPolicyBodySchema)],
     },
     async (request) => {
       const user = request.user as JwtPayload;
@@ -871,6 +889,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     '/api/v1/organization/dependency-policies/:policyId',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(depPolicyIdParamsSchema), validateBody(depPolicyBodySchema)],
     },
     async (request, reply) => {
       const user = request.user as JwtPayload;
@@ -926,6 +945,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     '/api/v1/organization/dependency-policies/:policyId',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(depPolicyIdParamsSchema)],
     },
     async (request, reply) => {
       const user = request.user as JwtPayload;
@@ -1151,6 +1171,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     '/api/v1/organization/dependency-policies/violations/:violationId/override',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(depViolationIdParamsSchema)],
     },
     async (request, reply) => {
       const user = request.user as JwtPayload;
@@ -1204,6 +1225,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     '/api/v1/organization/dependency-policies/violations/:violationId/resolve',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(depViolationIdParamsSchema)],
     },
     async (request, reply) => {
       const user = request.user as JwtPayload;
