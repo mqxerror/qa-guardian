@@ -48,7 +48,6 @@ const AutoPRPage = lazy(() => import('./pages/AutoPRPage').then(m => ({ default:
 const DependencyAgePage = lazy(() => import('./pages/DependencyAgePage').then(m => ({ default: m.DependencyAgePage })));
 const MultiLanguageDependencyPage = lazy(() => import('./pages/MultiLanguageDependencyPage').then(m => ({ default: m.MultiLanguageDependencyPage })));
 const VulnerabilityHistoryPage = lazy(() => import('./pages/VulnerabilityHistoryPage').then(m => ({ default: m.VulnerabilityHistoryPage })));
-const ExploitabilityAnalysisPage = lazy(() => import('./pages/ExploitabilityAnalysisPage').then(m => ({ default: m.ExploitabilityAnalysisPage })));
 const ScanCachingPage = lazy(() => import('./pages/ScanCachingPage').then(m => ({ default: m.ScanCachingPage })));
 const DependencyAlertsPage = lazy(() => import('./pages/DependencyAlertsPage').then(m => ({ default: m.DependencyAlertsPage })));
 const MCPChatPage = lazy(() => import('./pages/MCPChatPage').then(m => ({ default: m.MCPChatPage })));
@@ -468,16 +467,6 @@ function App() {
             <ProtectedRoute>
               <PageErrorBoundary>
                 <VulnerabilityHistoryPage />
-              </PageErrorBoundary>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/security/exploitability"
-          element={
-            <ProtectedRoute>
-              <PageErrorBoundary>
-                <ExploitabilityAnalysisPage />
               </PageErrorBoundary>
             </ProtectedRoute>
           }

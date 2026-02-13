@@ -35,7 +35,6 @@ export { AutoPRPage } from './AutoPRPage';
 export { DependencyAgePage } from './DependencyAgePage';
 export { MultiLanguageDependencyPage } from './MultiLanguageDependencyPage';
 export { VulnerabilityHistoryPage } from './VulnerabilityHistoryPage';
-export { ExploitabilityAnalysisPage } from './ExploitabilityAnalysisPage';
 export { ScanCachingPage } from './ScanCachingPage';
 // Feature #412: KieAIProviderPage content moved to SettingsPage AI tab
 // Feature #412: AnthropicProviderPage content moved to SettingsPage AI tab
