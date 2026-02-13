@@ -11,6 +11,16 @@ import { TestStep } from './test-suites/types.js';
 import { createLogger } from '../services/logger.js';
 // Feature #509: Safe JSON parsing
 import { safeJsonParseOrPassthrough } from '../utils/index.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  validateQuery,
+  stepTemplateIdParamsSchema,
+  createStepTemplateBodySchema,
+  updateStepTemplateBodySchema,
+  stepTemplatesQuerySchema,
+} from '../validation/index.js';
 
 const log = createLogger('step-templates');
 
@@ -73,8 +83,10 @@ interface TestParams {
 export async function stepTemplateRoutes(app: FastifyInstance) {
 
   // List step templates for the organization
+  // Feature #716: Zod validation for step templates query
   app.get('/api/v1/step-templates', {
     preHandler: [authenticate],
+    preValidation: [validateQuery(stepTemplatesQuerySchema)],
   }, async (request, reply) => {
     const orgId = getOrganizationId(request);
     const { suite_id, search } = request.query as { suite_id?: string; search?: string };
@@ -114,8 +126,10 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
   });
 
   // Get a single step template
+  // Feature #716: Zod validation for template ID param
   app.get<{ Params: TemplateParams }>('/api/v1/step-templates/:templateId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(stepTemplateIdParamsSchema)],
   }, async (request, reply) => {
     const { templateId } = request.params;
     const orgId = getOrganizationId(request);
@@ -145,8 +159,10 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
   });
 
   // Create a new step template
+  // Feature #716: Zod validation for template creation body
   app.post<{ Body: CreateTemplateBody }>('/api/v1/step-templates', {
     preHandler: [authenticate],
+    preValidation: [validateBody(createStepTemplateBodySchema)],
   }, async (request, reply) => {
     const { name, description, steps, tags = [], suite_id } = request.body;
     const user = request.user as JwtPayload;
@@ -190,8 +206,10 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
   });
 
   // Update a step template
+  // Feature #716: Zod validation for template update params and body
   app.patch<{ Params: TemplateParams; Body: Partial<CreateTemplateBody> }>('/api/v1/step-templates/:templateId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(stepTemplateIdParamsSchema), validateBody(updateStepTemplateBodySchema)],
   }, async (request, reply) => {
     const { templateId } = request.params;
     const orgId = getOrganizationId(request);
@@ -249,8 +267,10 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
   });
 
   // Delete a step template
+  // Feature #716: Zod validation for template ID param
   app.delete<{ Params: TemplateParams }>('/api/v1/step-templates/:templateId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(stepTemplateIdParamsSchema)],
   }, async (request, reply) => {
     const { templateId } = request.params;
     const orgId = getOrganizationId(request);

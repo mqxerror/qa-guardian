@@ -18,6 +18,14 @@ import {
   getRecentAlerts,
   checkBudgetAndAlert,
 } from '../services/repositories/ai-usage.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateQuery,
+  aiUsageQuerySchema,
+  aiUsageBudgetBodySchema,
+  aiUsageAlertsQuerySchema,
+} from '../validation/index.js';
 
 // ============================================================================
 // Route Registration
@@ -28,6 +36,7 @@ export async function aiUsageRoutes(app: FastifyInstance) {
   // GET /api/v1/ai/usage - Get AI usage statistics
   // Feature #477: Returns aggregated usage data from database
   // ============================================================================
+  // Feature #716: Zod validation for AI usage query
   app.get<{
     Querystring: {
       period?: 'day' | 'week' | 'month';
@@ -36,6 +45,7 @@ export async function aiUsageRoutes(app: FastifyInstance) {
     };
   }>('/api/v1/ai/usage', {
     preHandler: [authenticate],
+    preValidation: [validateQuery(aiUsageQuerySchema)],
   }, async (request, reply) => {
     const orgId = getOrganizationId(request);
     const { period = 'day', start_date, end_date } = request.query;
@@ -122,6 +132,7 @@ export async function aiUsageRoutes(app: FastifyInstance) {
   // PUT /api/v1/ai/usage/budget - Set budget configuration
   // Feature #477: Configure daily/monthly limits and alert thresholds
   // ============================================================================
+  // Feature #716: Zod validation for AI usage budget body
   app.put<{
     Body: {
       daily_limit_usd?: number | null;
@@ -130,6 +141,7 @@ export async function aiUsageRoutes(app: FastifyInstance) {
     };
   }>('/api/v1/ai/usage/budget', {
     preHandler: [authenticate],
+    preValidation: [validateBody(aiUsageBudgetBodySchema)],
   }, async (request, reply) => {
     const orgId = getOrganizationId(request);
     const { daily_limit_usd, monthly_limit_usd, alert_threshold_percent } = request.body;
@@ -165,12 +177,14 @@ export async function aiUsageRoutes(app: FastifyInstance) {
   // GET /api/v1/ai/usage/alerts - Get recent budget alerts
   // Feature #477: Returns recent budget threshold alerts
   // ============================================================================
+  // Feature #716: Zod validation for AI usage alerts query
   app.get<{
     Querystring: {
       limit?: string;
     };
   }>('/api/v1/ai/usage/alerts', {
     preHandler: [authenticate],
+    preValidation: [validateQuery(aiUsageAlertsQuerySchema)],
   }, async (request, reply) => {
     const orgId = getOrganizationId(request);
     const limit = parseInt(request.query.limit || '10', 10);

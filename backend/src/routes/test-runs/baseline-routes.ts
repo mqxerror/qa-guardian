@@ -20,6 +20,13 @@ import { getTest } from '../test-suites.js';
 // testRuns available from execution.js if needed
 // Feature #484: Pino structured logging
 import { createLogger } from '../../services/logger.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateParams,
+  validateQuery,
+  baselineTestIdParamsSchema,
+  baselineQuerySchema,
+} from '../../validation/index.js';
 
 const log = createLogger('baseline-routes');
 import {
@@ -98,6 +105,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
   // Get baseline for a test
   app.get<{ Params: { testId: string }; Querystring: { viewport?: string; branch?: string } }>('/api/v1/tests/:testId/baseline', {
     preHandler: [authenticate],
+    preValidation: [validateParams(baselineTestIdParamsSchema), validateQuery(baselineQuerySchema)],
   }, async (request, reply) => {
     const { testId } = request.params;
     const requestedViewport = request.query.viewport;

@@ -20,6 +20,15 @@ import {
 import { validateWebhookURL, validateWebhookURLWithDNS, generateId } from '../../utils/index.js';
 import { WebhookLogEntry, webhookLog } from './alerts.js';
 import { createLogger } from '../../services/logger.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  webhookSubscriptionIdParamsSchema,
+  testWebhookUrlBodySchema,
+  createWebhookSubscriptionBodySchema,
+  updateWebhookSubscriptionBodySchema,
+} from '../../validation/index.js';
 
 const logger = createLogger('route:test-runs:webhook-crud');
 
@@ -151,6 +160,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
     };
   }>('/api/v1/webhook-subscriptions/test-url', {
     preHandler: [authenticate],
+    preValidation: [validateBody(testWebhookUrlBodySchema)],
   }, async (request, reply) => {
     const user = request.user as JwtPayload;
     const { url, headers: customHeaders, secret, payload: customPayload } = request.body;
@@ -322,6 +332,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
     };
   }>('/api/v1/webhook-subscriptions', {
     preHandler: [authenticate],
+    preValidation: [validateBody(createWebhookSubscriptionBodySchema)],
   }, async (request, reply) => {
     const orgId = getOrganizationId(request);
     const user = request.user as JwtPayload;
@@ -566,6 +577,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
     };
   }>('/api/v1/webhook-subscriptions/:subscriptionId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(webhookSubscriptionIdParamsSchema), validateBody(updateWebhookSubscriptionBodySchema)],
   }, async (request, reply) => {
     const orgId = getOrganizationId(request);
     const user = request.user as JwtPayload;
@@ -740,6 +752,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
   // Delete webhook subscription
   app.delete<{ Params: { subscriptionId: string } }>('/api/v1/webhook-subscriptions/:subscriptionId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(webhookSubscriptionIdParamsSchema)],
   }, async (request, reply) => {
     const orgId = getOrganizationId(request);
     const user = request.user as JwtPayload;

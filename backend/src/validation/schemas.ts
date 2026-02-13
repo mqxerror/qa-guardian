@@ -992,6 +992,227 @@ export const dastScheduleBodySchema = z.object({
 });
 
 // ============================================================================
+// Feature #716: Remaining Route Validation Schemas
+// ============================================================================
+
+/**
+ * Schedule routes
+ */
+export const scheduleIdParamsSchema = z.object({
+  id: z.string().min(1, 'Schedule ID is required'),
+});
+
+export const createScheduleBodySchema = z.object({
+  suite_id: z.string().min(1, 'Suite ID is required'),
+  name: z.string().min(1, 'Schedule name is required').max(255),
+  description: z.string().max(1000).optional(),
+  cron_expression: z.string().optional(),
+  run_at: z.string().optional(),
+  timezone: z.string().max(100).optional(),
+  enabled: z.boolean().optional(),
+  browsers: z.array(z.enum(['chromium', 'firefox', 'webkit'])).optional(),
+  notify_on_failure: z.boolean().optional(),
+});
+
+export const updateScheduleBodySchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().max(1000).optional(),
+  cron_expression: z.string().optional(),
+  run_at: z.string().optional(),
+  timezone: z.string().max(100).optional(),
+  enabled: z.boolean().optional(),
+  browsers: z.array(z.enum(['chromium', 'firefox', 'webkit'])).optional(),
+  notify_on_failure: z.boolean().optional(),
+});
+
+/**
+ * Webhook subscription routes
+ */
+export const webhookSubscriptionIdParamsSchema = z.object({
+  subscriptionId: z.string().min(1, 'Subscription ID is required'),
+});
+
+export const testWebhookUrlBodySchema = z.object({
+  url: z.string().url('Must be a valid URL'),
+  headers: z.record(z.string()).optional(),
+  secret: z.string().optional(),
+  payload: z.record(z.unknown()).optional(),
+});
+
+export const createWebhookSubscriptionBodySchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  url: z.string().url('Must be a valid URL'),
+  events: z.array(z.string().min(1)).min(1, 'At least one event is required'),
+  project_id: z.string().optional(),
+  project_ids: z.array(z.string()).optional(),
+  result_statuses: z.array(z.string()).optional(),
+  headers: z.record(z.string()).optional(),
+  secret: z.string().optional(),
+  enabled: z.boolean().optional(),
+  payload_template: z.string().optional(),
+  retry_enabled: z.boolean().optional(),
+  max_retries: z.number().int().min(0).max(5).optional(),
+  batch_enabled: z.boolean().optional(),
+  batch_size: z.number().int().min(1).max(100).optional(),
+  batch_interval_seconds: z.number().int().min(5).max(3600).optional(),
+});
+
+export const updateWebhookSubscriptionBodySchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  url: z.string().url().optional(),
+  events: z.array(z.string().min(1)).optional(),
+  project_id: z.string().optional(),
+  project_ids: z.array(z.string()).optional(),
+  result_statuses: z.array(z.string()).optional(),
+  headers: z.record(z.string()).optional(),
+  secret: z.string().optional(),
+  enabled: z.boolean().optional(),
+  payload_template: z.string().optional(),
+  retry_enabled: z.boolean().optional(),
+  max_retries: z.number().int().min(0).max(5).optional(),
+  batch_enabled: z.boolean().optional(),
+  batch_size: z.number().int().min(1).max(100).optional(),
+  batch_interval_seconds: z.number().int().min(5).max(3600).optional(),
+});
+
+/**
+ * Monitoring webhook routes
+ */
+export const monitoringCheckIdParamsSchema = z.object({
+  checkId: z.string().min(1, 'Check ID is required'),
+});
+
+export const monitoringWebhookTokenParamsSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+});
+
+export const createMonitoringWebhookBodySchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  description: z.string().max(1000).optional(),
+  expected_interval: z.number().int().min(60, 'Interval must be at least 60 seconds'),
+  expected_payload: z.object({
+    schema: z.record(z.unknown()).optional(),
+    fields: z.array(z.string()).optional(),
+  }).optional(),
+  webhook_secret: z.string().optional(),
+});
+
+/**
+ * AI usage routes
+ */
+export const aiUsageQuerySchema = z.object({
+  period: z.enum(['day', 'week', 'month']).optional(),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
+});
+
+export const aiUsageBudgetBodySchema = z.object({
+  daily_limit_usd: z.number().min(0).optional(),
+  monthly_limit_usd: z.number().min(0).optional(),
+  alert_threshold_percent: z.number().min(0).max(100).optional(),
+});
+
+export const aiUsageAlertsQuerySchema = z.object({
+  limit: z.string().optional(),
+});
+
+/**
+ * Step template routes
+ */
+export const stepTemplateIdParamsSchema = z.object({
+  templateId: z.string().min(1, 'Template ID is required'),
+});
+
+export const createStepTemplateBodySchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  description: z.string().max(1000).optional(),
+  steps: z.array(z.record(z.unknown())).min(1, 'At least one step is required'),
+  tags: z.array(z.string()).optional(),
+  suite_id: z.string().optional(),
+});
+
+export const updateStepTemplateBodySchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().max(1000).optional(),
+  steps: z.array(z.record(z.unknown())).optional(),
+  tags: z.array(z.string()).optional(),
+  suite_id: z.string().optional(),
+});
+
+export const stepTemplatesQuerySchema = z.object({
+  suite_id: z.string().optional(),
+  search: z.string().optional(),
+});
+
+/**
+ * Healing routes
+ */
+export const healingApprovalIdParamsSchema = z.object({
+  approvalId: z.string().min(1, 'Approval ID is required'),
+});
+
+export const healingIdParamsSchema = z.object({
+  healingId: z.string().min(1, 'Healing ID is required'),
+});
+
+export const healingApprovalBodySchema = z.object({
+  approved: z.boolean(),
+});
+
+export const healingBulkUpdateBodySchema = z.object({
+  updates: z.array(z.object({
+    test_id: z.string().min(1),
+    step_index: z.number().int().min(0),
+    new_selector: z.string().min(1),
+  })).min(1, 'At least one update is required'),
+});
+
+/**
+ * Baseline routes
+ */
+export const baselineTestIdParamsSchema = z.object({
+  testId: z.string().min(1, 'Test ID is required'),
+});
+
+export const baselineQuerySchema = z.object({
+  viewport: z.string().optional(),
+  branch: z.string().optional(),
+});
+
+/**
+ * GitHub routes
+ */
+export const githubRepoParamsSchema = z.object({
+  owner: z.string().min(1, 'Owner is required'),
+  repo: z.string().min(1, 'Repo is required'),
+});
+
+export const githubConnectProjectBodySchema = z.object({
+  owner: z.string().min(1, 'Owner is required'),
+  repo: z.string().min(1, 'Repo is required'),
+  branch: z.string().optional(),
+  test_path: z.string().optional(),
+});
+
+export const githubProjectIdParamsSchema = z.object({
+  projectId: z.string().min(1, 'Project ID is required'),
+});
+
+/**
+ * Audit logs routes
+ */
+export const auditLogsOrgIdParamsSchema = z.object({
+  orgId: z.string().min(1, 'Organization ID is required'),
+});
+
+export const auditLogsQuerySchema = z.object({
+  limit: z.string().optional(),
+  offset: z.string().optional(),
+  action: z.string().optional(),
+  resource_type: z.string().optional(),
+});
+
+// ============================================================================
 // Validation Helper
 // ============================================================================
 
@@ -1137,3 +1358,515 @@ export type SastConfigUpdateBodyInput = z.infer<typeof sastConfigUpdateBodySchem
 export type DastProfileUpdateBodyInput = z.infer<typeof dastProfileUpdateBodySchema>;
 export type DastConfigUpdateBodyInput = z.infer<typeof dastConfigUpdateBodySchema>;
 export type DastScheduleBodyInput = z.infer<typeof dastScheduleBodySchema>;
+
+// Feature #716: Remaining Route Types
+export type ScheduleIdParams = z.infer<typeof scheduleIdParamsSchema>;
+export type CreateScheduleBodyInput = z.infer<typeof createScheduleBodySchema>;
+export type UpdateScheduleBodyInput = z.infer<typeof updateScheduleBodySchema>;
+export type WebhookSubscriptionIdParams = z.infer<typeof webhookSubscriptionIdParamsSchema>;
+export type TestWebhookUrlBodyInput = z.infer<typeof testWebhookUrlBodySchema>;
+export type CreateWebhookSubscriptionBodyInput = z.infer<typeof createWebhookSubscriptionBodySchema>;
+export type UpdateWebhookSubscriptionBodyInput = z.infer<typeof updateWebhookSubscriptionBodySchema>;
+export type MonitoringCheckIdParams = z.infer<typeof monitoringCheckIdParamsSchema>;
+export type MonitoringWebhookTokenParams = z.infer<typeof monitoringWebhookTokenParamsSchema>;
+export type CreateMonitoringWebhookBodyInput = z.infer<typeof createMonitoringWebhookBodySchema>;
+export type AiUsageQuery = z.infer<typeof aiUsageQuerySchema>;
+export type AiUsageBudgetBodyInput = z.infer<typeof aiUsageBudgetBodySchema>;
+export type StepTemplateIdParams = z.infer<typeof stepTemplateIdParamsSchema>;
+export type CreateStepTemplateBodyInput = z.infer<typeof createStepTemplateBodySchema>;
+export type UpdateStepTemplateBodyInput = z.infer<typeof updateStepTemplateBodySchema>;
+export type HealingApprovalIdParams = z.infer<typeof healingApprovalIdParamsSchema>;
+export type HealingIdParams = z.infer<typeof healingIdParamsSchema>;
+export type HealingApprovalBodyInput = z.infer<typeof healingApprovalBodySchema>;
+export type HealingBulkUpdateBodyInput = z.infer<typeof healingBulkUpdateBodySchema>;
+export type BaselineTestIdParams = z.infer<typeof baselineTestIdParamsSchema>;
+export type GithubRepoParams = z.infer<typeof githubRepoParamsSchema>;
+export type GithubConnectProjectBodyInput = z.infer<typeof githubConnectProjectBodySchema>;
+export type AuditLogsOrgIdParams = z.infer<typeof auditLogsOrgIdParamsSchema>;
+export type AuditLogsQuery = z.infer<typeof auditLogsQuerySchema>;
+
+// ============================================================================
+// Feature #716: API Key Schemas
+// ============================================================================
+
+/**
+ * API key org params
+ */
+export const apiKeyOrgParamsSchema = z.object({
+  orgId: z.string().min(1, 'Organization ID is required'),
+});
+
+/**
+ * API key ID params
+ */
+export const apiKeyIdParamsSchema = z.object({
+  id: z.string().min(1, 'API key ID is required'),
+});
+
+/**
+ * Create API key request body
+ */
+export const createApiKeyBodySchema = z.object({
+  name: z.string().min(1, 'API key name is required').max(255),
+  scopes: z.array(z.string()).default(['read']),
+  expires_in_days: z.number().int().min(1).max(365).optional(),
+  rate_limit: z.number().int().min(1).max(10000).optional(),
+  rate_limit_window: z.number().int().min(1).max(3600).optional(),
+  burst_limit: z.number().int().min(1).max(1000).optional(),
+  burst_window: z.number().int().min(1).max(300).optional(),
+});
+
+/**
+ * Validate MCP key request body
+ */
+export const validateMcpKeyBodySchema = z.object({
+  api_key: z.string().min(1, 'API key is required'),
+  required_scope: z.string().default('mcp'),
+});
+
+// API Key Types
+export type ApiKeyOrgParams = z.infer<typeof apiKeyOrgParamsSchema>;
+export type ApiKeyIdParams = z.infer<typeof apiKeyIdParamsSchema>;
+export type CreateApiKeyBodyInput = z.infer<typeof createApiKeyBodySchema>;
+export type ValidateMcpKeyBodyInput = z.infer<typeof validateMcpKeyBodySchema>;
+
+// ============================================================================
+// Feature #716: Monitoring - Alert Routing Schemas
+// ============================================================================
+
+/**
+ * Alert routing rule ID params
+ */
+export const alertRoutingRuleIdParamsSchema = z.object({
+  ruleId: z.string().min(1, 'Rule ID is required'),
+});
+
+/**
+ * Create alert routing rule body
+ */
+export const createAlertRoutingRuleBodySchema = z.object({
+  name: z.string().min(1, 'Rule name is required').max(255),
+  description: z.string().max(2000).optional(),
+  conditions: z.array(z.object({
+    field: z.string().min(1),
+    operator: z.string().min(1),
+    value: z.unknown(),
+  })).min(1),
+  condition_match: z.enum(['all', 'any']).optional(),
+  destinations: z.array(z.object({
+    type: z.string().min(1),
+    config: z.record(z.unknown()),
+    name: z.string().optional(),
+  })).min(1),
+  enabled: z.boolean().optional(),
+  priority: z.number().int().min(0).optional(),
+});
+
+/**
+ * Update alert routing rule body
+ */
+export const updateAlertRoutingRuleBodySchema = createAlertRoutingRuleBodySchema.partial();
+
+/**
+ * Alert routing simulate body
+ */
+export const alertRoutingSimulateBodySchema = z.object({
+  alert: z.object({
+    check_name: z.string().min(1),
+    check_type: z.enum(['uptime', 'transaction', 'performance', 'webhook', 'dns', 'tcp']),
+    severity: z.enum(['critical', 'high', 'medium', 'low', 'info']),
+    location: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    error_message: z.string().optional(),
+  }),
+});
+
+/**
+ * Alert rate limit config body
+ */
+export const alertRateLimitConfigBodySchema = z.object({
+  enabled: z.boolean(),
+  max_alerts_per_minute: z.number().int().min(1),
+  time_window_seconds: z.number().int().min(1),
+  suppression_mode: z.enum(['drop', 'aggregate']),
+  aggregate_threshold: z.number().int().min(1),
+});
+
+/**
+ * Alert rate limit test body
+ */
+export const alertRateLimitTestBodySchema = z.object({
+  alert_count: z.number().int().min(1).max(100).optional(),
+});
+
+// ============================================================================
+// Feature #716: Monitoring - Alert Grouping Schemas
+// ============================================================================
+
+/**
+ * Alert grouping rule ID params
+ */
+export const alertGroupingRuleIdParamsSchema = z.object({
+  ruleId: z.string().min(1, 'Rule ID is required'),
+});
+
+/**
+ * Alert group ID params
+ */
+export const alertGroupIdParamsSchema = z.object({
+  groupId: z.string().min(1, 'Group ID is required'),
+});
+
+/**
+ * Create alert grouping rule body
+ */
+export const createAlertGroupingRuleBodySchema = z.object({
+  name: z.string().min(1, 'Rule name is required').max(255),
+  description: z.string().max(2000).optional(),
+  group_by: z.array(z.string()).min(1),
+  time_window_minutes: z.number().int().min(1).max(1440).optional(),
+  deduplication_enabled: z.boolean().optional(),
+  deduplication_key: z.string().optional(),
+  max_alerts_per_group: z.number().int().min(1).optional(),
+  notification_delay_seconds: z.number().int().min(0).optional(),
+  priority: z.number().int().min(0).optional(),
+});
+
+/**
+ * Update alert grouping rule body
+ */
+export const updateAlertGroupingRuleBodySchema = createAlertGroupingRuleBodySchema.extend({
+  is_active: z.boolean().optional(),
+}).partial();
+
+/**
+ * Alert group acknowledge body
+ */
+export const alertGroupAcknowledgeBodySchema = z.object({
+  note: z.string().max(2000).optional(),
+});
+
+/**
+ * Alert group resolve body
+ */
+export const alertGroupResolveBodySchema = z.object({
+  resolution_notes: z.string().max(5000).optional(),
+});
+
+/**
+ * Alert group snooze body
+ */
+export const alertGroupSnoozeBodySchema = z.object({
+  duration_hours: z.number().min(0.1).max(168),
+});
+
+/**
+ * Alert grouping simulate body
+ */
+export const alertGroupingSimulateBodySchema = z.object({
+  alerts: z.array(z.object({
+    check_name: z.string().min(1),
+    check_type: z.enum(['uptime', 'transaction', 'performance', 'webhook', 'dns', 'tcp']),
+    location: z.string().optional(),
+    error_message: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+  })).min(1),
+});
+
+// ============================================================================
+// Feature #716: Monitoring - Alert Correlation Schemas
+// ============================================================================
+
+/**
+ * Alert correlation config body
+ */
+export const alertCorrelationConfigBodySchema = z.object({
+  enabled: z.boolean(),
+  correlate_by_check: z.boolean(),
+  correlate_by_location: z.boolean(),
+  correlate_by_error_type: z.boolean(),
+  correlate_by_time_window: z.boolean(),
+  time_window_seconds: z.number().int().min(1),
+  similarity_threshold: z.number().int().min(0).max(100),
+});
+
+/**
+ * Correlation ID params
+ */
+export const correlationIdParamsSchema = z.object({
+  correlationId: z.string().min(1, 'Correlation ID is required'),
+});
+
+/**
+ * Alert correlation test body
+ */
+export const alertCorrelationTestBodySchema = z.object({
+  alert_count: z.number().int().min(1).max(100).optional(),
+  scenario: z.enum(['same_check', 'same_location', 'similar_error', 'mixed']).optional(),
+});
+
+/**
+ * Runbook ID params
+ */
+export const runbookIdParamsSchema = z.object({
+  runbookId: z.string().min(1, 'Runbook ID is required'),
+});
+
+/**
+ * Create alert runbook body
+ */
+export const createAlertRunbookBodySchema = z.object({
+  name: z.string().min(1, 'Runbook name is required').max(255),
+  description: z.string().max(2000).optional(),
+  check_type: z.string().min(1),
+  severity: z.string().optional(),
+  runbook_url: z.string().url('Invalid runbook URL'),
+  instructions: z.string().max(10000).optional(),
+  tags: z.array(z.string()).optional(),
+});
+
+/**
+ * Update alert runbook body
+ */
+export const updateAlertRunbookBodySchema = createAlertRunbookBodySchema.partial();
+
+/**
+ * Test runbook match body
+ */
+export const testRunbookMatchBodySchema = z.object({
+  check_type: z.string().min(1),
+  severity: z.string().min(1),
+  check_name: z.string().optional(),
+  error_message: z.string().optional(),
+});
+
+/**
+ * Test alert routing destination body
+ */
+export const testAlertDestinationBodySchema = z.object({
+  destination_type: z.string().min(1),
+  config: z.record(z.unknown()),
+  test_alert: z.object({
+    check_name: z.string(),
+    check_type: z.string(),
+    severity: z.string(),
+    error_message: z.string().optional(),
+  }).optional(),
+});
+
+// ============================================================================
+// Feature #716: Monitoring - Incidents Schemas
+// ============================================================================
+
+/**
+ * Incident ID params
+ */
+export const incidentIdParamsSchema = z.object({
+  incidentId: z.string().min(1, 'Incident ID is required'),
+});
+
+/**
+ * Create incident body
+ */
+export const createIncidentBodySchema = z.object({
+  title: z.string().min(1, 'Title is required').max(500),
+  description: z.string().max(5000).optional(),
+  priority: z.enum(['P1', 'P2', 'P3', 'P4', 'P5']).optional(),
+  severity: z.enum(['critical', 'high', 'medium', 'low', 'info']).optional(),
+  source: z.enum(['alert', 'manual', 'api', 'integration']).optional(),
+  source_alert_id: z.string().optional(),
+  source_check_id: z.string().optional(),
+  source_check_type: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  affected_services: z.array(z.string()).optional(),
+  escalation_policy_id: z.string().optional(),
+  on_call_schedule_id: z.string().optional(),
+});
+
+/**
+ * Update incident status body
+ */
+export const updateIncidentStatusBodySchema = z.object({
+  status: z.enum(['triggered', 'acknowledged', 'investigating', 'identified', 'monitoring', 'resolved']),
+  resolution_summary: z.string().max(5000).optional(),
+  postmortem_url: z.string().url().optional(),
+});
+
+/**
+ * Add incident responder body
+ */
+export const addIncidentResponderBodySchema = z.object({
+  user_id: z.string().min(1),
+  user_name: z.string().min(1),
+  user_email: z.string().email(),
+  role: z.enum(['primary', 'secondary', 'observer']).optional(),
+});
+
+/**
+ * Add incident note body
+ */
+export const addIncidentNoteBodySchema = z.object({
+  content: z.string().min(1, 'Note content is required').max(10000),
+  visibility: z.enum(['internal', 'public']).optional(),
+});
+
+/**
+ * Resolve incident body
+ */
+export const resolveIncidentBodySchema = z.object({
+  resolution_summary: z.string().min(1).max(5000),
+  postmortem_url: z.string().url().optional(),
+  postmortem_completed: z.boolean().optional(),
+});
+
+// ============================================================================
+// Feature #716: Monitoring - Status Pages Schemas
+// ============================================================================
+
+/**
+ * Status page ID params
+ */
+export const statusPageIdParamsSchema = z.object({
+  pageId: z.string().min(1, 'Page ID is required'),
+});
+
+/**
+ * Status page incident params
+ */
+export const statusPageIncidentParamsSchema = z.object({
+  pageId: z.string().min(1),
+  incidentId: z.string().min(1),
+});
+
+/**
+ * Status page slug params
+ */
+export const statusPageSlugParamsSchema = z.object({
+  slug: z.string().min(1).max(100),
+});
+
+/**
+ * Create status page body
+ */
+export const createStatusPageBodySchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  description: z.string().max(2000).optional(),
+  logo_url: z.string().url().optional(),
+  favicon_url: z.string().url().optional(),
+  primary_color: z.string().max(20).optional(),
+  show_history_days: z.number().int().min(1).max(90).optional(),
+  checks: z.array(z.record(z.unknown())).optional(),
+  is_public: z.boolean().optional(),
+  show_uptime_percentage: z.boolean().optional(),
+  show_response_time: z.boolean().optional(),
+  show_incidents: z.boolean().optional(),
+  custom_slug: z.string().max(100).optional(),
+});
+
+/**
+ * Update status page body
+ */
+export const updateStatusPageBodySchema = createStatusPageBodySchema.extend({
+  custom_domain: z.string().max(255).optional(),
+}).partial();
+
+/**
+ * Create status page incident body
+ */
+export const createStatusPageIncidentBodySchema = z.object({
+  title: z.string().min(1).max(500),
+  status: z.enum(['investigating', 'identified', 'monitoring', 'resolved']),
+  impact: z.enum(['none', 'minor', 'major', 'critical']),
+  message: z.string().min(1).max(5000),
+  affected_components: z.array(z.string()).optional(),
+});
+
+/**
+ * Status page incident update body
+ */
+export const createStatusPageIncidentUpdateBodySchema = z.object({
+  status: z.enum(['investigating', 'identified', 'monitoring', 'resolved']),
+  message: z.string().min(1).max(5000),
+});
+
+/**
+ * Status page subscribe body (public)
+ */
+export const statusPageSubscribeBodySchema = z.object({
+  email: z.string().email().optional(),
+});
+
+// ============================================================================
+// Feature #716: Monitoring - On-Call & Escalation Schemas
+// ============================================================================
+
+/**
+ * On-call schedule ID params
+ */
+export const onCallScheduleIdParamsSchema = z.object({
+  scheduleId: z.string().min(1, 'Schedule ID is required'),
+});
+
+/**
+ * Escalation policy ID params
+ */
+export const escalationPolicyIdParamsSchema = z.object({
+  policyId: z.string().min(1, 'Policy ID is required'),
+});
+
+/**
+ * Create on-call schedule body
+ */
+export const createOnCallScheduleBodySchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  description: z.string().max(2000).optional(),
+  timezone: z.string().max(100).optional(),
+  rotation_type: z.enum(['daily', 'weekly', 'custom']),
+  rotation_interval_days: z.number().int().min(1).max(365).optional(),
+  members: z.array(z.object({
+    user_id: z.string().min(1),
+    user_name: z.string().min(1),
+    user_email: z.string().email(),
+    phone: z.string().optional(),
+  })).min(1),
+});
+
+/**
+ * Update on-call schedule body
+ */
+export const updateOnCallScheduleBodySchema = createOnCallScheduleBodySchema.extend({
+  is_active: z.boolean().optional(),
+}).partial();
+
+/**
+ * Create escalation policy body
+ */
+export const createEscalationPolicyBodySchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  description: z.string().max(2000).optional(),
+  levels: z.array(z.object({
+    escalate_after_minutes: z.number().int().min(0),
+    targets: z.array(z.record(z.unknown())).min(1),
+  })).min(1),
+  repeat_policy: z.enum(['once', 'repeat_until_acknowledged']).optional(),
+  repeat_interval_minutes: z.number().int().min(1).optional(),
+  is_default: z.boolean().optional(),
+});
+
+/**
+ * Update escalation policy body
+ */
+export const updateEscalationPolicyBodySchema = createEscalationPolicyBodySchema.extend({
+  is_active: z.boolean().optional(),
+}).partial();
+
+// Monitoring Types
+export type AlertRoutingRuleIdParams = z.infer<typeof alertRoutingRuleIdParamsSchema>;
+export type AlertGroupingRuleIdParams = z.infer<typeof alertGroupingRuleIdParamsSchema>;
+export type AlertGroupIdParams = z.infer<typeof alertGroupIdParamsSchema>;
+export type CorrelationIdParams = z.infer<typeof correlationIdParamsSchema>;
+export type RunbookIdParams = z.infer<typeof runbookIdParamsSchema>;
+export type IncidentIdParams = z.infer<typeof incidentIdParamsSchema>;
+export type StatusPageIdParams = z.infer<typeof statusPageIdParamsSchema>;
+export type OnCallScheduleIdParams = z.infer<typeof onCallScheduleIdParamsSchema>;
+export type EscalationPolicyIdParams = z.infer<typeof escalationPolicyIdParamsSchema>;

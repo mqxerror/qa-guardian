@@ -9,6 +9,14 @@ import { getCache } from '../services/cache.js';
 import { CacheKeys } from '../services/cache-keys.js';
 // Feature #484: Pino structured logging
 import { createLogger } from '../services/logger.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  scheduleIdParamsSchema,
+  createScheduleBodySchema,
+  updateScheduleBodySchema,
+} from '../validation/index.js';
 
 const log = createLogger('schedules');
 
@@ -91,8 +99,10 @@ export async function scheduleRoutes(app: FastifyInstance) {
   });
 
   // Get single schedule
+  // Feature #716: Zod validation for schedule ID param
   app.get<{ Params: ScheduleParams }>('/api/v1/schedules/:id', {
     preHandler: [authenticate],
+    preValidation: [validateParams(scheduleIdParamsSchema)],
   }, async (request, reply) => {
     const { id } = request.params;
     const orgId = getOrganizationId(request);
@@ -109,8 +119,10 @@ export async function scheduleRoutes(app: FastifyInstance) {
   });
 
   // Create schedule
+  // Feature #716: Zod validation for schedule creation body
   app.post<{ Body: CreateScheduleBody }>('/api/v1/schedules', {
     preHandler: [authenticate],
+    preValidation: [validateBody(createScheduleBodySchema)],
   }, async (request, reply) => {
     const {
       suite_id,
@@ -206,8 +218,10 @@ export async function scheduleRoutes(app: FastifyInstance) {
   });
 
   // Update schedule
+  // Feature #716: Zod validation for schedule update params and body
   app.patch<{ Params: ScheduleParams; Body: Partial<CreateScheduleBody> }>('/api/v1/schedules/:id', {
     preHandler: [authenticate],
+    preValidation: [validateParams(scheduleIdParamsSchema), validateBody(updateScheduleBodySchema)],
   }, async (request, reply) => {
     const { id } = request.params;
     const updates = request.body;
@@ -270,8 +284,10 @@ export async function scheduleRoutes(app: FastifyInstance) {
   });
 
   // Delete schedule
+  // Feature #716: Zod validation for schedule delete params
   app.delete<{ Params: ScheduleParams }>('/api/v1/schedules/:id', {
     preHandler: [authenticate],
+    preValidation: [validateParams(scheduleIdParamsSchema)],
   }, async (request, reply) => {
     const { id } = request.params;
     const user = request.user as JwtPayload;
@@ -305,8 +321,10 @@ export async function scheduleRoutes(app: FastifyInstance) {
   });
 
   // Get schedule run history
+  // Feature #716: Zod validation for schedule ID param
   app.get<{ Params: ScheduleParams }>('/api/v1/schedules/:id/runs', {
     preHandler: [authenticate],
+    preValidation: [validateParams(scheduleIdParamsSchema)],
   }, async (request, reply) => {
     const { id } = request.params;
     const orgId = getOrganizationId(request);
@@ -339,8 +357,10 @@ export async function scheduleRoutes(app: FastifyInstance) {
   });
 
   // Manually trigger a schedule run (simulates what the scheduler would do)
+  // Feature #716: Zod validation for schedule trigger params
   app.post<{ Params: ScheduleParams }>('/api/v1/schedules/:id/trigger', {
     preHandler: [authenticate],
+    preValidation: [validateParams(scheduleIdParamsSchema)],
   }, async (request, reply) => {
     const { id } = request.params;
     const user = request.user as JwtPayload;

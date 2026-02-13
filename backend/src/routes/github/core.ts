@@ -39,6 +39,14 @@ import {
   demoTestFiles,
   getTestFilesForBranch,
 } from './stores.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  githubRepoParamsSchema,
+  githubConnectProjectBodySchema,
+  githubProjectIdParamsSchema,
+} from '../../validation/index.js';
 
 export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
   // Check if user has GitHub connected (simulated OAuth)
@@ -106,6 +114,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
   // Get branches for a repository
   app.get<{ Params: { owner: string; repo: string } }>('/api/v1/github/repositories/:owner/:repo/branches', {
     preHandler: [authenticate],
+    preValidation: [validateParams(githubRepoParamsSchema)],
   }, async (request, reply) => {
     const user = request.user as JwtPayload;
     const { owner, repo } = request.params;
@@ -163,6 +172,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
   // Connect a repository to a project
   app.post<{ Params: ProjectParams; Body: ConnectRepoBody }>('/api/v1/projects/:projectId/github/connect', {
     preHandler: [authenticate],
+    preValidation: [validateParams(githubProjectIdParamsSchema), validateBody(githubConnectProjectBodySchema)],
   }, async (request, reply) => {
     const user = request.user as JwtPayload;
     const { projectId } = request.params;
@@ -296,6 +306,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
   // Get GitHub connection for a project
   app.get<{ Params: ProjectParams }>('/api/v1/projects/:projectId/github', {
     preHandler: [authenticate],
+    preValidation: [validateParams(githubProjectIdParamsSchema)],
   }, async (request, reply) => {
     const user = request.user as JwtPayload;
     const { projectId } = request.params;

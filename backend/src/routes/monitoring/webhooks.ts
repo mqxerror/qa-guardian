@@ -28,6 +28,14 @@ import {
   addWebhookEvent,
   getWebhookEvents,
 } from './stores.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  monitoringCheckIdParamsSchema,
+  monitoringWebhookTokenParamsSchema,
+  createMonitoringWebhookBodySchema,
+} from '../../validation/index.js';
 
 export async function webhookRoutes(app: FastifyInstance): Promise<void> {
   // Get all webhook checks
@@ -78,6 +86,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/webhooks',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateBody(createMonitoringWebhookBodySchema)],
     },
     async (request, reply) => {
       const { name, description, expected_interval, expected_payload, webhook_secret } = request.body;
@@ -144,6 +153,9 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
   // Receive incoming webhook (no auth - uses token in URL)
   app.post<{ Params: { token: string } }>(
     '/api/v1/monitoring/webhooks/receive/:token',
+    {
+      preValidation: [validateParams(monitoringWebhookTokenParamsSchema)],
+    },
     async (request, reply) => {
       const { token } = request.params;
       const check = await getWebhookCheckByToken(token);
@@ -264,6 +276,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/webhooks/:checkId',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(monitoringCheckIdParamsSchema)],
     },
     async (request, reply) => {
       const { checkId } = request.params;
@@ -297,6 +310,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
     '/api/v1/monitoring/webhooks/:checkId/test',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin', 'developer'])],
+      preValidation: [validateParams(monitoringCheckIdParamsSchema)],
     },
     async (request, reply) => {
       const { checkId } = request.params;

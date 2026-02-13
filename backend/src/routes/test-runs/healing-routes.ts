@@ -36,6 +36,15 @@ import {
 import { testRuns, TestRun } from './execution.js';
 import { getTestRun } from '../../services/repositories/test-runs.js';
 import { createLogger } from '../../services/logger.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  healingApprovalIdParamsSchema,
+  healingIdParamsSchema,
+  healingApprovalBodySchema,
+  healingBulkUpdateBodySchema,
+} from '../../validation/index.js';
 
 const logger = createLogger('healing-routes');
 
@@ -262,6 +271,7 @@ export async function healingRoutes(app: FastifyInstance) {
     Body: { approved: boolean };
   }>('/api/v1/healing/approvals/:approvalId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(healingApprovalIdParamsSchema), validateBody(healingApprovalBodySchema)],
   }, async (request, reply) => {
     const { approvalId } = request.params;
     const { approved } = request.body;
@@ -327,6 +337,7 @@ export async function healingRoutes(app: FastifyInstance) {
     Params: { healingId: string };
   }>('/api/v1/healing/updates/:healingId/apply', {
     preHandler: [authenticate],
+    preValidation: [validateParams(healingIdParamsSchema)],
   }, async (request, reply) => {
     const { healingId } = request.params;
     const user = request.user as JwtPayload;
@@ -355,6 +366,7 @@ export async function healingRoutes(app: FastifyInstance) {
     Params: { healingId: string };
   }>('/api/v1/healing/updates/:healingId/dismiss', {
     preHandler: [authenticate],
+    preValidation: [validateParams(healingIdParamsSchema)],
   }, async (request, reply) => {
     const { healingId } = request.params;
 
@@ -762,6 +774,7 @@ export async function healingRoutes(app: FastifyInstance) {
   // Feature #1060: Bulk update fragile selectors
   app.post<{ Body: BulkHealingUpdate }>('/api/v1/healing/bulk-update', {
     preHandler: [authenticate],
+    preValidation: [validateBody(healingBulkUpdateBodySchema)],
   }, async (request, reply) => {
     const orgId = getOrganizationId(request);
     const user = request.user as JwtPayload;

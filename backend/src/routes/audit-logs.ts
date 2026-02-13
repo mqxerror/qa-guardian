@@ -1,6 +1,13 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import { authenticate, requireRoles, getOrganizationId, JwtPayload, ApiKeyPayload } from '../middleware/auth.js';
 import { createLogger } from '../services/logger.js';
+// Feature #716: Zod validation middleware and schemas
+import {
+  validateParams,
+  validateQuery,
+  auditLogsOrgIdParamsSchema,
+  auditLogsQuerySchema,
+} from '../validation/index.js';
 
 const log = createLogger('audit-logs');
 
@@ -78,10 +85,12 @@ export async function logAuditEntry(
 
 export async function auditLogRoutes(app: FastifyInstance) {
   // Get audit logs for organization (owner/admin only)
+  // Feature #716: Zod validation for audit log params and query
   app.get<{ Params: { orgId: string }; Querystring: { limit?: string; offset?: string; action?: string; resource_type?: string } }>(
     '/api/v1/organizations/:orgId/audit-logs',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateParams(auditLogsOrgIdParamsSchema), validateQuery(auditLogsQuerySchema)],
     },
     async (request, reply) => {
       const { orgId } = request.params;
@@ -151,10 +160,12 @@ export async function auditLogRoutes(app: FastifyInstance) {
   );
 
   // Get unique actions for filtering
+  // Feature #716: Zod validation for org ID param
   app.get<{ Params: { orgId: string } }>(
     '/api/v1/organizations/:orgId/audit-logs/actions',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateParams(auditLogsOrgIdParamsSchema)],
     },
     async (request, reply) => {
       const { orgId } = request.params;
@@ -182,10 +193,12 @@ export async function auditLogRoutes(app: FastifyInstance) {
   );
 
   // Get unique resource types for filtering
+  // Feature #716: Zod validation for org ID param
   app.get<{ Params: { orgId: string } }>(
     '/api/v1/organizations/:orgId/audit-logs/resource-types',
     {
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
+      preValidation: [validateParams(auditLogsOrgIdParamsSchema)],
     },
     async (request, reply) => {
       const { orgId } = request.params;
