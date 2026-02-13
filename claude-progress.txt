@@ -1,7 +1,7 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 848/882 features passing (96.1%)**
+- **Progress: 850/882 features passing (96.4%)**
 - **Last Updated**: 2026-02-13
 - **Pending**: 0 features
 - **In Progress**: None
@@ -47294,3 +47294,24 @@ Removed mock CVE Database page (/security/cve-database) which had hardcoded fake
 
 ### Conclusion
 848/882 features passing (96.1%). Feature #849 completed. App stable, no regressions.
+
+### Feature #850: Remove Exploitability Analysis page
+- Removed lazy import + route from App.tsx, export from pages/index.ts
+- Deleted ExploitabilityAnalysisPage.tsx (463 lines of mock EPSS/reachability data)
+- Removed 4 backend API routes from vulnerability-tracking.ts (exploitability, exploitability-analysis, analyze-reachability, epss-scores)
+- Cleaned up unused imports from vulnerability-tracking.ts
+- Frontend + backend builds pass with zero errors
+- /security/exploitability now shows 404
+- Security Dashboard loads correctly (heading, 5 tabs, breadcrumbs)
+- Screenshots: feature-850-exploitability-404.png
+
+### Feature #851: Remove Auto-PR page
+- Removed lazy import + route from App.tsx, export from pages/index.ts
+- Deleted AutoPRPage.tsx (443 lines of mock GitHub PR data)
+- Deleted backend/src/routes/github/dependency-auto-pr.ts (494 lines)
+- Cleaned up dependency-management.ts to remove auto-PR import/registration
+- Frontend + backend builds pass with zero errors
+- /security/auto-pr now shows 404
+
+### Updated Status
+850/882 features passing (96.4%). Features #849, #850, #851 completed this session.
