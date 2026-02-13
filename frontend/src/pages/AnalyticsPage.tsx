@@ -11,6 +11,7 @@ import { toast } from '../stores/toastStore';
 import { PageHeader } from '../components/ui';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
+import { EmptyStates } from '../components/ui/EmptyState';
 
 // Feature #72: Import React Query hooks for caching
 import {
@@ -101,6 +102,22 @@ export function AnalyticsPage() {
   const durationRegression = (durationTrendsData?.regression || null) as DurationRegression | null;
   const durationFilters = (durationTrendsData?.filters || null) as DurationFilters | null;
 
+  // Check if all data has loaded and there is no analytics data to display
+  const isAllLoading = isLoading || isBrowserStatsLoading || isProjectStatsLoading ||
+    isFlakyTestsLoading || isTrendsLoading || isA11yTrendsLoading ||
+    isDurationTrendsLoading || isBranchComparisonLoading || isAIUsageLoading;
+
+  const hasNoData = !isAllLoading &&
+    failingTests.length === 0 &&
+    browserStats.length === 0 &&
+    projectStats.length === 0 &&
+    flakyTests.length === 0 &&
+    trendData.length === 0 &&
+    a11yTrendData.length === 0 &&
+    durationTrendData.length === 0 &&
+    !branchComparisonData &&
+    !aiUsageData;
+
   // Export analytics data to CSV
   const handleExportCSV = () => {
     const csvSections: string[] = [];
@@ -190,81 +207,88 @@ export function AnalyticsPage() {
           }
         />
 
-        {/* Pass Rate Trends Section */}
-        <PassRateTrendsChart
-          trendData={trendData}
-          trendSummary={trendSummary}
-          trendDays={trendDays}
-          setTrendDays={setTrendDays}
-          isLoading={isTrendsLoading}
-        />
+        {/* Empty state when no analytics data is available */}
+        {hasNoData ? (
+          EmptyStates.noAnalytics()
+        ) : (
+          <>
+            {/* Pass Rate Trends Section */}
+            <PassRateTrendsChart
+              trendData={trendData}
+              trendSummary={trendSummary}
+              trendDays={trendDays}
+              setTrendDays={setTrendDays}
+              isLoading={isTrendsLoading}
+            />
 
-        {/* Feature #470: Duration Trends Section */}
-        <DurationTrendsChart
-          durationTrendData={durationTrendData}
-          durationTrendSummary={durationTrendSummary}
-          durationRegression={durationRegression}
-          durationFilters={durationFilters}
-          durationTrendDays={durationTrendDays}
-          setDurationTrendDays={setDurationTrendDays}
-          durationBrowserFilter={durationBrowserFilter}
-          setDurationBrowserFilter={setDurationBrowserFilter}
-          durationTestTypeFilter={durationTestTypeFilter}
-          setDurationTestTypeFilter={setDurationTestTypeFilter}
-          isLoading={isDurationTrendsLoading}
-        />
+            {/* Feature #470: Duration Trends Section */}
+            <DurationTrendsChart
+              durationTrendData={durationTrendData}
+              durationTrendSummary={durationTrendSummary}
+              durationRegression={durationRegression}
+              durationFilters={durationFilters}
+              durationTrendDays={durationTrendDays}
+              setDurationTrendDays={setDurationTrendDays}
+              durationBrowserFilter={durationBrowserFilter}
+              setDurationBrowserFilter={setDurationBrowserFilter}
+              durationTestTypeFilter={durationTestTypeFilter}
+              setDurationTestTypeFilter={setDurationTestTypeFilter}
+              isLoading={isDurationTrendsLoading}
+            />
 
-        {/* Accessibility Trends Section */}
-        <AccessibilityTrendsChart
-          a11yTrendData={a11yTrendData}
-          a11yTrendSummary={a11yTrendSummary}
-          a11yTrendDays={a11yTrendDays}
-          setA11yTrendDays={setA11yTrendDays}
-          isLoading={isA11yTrendsLoading}
-        />
+            {/* Accessibility Trends Section */}
+            <AccessibilityTrendsChart
+              a11yTrendData={a11yTrendData}
+              a11yTrendSummary={a11yTrendSummary}
+              a11yTrendDays={a11yTrendDays}
+              setA11yTrendDays={setA11yTrendDays}
+              isLoading={isA11yTrendsLoading}
+            />
 
-        {/* Most Failing Tests Section */}
-        <FailingTestsTable
-          failingTests={failingTests}
-          isLoading={isLoading}
-        />
+            {/* Most Failing Tests Section */}
+            <FailingTestsTable
+              failingTests={failingTests}
+              isLoading={isLoading}
+            />
 
-        {/* Browser-Specific Pass Rates Section */}
-        <BrowserStatsCards
-          browserStats={browserStats}
-          isLoading={isBrowserStatsLoading}
-        />
+            {/* Browser-Specific Pass Rates Section */}
+            <BrowserStatsCards
+              browserStats={browserStats}
+              isLoading={isBrowserStatsLoading}
+            />
 
-        {/* Project Comparison Section */}
-        <ProjectComparisonTable
-          projectStats={projectStats}
-          isLoading={isProjectStatsLoading}
-        />
+            {/* Project Comparison Section */}
+            <ProjectComparisonTable
+              projectStats={projectStats}
+              isLoading={isProjectStatsLoading}
+            />
 
-        {/* Feature #476: Branch Comparison Section */}
-        <BranchComparisonTable
-          branchComparisonData={branchComparisonData as BranchComparisonData | undefined}
-          branchA={branchA}
-          setBranchA={setBranchA}
-          branchB={branchB}
-          setBranchB={setBranchB}
-          isLoading={isBranchComparisonLoading}
-        />
+            {/* Feature #476: Branch Comparison Section */}
+            <BranchComparisonTable
+              branchComparisonData={branchComparisonData as BranchComparisonData | undefined}
+              branchA={branchA}
+              setBranchA={setBranchA}
+              branchB={branchB}
+              setBranchB={setBranchB}
+              isLoading={isBranchComparisonLoading}
+            />
 
-        {/* Feature #477: AI Usage Section */}
-        <AIUsageCards
-          aiUsageData={aiUsageData as AIUsageData | undefined}
-          isLoading={isAIUsageLoading}
-        />
+            {/* Feature #477: AI Usage Section */}
+            <AIUsageCards
+              aiUsageData={aiUsageData as AIUsageData | undefined}
+              isLoading={isAIUsageLoading}
+            />
 
-        {/* Flaky Tests Section */}
-        <FlakyTestsCards
-          flakyTests={flakyTests}
-          isLoading={isFlakyTestsLoading}
-        />
+            {/* Flaky Tests Section */}
+            <FlakyTestsCards
+              flakyTests={flakyTests}
+              isLoading={isFlakyTestsLoading}
+            />
 
-        {/* Feature #1075: AI Failure Clusters Section */}
-        <FailureClustersSection token={token} />
+            {/* Feature #1075: AI Failure Clusters Section */}
+            <FailureClustersSection token={token} />
+          </>
+        )}
       </div>
     </Layout>
   );

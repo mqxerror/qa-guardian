@@ -10,6 +10,7 @@ import { Loader2, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Modal, ModalHeader, ModalBody } from '../components/ui/Modal';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 // Feature #712: React Query hook for suites
 import { useAllSuites } from '../hooks/api/useSuites';
 
@@ -48,13 +49,8 @@ export function TestDocumentationPage() {
    projectName: suite.project_name || 'Default Project'
  })) || [];
 
- // Add demo suites if none exist (after data loads)
- const displaySuites = testSuites.length > 0 ? testSuites : [
-   { id: 'demo-1', name: 'Authentication Suite', testCount: 15, description: 'Tests for user authentication flows', projectId: 'proj-1', projectName: 'Main Application' },
-   { id: 'demo-2', name: 'Checkout Flow Suite', testCount: 22, description: 'E2E tests for checkout process', projectId: 'proj-1', projectName: 'Main Application' },
-   { id: 'demo-3', name: 'Dashboard Tests', testCount: 18, description: 'Tests for dashboard functionality', projectId: 'proj-1', projectName: 'Main Application' },
-   { id: 'demo-4', name: 'API Integration Suite', testCount: 30, description: 'API endpoint integration tests', projectId: 'proj-2', projectName: 'API Service' }
- ];
+ // Feature #877: Use real data only, no demo fallback
+ const displaySuites = testSuites;
 
  // Step 2 & 3: Generate documentation from selected suite
  const generateDocumentation = async () => {
@@ -256,6 +252,13 @@ export function TestDocumentationPage() {
  <div className="flex items-center justify-center py-8">
  <Loader2 className="animate-spin h-8 w-8 text-primary" aria-hidden="true" />
  </div>
+ ) : displaySuites.length === 0 ? (
+ <EmptyState
+  icon={EmptyStateIcons.document}
+  title="No test suites available"
+  description="Create test suites with tests to generate documentation from."
+  action={{ label: 'Go to Projects', href: '/projects' }}
+ />
  ) : (
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
  {displaySuites.map((suite) => (

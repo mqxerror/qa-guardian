@@ -16,7 +16,8 @@ import {
  useBatchRejectChanges,
 } from '../hooks/api/useVisualReview';
 import { Button } from '../components/ui/button';
-import { Check, X, Loader2, CheckCircle2, FolderOpen, Server, Monitor, Clock, AlertTriangle } from 'lucide-react';
+import { Check, X, Loader2, FolderOpen, Server, Monitor, Clock, AlertTriangle } from 'lucide-react';
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
 import type { PendingVisualChange, VisualChangeImpactAnalysis } from '@/types/tests';
 
@@ -501,11 +502,11 @@ Respond in this JSON format:
  <Loader2 className="animate-spin h-8 w-8 text-primary" />
  </div>
  ) : pendingChanges.length === 0 ? (
- <div className="text-center py-12">
- <CheckCircle2 className="mx-auto h-12 w-12 text-success" />
- <h3 className="mt-4 text-lg font-medium text-foreground">All caught up!</h3>
- <p className="text-muted-foreground">No pending visual changes to review.</p>
- </div>
+ <EmptyState
+  icon={EmptyStateIcons.run}
+  title="No visual comparisons"
+  description="Run visual regression tests to see comparison results here."
+ />
  ) : (
  <div>
  {/* Sort and Filter controls */}

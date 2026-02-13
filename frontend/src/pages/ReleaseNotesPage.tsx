@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/button';
 import { Loader2, Download, Copy } from 'lucide-react';
 
@@ -302,6 +303,12 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  <div className="flex items-center justify-center py-8">
  <Loader2 className="animate-spin h-8 w-8 text-primary" />
  </div>
+ ) : releases.length === 0 ? (
+ <EmptyState
+  icon={EmptyStateIcons.document}
+  title="No releases found"
+  description="Create test runs to generate releases and release notes."
+ />
  ) : (
  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
  <div>

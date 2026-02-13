@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from "react";
 // import { useNavigate } from "react-router-dom"; // Unused
 import { Layout } from "../components/Layout";
+import { EmptyState, EmptyStateIcons } from "../components/ui/EmptyState";
 import { useAuthStore } from "../stores/authStore";
 // recharts imports removed - unused (previously: LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend)
 import { toast } from "../stores/toastStore";
@@ -644,6 +645,16 @@ function MonitoringPage() {
         {/* Feature #75: Using React Query cached summary for instant load */}
         <MonitoringSummaryCards summary={displaySummary} isLoading={summaryLoading} />
 
+        {/* Feature #877: EmptyState when no monitors configured */}
+        {!isLoading && checks.length === 0 && transactions.length === 0 && performanceChecks.length === 0 && webhookChecks.length === 0 ? (
+          <EmptyState
+            icon={EmptyStateIcons.analytics}
+            title="No monitoring data"
+            description="Configure uptime checks and monitors to see monitoring data here."
+            action={{ label: 'Add Monitor', onClick: () => setShowCreateModal(true) }}
+          />
+        ) : (
+        <>
         {/* Uptime Checks Tab Content - Using modular component (Feature #47) */}
         {activeTab === 'checks' && (
           <UptimeChecksTab
@@ -784,6 +795,9 @@ function MonitoringPage() {
             onDeleteEscalationPolicy={handleDeleteEscalationPolicy}
             onTestEscalationPolicy={handleTestEscalationPolicy}
           />
+        )}
+
+        </>
         )}
 
         {/* Feature #47: Extracted Managed Incident Modals */}
