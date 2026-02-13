@@ -25,15 +25,11 @@ interface AccessibilityResultsDisplayProps {
 
 export function AccessibilityResultsDisplay({
  a11y,
- filterKey,
  currentSeverityFilter,
- currentCategoryFilter,
  currentSearchQuery,
  expandedViolations,
  onToggleViolation,
  onSetSeverityFilter,
- onSetCategoryFilter,
- onSetSearchQuery,
  onExportPDF,
  onExportCSV,
  testName,

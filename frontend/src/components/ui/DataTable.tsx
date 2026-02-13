@@ -17,7 +17,7 @@
  * ```
  */
 
-import React, { memo, useMemo, useCallback, useState } from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 import { ArrowUpDown, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // =============================================================================

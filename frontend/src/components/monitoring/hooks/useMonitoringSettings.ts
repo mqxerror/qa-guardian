@@ -355,7 +355,7 @@ export function useMonitoringSettings(token: string): UseMonitoringSettingsRetur
     time_window_seconds: 300, // 5 minutes
     similarity_threshold: 0.7,
   });
-  const [alertCorrelations, setAlertCorrelations] = useState<AlertCorrelation[]>([]);
+  const [alertCorrelations] = useState<AlertCorrelation[]>([]);
 
   // Runbooks state
   const [alertRunbooks, setAlertRunbooks] = useState<AlertRunbook[]>([]);

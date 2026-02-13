@@ -120,7 +120,6 @@ interface UseRecordingStateProps {
 export function useRecordingState({
   suiteId,
   token,
-  projectBaseUrl,
   onTestCreated,
 }: UseRecordingStateProps): UseRecordingStateReturn {
   // Modal state

@@ -14,7 +14,7 @@
  * For full integration tests, use Playwright E2E tests.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 import {
   projectKeys,

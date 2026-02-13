@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { Check, ChevronRight, CheckCircle } from 'lucide-react';
-import { ResultSummary, ActiveTab } from './types';
+import { ResultSummary } from './types';
 import { calculateHealthScore, getHealthScoreColorClass, getHealthScoreBarClass } from './utils';
 
 interface ExecutiveSummaryProps {

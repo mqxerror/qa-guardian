@@ -11,11 +11,11 @@ import {
  ViewportProfile,
  // ProjectMember, // Unused
  OrgMember,
- AlertChannel,
- AlertHistoryEntry,
- EnvironmentVariable,
- HealingSettings,
- SlackChannel,
+ // AlertChannel, // Unused
+ // AlertHistoryEntry, // Unused
+ // EnvironmentVariable, // Unused
+ // HealingSettings, // Unused
+ // SlackChannel, // Unused
 } from './types';
 import { SettingsState, SettingsHandlers } from './useSettingsHandlers';
 
@@ -65,13 +65,13 @@ export function SettingsTab({
  // Destructure settings state
  const {
  projectMembers,
- showAddMemberModal,
- selectedUserId,
- selectedMemberRole,
+ // showAddMemberModal, // Used in ProjectModals, not here
+ // selectedUserId, // Used in ProjectModals, not here
+ // selectedMemberRole, // Used in ProjectModals, not here
  alertChannels,
  showAlertHistory,
  alertHistory,
- slackChannels,
+ // slackChannels, // Used in ProjectModals, not here
  envVars,
  editingEnvId,
  editEnvValue,
@@ -83,8 +83,8 @@ export function SettingsTab({
  // Destructure settings handlers
  const {
  setShowAddMemberModal,
- setSelectedUserId,
- setSelectedMemberRole,
+ // setSelectedUserId, // Used in ProjectModals, not here
+ // setSelectedMemberRole, // Used in ProjectModals, not here
  handleRemoveMember,
  setSlackChannels,
  setShowCreateAlertModal,

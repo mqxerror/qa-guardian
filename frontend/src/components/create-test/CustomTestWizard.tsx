@@ -291,7 +291,7 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  initialMethod = null,
 }) => {
  // Get token from auth store instead of props
- const { token } = useAuthStore();
+ useAuthStore();
 
  // Wizard state
  const [wizardStep, setWizardStep] = useState<CustomWizardStep>(1);

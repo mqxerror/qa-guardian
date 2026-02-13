@@ -4,7 +4,7 @@
  * Feature #624: Converted to useMutation hooks for proper cache invalidation and deduplication
  */
 import { useState, useCallback } from 'react';
-import { useMutation, useQueryClient, UseMutationResult } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '../../stores/toastStore';
 import {
   SASTConfig,
@@ -116,7 +116,7 @@ export function useSastHandlers({
   const [selectedScan, setSelectedScan] = useState<SASTScanResult | null>(null);
   const [sastRulesets, setSastRulesets] = useState<Array<{ id: string; name: string; description: string }>>([]);
   const [customRules, setCustomRules] = useState<CustomRule[]>([]);
-  const [isLoadingCustomRules, setIsLoadingCustomRules] = useState(false);
+  const [isLoadingCustomRules] = useState(false);
   const [showAddCustomRuleModal, setShowAddCustomRuleModal] = useState(false);
   const [newCustomRuleName, setNewCustomRuleName] = useState('');
   const [newCustomRuleYaml, setNewCustomRuleYaml] = useState('');

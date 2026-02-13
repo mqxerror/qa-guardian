@@ -256,7 +256,7 @@ export function useUpdateSuite() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data, projectId }: { id: string; data: UpdateSuiteInput; projectId?: string }) =>
+    mutationFn: ({ id, data }: { id: string; data: UpdateSuiteInput; projectId?: string }) =>
       fetchWithAuth(`/api/v1/suites/${id}`, token, {
         method: 'PUT',
         body: JSON.stringify(data),
@@ -337,7 +337,7 @@ export function useDeleteSuite() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, projectId }: { id: string; projectId?: string }) =>
+    mutationFn: ({ id }: { id: string; projectId?: string }) =>
       fetchWithAuth(`/api/v1/suites/${id}`, token, {
         method: 'DELETE',
       }),

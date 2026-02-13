@@ -24,7 +24,12 @@ export const DEVICE_PRESETS: DevicePreset[] = [
 /**
  * Default viewport presets (backwards compatible)
  */
-export const DEFAULT_VIEWPORTS: ViewportConfig[] = DEVICE_PRESETS.map(({ icon, category, ...vp }) => vp);
+export const DEFAULT_VIEWPORTS: ViewportConfig[] = DEVICE_PRESETS.map((dp) => ({
+  name: dp.name,
+  width: dp.width,
+  height: dp.height,
+  enabled: dp.enabled,
+}));
 
 /**
  * Default configuration values

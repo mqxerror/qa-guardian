@@ -199,8 +199,9 @@ Please provide:
 
  const refreshFlakinessAnalysis = useCallback((test: FlakyTest) => {
    setFlakinessAnalysisCache(prev => {
-     const { [test.test_id]: _, ...rest } = prev;
-     return rest;
+     const next = { ...prev };
+     delete next[test.test_id];
+     return next;
    });
    openFlakinessAnalysis(test);
  }, [openFlakinessAnalysis]);

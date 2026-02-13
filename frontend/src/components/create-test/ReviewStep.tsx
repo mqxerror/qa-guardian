@@ -656,27 +656,6 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
  }
  }, [buildRequestBody, suiteId, token, displayName, scheduleConfig, onSuccess, onError]);
 
- // Feature #589: Render common settings (timeout, retries, tags) for all test types
- const renderCommonSettings = () => {
- if (config.method !== 'manual-setup') return null;
- return (
- <>
- {config.timeout && config.timeout !== 30000 && (
- <SummaryRow label="Timeout" value={`${(config.timeout / 1000).toFixed(0)}s`} />
- )}
- {config.retries !== undefined && config.retries > 0 && (
- <SummaryRow label="Retries" value={`${config.retries}`} />
- )}
- {config.tags && config.tags.length > 0 && (
- <SummaryRow label="Tags" value={config.tags.join(', ')} />
- )}
- {config.deviceEmulationEnabled && (
- <SummaryRow label="Device" value={config.deviceConfig?.preset || 'Custom'} />
- )}
- </>
- );
- };
-
  // Render type-specific settings
  const renderTypeSpecificSettings = () => {
  if (config.method === 'ai-generate') {

@@ -87,8 +87,6 @@ export function TestListSection({
  onShowDeleteTestModal,
  loadStepTemplates,
 }: TestListSectionProps) {
- const navigate = useNavigate();
-
  // Helper function to render sort indicator
  const renderSortIndicator = (field: LocalSortField) => {
  if (sortField === field) {
@@ -170,8 +168,6 @@ export function TestListSection({
  <VirtualizedTestList
  tests={tests}
  sortedTests={sortedTests}
- sortField={sortField}
- sortDirection={sortDirection}
  suiteRun={suiteRun}
  openActionsDropdown={openActionsDropdown}
  runningTestId={runningTestId}
@@ -199,8 +195,6 @@ export function TestListSection({
 interface VirtualizedTestListProps {
  tests: TestType[];
  sortedTests: TestType[];
- sortField: LocalSortField | null;
- sortDirection: LocalSortDirection;
  suiteRun: SuiteRun | null;
  openActionsDropdown: string | null;
  runningTestId: string | null;
@@ -221,8 +215,6 @@ interface VirtualizedTestListProps {
 function VirtualizedTestList({
  tests,
  sortedTests,
- sortField,
- sortDirection,
  suiteRun,
  openActionsDropdown,
  runningTestId,

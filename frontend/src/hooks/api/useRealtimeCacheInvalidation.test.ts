@@ -8,7 +8,7 @@
  * - Event payload handling with various field formats
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 import { runKeys } from './useRuns';
 import { testKeys } from './useTests';
@@ -139,6 +139,7 @@ function simulateSuiteDeletedHandler(queryClient: QueryClient, data: SuiteEventP
   queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function simulateProjectCreatedHandler(queryClient: QueryClient, _data: ProjectEventPayload) {
   queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
   queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
@@ -149,6 +150,7 @@ function simulateProjectUpdatedHandler(queryClient: QueryClient, data: ProjectEv
   queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function simulateProjectDeletedHandler(queryClient: QueryClient, _data: ProjectEventPayload) {
   queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
   queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });

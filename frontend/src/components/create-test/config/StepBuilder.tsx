@@ -322,20 +322,6 @@ export const StepBuilder: React.FC<StepBuilderProps> = ({
  setDropIndex(null);
  }, [dragIndex, dropIndex, steps, updateSteps]);
 
- // Convert steps to string format for legacy support
- // Feature #513: Prefixed with _ - string export planned for step sharing feature
- const _stepsToString = useCallback((): string => {
- return steps
- .map((step, index) => {
- const config = ACTION_CONFIG[step.action];
- let stepStr = `${index + 1}. ${config.label}`;
- if (step.selector) stepStr += ` "${step.selector}"`;
- if (step.value) stepStr += ` → ${step.value}`;
- return stepStr;
- })
- .join('\n');
- }, [steps]);
-
  return (
  <div className={`step-builder ${className}`}>
  {/* Steps List */}

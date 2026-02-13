@@ -12,9 +12,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
 import { fetchWithAuth } from './fetchWithAuth'; // Feature #655: Shared auth fetch
 
-// API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
-
 // ============== Types ==============
 
 export interface AuditLogEntry {

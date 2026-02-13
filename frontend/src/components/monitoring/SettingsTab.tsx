@@ -6,8 +6,6 @@
  * Full settings functionality is retained in MonitoringPage.tsx for now.
  */
 
-import { useState } from 'react';
-import { toast } from '../../stores/toastStore';
 import {
  MonitoringSettings,
  RetentionStats,
@@ -25,16 +23,10 @@ import {
  AlertRunbook,
  ManagedIncident,
  AvailableCheck,
- StatusPageIncident,
  AlertHistoryStats,
  AlertHistoryItem,
  AlertsOverTimeData,
  RateLimitStats,
- OnCallMember,
- EscalationTarget,
- AlertRoutingCondition,
- AlertRoutingDestination,
- AlertRunbookStep,
 } from './types';
 
 // Define props interface for all settings data and callbacks

@@ -148,7 +148,6 @@ export interface QuickTestPanelProps {
  * QuickTestPanel - URL input with checkbox test type selection
  */
 export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
- suiteId,
  projectBaseUrl,
  onGenerateTests,
  generatedTests = [],
@@ -173,7 +172,7 @@ export const QuickTestPanel: React.FC<QuickTestPanelProps> = ({
  // Get selected types
  const selectedTypes = useMemo(() => {
  return (Object.entries(selection) as [QuickTestType, boolean][])
- .filter(([_, selected]) => selected)
+ .filter(([, selected]) => selected)
  .map(([type]) => type);
  }, [selection]);
 

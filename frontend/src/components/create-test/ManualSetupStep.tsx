@@ -353,7 +353,7 @@ interface FormErrors {
 }
 
 export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
- onContinue: _onContinue, // Feature #513: prefixed - continuation handled via onChange callback
+ // Feature #513: onContinue intentionally unused - continuation handled via onChange callback
  onChange,
  projectBaseUrl,
 }) => {
@@ -397,7 +397,8 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  // Clear error for this field when user types
  if (errors[field as keyof FormErrors]) {
  setErrors(prevErrors => {
- const { [field as keyof FormErrors]: _removed, ...rest } = prevErrors;
+ const rest = { ...prevErrors };
+ delete rest[field as keyof FormErrors];
  return rest;
  });
  }
@@ -479,7 +480,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  e2eConfig: e2eConfig,
  }));
  }}
- onValidationChange={(_isValid) => {
+ onValidationChange={() => {
  // Feature #584: E2E config validation handled separately
  }}
  projectBaseUrl={projectBaseUrl}
@@ -513,7 +514,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  visualConfig: visualConfig, // Store full config
  }));
  }}
- onValidationChange={(_isValid) => {
+ onValidationChange={() => {
  // Feature #513: prefixed - visual config validation handled separately
  }}
  projectBaseUrl={projectBaseUrl}
@@ -557,7 +558,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  performanceConfig: perfConfig,
  }));
  }}
- onValidationChange={(_isValid) => {
+ onValidationChange={() => {
  // Feature #586: Performance config validation handled separately
  }}
  projectBaseUrl={projectBaseUrl}
@@ -597,7 +598,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  accessibilityConfig: a11yConfig,
  }));
  }}
- onValidationChange={(_isValid) => {
+ onValidationChange={() => {
  // Feature #587: Accessibility config validation handled separately
  }}
  projectBaseUrl={projectBaseUrl}
@@ -639,7 +640,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  loadConfig: loadConfig,
  }));
  }}
- onValidationChange={(_isValid) => {
+ onValidationChange={() => {
  // Feature #585: Load config validation handled separately
  }}
  projectBaseUrl={projectBaseUrl}
@@ -683,7 +684,7 @@ export const ManualSetupStep: React.FC<ManualSetupStepProps> = ({
  securityConfig: securityConfig,
  }));
  }}
- onValidationChange={(_isValid) => {
+ onValidationChange={() => {
  // Feature #591: Security config validation handled separately
  }}
  projectBaseUrl={projectBaseUrl}

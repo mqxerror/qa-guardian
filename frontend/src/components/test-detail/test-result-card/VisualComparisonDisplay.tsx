@@ -33,22 +33,9 @@ export function VisualComparisonDisplay({
  result,
  comparisonViewMode,
  setComparisonViewMode,
- sliderPosition,
- setSliderPosition,
- onionSkinOpacity,
- setOnionSkinOpacity,
- diffOverlayOpacity,
- setDiffOverlayOpacity,
- imageZoomLevel,
- setImageZoomLevel,
- baselineContainerRef,
- currentContainerRef,
- diffContainerRef,
- handleSyncScroll,
  onOpenLightbox,
  onApproveBaseline,
  onRejectChanges,
- token,
 }: VisualComparisonDisplayProps) {
  if (!result.visual_comparison) return null;
 

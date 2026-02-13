@@ -90,7 +90,6 @@ function getActionIcon(action: string): string {
  * RecordStep component
  */
 export const RecordStep: React.FC<RecordStepProps> = ({
-  onContinue: _onContinue,
   onChange,
   projectBaseUrl,
 }) => {

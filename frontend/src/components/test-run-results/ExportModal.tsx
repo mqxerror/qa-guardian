@@ -8,7 +8,7 @@
 import React, { useState } from 'react';
 import { FileText, Code, ArrowRight, Share2, Loader2 } from 'lucide-react';
 import { Modal, ModalHeader, ModalBody } from '../ui/Modal';
-import { generatePdfReport, generateHtmlReport, type PdfReportParams, type HtmlReportParams } from './reportGenerators';
+import { generatePdfReport, generateHtmlReport } from './reportGenerators';
 import { ResultSummary, TestRun } from './types';
 
 export interface ExportModalProps {

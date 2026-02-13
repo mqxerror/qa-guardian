@@ -3,7 +3,7 @@
  * Extracted from TestRunResultPage.tsx for modularity (Feature #46)
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ChevronDown, Loader2, ChevronRight, Check, X, Plus, ZoomOut, ZoomIn, Maximize2, ChevronsUpDown, ImageIcon } from 'lucide-react';
 import { TestResult, VisualViewMode, VisualMarker } from './types';
 
@@ -52,7 +52,7 @@ export default function VisualTab({
  // Feature #1880: Video timeline state
  const [visualVideoExpanded, setVisualVideoExpanded] = useState(false);
  const [visualVideoCurrentTime, setVisualVideoCurrentTime] = useState(0);
- const [isVisualVideoPlaying, setIsVisualVideoPlaying] = useState(false);
+ const [, setIsVisualVideoPlaying] = useState(false);
 
  // Toggle visual result expansion
  const toggleVisualResult = (resultId: string) => {
@@ -499,7 +499,7 @@ export default function VisualTab({
  </span>
  </h4>
  <div className="space-y-4">
- {result.viewport_results.map((vp, vpIdx) => {
+ {result.viewport_results.map((vp) => {
  const vpHasDiff = (vp.diffPercentage || 0) > 0.1;
  const vpHasBaseline = vp.visualComparison?.hasBaseline !== false;
  return (

@@ -11,8 +11,8 @@
  * Feature #127: Mobile responsive design audit and fixes
  */
 
-import React, { useRef, useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import React, { useState } from 'react';
+import { Socket } from 'socket.io-client';
 import { toast } from '../../../stores/toastStore';
 import { DeviceConfig } from '../../test-modals/types';
 import { DeviceSelect } from '../../create-test/shared/DeviceSelect';
@@ -96,7 +96,6 @@ interface RecordTestModalProps {
 export function RecordTestModal({
   isOpen,
   isRecording,
-  onClose,
   recordTargetUrl,
   onRecordTargetUrlChange,
   recordedSteps,
@@ -106,20 +105,14 @@ export function RecordTestModal({
   recordingDeviceConfig,
   onRecordingDeviceConfigChange,
   recordingSessionId,
-  onRecordingSessionIdChange,
   recordingElapsed,
   recordingFrame,
-  onRecordingFrameChange,
   recordingConnected,
-  onRecordingConnectedChange,
   recordingCurrentUrl,
   onRecordingCurrentUrlChange,
   reconnectAttempt,
-  onReconnectAttemptChange,
   reconnectFailed,
-  onReconnectFailedChange,
   staleFrameWarning,
-  onStaleFrameWarningChange,
   showDebugOverlay,
   onShowDebugOverlayChange,
   clickRipple,
@@ -128,17 +121,12 @@ export function RecordTestModal({
   browserViewRef,
   browserImgRef,
   frameScaleRef,
-  lastFrameTimeRef,
-  staleFrameTimerRef,
-  frameRequestRef,
-  pendingFrameRef,
   onStartRecording,
   onStopRecording,
   onCancelRecording,
   onRetryConnection,
   onStopAndSave,
   projectBaseUrl,
-  token,
   formatElapsed,
   getActionIcon,
 }: RecordTestModalProps) {

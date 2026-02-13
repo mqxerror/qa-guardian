@@ -16,7 +16,7 @@ interface SuiteCardProps {
 
 const SuiteCard: React.FC<SuiteCardProps> = React.memo(({
  suite,
- projectId,
+ // projectId, // Currently unused - kept in interface for future use
  formatDate,
 }) => {
  const getBrowserIcon = (browser?: string) => {

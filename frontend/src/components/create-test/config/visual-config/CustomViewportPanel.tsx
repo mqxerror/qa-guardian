@@ -2,7 +2,7 @@
 // Custom viewport panel component extracted from VisualConfig.tsx
 
 import React, { useState } from 'react';
-import type { ViewportConfig, VisualConfigState } from './types';
+import type { ViewportConfig } from './types';
 import { DEVICE_PRESETS } from './constants';
 
 interface CustomViewportPanelProps {

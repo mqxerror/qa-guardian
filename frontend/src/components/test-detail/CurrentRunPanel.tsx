@@ -2,10 +2,7 @@
 // Displays current run status, live execution progress, and test results
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Loader2, Download, X, Zap, ImageIcon, Terminal } from 'lucide-react';
-import { VideoPlayer } from './VideoPlayer';
 // Feature #566: Import canonical LiveProgress & ConsoleLogEntry from types.ts
 import { TestRunType, TestType, StepResult, LiveProgress, ConsoleLogEntry } from './types';
 
@@ -530,24 +527,6 @@ interface TestResultItemProps {
 
 function TestResultItem({
  result,
- test,
- currentRun,
- formatDateTime,
- lighthouseHistory,
- expandedViolations,
- violationImpactFilter,
- violationCategoryFilter,
- violationSearchQuery,
- onToggleViolation,
- onSetViolationImpactFilter,
- onSetViolationCategoryFilter,
- onSetViolationSearchQuery,
- filterViolations,
- getViolationCategories,
- getImpactColor,
- getLighthouseScoreColor,
- onApproveBaseline,
- onOpenLightbox,
 }: TestResultItemProps) {
  // This is a simplified version - the full implementation handles all the complex
  // result display logic from the original TestDetailPage

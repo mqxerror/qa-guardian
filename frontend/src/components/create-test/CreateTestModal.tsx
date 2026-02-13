@@ -362,7 +362,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  // Create preview entries for each selected type with unique IDs
  const baseTime = Date.now();
  const previews: GeneratedTestPreview[] = Object.entries(testSelection)
- .filter(([_key, selected]) => selected)
+ .filter(([, selected]) => selected)
  .map(([key], index) => {
  const config = TEST_TYPE_CONFIG[key as keyof typeof TEST_TYPE_CONFIG];
  return {

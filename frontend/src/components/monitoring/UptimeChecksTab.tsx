@@ -5,23 +5,19 @@
  * Displays uptime check list, detail panel, and check management functionality
  */
 
-import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
  UptimeCheck,
  CheckResult,
- MonitoringLocation,
  LocationResult,
  SlaMetrics,
  IncidentData,
- Incident,
  HistoryData,
  MaintenanceData,
  DetailTab,
  HistoryRange,
 } from './types';
-import { StatusBadge } from './';
 
 export interface UptimeChecksTabProps {
  // Data
@@ -82,7 +78,6 @@ export default function UptimeChecksTab({
  historyData,
  maintenanceData,
  isLoading,
- isLoadingResults,
  isLoadingSla,
  isLoadingIncidents,
  isLoadingHistory,
@@ -345,7 +340,6 @@ export default function UptimeChecksTab({
  incidentData={incidentData}
  historyData={historyData}
  maintenanceData={maintenanceData}
- isLoadingResults={isLoadingResults}
  isLoadingSla={isLoadingSla}
  isLoadingIncidents={isLoadingIncidents}
  isLoadingHistory={isLoadingHistory}
@@ -379,7 +373,6 @@ interface CheckDetailPanelProps {
  incidentData: IncidentData | null;
  historyData: HistoryData | null;
  maintenanceData: MaintenanceData | null;
- isLoadingResults: boolean;
  isLoadingSla: boolean;
  isLoadingIncidents: boolean;
  isLoadingHistory: boolean;
@@ -401,7 +394,6 @@ function CheckDetailPanel({
  incidentData,
  historyData,
  maintenanceData,
- isLoadingResults,
  isLoadingSla,
  isLoadingIncidents,
  isLoadingHistory,

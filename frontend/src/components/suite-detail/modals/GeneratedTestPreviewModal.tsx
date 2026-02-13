@@ -8,7 +8,7 @@
  * Feature #634: Migrated to Modal/ModalBody/ModalFooter
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 import { GeneratedTestPreview } from '../useModalState';

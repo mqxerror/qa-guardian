@@ -14,8 +14,6 @@ export function CardSpotlight({
   spotlightColor = "rgba(59, 130, 246, 0.15)",
 }: CardSpotlightProps) {
   const divRef = useRef<HTMLDivElement>(null);
-  // Feature #513: Prefixed with _ - focus tracking for accessibility enhancement planned
-  const [_isFocused, setIsFocused] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [opacity, setOpacity] = useState(0);
 
@@ -29,12 +27,10 @@ export function CardSpotlight({
   };
 
   const handleFocus = () => {
-    setIsFocused(true);
     setOpacity(1);
   };
 
   const handleBlur = () => {
-    setIsFocused(false);
     setOpacity(0);
   };
 

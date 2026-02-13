@@ -11,11 +11,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Save, AlertCircle, Eye, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter } from '../../ui/Modal';
 import type { TestType as Test, TestStep } from '../types';
-import { E2EConfig, type E2EConfigState, type BrowserType } from '../../create-test/config/E2EConfig';
-import { VisualConfig, type VisualConfigState } from '../../create-test/config/VisualConfig';
-import { PerformanceConfig, type PerformanceConfigState } from '../../create-test/config/PerformanceConfig';
-import { AccessibilityConfig, type AccessibilityConfigState } from '../../create-test/config/AccessibilityConfig';
-import { LoadConfig, type LoadConfigState } from '../../create-test/config/LoadConfig';
+import { type BrowserType } from '../../create-test/config/E2EConfig';
 import { useAuthStore } from '../../../stores/authStore';
 
 /**
@@ -116,7 +112,6 @@ export const FullEditTestModal: React.FC<FullEditTestModalProps> = ({
   test,
   onClose,
   onSaved,
-  suiteId,
 }) => {
   const token = useAuthStore(state => state.token);
 

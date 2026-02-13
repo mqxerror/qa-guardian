@@ -178,12 +178,6 @@ export interface LighthouseOverviewTabProps {
 
 export const LighthouseOverviewTab: React.FC<LighthouseOverviewTabProps> = ({
  lighthouse,
- opportunities,
- diagnostics,
- expandedOpportunities,
- toggleOpportunity,
- expandedDiagnostics,
- toggleDiagnostic,
 }) => (
  <>
  {/* Feature #67: Side-by-side Circular Gauges when both mobile and desktop available */}

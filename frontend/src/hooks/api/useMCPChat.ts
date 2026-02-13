@@ -10,7 +10,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { UnifiedAIService, AIStatusResponse, ChatResponse } from '../../services/UnifiedAIService';
+import { UnifiedAIService, ChatResponse } from '../../services/UnifiedAIService';
 import { useAuthStore } from '../../stores/authStore';
 
 // Query keys factory for cache management
@@ -26,8 +26,6 @@ export const mcpChatKeys = {
  * Uses short staleTime for real-time status updates
  */
 export function useAIStatus() {
-  const token = useAuthStore(state => state.token);
-
   return useQuery({
     queryKey: mcpChatKeys.status(),
     queryFn: async () => {

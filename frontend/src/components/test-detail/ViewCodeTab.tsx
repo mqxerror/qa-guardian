@@ -1,7 +1,6 @@
 // Feature #48: ViewCodeTab - Extracted from TestDetailPage.tsx
 // Displays Playwright code for test cases with edit capability
 
-import { useState } from 'react';
 import { Copy, Loader2, HelpCircle, FileEdit, Save, Info, RotateCcw } from 'lucide-react';
 import { toast } from '../../stores/toastStore';
 

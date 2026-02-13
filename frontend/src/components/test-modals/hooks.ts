@@ -380,7 +380,6 @@ export function useEnhancedAICopilot(
   formData: TestFormData,
   updateFields: (updates: Partial<TestFormData>) => void,
   isEnabled: boolean,
-  token?: string
 ) {
   const [suggestions, setSuggestions] = useState<AICopilotSuggestion[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);

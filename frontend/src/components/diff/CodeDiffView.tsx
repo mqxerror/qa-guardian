@@ -102,7 +102,6 @@ function applyHunks(originalCode: string, newCode: string, hunks: DiffHunk[]): s
 
  // For partial acceptance, we need to apply changes selectively
  const originalLines = originalCode.split('\n');
- const newLines = newCode.split('\n');
  const result: string[] = [];
 
  let originalIndex = 0;
@@ -182,17 +181,6 @@ export function CodeDiffView({
  setHunks(prev => prev.map(h =>
  h.id === hunkId ? { ...h, accepted: false } : h
  ));
- }, []);
-
- // Handle toggling a hunk (for pending state)
- const handleToggleHunk = useCallback((hunkId: number) => {
- setHunks(prev => prev.map(h => {
- if (h.id !== hunkId) return h;
- // Cycle through: null -> true -> false -> null
- if (h.accepted === null) return { ...h, accepted: true };
- if (h.accepted === true) return { ...h, accepted: false };
- return { ...h, accepted: null };
- }));
  }, []);
 
  // Accept all hunks

@@ -17,8 +17,8 @@ import { Key, ShoppingCart, ShieldCheck, Pencil, X, Eye, CheckCircle, Loader2 } 
 import {
  OrgMember,
  // SlackChannel, // Unused
- EditSelectorModalState,
- VisionHealingResult,
+ // EditSelectorModalState, // Unused
+ // VisionHealingResult, // Unused
  SettingsState,
  SettingsHandlers,
 } from './';
@@ -109,13 +109,13 @@ export function ProjectModals({
 }: ProjectModalsProps) {
  // Destructure settings state
  const {
- showAddEnvModal: _showAddEnvModal, // Already passed as prop
+ // showAddEnvModal: already passed as prop
  newEnvKey, newEnvValue, newEnvIsSecret, isAddingEnv, addEnvError,
- showCreateAlertModal: _showCreateAlertModal, // Already passed as prop
+ // showCreateAlertModal: already passed as prop
  newAlertType, newAlertName, newAlertCondition, newAlertThreshold,
  newAlertEmails, newAlertWebhookUrl, newAlertSlackChannel, slackChannels,
  newAlertSuppressOnRetry, isCreatingAlert, createAlertError,
- showAddMemberModal: _showAddMemberModal, // Already passed as prop
+ // showAddMemberModal: already passed as prop
  selectedUserId, selectedMemberRole, isAddingMember, addMemberError,
  editSelectorModal, editSelectorValue, editSelectorNotes, editSelectorApplyToTest,
  isSubmittingSelector, isHealingWithVision, visionHealingResult,
@@ -125,7 +125,7 @@ export function ProjectModals({
  const {
  setShowAddEnvModal, setNewEnvKey, setNewEnvValue, setNewEnvIsSecret,
  setAddEnvError, handleAddEnvVar,
- setShowCreateAlertModal, setNewAlertType, setNewAlertName, setNewAlertCondition,
+ setShowCreateAlertModal, setNewAlertName, setNewAlertCondition,
  setNewAlertThreshold, setNewAlertEmails, setNewAlertWebhookUrl, setNewAlertSlackChannel,
  setNewAlertSuppressOnRetry, handleCreateAlert,
  setShowAddMemberModal, setSelectedUserId, setSelectedMemberRole, handleAddMember,

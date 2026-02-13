@@ -64,14 +64,12 @@ const sizeClasses: Record<ModalSize, string> = {
 export function Modal({
   isOpen,
   onClose,
-  title,
   children,
   size = 'md',
   className = '',
   closeOnBackdrop = true,
   closeOnEscape = true,
   titleId,
-  showCloseButton = true,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const generatedTitleId = useRef(`modal-title-${Math.random().toString(36).substr(2, 9)}`);

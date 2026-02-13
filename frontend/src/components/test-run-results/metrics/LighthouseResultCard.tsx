@@ -73,17 +73,12 @@ export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
  opportunities,
  diagnostics,
  passedAudits,
- passedAuditsByCategory,
  lighthouseActiveTab,
  setLighthouseActiveTab,
  expandedOpportunities,
  toggleOpportunity,
  expandedDiagnostics,
  toggleDiagnostic,
- expandedPassedAudits,
- togglePassedAudit,
- passedAuditsCollapsed,
- setPassedAuditsCollapsed,
  securityInsightsCollapsed,
  setSecurityInsightsCollapsed,
  expandedMixedContentResources,
@@ -91,7 +86,6 @@ export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
  perfAILoading,
  perfAIResult,
  setPerfAIResult,
- perfAIError,
  perfAIAnalysisOpen,
  analyzePerformanceResults,
  exportLighthousePDF,
@@ -227,7 +221,7 @@ export const LighthouseResultCard: React.FC<LighthouseResultCardProps> = ({
  {topOpportunities.length > 0 && lighthouseStatus !== 'excellent' && (
  <div className="bg-white/50 rounded-lg p-3 border border-current/10">
  <h5 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Quick Wins</h5>
- {topOpportunities.map((opp, i) => (
+ {topOpportunities.map((opp) => (
  <div key={opp.id} className="flex items-center justify-between py-1">
  <span className="text-sm text-foreground truncate flex-1">{opp.title}</span>
  <span className={`text-xs font-semibold ml-2 ${

@@ -134,7 +134,7 @@ class SlashCommandRegistry {
 
     let helpText = '**Available Slash Commands:**\n\n';
 
-    for (const [category, cmds] of commandsByCategory) {
+    for (const [, cmds] of commandsByCategory) {
       helpText += cmds.map(cmd => `**${cmd.usage}** - ${cmd.description}`).join('\n') + '\n';
     }
 

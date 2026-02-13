@@ -6,7 +6,6 @@
 
 import React, { useState } from 'react';
 import { Settings } from 'lucide-react';
-import { toast } from '../../stores/toastStore';
 
 // Import types and components from extracted folder
 import {
@@ -21,7 +20,6 @@ import {
 // Feature #574: Wrapped in React.memo to prevent re-renders from unrelated state changes
 function TestResultCardInner({
  result,
- testType,
  token,
  comparisonViewMode,
  setComparisonViewMode,

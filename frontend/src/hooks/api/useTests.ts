@@ -261,7 +261,7 @@ export function useUpdateTest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data, suiteId }: { id: string; data: UpdateTestInput; suiteId?: string }) =>
+    mutationFn: ({ id, data }: { id: string; data: UpdateTestInput; suiteId?: string }) =>
       fetchWithAuth(`/api/v1/tests/${id}`, token, {
         method: 'PUT',
         body: JSON.stringify(data),
@@ -345,7 +345,7 @@ export function useDeleteTest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, suiteId }: { id: string; suiteId?: string }) =>
+    mutationFn: ({ id }: { id: string; suiteId?: string }) =>
       fetchWithAuth(`/api/v1/tests/${id}`, token, {
         method: 'DELETE',
       }),
@@ -600,7 +600,7 @@ export function useDeleteStepTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ templateId, suiteId }: { templateId: string; suiteId: string }) =>
+    mutationFn: ({ templateId }: { templateId: string; suiteId: string }) =>
       fetchWithAuth(`/api/v1/step-templates/${templateId}`, token, {
         method: 'DELETE',
       }),

@@ -3,7 +3,7 @@
  * Feature #712: Create React Query hook to eliminate raw fetch() in SharedTestRunPage
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
 // Types
 export interface StepResult {

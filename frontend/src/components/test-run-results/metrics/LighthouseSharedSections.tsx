@@ -10,7 +10,7 @@
  * - SecurityInsightsSection
  */
 import React, { useState } from 'react';
-import { ChevronRight, ChevronDown, X } from 'lucide-react';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 import { LighthouseResult } from '../types';
 import { Modal, ModalBody } from '../../ui/Modal';
 
@@ -212,8 +212,6 @@ export const SecurityInsightsSection: React.FC<SecurityInsightsSectionProps> = (
  lighthouse,
  securityInsightsCollapsed,
  setSecurityInsightsCollapsed,
- expandedMixedContentResources,
- setExpandedMixedContentResources,
 }) => (
  <div className="border border-border rounded-lg overflow-hidden mt-6">
  <button

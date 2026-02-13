@@ -47,7 +47,7 @@ const getClusterColor = (patternType: string): string => {
   return colors[patternType] || 'bg-muted text-muted-foreground border-border';
 };
 
-export function FailureClustersSection({ token: _token }: FailureClustersSectionProps) {
+export function FailureClustersSection({}: FailureClustersSectionProps) {
   const navigate = useNavigate();
   const [expandedCluster, setExpandedCluster] = useState<string | null>(null);
   const [days, setDays] = useState<7 | 14 | 30>(7);

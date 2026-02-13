@@ -297,7 +297,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                 <div className="px-4 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   {category}
                 </div>
-                {items.map((item, itemIndex) => {
+                {items.map((item) => {
                   const globalIndex = filteredItems.findIndex(fi => fi.id === item.id.replace(/-\d+$/, ''));
                   const isSelected = globalIndex === selectedIndex;
 

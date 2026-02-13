@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import { useAuthStore } from '../../stores/authStore';
-import type { CreateTestSuiteModalProps, TestSuggestion } from './types';
+import type { CreateTestSuiteModalProps } from './types';
 
 interface Project {
   id: string;

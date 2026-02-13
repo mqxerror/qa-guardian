@@ -34,7 +34,6 @@ function TestAISummaryInner({
   testName,
   runs,
   token,
-  formatDateTime,
 }: TestAISummaryProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [diagnosis, setDiagnosis] = useState<AIDiagnosis | null>(null);
@@ -265,7 +264,7 @@ function TestAISummaryInner({
           {/* Quick status indicators when collapsed */}
           {!isExpanded && (
             <div className="flex items-center gap-2">
-              {recentRuns.slice(0, 3).map((run, idx) => (
+              {recentRuns.slice(0, 3).map((run) => (
                 <div key={run.id} className="flex items-center">
                   {getStatusIcon(run.status)}
                 </div>
@@ -301,7 +300,7 @@ function TestAISummaryInner({
                 Recent Runs
               </h4>
               <div className="space-y-1">
-                {recentRuns.map((run, idx) => (
+                {recentRuns.map((run) => (
                   <div
                     key={run.id}
                     className="flex items-center justify-between text-sm py-1"

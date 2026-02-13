@@ -61,7 +61,6 @@ export function TestList({
   onSelect,
   selectedIds = new Set(),
   showCheckboxes = false,
-  emptyMessage = 'No tests found',
   searchQuery = '',
   sortField,
   sortDirection,

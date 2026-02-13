@@ -11,7 +11,7 @@
  * Feature #1074: Quick link to healing options
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { FlaskConical, CheckCircle2, XCircle, Clock, Loader2, ChevronDown, ChevronUp, ImageIcon, Eye, ZoomIn, ChevronRight, Pencil } from 'lucide-react';
 import type { EditSelectorModalState } from './modals';
 import { ScoreCard } from '../ui/score-card';

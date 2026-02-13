@@ -91,8 +91,6 @@ interface LighthouseResultsDisplayProps {
 // Feature #67: Lighthouse Results Display with Mobile + Desktop side-by-side
 export function LighthouseResultsDisplay({
  lighthouse,
- lighthouseHistory,
- testName,
 }: LighthouseResultsDisplayProps) {
  if (lighthouse.unreachable) {
  return (

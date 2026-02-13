@@ -58,18 +58,16 @@ export interface AIGenerateStepProps {
  * Feature #593: Added OpenAPI mode toggle
  */
 export const AIGenerateStep: React.FC<AIGenerateStepProps> = ({
- onContinue: _onContinue, // Feature #513: prefixed - continuation handled via onChange callback
  onChange,
- initialDescription: _initialDescription = '', // Feature #513: prefixed - not used, input starts empty
  projectBaseUrl,
 }) => {
  // Feature #593: Mode toggle between text and openapi
  const [inputMode, setInputMode] = useState<AIGenInputMode>('text');
  const [openAPITests, setOpenAPITests] = useState<OpenAPIGeneratedTest[]>([]);
 
- // Feature #513: isReady check moved to useEffect, prefixing unused
+ // Feature #513: isReady check moved to useEffect
  // Feature #588: Enable useAIService to call backend /api/v1/ai/parse-intent for real AI parsing
- const { input, isParsing, result, setInput, isReady: _isReady, updateResult, error } = useAIParser({
+ const { input, isParsing, result, setInput, updateResult, error } = useAIParser({
  debounceMs: 400,
  minInputLength: 5,
  useAIService: true, // Feature #588: Use backend AI for enhanced parsing

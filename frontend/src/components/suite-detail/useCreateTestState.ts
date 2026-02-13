@@ -6,8 +6,7 @@
  * including form fields, validation, and test-type-specific settings.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { DeviceConfig } from '../test-modals/types';
+import { useState, useCallback, useEffect } from 'react';
 
 // Test type options
 export type NewTestType = 'e2e' | 'visual_regression' | 'lighthouse' | 'load' | 'accessibility';

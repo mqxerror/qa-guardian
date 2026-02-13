@@ -37,46 +37,12 @@ interface AIHealthState {
   showInsights: boolean;
 }
 
-// Action types
-type AIHealthAction =
-  | { type: 'START_LOADING' }
-  | { type: 'SET_REPORT'; payload: AIHealthReport }
-  | { type: 'SET_ERROR' }
-  | { type: 'TOGGLE_INSIGHTS' }
-  | { type: 'SHOW_INSIGHTS' }
-  | { type: 'HIDE_INSIGHTS' };
-
 // Initial state
 const initialState: AIHealthState = {
   report: null,
   isLoading: false,
   showInsights: false,
 };
-
-// Reducer function
-function aiHealthReducer(state: AIHealthState, action: AIHealthAction): AIHealthState {
-  switch (action.type) {
-    case 'START_LOADING':
-      return { ...state, isLoading: true };
-    case 'SET_REPORT':
-      return {
-        ...state,
-        report: action.payload,
-        isLoading: false,
-        showInsights: true,
-      };
-    case 'SET_ERROR':
-      return { ...state, isLoading: false };
-    case 'TOGGLE_INSIGHTS':
-      return { ...state, showInsights: !state.showInsights };
-    case 'SHOW_INSIGHTS':
-      return { ...state, showInsights: true };
-    case 'HIDE_INSIGHTS':
-      return { ...state, showInsights: false };
-    default:
-      return state;
-  }
-}
 
 export interface UseAIHealthStateReturn {
   // State

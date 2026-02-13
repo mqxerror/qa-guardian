@@ -6,7 +6,7 @@
  * The actual data fetching is done via React Query hooks in useMonitoring.ts
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import type { MonitoringSettings } from './api/useMonitoring';
 
 export interface SettingsFormState {

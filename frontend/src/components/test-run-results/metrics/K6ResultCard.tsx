@@ -40,7 +40,6 @@ export const K6ResultCard: React.FC<K6ResultCardProps> = ({
  loadTest,
  k6ActiveTab,
  setK6ActiveTab,
- k6ShowThresholds,
  k6ExportFormat,
  perfAILoading,
  perfAIResult,

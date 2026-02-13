@@ -6,7 +6,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '../../stores/toastStore';
-import { getErrorMessage, isNetworkError, isOffline } from '../../utils/errorHandling';
+import { getErrorMessage } from '../../utils/errorHandling';
 import { TestType, TestRunType } from './types';
 
 /** Notification type for test detail actions */
@@ -62,7 +62,6 @@ export function useTestDetailActions({
   selectedBranch,
   runs,
   setRuns,
-  addNotification,
 }: UseTestDetailActionsProps) {
   const navigate = useNavigate();
 

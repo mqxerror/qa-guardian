@@ -9,7 +9,7 @@ import { createLogger } from '../utils/logger';
 
 const logger = createLogger('test-run-handlers');
 import { ScreenshotItem } from '../components/test-run-results';
-import type { LighthouseResult, StepLoadTestResult } from '../components/test-detail/types';
+import type { LighthouseResult } from '../components/test-detail/types';
 import type { K6LoadTestData } from '../components/test-run-results/pdfExport';
 
 // Performance analysis context type
