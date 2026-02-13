@@ -97,3 +97,10 @@ backend/videos/
 backend/baselines/
 *.zip
 *.webm
+
+# Harness agent artifacts
+.playwright-mcp/
+.agent.lock
+feature-*.png
+regression-*.png
+create_regression_tests.py
