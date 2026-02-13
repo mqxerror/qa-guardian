@@ -41,7 +41,6 @@ const NpmAuditPage = lazy(() => import('./pages/NpmAuditPage').then(m => ({ defa
 const LicenseCompliancePage = lazy(() => import('./pages/LicenseCompliancePage').then(m => ({ default: m.LicenseCompliancePage })));
 const SbomPage = lazy(() => import('./pages/SbomPage').then(m => ({ default: m.SbomPage })));
 const ContainerScanPage = lazy(() => import('./pages/ContainerScanPage').then(m => ({ default: m.ContainerScanPage })));
-const UpgradeRecommendationsPage = lazy(() => import('./pages/UpgradeRecommendationsPage').then(m => ({ default: m.UpgradeRecommendationsPage })));
 const DependencyTreePage = lazy(() => import('./pages/DependencyTreePage').then(m => ({ default: m.DependencyTreePage })));
 const DependencyPolicyPage = lazy(() => import('./pages/DependencyPolicyPage').then(m => ({ default: m.DependencyPolicyPage })));
 const MultiLanguageDependencyPage = lazy(() => import('./pages/MultiLanguageDependencyPage').then(m => ({ default: m.MultiLanguageDependencyPage })));
@@ -385,16 +384,6 @@ function App() {
             <ProtectedRoute>
               <PageErrorBoundary>
                 <ContainerScanPage />
-              </PageErrorBoundary>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/security/upgrade-recommendations"
-          element={
-            <ProtectedRoute>
-              <PageErrorBoundary>
-                <UpgradeRecommendationsPage />
               </PageErrorBoundary>
             </ProtectedRoute>
           }
