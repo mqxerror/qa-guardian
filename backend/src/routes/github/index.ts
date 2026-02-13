@@ -5,14 +5,14 @@
  * This allows other parts of the application to import from a single location.
  *
  * Feature #1375: Split github.ts into modules
+ * Feature #862: Removed dependency-management.ts and dependency-lists.ts (dead code after page cuts)
  *
  * Structure:
  * - types.ts: All TypeScript interfaces and type definitions
  * - stores.ts: In-memory data stores and demo data
  * - core.ts: Core GitHub OAuth and repository routes
- * - dependency-scanning.ts: PR dependency scanning, alerts, policies
- * - dependency-management.ts: Allowlist/blocklist, health score, auto-PR, age tracking
- * - vulnerability-tracking.ts: Multi-language support, vulnerability history, exploitability
+ * - dependency-scanning.ts: PR dependency scanning (alerts/policies removed in #862)
+ * - vulnerability-tracking.ts: All-dependencies endpoint only (multi-lang/history removed in #862)
  * - ai-providers.ts: Kie.ai, Anthropic, AI provider router routes
  * - ai-test-generation.ts: AI test generation routes
  * - natural-language-tests.ts: Natural language test generation routes
@@ -29,7 +29,6 @@ export * from './stores.js';
 // Re-export route modules
 export { coreGithubRoutes } from './core.js';
 export { dependencyScanningRoutes } from './dependency-scanning.js';
-export { dependencyManagementRoutes } from './dependency-management.js';
 export { vulnerabilityTrackingRoutes } from './vulnerability-tracking.js';
 export { aiProviderRoutes } from './ai-providers.js';
 export { aiTestGenerationRoutes } from './ai-test-generation.js';

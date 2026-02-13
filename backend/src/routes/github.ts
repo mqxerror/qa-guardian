@@ -6,13 +6,13 @@
  *
  * Feature #1375: Split github.ts into modules
  * Feature #1542: Added AI best practices routes
+ * Feature #862: Removed dependency-management (dead code after page cuts)
  *
  * @see ./github/types.ts - Type definitions
  * @see ./github/stores.ts - In-memory data stores and demo data
  * @see ./github/core.ts - Core GitHub OAuth and repository routes
- * @see ./github/dependency-scanning.ts - PR dependency scanning, alerts, policies
- * @see ./github/dependency-management.ts - Allowlist/blocklist, health score, auto-PR, age tracking
- * @see ./github/vulnerability-tracking.ts - Multi-language support, vulnerability history, exploitability
+ * @see ./github/dependency-scanning.ts - PR dependency scanning
+ * @see ./github/vulnerability-tracking.ts - All-dependencies endpoint
  * @see ./github/ai-providers.ts - Kie.ai, Anthropic, AI provider router routes
  * @see ./github/ai-test-generation.ts - AI test generation routes
  * @see ./github/natural-language-tests.ts - Natural language test generation routes
@@ -30,7 +30,6 @@ export * from './github/stores.js';
 import {
   coreGithubRoutes,
   dependencyScanningRoutes,
-  dependencyManagementRoutes,
   vulnerabilityTrackingRoutes,
   aiProviderRoutes,
   aiTestGenerationRoutes,
@@ -46,7 +45,6 @@ export async function githubRoutes(app: FastifyInstance) {
   // Register all route modules
   await coreGithubRoutes(app);
   await dependencyScanningRoutes(app);
-  await dependencyManagementRoutes(app);
   await vulnerabilityTrackingRoutes(app);
   await aiProviderRoutes(app);
   await aiTestGenerationRoutes(app);
