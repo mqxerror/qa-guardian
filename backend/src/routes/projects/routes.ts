@@ -22,7 +22,7 @@ import {
   createEnvVarSchema,
   updateEnvVarSchema,
   quickSmokeTestSchema,
-} from '../../validation/schemas.js';
+} from '../../validation/index.js';
 // UpdateProjectInput available from schemas if needed
 import { TestSuite, Test } from '../test-suites.js';
 import {

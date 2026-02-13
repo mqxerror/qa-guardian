@@ -18,10 +18,6 @@ export * from './mcp-schemas.js';
 export * from './monitoring-schemas.js';
 export * from './remaining-schemas.js';
 
-// Legacy file kept for backward compatibility with any direct imports
-// All schemas are now maintained in domain-specific files above
-// export * from './schemas.js'; // Deprecated - use domain files
-
 // Export middleware (validate renamed to validateRequest to avoid conflict)
 export { validateBody, validateParams, validateQuery, validate as validateRequest, createValidatedHandler } from './middleware.js';
 export type { ValidationSchemas } from './middleware.js';

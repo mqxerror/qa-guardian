@@ -8,7 +8,7 @@
 
 import { FastifyRequest, FastifyReply, preHandlerHookHandler } from 'fastify';
 import { z } from 'zod';
-import { formatZodErrors } from './schemas.js';
+import { formatZodErrors } from './common-schemas.js';
 
 /**
  * Create a validation preHandler for request body
