@@ -16,6 +16,13 @@ import type {
   AvailableToolsResponse,
 } from './types.js';
 import { createLogger } from '../../services/logger.js';
+// Feature #715: Zod validation middleware and schemas
+import {
+  validateBody,
+  mcpExecuteBodySchema,
+  mcpChatBodySchema,
+  mcpChatVisionBodySchema,
+} from '../../validation/index.js';
 
 // Use structured Pino logger with convenience wrappers
 const pinoLog = createLogger('mcp-rest');
@@ -318,9 +325,12 @@ export default async function mcpToolsRoutes(fastify: FastifyInstance) {
    * POST /api/v1/mcp/execute
    * Execute an MCP tool handler
    */
+  // Feature #715: Zod validation for MCP tool execution body
   fastify.post<{
     Body: ExecuteToolRequest;
-  }>('/execute', async (request, reply) => {
+  }>('/execute', {
+    preValidation: [validateBody(mcpExecuteBodySchema)],
+  }, async (request, reply) => {
     const startTime = Date.now();
 
     try {
@@ -416,6 +426,7 @@ export default async function mcpToolsRoutes(fastify: FastifyInstance) {
    * AI-powered chat endpoint with tool execution capability
    * Claude can request tool execution by including TOOL_CALL blocks in its response
    */
+  // Feature #715: Zod validation for MCP chat body
   fastify.post<{
     Body: {
       message: string;
@@ -432,7 +443,9 @@ export default async function mcpToolsRoutes(fastify: FastifyInstance) {
       provider?: 'kie' | 'anthropic' | 'auto';
       model?: string;
     };
-  }>('/chat', async (request, reply) => {
+  }>('/chat', {
+    preValidation: [validateBody(mcpChatBodySchema)],
+  }, async (request, reply) => {
     const startTime = Date.now();
 
     try {
@@ -1166,6 +1179,7 @@ Tool fails → Continue anyway → Report "completed successfully" ❌`;
    * AI-powered chat endpoint with Claude Vision for visual regression analysis
    * Feature #1947: Smart image handling - use Vision API only for visual regression tests
    */
+  // Feature #715: Zod validation for MCP chat vision body
   fastify.post<{
     Body: {
       message: string;
@@ -1180,7 +1194,9 @@ Tool fails → Continue anyway → Report "completed successfully" ❌`;
       };
       complexity?: 'simple' | 'complex';
     };
-  }>('/chat/vision', async (request, reply) => {
+  }>('/chat/vision', {
+    preValidation: [validateBody(mcpChatVisionBodySchema)],
+  }, async (request, reply) => {
     const startTime = Date.now();
 
     try {

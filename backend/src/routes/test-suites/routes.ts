@@ -2,9 +2,26 @@
 // Handles test suite and test CRUD operations, plus test steps
 // Feature #61: Redis caching integration
 // Feature #108: WebSocket events for real-time cache invalidation
+// Feature #714: Zod validation for request bodies, params, and queries
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
+// Feature #714: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  validateQuery,
+  suiteProjectParamsSchema,
+  suiteParamsSchema,
+  testParamsSchema,
+  testStepParamsSchema,
+  listPaginationQuerySchema,
+  testCodeQuerySchema,
+  reorderStepsSchema,
+  addStepSchema,
+  updateStepSchema,
+  reorderTestsSchema,
+} from '../../validation/index.js';
 import { logAuditEntry } from '../audit-logs.js';
 // Feature #61: Redis caching
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
@@ -52,8 +69,10 @@ export async function coreRoutes(app: FastifyInstance) {
   // Feature #55: Add server-side pagination
   // Feature #61: Cached for 5 minutes
   // Feature #99: Database-level pagination - no longer loads ALL suites into memory
+  // Feature #714: Zod validation for params and query
   app.get<{ Params: ProjectParams; Querystring: { page?: number; limit?: number } }>('/api/v1/projects/:projectId/suites', {
     preHandler: [authenticate],
+    preValidation: [validateParams(suiteProjectParamsSchema), validateQuery(listPaginationQuerySchema)],
   }, async (request, _reply) => {
     const { projectId } = request.params;
     const { page = 1, limit = 20 } = request.query;
@@ -105,8 +124,10 @@ export async function coreRoutes(app: FastifyInstance) {
   // Get single test suite
   // Feature #2081: Use async database functions for persistence
   // Feature #61: Cached for 5 minutes
+  // Feature #714: Zod validation for params
   app.get<{ Params: SuiteParams }>('/api/v1/suites/:suiteId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(suiteParamsSchema)],
   }, async (request, reply) => {
     const { suiteId } = request.params;
     const orgId = getOrganizationId(request);
@@ -137,8 +158,10 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // Create test suite
   // Feature #862: MCP tool create-test-suite support
+  // Feature #714: Zod validation for params
   app.post<{ Params: ProjectParams; Body: CreateSuiteBody }>('/api/v1/projects/:projectId/suites', {
     preHandler: [authenticate],
+    preValidation: [validateParams(suiteProjectParamsSchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const {
@@ -213,8 +236,10 @@ export async function coreRoutes(app: FastifyInstance) {
   // Feature #1688: Update test suite
   // MCP tool: update_test_suite
   // Feature #2081: Use async database functions for persistence
+  // Feature #714: Zod validation for params
   app.patch<{ Params: SuiteParams; Body: UpdateSuiteBody }>('/api/v1/suites/:suiteId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(suiteParamsSchema)],
   }, async (request, reply) => {
     const { suiteId } = request.params;
     const updates = request.body;
@@ -273,8 +298,10 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // Delete test suite
   // Feature #2081: Use async database functions for persistence
+  // Feature #714: Zod validation for params
   app.delete<{ Params: SuiteParams }>('/api/v1/suites/:suiteId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(suiteParamsSchema)],
   }, async (request, reply) => {
     const { suiteId } = request.params;
     const user = request.user as JwtPayload;
@@ -325,8 +352,10 @@ export async function coreRoutes(app: FastifyInstance) {
   // Feature #54: Add server-side pagination
   // Feature #61: Cached for 5 minutes (tests list)
   // Feature #99: Database-level pagination - no longer loads ALL tests into memory
+  // Feature #714: Zod validation for params and query
   app.get<{ Params: SuiteParams; Querystring: { page?: number; limit?: number } }>('/api/v1/suites/:suiteId/tests', {
     preHandler: [authenticate],
+    preValidation: [validateParams(suiteParamsSchema), validateQuery(listPaginationQuerySchema)],
   }, async (request, reply) => {
     const { suiteId } = request.params;
     const { page = 1, limit = 50 } = request.query;
@@ -413,8 +442,10 @@ export async function coreRoutes(app: FastifyInstance) {
   // Get single test
   // Feature #2081: Use async database functions for persistence
   // Feature #61: Cached for 5 minutes
+  // Feature #714: Zod validation for params
   app.get<{ Params: TestParams }>('/api/v1/tests/:testId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(testParamsSchema)],
   }, async (request, reply) => {
     const { testId } = request.params;
     const orgId = getOrganizationId(request);
@@ -445,8 +476,10 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // Feature #875: Get generated Playwright code for a test
   // Feature #2081: Use async database functions for persistence
+  // Feature #714: Zod validation for params and query
   app.get<{ Params: TestParams; Querystring: { format?: 'typescript' | 'javascript' } }>('/api/v1/tests/:testId/code', {
     preHandler: [authenticate],
+    preValidation: [validateParams(testParamsSchema), validateQuery(testCodeQuerySchema)],
   }, async (request, reply) => {
     const { testId } = request.params;
     const format = request.query.format || 'typescript';
@@ -493,8 +526,10 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // Create test in a suite
   // Feature #2081: Use async database functions for persistence
+  // Feature #714: Zod validation for params
   app.post<{ Params: SuiteParams; Body: CreateTestBody }>('/api/v1/suites/:suiteId/tests', {
     preHandler: [authenticate],
+    preValidation: [validateParams(suiteParamsSchema)],
   }, async (request, reply) => {
     const { suiteId } = request.params;
     // Feature #589: Added timeout, retries, tags, device_emulation, device_config for E2E tests
@@ -700,8 +735,10 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // Update test
   // Feature #2081: Use async database functions for persistence
+  // Feature #714: Zod validation for params
   app.patch<{ Params: TestParams; Body: UpdateTestBody }>('/api/v1/tests/:testId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(testParamsSchema)],
   }, async (request, reply) => {
     const { testId } = request.params;
     const updates = request.body;
@@ -787,8 +824,10 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // Reorder test steps
   // Feature #2081: Use async database functions for persistence
+  // Feature #714: Zod validation for params and body
   app.put<{ Params: TestParams; Body: { steps: Array<{ id: string; action: string; selector?: string; value?: string; order?: number }> } }>('/api/v1/tests/:testId/steps/reorder', {
     preHandler: [authenticate],
+    preValidation: [validateParams(testParamsSchema), validateBody(reorderStepsSchema)],
   }, async (request, reply) => {
     const { testId } = request.params;
     const { steps } = request.body;
@@ -833,8 +872,10 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Feature #872: Add a step to a test
+  // Feature #714: Zod validation for params and body
   app.post<{ Params: TestParams; Body: { action: string; selector?: string; value?: string; index?: number } }>('/api/v1/tests/:testId/steps', {
     preHandler: [authenticate],
+    preValidation: [validateParams(testParamsSchema), validateBody(addStepSchema)],
   }, async (request, reply) => {
     const { testId } = request.params;
     const { action, selector, value, index } = request.body;
@@ -916,8 +957,10 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // Feature #873: Update a step in a test
   // Feature #2081: Use async database functions for persistence
+  // Feature #714: Zod validation for params and body
   app.patch<{ Params: { testId: string; stepId: string }; Body: { action?: string; selector?: string; value?: string } }>('/api/v1/tests/:testId/steps/:stepId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(testStepParamsSchema), validateBody(updateStepSchema)],
   }, async (request, reply) => {
     const { testId, stepId } = request.params;
     const { action, selector, value } = request.body;
@@ -998,8 +1041,10 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // Feature #874: Delete a step from a test
   // Feature #2081: Use async database functions for persistence
+  // Feature #714: Zod validation for params
   app.delete<{ Params: { testId: string; stepId: string } }>('/api/v1/tests/:testId/steps/:stepId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(testStepParamsSchema)],
   }, async (request, reply) => {
     const { testId, stepId } = request.params;
     const user = request.user as JwtPayload;
@@ -1062,9 +1107,11 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Feature #871: Reorder tests within a suite
+  // Feature #2081: Use async database functions for persistence
+  // Feature #714: Zod validation for params and body
   app.put<{ Params: SuiteParams; Body: { test_ids: string[] } }>('/api/v1/suites/:suiteId/tests/reorder', {
     preHandler: [authenticate],
-  // Feature #2081: Use async database functions for persistence
+    preValidation: [validateParams(suiteParamsSchema), validateBody(reorderTestsSchema)],
   }, async (request, reply) => {
     const { suiteId } = request.params;
     const { test_ids } = request.body;
@@ -1139,8 +1186,10 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // Delete test
   // Feature #2081: Use async database functions for persistence
+  // Feature #714: Zod validation for params
   app.delete<{ Params: TestParams }>('/api/v1/tests/:testId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(testParamsSchema)],
   }, async (request, reply) => {
     const { testId } = request.params;
     const user = request.user as JwtPayload;

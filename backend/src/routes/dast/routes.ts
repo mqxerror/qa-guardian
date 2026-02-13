@@ -42,6 +42,26 @@ import {
   performGraphQLIntrospection,
 } from './graphql.js';
 import { createLogger } from '../../services/logger.js';
+// Feature #715: Zod validation middleware and schemas
+import {
+  validateParams,
+  validateBody,
+  validateQuery,
+  dastProjectIdParamsSchema,
+  dastScanIdParamsSchema,
+  dastAlertIdParamsSchema,
+  dastFalsePositiveIdParamsSchema,
+  dastTriggerScanBodySchema,
+  dastFalsePositiveBodySchema,
+  dastAlertsQuerySchema,
+  dastReportQuerySchema,
+  dastStatsQuerySchema,
+  dastOpenApiUploadBodySchema,
+  dastGraphqlScanBodySchema,
+  dastGraphqlIntrospectBodySchema,
+  dastGraphqlScanIdParamsSchema,
+  dastGraphqlScansQuerySchema,
+} from '../../validation/index.js';
 
 const logger = createLogger('dast');
 
@@ -61,10 +81,12 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Get DAST config for a project
+  // Feature #715: Zod validation for projectId param
   app.get<{
     Params: { projectId: string };
   }>('/api/v1/projects/:projectId/dast/config', {
     preHandler: [authenticate, requireScopes(['read'])],
+    preValidation: [validateParams(dastProjectIdParamsSchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);
@@ -79,11 +101,13 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Update DAST config for a project
+  // Feature #715: Zod validation for projectId param
   app.put<{
     Params: { projectId: string };
     Body: Partial<DASTConfig>;
   }>('/api/v1/projects/:projectId/dast/config', {
     preHandler: [authenticate, requireScopes(['write'])],
+    preValidation: [validateParams(dastProjectIdParamsSchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);
@@ -108,11 +132,13 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Get DAST scans for a project
+  // Feature #715: Zod validation for projectId param
   app.get<{
     Params: { projectId: string };
     Querystring: { limit?: string };
   }>('/api/v1/projects/:projectId/dast/scans', {
     preHandler: [authenticate, requireScopes(['read'])],
+    preValidation: [validateParams(dastProjectIdParamsSchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const { limit = '10' } = request.query;
@@ -134,6 +160,7 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Trigger a new DAST scan
+  // Feature #715: Zod validation for projectId param and scan body
   app.post<{
     Params: { projectId: string };
     Body: {
@@ -142,6 +169,7 @@ export async function dastRoutes(app: FastifyInstance) {
     };
   }>('/api/v1/projects/:projectId/dast/scans', {
     preHandler: [authenticate, requireScopes(['execute'])],
+    preValidation: [validateParams(dastProjectIdParamsSchema), validateBody(dastTriggerScanBodySchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);
@@ -217,10 +245,12 @@ export async function dastRoutes(app: FastifyInstance) {
 
   // Get a specific DAST scan
   // Feature #124: Use direct scan lookup instead of fetching all + filter
+  // Feature #715: Zod validation for projectId + scanId params
   app.get<{
     Params: { projectId: string; scanId: string };
   }>('/api/v1/projects/:projectId/dast/scans/:scanId', {
     preHandler: [authenticate, requireScopes(['read'])],
+    preValidation: [validateParams(dastScanIdParamsSchema)],
   }, async (request, reply) => {
     const { projectId, scanId } = request.params;
     const orgId = getOrganizationId(request);
@@ -242,11 +272,13 @@ export async function dastRoutes(app: FastifyInstance) {
 
   // Get alerts from a specific scan
   // Feature #124: Use direct scan lookup instead of fetching all + filter
+  // Feature #715: Zod validation for params and query
   app.get<{
     Params: { projectId: string; scanId: string };
     Querystring: { risk?: string; confidence?: string; includeFalsePositives?: string };
   }>('/api/v1/projects/:projectId/dast/scans/:scanId/alerts', {
     preHandler: [authenticate, requireScopes(['read'])],
+    preValidation: [validateParams(dastScanIdParamsSchema), validateQuery(dastAlertsQuerySchema)],
   }, async (request, reply) => {
     const { projectId, scanId } = request.params;
     const { risk, confidence, includeFalsePositives = 'false' } = request.query;
@@ -293,11 +325,13 @@ export async function dastRoutes(app: FastifyInstance) {
 
   // Generate and download DAST scan report
   // Feature #124: Use direct scan lookup instead of fetching all + filter
+  // Feature #715: Zod validation for params and query
   app.get<{
     Params: { projectId: string; scanId: string };
     Querystring: { format?: string };
   }>('/api/v1/projects/:projectId/dast/scans/:scanId/report', {
     preHandler: [authenticate, requireScopes(['read'])],
+    preValidation: [validateParams(dastScanIdParamsSchema), validateQuery(dastReportQuerySchema)],
   }, async (request, reply) => {
     const { projectId, scanId } = request.params;
     const { format = 'html' } = request.query;
@@ -410,11 +444,13 @@ export async function dastRoutes(app: FastifyInstance) {
 
   // Mark an alert as false positive
   // Feature #124: Use direct scan lookup instead of fetching all + filter
+  // Feature #715: Zod validation for params and body
   app.post<{
     Params: { projectId: string; scanId: string; alertId: string };
     Body: { reason: string };
   }>('/api/v1/projects/:projectId/dast/scans/:scanId/alerts/:alertId/false-positive', {
     preHandler: [authenticate, requireScopes(['write'])],
+    preValidation: [validateParams(dastAlertIdParamsSchema), validateBody(dastFalsePositiveBodySchema)],
   }, async (request, reply) => {
     const { projectId, scanId, alertId } = request.params;
     const { reason } = request.body;
@@ -484,10 +520,12 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Get false positives for a project
+  // Feature #715: Zod validation for projectId param
   app.get<{
     Params: { projectId: string };
   }>('/api/v1/projects/:projectId/dast/false-positives', {
     preHandler: [authenticate, requireScopes(['read'])],
+    preValidation: [validateParams(dastProjectIdParamsSchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);
@@ -506,10 +544,12 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Remove a false positive
+  // Feature #715: Zod validation for false positive params
   app.delete<{
     Params: { projectId: string; falsePositiveId: string };
   }>('/api/v1/projects/:projectId/dast/false-positives/:falsePositiveId', {
     preHandler: [authenticate, requireScopes(['write'])],
+    preValidation: [validateParams(dastFalsePositiveIdParamsSchema)],
   }, async (request, reply) => {
     const { projectId, falsePositiveId } = request.params;
     const orgId = getOrganizationId(request);
@@ -542,10 +582,12 @@ export async function dastRoutes(app: FastifyInstance) {
 
   // Get organization-wide DAST statistics
   // Feature #124: Optimized to use single JOIN query instead of N+1 queries
+  // Feature #715: Zod validation for stats query
   app.get<{
     Querystring: { days?: string };
   }>('/api/v1/organizations/current/dast/stats', {
     preHandler: [authenticate, requireScopes(['read'])],
+    preValidation: [validateQuery(dastStatsQuerySchema)],
   }, async (request, reply) => {
     const { days = '30' } = request.query;
     const orgId = getOrganizationId(request);
@@ -600,11 +642,13 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Upload OpenAPI specification
+  // Feature #715: Zod validation for params and body
   app.post<{
     Params: { projectId: string };
     Body: { content: string; name?: string };
   }>('/api/v1/projects/:projectId/dast/openapi-spec', {
     preHandler: [authenticate, requireScopes(['write'])],
+    preValidation: [validateParams(dastProjectIdParamsSchema), validateBody(dastOpenApiUploadBodySchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const { content, name = 'API Specification' } = request.body;
@@ -669,10 +713,12 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Get OpenAPI specification for a project
+  // Feature #715: Zod validation for projectId param
   app.get<{
     Params: { projectId: string };
   }>('/api/v1/projects/:projectId/dast/openapi-spec', {
     preHandler: [authenticate, requireScopes(['read'])],
+    preValidation: [validateParams(dastProjectIdParamsSchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);
@@ -709,10 +755,12 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Delete OpenAPI specification
+  // Feature #715: Zod validation for projectId param
   app.delete<{
     Params: { projectId: string };
   }>('/api/v1/projects/:projectId/dast/openapi-spec', {
     preHandler: [authenticate, requireScopes(['write'])],
+    preValidation: [validateParams(dastProjectIdParamsSchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);
@@ -759,10 +807,12 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // GraphQL scan routes
+  // Feature #715: Zod validation for GraphQL scan body
   app.post<{
     Body: GraphQLScanConfig;
   }>('/api/v1/dast/graphql/scan', {
     preHandler: [authenticate, requireScopes(['write'])],
+    preValidation: [validateBody(dastGraphqlScanBodySchema)],
   }, async (request, reply) => {
     const config = request.body;
 
@@ -801,10 +851,12 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Get GraphQL scan status/result
+  // Feature #715: Zod validation for scanId param
   app.get<{
     Params: { scanId: string };
   }>('/api/v1/dast/graphql/scan/:scanId', {
     preHandler: [authenticate, requireScopes(['read'])],
+    preValidation: [validateParams(dastGraphqlScanIdParamsSchema)],
   }, async (request, reply) => {
     const { scanId } = request.params;
     const scan = await getGraphQLScan(scanId);
@@ -817,10 +869,12 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // List all GraphQL scans
+  // Feature #715: Zod validation for GraphQL scans query
   app.get<{
     Querystring: { limit?: string; status?: string };
   }>('/api/v1/dast/graphql/scans', {
     preHandler: [authenticate, requireScopes(['read'])],
+    preValidation: [validateQuery(dastGraphqlScansQuerySchema)],
   }, async (request, reply) => {
     const { limit = '10', status } = request.query;
     const limitNum = Math.min(parseInt(limit) || 10, 100);
@@ -834,10 +888,12 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Perform introspection only
+  // Feature #715: Zod validation for introspection body
   app.post<{
     Body: { endpoint: string; authHeader?: string };
   }>('/api/v1/dast/graphql/introspect', {
     preHandler: [authenticate, requireScopes(['read'])],
+    preValidation: [validateBody(dastGraphqlIntrospectBodySchema)],
   }, async (request, reply) => {
     const { endpoint, authHeader } = request.body;
 

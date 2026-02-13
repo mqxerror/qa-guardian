@@ -9,8 +9,20 @@ import { authenticate, requireScopes, JwtPayload, ApiKeyPayload, getOrganization
 import { createLogger } from '../../services/logger.js';
 
 const log = createLogger('projects');
-import { validateBody } from '../../validation/middleware.js';
-import { createProjectSchema, CreateProjectInput } from '../../validation/schemas.js';
+// Feature #714: Zod validation middleware and schemas
+import { validateBody, validateParams, validateQuery } from '../../validation/middleware.js';
+import {
+  createProjectSchema,
+  CreateProjectInput,
+  updateProjectSchema,
+  projectIdParamsSchema,
+  projectListQuerySchema,
+  projectArchiveSchema,
+  projectEnvVarParamsSchema,
+  createEnvVarSchema,
+  updateEnvVarSchema,
+  quickSmokeTestSchema,
+} from '../../validation/schemas.js';
 // UpdateProjectInput available from schemas if needed
 import { TestSuite, Test } from '../test-suites.js';
 import {
@@ -50,8 +62,10 @@ export async function coreRoutes(app: FastifyInstance) {
   // For developers/viewers, only show projects they have explicit access to
   // Query params: include_archived=true to include archived projects, archived_only=true for only archived
   // Feature #61: Cached for 5 minutes
+  // Feature #714: Zod validation for query params
   app.get<{ Querystring: { include_archived?: string; archived_only?: string } }>('/api/v1/projects', {
     preHandler: [authenticate, requireScopes(['read'])],
+    preValidation: [validateQuery(projectListQuerySchema)],
   }, async (request) => {
     const orgId = getOrganizationId(request);
     const user = request.user as JwtPayload | ApiKeyPayload;
@@ -93,8 +107,10 @@ export async function coreRoutes(app: FastifyInstance) {
 
   // Get single project (requires authentication, organization membership, and project access)
   // Feature #61: Cached for 5 minutes
+  // Feature #714: Zod validation for params
   app.get<{ Params: ProjectParams }>('/api/v1/projects/:id', {
     preHandler: [authenticate],
+    preValidation: [validateParams(projectIdParamsSchema)],
   }, async (request, reply) => {
     const { id } = request.params;
     const user = request.user as JwtPayload;
@@ -216,8 +232,10 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Update project (requires authentication and organization membership)
+  // Feature #714: Zod validation for params and body
   app.patch<{ Params: ProjectParams; Body: Partial<CreateProjectBody> }>('/api/v1/projects/:id', {
     preHandler: [authenticate],
+    preValidation: [validateParams(projectIdParamsSchema), validateBody(updateProjectSchema)],
   }, async (request, reply) => {
     const { id } = request.params;
     const updates = request.body;
@@ -274,8 +292,10 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Delete project (requires authentication, admin or owner, and organization membership)
+  // Feature #714: Zod validation for params
   app.delete<{ Params: ProjectParams }>('/api/v1/projects/:id', {
     preHandler: [authenticate],
+    preValidation: [validateParams(projectIdParamsSchema)],
   }, async (request, reply) => {
     const { id } = request.params;
     const user = request.user as JwtPayload;
@@ -335,8 +355,10 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Archive/unarchive project (requires authentication, admin or owner, and organization membership)
+  // Feature #714: Zod validation for params and body
   app.post<{ Params: ProjectParams; Body: { archived: boolean } }>('/api/v1/projects/:id/archive', {
     preHandler: [authenticate],
+    preValidation: [validateParams(projectIdParamsSchema), validateBody(projectArchiveSchema)],
   }, async (request, reply) => {
     const { id } = request.params;
     const { archived } = request.body;
@@ -390,8 +412,10 @@ export async function coreRoutes(app: FastifyInstance) {
   // ========== ENVIRONMENT VARIABLES ==========
 
   // List environment variables for a project
+  // Feature #714: Zod validation for params
   app.get<{ Params: ProjectParams }>('/api/v1/projects/:id/env', {
     preHandler: [authenticate],
+    preValidation: [validateParams(projectIdParamsSchema)],
   }, async (request, reply) => {
     const { id } = request.params;
     const user = request.user as JwtPayload;
@@ -424,8 +448,10 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Add environment variable to a project
+  // Feature #714: Zod validation for params and body
   app.post<{ Params: ProjectParams; Body: { key: string; value: string; is_secret?: boolean } }>('/api/v1/projects/:id/env', {
     preHandler: [authenticate],
+    preValidation: [validateParams(projectIdParamsSchema), validateBody(createEnvVarSchema)],
   }, async (request, reply) => {
     const { id } = request.params;
     const { key, value, is_secret = false } = request.body;
@@ -455,21 +481,9 @@ export async function coreRoutes(app: FastifyInstance) {
       });
     }
 
-    // Validate key
-    if (!key || key.trim().length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Environment variable key is required',
-      });
-    }
-
-    const trimmedKey = key.trim().toUpperCase();
-    if (!/^[A-Z_][A-Z0-9_]*$/.test(trimmedKey)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Key must start with a letter or underscore and contain only letters, numbers, and underscores',
-      });
-    }
+    // Note: Key validation now handled by Zod schema (createEnvVarSchema)
+    // The schema trims and uppercases the key automatically
+    const trimmedKey = key; // Already validated and transformed by Zod
 
     // Check for duplicate keys
     const envVars = await dbGetProjectEnvVars(id);
@@ -505,8 +519,10 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Update environment variable
+  // Feature #714: Zod validation for params and body
   app.put<{ Params: { id: string; varId: string }; Body: { value?: string; is_secret?: boolean } }>('/api/v1/projects/:id/env/:varId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(projectEnvVarParamsSchema), validateBody(updateEnvVarSchema)],
   }, async (request, reply) => {
     const { id, varId } = request.params;
     const { value, is_secret } = request.body;
@@ -573,8 +589,10 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Delete environment variable
+  // Feature #714: Zod validation for params
   app.delete<{ Params: { id: string; varId: string } }>('/api/v1/projects/:id/env/:varId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(projectEnvVarParamsSchema)],
   }, async (request, reply) => {
     const { id, varId } = request.params;
     const user = request.user as JwtPayload;
@@ -623,8 +641,10 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Feature #1975: Quick Smoke Test - One-click smoke test from project dashboard
+  // Feature #714: Zod validation for params and body
   app.post<{ Params: ProjectParams; Body: { target_url: string } }>('/api/v1/projects/:id/quick-smoke-test', {
     preHandler: [authenticate, requireScopes(['execute'])],
+    preValidation: [validateParams(projectIdParamsSchema), validateBody(quickSmokeTestSchema)],
   }, async (request, reply) => {
     const { id } = request.params;
     const { target_url } = request.body;

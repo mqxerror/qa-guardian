@@ -444,6 +444,407 @@ export const retryStrategyTestIdParamsSchema = z.object({
   testId: uuidSchema,
 });
 
+// ============================================================================
+// Feature #714: Project Route Schemas
+// ============================================================================
+
+/**
+ * Project list query parameters
+ */
+export const projectListQuerySchema = z.object({
+  include_archived: z.string().optional(),
+  archived_only: z.string().optional(),
+});
+
+/**
+ * Project archive request body
+ */
+export const projectArchiveSchema = z.object({
+  archived: z.boolean(),
+});
+
+/**
+ * Project environment variable ID params
+ */
+export const projectEnvVarParamsSchema = z.object({
+  id: uuidSchema,
+  varId: uuidSchema,
+});
+
+/**
+ * Create environment variable request body
+ */
+export const createEnvVarSchema = z.object({
+  key: z
+    .string()
+    .min(1, 'Key is required')
+    .transform(s => s.trim().toUpperCase())
+    .refine(
+      s => /^[A-Z_][A-Z0-9_]*$/.test(s),
+      'Key must start with a letter or underscore and contain only letters, numbers, and underscores'
+    ),
+  value: z.string(),
+  is_secret: z.boolean().default(false),
+});
+
+/**
+ * Update environment variable request body
+ */
+export const updateEnvVarSchema = z.object({
+  value: z.string().optional(),
+  is_secret: z.boolean().optional(),
+});
+
+/**
+ * Quick smoke test request body
+ */
+export const quickSmokeTestSchema = z.object({
+  target_url: z.string().url('Invalid URL format').optional(),
+});
+
+// ============================================================================
+// Feature #714: Test Suite Route Schemas
+// ============================================================================
+
+/**
+ * Project ID parameter for suite routes
+ */
+export const suiteProjectParamsSchema = z.object({
+  projectId: uuidSchema,
+});
+
+/**
+ * Suite ID parameter
+ */
+export const suiteParamsSchema = z.object({
+  suiteId: uuidSchema,
+});
+
+/**
+ * Test ID parameter
+ */
+export const testParamsSchema = z.object({
+  testId: uuidSchema,
+});
+
+/**
+ * Test step params (testId + stepId)
+ */
+export const testStepParamsSchema = z.object({
+  testId: uuidSchema,
+  stepId: uuidSchema,
+});
+
+/**
+ * Pagination query for suites/tests lists
+ */
+export const listPaginationQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+/**
+ * Test code format query
+ */
+export const testCodeQuerySchema = z.object({
+  format: z.enum(['typescript', 'javascript']).default('typescript'),
+});
+
+/**
+ * Reorder steps request body
+ */
+export const reorderStepsSchema = z.object({
+  steps: z.array(z.object({
+    id: z.string(),
+    action: z.string(),
+    selector: z.string().optional(),
+    value: z.string().optional(),
+    order: z.number().int().optional(),
+  })),
+});
+
+/**
+ * Add step request body
+ */
+export const addStepSchema = z.object({
+  action: z.string().min(1, 'Action is required'),
+  selector: z.string().optional(),
+  value: z.string().optional(),
+  index: z.number().int().min(0).optional(),
+});
+
+/**
+ * Update step request body
+ */
+export const updateStepSchema = z.object({
+  action: z.string().optional(),
+  selector: z.string().optional(),
+  value: z.string().optional(),
+});
+
+/**
+ * Reorder tests request body
+ */
+export const reorderTestsSchema = z.object({
+  test_ids: z.array(uuidSchema).min(1, 'At least one test ID is required'),
+});
+
+// ============================================================================
+// Feature #715: Quick Test Schemas
+// ============================================================================
+
+/**
+ * Quick test run ID parameter
+ */
+export const quickTestRunIdParamsSchema = z.object({
+  runId: uuidSchema,
+});
+
+/**
+ * Quick test compare ID parameter
+ */
+export const quickTestCompareIdParamsSchema = z.object({
+  compareId: uuidSchema,
+});
+
+/**
+ * Quick test schedule ID parameter
+ */
+export const quickTestScheduleIdParamsSchema = z.object({
+  scheduleId: uuidSchema,
+});
+
+/**
+ * Quick test screenshot params
+ */
+export const quickTestScreenshotParamsSchema = z.object({
+  runId: uuidSchema,
+  type: z.enum(['desktop', 'mobile']),
+});
+
+/**
+ * Quick test body (POST /quick-test)
+ */
+export const quickTestBodySchema = z.object({
+  url: z.string().url('Invalid URL format'),
+  browser: z.enum(['chromium', 'firefox', 'webkit']).default('chromium'),
+});
+
+/**
+ * Quick test compare body
+ */
+export const quickTestCompareBodySchema = z.object({
+  urlA: z.string().url('Invalid URL format for urlA'),
+  urlB: z.string().url('Invalid URL format for urlB'),
+});
+
+/**
+ * Quick test schedule body
+ */
+export const quickTestScheduleBodySchema = z.object({
+  url: z.string().url('Invalid URL format'),
+  name: z.string().min(1, 'Name is required').max(255),
+  cron_expression: z.string().min(1, 'Cron expression is required'),
+  notify_on_score_drop: z.boolean().default(true),
+  score_threshold: z.number().min(0).max(100).default(70),
+});
+
+/**
+ * Quick test schedule update body
+ */
+export const quickTestScheduleUpdateBodySchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  cron_expression: z.string().optional(),
+  enabled: z.boolean().optional(),
+  notify_on_score_drop: z.boolean().optional(),
+  score_threshold: z.number().min(0).max(100).optional(),
+});
+
+/**
+ * Quick test history query
+ */
+export const quickTestHistoryQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+  status: z.enum(['running', 'completed', 'failed']).optional(),
+});
+
+/**
+ * Quick test schedules list query
+ */
+export const quickTestSchedulesQuerySchema = z.object({
+  enabled: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+// ============================================================================
+// Feature #715: DAST Schemas
+// ============================================================================
+
+/**
+ * DAST project ID parameter
+ */
+export const dastProjectIdParamsSchema = z.object({
+  projectId: uuidSchema,
+});
+
+/**
+ * DAST scan ID params
+ */
+export const dastScanIdParamsSchema = z.object({
+  projectId: uuidSchema,
+  scanId: z.string().min(1),
+});
+
+/**
+ * DAST alert ID params
+ */
+export const dastAlertIdParamsSchema = z.object({
+  projectId: uuidSchema,
+  scanId: z.string().min(1),
+  alertId: z.string().min(1),
+});
+
+/**
+ * DAST false positive ID params
+ */
+export const dastFalsePositiveIdParamsSchema = z.object({
+  projectId: uuidSchema,
+  falsePositiveId: z.string().min(1),
+});
+
+/**
+ * DAST trigger scan body
+ */
+export const dastTriggerScanBodySchema = z.object({
+  targetUrl: z.string().url('Invalid URL format').optional(),
+  scanProfile: z.enum(['baseline', 'full', 'api']).optional(),
+});
+
+/**
+ * DAST false positive body
+ */
+export const dastFalsePositiveBodySchema = z.object({
+  reason: z.string().min(10, 'Reason must be at least 10 characters'),
+});
+
+/**
+ * DAST alerts query
+ */
+export const dastAlertsQuerySchema = z.object({
+  risk: z.string().optional(),
+  confidence: z.string().optional(),
+  includeFalsePositives: z.string().optional(),
+});
+
+/**
+ * DAST report query
+ */
+export const dastReportQuerySchema = z.object({
+  format: z.enum(['pdf', 'html', 'json']).default('html'),
+});
+
+/**
+ * DAST stats query
+ */
+export const dastStatsQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(365).default(30),
+});
+
+/**
+ * DAST OpenAPI upload body
+ */
+export const dastOpenApiUploadBodySchema = z.object({
+  content: z.string().min(1, 'OpenAPI specification content is required'),
+  name: z.string().max(255).default('API Specification'),
+});
+
+/**
+ * DAST GraphQL scan body
+ */
+export const dastGraphqlScanBodySchema = z.object({
+  endpoint: z.string().url('Invalid GraphQL endpoint URL'),
+  authHeader: z.string().optional(),
+  testQueries: z.array(z.string()).optional(),
+  includeIntrospection: z.boolean().default(true),
+});
+
+/**
+ * DAST GraphQL introspect body
+ */
+export const dastGraphqlIntrospectBodySchema = z.object({
+  endpoint: z.string().url('Invalid GraphQL endpoint URL'),
+  authHeader: z.string().optional(),
+});
+
+/**
+ * DAST GraphQL scan ID params
+ */
+export const dastGraphqlScanIdParamsSchema = z.object({
+  scanId: z.string().min(1),
+});
+
+/**
+ * DAST GraphQL scans query
+ */
+export const dastGraphqlScansQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  status: z.string().optional(),
+});
+
+// ============================================================================
+// Feature #715: SAST Schemas
+// ============================================================================
+
+/**
+ * SAST project ID parameter
+ */
+export const sastProjectIdParamsSchema = z.object({
+  projectId: uuidSchema,
+});
+
+/**
+ * SAST scan ID params
+ */
+export const sastScanIdParamsSchema = z.object({
+  projectId: uuidSchema,
+  scanId: uuidSchema,
+});
+
+/**
+ * SAST trigger scan body
+ */
+export const sastTriggerScanBodySchema = z.object({
+  branch: z.string().max(255).default('main'),
+});
+
+/**
+ * SAST dashboard query
+ */
+export const sastDashboardQuerySchema = z.object({
+  severity: z.string().optional(),
+  category: z.string().optional(),
+  sortBy: z.enum(['date', 'severity', 'project']).default('date'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+/**
+ * SAST trends query
+ */
+export const sastTrendsQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(365).default(30),
+});
+
+/**
+ * SAST scans list query
+ */
+export const sastScansQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+});
+
 /**
  * Auto-quarantine settings update body
  */
@@ -465,6 +866,100 @@ export const retryStrategySettingsSchema = z.object({
     max_score: z.number().min(0).max(1.01), // Allow 1.01 to include 1.0
     retries: z.number().int().min(0).max(10),
   })).optional(),
+});
+
+// ============================================================================
+// Feature #715: MCP Tools Schemas
+// ============================================================================
+
+/**
+ * MCP tool execute request body
+ */
+export const mcpExecuteBodySchema = z.object({
+  tool_name: z.string().min(1, 'Tool name is required').max(100),
+  args: z.record(z.unknown()).default({}),
+  use_real_ai: z.boolean().default(true),
+});
+
+/**
+ * MCP chat request body
+ */
+export const mcpChatBodySchema = z.object({
+  message: z.string().min(1, 'Message is required').max(10000),
+  context: z.object({
+    project_id: z.string().optional(),
+    project_name: z.string().optional(),
+    test_id: z.string().optional(),
+    current_page: z.string().optional(),
+    conversation_history: z.array(z.object({
+      role: z.string(),
+      content: z.string(),
+    })).optional(),
+  }).optional(),
+  complexity: z.enum(['simple', 'complex']).default('complex'),
+  provider: z.enum(['kie', 'anthropic', 'auto']).optional(),
+  model: z.string().max(100).optional(),
+});
+
+/**
+ * MCP chat vision request body
+ */
+export const mcpChatVisionBodySchema = z.object({
+  message: z.string().min(1, 'Message is required').max(10000),
+  image: z.object({
+    data: z.string().min(1, 'Image data is required'),
+    media_type: z.enum(['image/jpeg', 'image/png', 'image/gif', 'image/webp']),
+  }),
+  context: z.object({
+    test_type: z.string().optional(),
+    diff_percentage: z.number().min(0).max(100).optional(),
+    viewport: z.object({
+      width: z.number().int().min(1),
+      height: z.number().int().min(1),
+    }).optional(),
+  }).optional(),
+  complexity: z.enum(['simple', 'complex']).default('complex'),
+});
+
+/**
+ * SAST config update body
+ */
+export const sastConfigUpdateBodySchema = z.object({
+  enabled: z.boolean().optional(),
+  auto_scan: z.boolean().optional(),
+  scan_on_push: z.boolean().optional(),
+  languages: z.array(z.string()).optional(),
+  severity_threshold: z.enum(['info', 'warning', 'error', 'critical']).optional(),
+  exclude_patterns: z.array(z.string()).optional(),
+  custom_rules: z.array(z.record(z.unknown())).optional(),
+});
+
+/**
+ * DAST scan profile update body
+ */
+export const dastProfileUpdateBodySchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  target_url: z.string().url().optional(),
+  scan_type: z.enum(['baseline', 'full', 'api']).optional(),
+  authentication: z.record(z.unknown()).optional(),
+});
+
+/**
+ * DAST OpenAPI upload body
+ */
+export const dastOpenApiBodySchema = z.object({
+  content: z.string().min(1, 'OpenAPI specification content is required'),
+  name: z.string().max(255).default('API Specification'),
+});
+
+/**
+ * DAST schedule body
+ */
+export const dastScheduleBodySchema = z.object({
+  target_url: z.string().url('Invalid URL format'),
+  scan_profile: z.enum(['baseline', 'full', 'api']).default('baseline'),
+  frequency: z.string().min(1, 'Frequency is required'),
+  enabled: z.boolean().default(true),
 });
 
 // ============================================================================
@@ -548,3 +1043,67 @@ export type TeamMetricsQuery = z.infer<typeof teamMetricsQuerySchema>;
 export type RetryStrategyTestIdParams = z.infer<typeof retryStrategyTestIdParamsSchema>;
 export type AutoQuarantineSettingsInput = z.infer<typeof autoQuarantineSettingsSchema>;
 export type RetryStrategySettingsInput = z.infer<typeof retryStrategySettingsSchema>;
+
+// Feature #714: Project Route Types
+export type ProjectListQuery = z.infer<typeof projectListQuerySchema>;
+export type ProjectArchiveInput = z.infer<typeof projectArchiveSchema>;
+export type ProjectEnvVarParams = z.infer<typeof projectEnvVarParamsSchema>;
+export type CreateEnvVarInput = z.infer<typeof createEnvVarSchema>;
+export type UpdateEnvVarInput = z.infer<typeof updateEnvVarSchema>;
+export type QuickSmokeTestInput = z.infer<typeof quickSmokeTestSchema>;
+
+// Feature #714: Test Suite Route Types
+export type SuiteProjectParams = z.infer<typeof suiteProjectParamsSchema>;
+export type SuiteParams = z.infer<typeof suiteParamsSchema>;
+export type TestParams = z.infer<typeof testParamsSchema>;
+export type TestStepParams = z.infer<typeof testStepParamsSchema>;
+export type ListPaginationQuery = z.infer<typeof listPaginationQuerySchema>;
+export type TestCodeQuery = z.infer<typeof testCodeQuerySchema>;
+export type ReorderStepsInput = z.infer<typeof reorderStepsSchema>;
+export type AddStepInput = z.infer<typeof addStepSchema>;
+export type UpdateStepInput = z.infer<typeof updateStepSchema>;
+export type ReorderTestsInput = z.infer<typeof reorderTestsSchema>;
+
+// Feature #715: Quick Test Types
+export type QuickTestRunIdParams = z.infer<typeof quickTestRunIdParamsSchema>;
+export type QuickTestCompareIdParams = z.infer<typeof quickTestCompareIdParamsSchema>;
+export type QuickTestScheduleIdParams = z.infer<typeof quickTestScheduleIdParamsSchema>;
+export type QuickTestScreenshotParams = z.infer<typeof quickTestScreenshotParamsSchema>;
+export type QuickTestBodyInput = z.infer<typeof quickTestBodySchema>;
+export type QuickTestCompareBodyInput = z.infer<typeof quickTestCompareBodySchema>;
+export type QuickTestScheduleBodyInput = z.infer<typeof quickTestScheduleBodySchema>;
+export type QuickTestScheduleUpdateBodyInput = z.infer<typeof quickTestScheduleUpdateBodySchema>;
+export type QuickTestHistoryQuery = z.infer<typeof quickTestHistoryQuerySchema>;
+export type QuickTestSchedulesQuery = z.infer<typeof quickTestSchedulesQuerySchema>;
+
+// Feature #715: DAST Types
+export type DastProjectIdParams = z.infer<typeof dastProjectIdParamsSchema>;
+export type DastScanIdParams = z.infer<typeof dastScanIdParamsSchema>;
+export type DastAlertIdParams = z.infer<typeof dastAlertIdParamsSchema>;
+export type DastFalsePositiveIdParams = z.infer<typeof dastFalsePositiveIdParamsSchema>;
+export type DastTriggerScanBodyInput = z.infer<typeof dastTriggerScanBodySchema>;
+export type DastFalsePositiveBodyInput = z.infer<typeof dastFalsePositiveBodySchema>;
+export type DastAlertsQuery = z.infer<typeof dastAlertsQuerySchema>;
+export type DastReportQuery = z.infer<typeof dastReportQuerySchema>;
+export type DastStatsQuery = z.infer<typeof dastStatsQuerySchema>;
+export type DastOpenApiUploadBodyInput = z.infer<typeof dastOpenApiUploadBodySchema>;
+export type DastGraphqlScanBodyInput = z.infer<typeof dastGraphqlScanBodySchema>;
+export type DastGraphqlIntrospectBodyInput = z.infer<typeof dastGraphqlIntrospectBodySchema>;
+export type DastGraphqlScanIdParams = z.infer<typeof dastGraphqlScanIdParamsSchema>;
+export type DastGraphqlScansQuery = z.infer<typeof dastGraphqlScansQuerySchema>;
+
+// Feature #715: SAST Types
+export type SastProjectIdParams = z.infer<typeof sastProjectIdParamsSchema>;
+export type SastScanIdParams = z.infer<typeof sastScanIdParamsSchema>;
+export type SastTriggerScanBodyInput = z.infer<typeof sastTriggerScanBodySchema>;
+export type SastDashboardQuery = z.infer<typeof sastDashboardQuerySchema>;
+export type SastTrendsQuery = z.infer<typeof sastTrendsQuerySchema>;
+export type SastScansQuery = z.infer<typeof sastScansQuerySchema>;
+
+// Feature #715: MCP Tools Types
+export type McpExecuteBodyInput = z.infer<typeof mcpExecuteBodySchema>;
+export type McpChatBodyInput = z.infer<typeof mcpChatBodySchema>;
+export type McpChatVisionBodyInput = z.infer<typeof mcpChatVisionBodySchema>;
+export type SastConfigUpdateBodyInput = z.infer<typeof sastConfigUpdateBodySchema>;
+export type DastProfileUpdateBodyInput = z.infer<typeof dastProfileUpdateBodySchema>;
+export type DastScheduleBodyInput = z.infer<typeof dastScheduleBodySchema>;

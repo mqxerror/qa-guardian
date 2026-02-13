@@ -69,6 +69,18 @@ import {
   getDashboardSummary,
   getDashboardFindings,
 } from '../../services/repositories/sast.js';
+// Feature #715: Zod validation middleware and schemas
+import {
+  validateParams,
+  validateBody,
+  validateQuery,
+  sastProjectIdParamsSchema,
+  sastScanIdParamsSchema,
+  sastTriggerScanBodySchema,
+  sastDashboardQuerySchema,
+  sastTrendsQuerySchema,
+  sastScansQuerySchema,
+} from '../../validation/index.js';
 
 /**
  * Run a real Semgrep CLI scan against a target directory.
@@ -501,8 +513,10 @@ async function runBuiltinSASTScan(
  */
 export async function coreRoutes(app: FastifyInstance) {
   // Get SAST configuration for a project
+  // Feature #715: Zod validation for projectId param
   app.get<{ Params: { projectId: string } }>('/api/v1/projects/:projectId/sast/config', {
     preHandler: [authenticate],
+    preValidation: [validateParams(sastProjectIdParamsSchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const user = request.user as JwtPayload;
@@ -522,8 +536,10 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Update SAST configuration for a project
+  // Feature #715: Zod validation for projectId param
   app.put<{ Params: { projectId: string }; Body: Partial<SASTConfig> }>('/api/v1/projects/:projectId/sast/config', {
     preHandler: [authenticate],
+    preValidation: [validateParams(sastProjectIdParamsSchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const user = request.user as JwtPayload;
@@ -579,8 +595,10 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Trigger a SAST scan for a project
+  // Feature #715: Zod validation for projectId param and scan body
   app.post<{ Params: { projectId: string }; Body: { branch?: string } }>('/api/v1/projects/:projectId/sast/scan', {
     preHandler: [authenticate],
+    preValidation: [validateParams(sastProjectIdParamsSchema), validateBody(sastTriggerScanBodySchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const { branch = 'main' } = request.body || {};
@@ -703,6 +721,7 @@ export async function coreRoutes(app: FastifyInstance) {
    * - Efficient queries using DISTINCT ON for latest scans
    * - Summary calculation without loading all findings into memory
    */
+  // Feature #715: Zod validation for dashboard query
   app.get<{
     Querystring: {
       severity?: string;
@@ -714,6 +733,7 @@ export async function coreRoutes(app: FastifyInstance) {
     };
   }>('/api/v1/sast/dashboard', {
     preHandler: [authenticate],
+    preValidation: [validateQuery(sastDashboardQuerySchema)],
   }, async (request, _reply) => {
     const user = request.user as JwtPayload;
     const {
@@ -764,12 +784,14 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Get SAST trend data over time
+  // Feature #715: Zod validation for trends query
   app.get<{
     Querystring: {
       days?: string;
     };
   }>('/api/v1/sast/trends', {
     preHandler: [authenticate],
+    preValidation: [validateQuery(sastTrendsQuerySchema)],
   }, async (request, reply) => {
     const user = request.user as JwtPayload;
     const days = parseInt(request.query.days || '30', 10);
@@ -906,8 +928,10 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Get scan results for a project
+  // Feature #715: Zod validation for projectId param and scans query
   app.get<{ Params: { projectId: string }; Querystring: { limit?: string } }>('/api/v1/projects/:projectId/sast/scans', {
     preHandler: [authenticate],
+    preValidation: [validateParams(sastProjectIdParamsSchema), validateQuery(sastScansQuerySchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const limit = parseInt(request.query.limit || '10', 10);
@@ -929,8 +953,10 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Get a specific scan result
+  // Feature #715: Zod validation for projectId + scanId params
   app.get<{ Params: { projectId: string; scanId: string } }>('/api/v1/projects/:projectId/sast/scans/:scanId', {
     preHandler: [authenticate],
+    preValidation: [validateParams(sastScanIdParamsSchema)],
   }, async (request, reply) => {
     const { projectId, scanId } = request.params;
     const user = request.user as JwtPayload;

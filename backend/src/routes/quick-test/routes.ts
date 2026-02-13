@@ -14,6 +14,22 @@
 import { FastifyPluginAsync } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticate, requireScopes, getOrganizationId, type JwtPayload } from '../../middleware/auth.js';
+// Feature #715: Zod validation middleware and schemas
+import {
+  validateBody,
+  validateParams,
+  validateQuery,
+  quickTestBodySchema,
+  quickTestCompareBodySchema,
+  quickTestRunIdParamsSchema,
+  quickTestCompareIdParamsSchema,
+  quickTestScheduleIdParamsSchema,
+  quickTestScheduleBodySchema,
+  quickTestScheduleUpdateBodySchema,
+  quickTestHistoryQuerySchema,
+  quickTestSchedulesQuerySchema,
+  quickTestScreenshotParamsSchema,
+} from '../../validation/index.js';
 import { runQuickTest, getQuickTestResultAsync } from '../../services/quick-test-runner.js';
 import { logAuditEntry } from '../audit-logs.js';
 import { validateURLForSSRF } from '../../utils/index.js';
@@ -114,10 +130,12 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
    * Start a quick test for a URL
    * Returns immediately with runId, results stream via WebSocket
    */
+  // Feature #715: Zod validation for request body
   app.post<{ Body: QuickTestBody }>(
     '/api/v1/quick-test',
     {
       preHandler: [authenticate, requireScopes(['execute'])],
+      preValidation: [validateBody(quickTestBodySchema)],
       schema: {
         tags: ['Quick Test'],
         summary: 'Start a quick test for a URL',
@@ -236,10 +254,12 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
    * Feature #473: Start a comparative quick test for two URLs side-by-side
    * Runs both tests in parallel and provides comparison-specific events
    */
+  // Feature #715: Zod validation for compare body
   app.post<{ Body: QuickTestCompareBody }>(
     '/api/v1/quick-test/compare',
     {
       preHandler: [authenticate, requireScopes(['execute'])],
+      preValidation: [validateBody(quickTestCompareBodySchema)],
       schema: {
         tags: ['Quick Test'],
         summary: 'Start a comparative quick test for two URLs',
@@ -382,10 +402,12 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
    * GET /api/v1/quick-test/compare/:compareId
    * Feature #473: Get the results of a comparative quick test
    */
+  // Feature #715: Zod validation for compare params
   app.get<{ Params: QuickTestCompareParams }>(
     '/api/v1/quick-test/compare/:compareId',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(quickTestCompareIdParamsSchema)],
       schema: {
         tags: ['Quick Test'],
         summary: 'Get comparative quick test results',
@@ -495,10 +517,12 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
    * POST /api/v1/quick-test/schedules
    * Feature #474: Create a scheduled Quick Test for recurring monitoring
    */
+  // Feature #715: Zod validation for schedule body
   app.post<{ Body: QuickTestScheduleBody }>(
     '/api/v1/quick-test/schedules',
     {
       preHandler: [authenticate, requireScopes(['execute'])],
+      preValidation: [validateBody(quickTestScheduleBodySchema)],
       schema: {
         tags: ['Quick Test'],
         summary: 'Create a scheduled Quick Test',
@@ -639,10 +663,12 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
    * GET /api/v1/quick-test/schedules
    * Feature #671: List quick test schedules
    */
+  // Feature #715: Zod validation for schedules list query
   app.get<{ Querystring: { enabled?: string; limit?: string; offset?: string } }>(
     '/api/v1/quick-test/schedules',
     {
       preHandler: [authenticate],
+      preValidation: [validateQuery(quickTestSchedulesQuerySchema)],
       schema: {
         tags: ['Quick Test'],
         summary: 'List quick test schedules',
@@ -699,10 +725,12 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
    * GET /api/v1/quick-test/schedules/:scheduleId
    * Feature #671: Get a specific quick test schedule
    */
+  // Feature #715: Zod validation for schedule ID param
   app.get<{ Params: { scheduleId: string } }>(
     '/api/v1/quick-test/schedules/:scheduleId',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(quickTestScheduleIdParamsSchema)],
       schema: {
         tags: ['Quick Test'],
         summary: 'Get quick test schedule details',
@@ -747,6 +775,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
    * PATCH /api/v1/quick-test/schedules/:scheduleId
    * Feature #671: Update a quick test schedule
    */
+  // Feature #715: Zod validation for schedule update params + body
   app.patch<{
     Params: { scheduleId: string };
     Body: { name?: string; cron_expression?: string; enabled?: boolean; notify_on_score_drop?: boolean; score_threshold?: number };
@@ -754,6 +783,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
     '/api/v1/quick-test/schedules/:scheduleId',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(quickTestScheduleIdParamsSchema), validateBody(quickTestScheduleUpdateBodySchema)],
       schema: {
         tags: ['Quick Test'],
         summary: 'Update quick test schedule',
@@ -836,10 +866,12 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
    * DELETE /api/v1/quick-test/schedules/:scheduleId
    * Feature #671: Delete a quick test schedule
    */
+  // Feature #715: Zod validation for schedule delete params
   app.delete<{ Params: { scheduleId: string } }>(
     '/api/v1/quick-test/schedules/:scheduleId',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(quickTestScheduleIdParamsSchema)],
       schema: {
         tags: ['Quick Test'],
         summary: 'Delete quick test schedule',
@@ -884,6 +916,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
    * Feature #465: Get paginated history of quick test runs for the organization
    * NOTE: This route MUST be registered BEFORE /:runId to avoid path parameter conflict
    */
+  // Feature #715: Zod validation for history query
   app.get<{
     Querystring: {
       limit?: string;
@@ -894,6 +927,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
     '/api/v1/quick-test/history',
     {
       preHandler: [authenticate],
+      preValidation: [validateQuery(quickTestHistoryQuerySchema)],
       schema: {
         tags: ['Quick Test'],
         summary: 'Get quick test history',
@@ -985,10 +1019,12 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
    * GET /api/v1/quick-test/:runId
    * Get the current status and results of a quick test
    */
+  // Feature #715: Zod validation for runId param
   app.get<{ Params: QuickTestParams }>(
     '/api/v1/quick-test/:runId',
     {
       preHandler: [authenticate],
+      preValidation: [validateParams(quickTestRunIdParamsSchema)],
       schema: {
         tags: ['Quick Test'],
         summary: 'Get quick test results',
@@ -1088,11 +1124,13 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
    * 1. Authorization header (JWT token) - for API clients
    * 2. Signed URL token query param - for <img> tags
    */
+  // Feature #715: Zod validation for screenshot params
   app.get<{ Params: ScreenshotParams; Querystring: ScreenshotQuerystring }>(
     '/api/v1/quick-test/:runId/screenshots/:type',
     {
       // Feature #478: No preHandler - we do soft auth in the handler
       // This allows both JWT auth and signed token auth without returning 401 early
+      preValidation: [validateParams(quickTestScreenshotParamsSchema)],
       schema: {
         tags: ['Quick Test'],
         summary: 'Get screenshot from a quick test run',
