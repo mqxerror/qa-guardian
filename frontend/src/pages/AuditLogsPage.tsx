@@ -1,7 +1,7 @@
 // AuditLogsPage extracted from App.tsx for code quality compliance (Feature #1357)
 // Feature #689: Migrated from raw fetch to React Query hooks
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ export function AuditLogsPage() {
  const [limit, setLimit] = useState(20);
 
  // Feature #689: React Query hooks for caching - replaces useState+useEffect+fetch pattern
- const { data: auditLogsData, isLoading } = useAuditLogs(user?.organization_id, {
+ const { data: auditLogsData, isLoading, isError, error } = useAuditLogs(user?.organization_id, {
   action: filterAction || undefined,
   resource_type: filterResourceType || undefined,
   limit,
@@ -62,6 +62,14 @@ export function AuditLogsPage() {
      { label: 'Audit Logs' }
    ]}
  />
+
+ {isError && (
+ <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+   <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+   <h3 className="text-lg font-semibold text-destructive">Failed to load audit logs</h3>
+   <p className="text-sm text-muted-foreground mt-1">{error instanceof Error ? error.message : 'An unexpected error occurred'}</p>
+ </div>
+ )}
 
  {/* Filters */}
  <div className="mb-6 flex flex-wrap gap-4">

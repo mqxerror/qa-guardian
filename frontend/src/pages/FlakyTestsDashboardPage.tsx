@@ -14,7 +14,7 @@ import {
  AnimatedCard,
  StatusPill,
 } from '../components/ui';
-import { RefreshCw, Settings2 } from 'lucide-react';
+import { RefreshCw, Settings2, AlertTriangle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 // Feature #728: EmptyState adoption
 import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
@@ -540,7 +540,7 @@ export function FlakyTestsDashboardPage() {
  const navigate = useNavigate();
 
  // Feature #76: React Query hooks for data fetching with caching
- const { data: flakyTestsData, isLoading: isLoadingFlakyTests, refetch: refetchFlakyTests } = useFlakyTests();
+ const { data: flakyTestsData, isLoading: isLoadingFlakyTests, isError, error, refetch: refetchFlakyTests } = useFlakyTests();
  const { data: impactReportData, isLoading: isLoadingImpactReport } = useFlakyImpactReport();
  const { data: autoQuarantineData, refetch: refetchAutoQuarantine } = useAutoQuarantineSettings();
  const { data: retryStrategyData, refetch: refetchRetryStrategy } = useRetryStrategySettings();
@@ -635,6 +635,14 @@ export function FlakyTestsDashboardPage() {
            </div>
          }
        />
+
+       {isError && (
+         <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+           <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+           <h3 className="text-lg font-semibold text-destructive">Failed to load flaky tests</h3>
+           <p className="text-sm text-muted-foreground mt-1">{error instanceof Error ? error.message : 'An unexpected error occurred'}</p>
+         </div>
+       )}
 
        {modals.showAutoQuarantineSettings && autoQuarantineSettings && <AutoQuarantinePanel settings={autoQuarantineSettings} onClose={() => modals.setShowAutoQuarantineSettings(false)} onUpdate={handleUpdateAutoQuarantineSettings} onRun={handleRunAutoQuarantine} isRunning={modals.isLoadingAutoQuarantine} result={modals.autoQuarantineResult} />}
        {modals.showRetryStrategySettings && retryStrategySettings && <RetryStrategyPanel settings={retryStrategySettings} preview={retryStrategyPreview} onClose={() => modals.setShowRetryStrategySettings(false)} onUpdate={handleUpdateRetryStrategySettings} />}

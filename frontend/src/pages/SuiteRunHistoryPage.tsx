@@ -5,7 +5,7 @@
 
 import { useState, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Loader2, Eye } from 'lucide-react';
+import { Loader2, Eye, AlertTriangle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 // Feature #728: EmptyState adoption
 import { EmptyStates, EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
@@ -32,7 +32,7 @@ function SuiteRunHistoryPage() {
  const { data: projectData } = useProject(projectId);
  const project = projectData?.project ?? projectData ?? null;
 
- const { data: runsData, isLoading: runsLoading, error: runsError } = useRunsBySuite(suiteId);
+ const { data: runsData, isLoading: runsLoading, isError, error: runsError } = useRunsBySuite(suiteId);
  const runs: TestRun[] = runsData?.runs ?? [];
 
  // Derived loading/error state
@@ -129,6 +129,14 @@ function SuiteRunHistoryPage() {
      </Button>
    }
  />
+
+ {isError && (
+ <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+   <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+   <h3 className="text-lg font-semibold text-destructive">Failed to load run history</h3>
+   <p className="text-sm text-muted-foreground mt-1">{runsError instanceof Error ? runsError.message : 'An unexpected error occurred'}</p>
+ </div>
+ )}
 
  {/* Stats Cards */}
  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

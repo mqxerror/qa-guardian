@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { PageHeader } from '../components/ui';
+import { AlertTriangle } from 'lucide-react';
 // Feature #728: EmptyState adoption
 import { EmptyStates } from '../components/ui/EmptyState';
 import { useAuthStore } from '../stores/authStore';
@@ -39,7 +40,7 @@ export function OrganizationMembersPage() {
   // Feature #81: React Query hooks for cached data
   // Feature #734: Use actual organization UUID instead of hardcoded '1'
   const orgId = user?.organization_id;
-  const { data: members = [], isLoading: isLoadingMembers } = useMembers(orgId);
+  const { data: members = [], isLoading: isLoadingMembers, isError, error } = useMembers(orgId);
   const { data: pendingInvitations = [] } = useInvitations(orgId);
   const sendInvitationMutation = useSendInvitation(orgId);
   const removeMemberMutation = useRemoveMember(orgId);
@@ -136,6 +137,14 @@ export function OrganizationMembersPage() {
             ) : undefined
           }
         />
+
+        {isError && (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+            <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+            <h3 className="text-lg font-semibold text-destructive">Failed to load team members</h3>
+            <p className="text-sm text-muted-foreground mt-1">{error instanceof Error ? error.message : 'An unexpected error occurred'}</p>
+          </div>
+        )}
 
         {/* Team members list */}
         <div className="mt-8">

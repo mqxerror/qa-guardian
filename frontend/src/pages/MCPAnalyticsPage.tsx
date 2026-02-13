@@ -12,6 +12,8 @@ import type { MCPUsageStats, MCPTimeSeriesData } from '@/types/mcp';
 
 export function MCPAnalyticsPage() {
  const [isLoading, setIsLoading] = useState(true);
+ const [isError, setIsError] = useState(false);
+ const [fetchError, setFetchError] = useState<string | null>(null);
  const [toolStats, setToolStats] = useState<MCPUsageStats[]>([]);
  const [timeSeriesData, setTimeSeriesData] = useState<MCPTimeSeriesData[]>([]);
  const [totalCalls, setTotalCalls] = useState(0);
@@ -22,6 +24,8 @@ export function MCPAnalyticsPage() {
  useEffect(() => {
  const fetchAnalytics = async () => {
  setIsLoading(true);
+ setIsError(false);
+ setFetchError(null);
  try {
  // Try to fetch from MCP server's validate_api_key which includes usage stats
  const response = await fetch(`${import.meta.env.VITE_MCP_URL || ''}/mcp/message`, {
@@ -58,6 +62,8 @@ export function MCPAnalyticsPage() {
  setAvgResponseTime(0);
  } catch (err) {
  console.error('Failed to fetch MCP analytics:', err);
+ setIsError(true);
+ setFetchError(err instanceof Error ? err.message : 'Failed to fetch MCP analytics');
  setToolStats([]);
  setTimeSeriesData([]);
  setTotalCalls(0);
@@ -171,6 +177,14 @@ export function MCPAnalyticsPage() {
      </select>
    }
  />
+
+ {isError && (
+ <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+   <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+   <h3 className="text-lg font-semibold text-destructive">Failed to load MCP analytics</h3>
+   <p className="text-sm text-muted-foreground mt-1">{fetchError || 'An unexpected error occurred'}</p>
+ </div>
+ )}
 
  {isLoading ? (
  <div className="flex justify-center py-12">

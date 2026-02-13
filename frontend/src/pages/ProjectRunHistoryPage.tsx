@@ -4,7 +4,7 @@
 
 import { useState, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Loader2, Eye } from 'lucide-react';
+import { Loader2, Eye, AlertTriangle } from 'lucide-react';
 // Feature #728: EmptyState adoption
 import { EmptyStates, EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ function ProjectRunHistoryPage() {
 
  // Feature #689: React Query hooks for caching - replaces useState+useEffect+fetch pattern
  const { data: project } = useProject(projectId);
- const { data: runsData, isLoading: loading, error: runsError } = useRunsByProject(projectId, 1000);
+ const { data: runsData, isLoading: loading, isError, error: runsError } = useRunsByProject(projectId, 1000);
 
  // Derive runs from React Query response
  const runs = (runsData?.runs || []) as TestRun[];
@@ -146,6 +146,14 @@ function ProjectRunHistoryPage() {
      </Button>
    }
  />
+
+ {isError && (
+ <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+   <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+   <h3 className="text-lg font-semibold text-destructive">Failed to load run history</h3>
+   <p className="text-sm text-muted-foreground mt-1">{runsError instanceof Error ? runsError.message : 'An unexpected error occurred'}</p>
+ </div>
+ )}
 
  {/* Stats Cards */}
  <div className="grid grid-cols-2 md:grid-cols-6 gap-4">

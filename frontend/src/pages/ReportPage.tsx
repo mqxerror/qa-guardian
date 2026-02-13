@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
-import { FileText, BarChart2, Code2, Download } from 'lucide-react';
+import { FileText, BarChart2, Code2, Download, AlertTriangle } from 'lucide-react';
 // Feature #712: React Query hooks
 import { useReport, useExportReport } from '../hooks/api/useReports';
 import { Button } from '@/components/ui/button';
@@ -95,7 +95,7 @@ export function ReportPage() {
   const [exportLoading, setExportLoading] = useState<string | null>(null);
 
   // Feature #712: Use React Query hooks
-  const { data: reportData, isLoading: loading, error: queryError } = useReport(reportId);
+  const { data: reportData, isLoading: loading, isError, error: queryError } = useReport(reportId);
   const exportMutation = useExportReport();
 
   // Extract report from query response
@@ -155,12 +155,13 @@ export function ReportPage() {
     );
   }
 
-  if (error || !report) {
+  if (isError || error || !report) {
     return (
       <Layout>
-        <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-6 text-center">
-          <h2 className="text-xl font-semibold text-destructive mb-2">Report Not Found</h2>
-          <p className="text-destructive">{error || 'The requested report could not be found.'}</p>
+        <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+          <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+          <h3 className="text-lg font-semibold text-destructive">Failed to load report</h3>
+          <p className="text-sm text-muted-foreground mt-1">{queryError instanceof Error ? queryError.message : 'An unexpected error occurred'}</p>
           <Link to="/dashboard" className="mt-4 inline-block text-primary hover:underline">
             Return to Dashboard
           </Link>

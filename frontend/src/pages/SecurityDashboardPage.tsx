@@ -15,6 +15,7 @@ import { useUrlState, useUrlStateArray, useUrlTab } from '../hooks/useUrlState';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { PageHeader } from '../components/ui';
 import { Button } from '../components/ui/button';
+import { AlertTriangle } from 'lucide-react';
 import {
   useSecurityDashboard,
   useSecurityTrends,
@@ -62,6 +63,8 @@ export function SecurityDashboardPage() {
   const {
     data,
     isLoading,
+    isError,
+    error,
   } = useSecurityDashboard(dashboardParams);
 
   const {
@@ -236,6 +239,14 @@ export function SecurityDashboardPage() {
           description="SAST findings across all projects in your organization"
           breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security' }]}
         />
+
+        {isError && (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+            <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+            <h3 className="text-lg font-semibold text-destructive">Failed to load security dashboard</h3>
+            <p className="text-sm text-muted-foreground mt-1">{error instanceof Error ? error.message : 'An unexpected error occurred'}</p>
+          </div>
+        )}
 
         {/* Tab Navigation */}
         <div className="mb-6 border-b border-border">
