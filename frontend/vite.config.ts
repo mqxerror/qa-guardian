@@ -14,11 +14,14 @@ import path from 'path';
 // only used by lazy-loaded routes. React, react-router, and other core deps
 // stay in the main vendor chunk to avoid circular dependency issues.
 //
-// Chunk strategy (actual measured sizes):
-//   index-*.js     — React, router, zustand, tanstack, etc. (~127KB gzip) ✓ UNDER 200KB
-//   ui-lib-*.js    — @radix-ui, lucide-react (~42KB gzip) - stable caching
+// Chunk strategy (actual measured sizes after Feature #724 optimization):
+//   index-*.js     — React, router, zustand, tanstack, etc. (~124KB gzip) ✓ UNDER 200KB
+//   ui-lib-*.js    — @radix-ui, lucide-react (~44KB gzip) - stable caching
 //   charts-*.js    — recharts, d3-* (~156KB gzip) - LAZY-LOADED by analytics pages
-//   pdf-export-*.js — jspdf, jszip, html2canvas (~206KB gzip) - LAZY-LOADED for exports
+//   pdf-export-*.js — jspdf + fflate (~128KB gzip) - LAZY-LOADED for report generation
+//   html2canvas-*.js — html2canvas (~48KB gzip) - LAZY-LOADED as jsPDF dep
+//   canvg-*.js     — canvg SVG rendering (~52KB gzip) - LAZY-LOADED as jsPDF dep
+//   jszip-*.js     — jszip (~30KB gzip) - LAZY-LOADED for artifact downloads
 //
 // The main vendor chunk (index-*.js) is now 127KB gzip, well under the 200KB target.
 // Heavy libraries (charts, PDF) are in separate chunks that load on-demand.
@@ -49,9 +52,27 @@ export default defineConfig({
             return 'charts';
           }
 
-          // PDF/Export - 600KB+, only used for export functionality
-          // Feature #647: Added canvg and fflate (jspdf transitive deps)
-          if (id.includes('jspdf') || id.includes('jszip') || id.includes('html2canvas') || id.includes('canvg') || id.includes('fflate')) {
+          // Feature #724: Split PDF export into smaller chunks (under 200KB gzip each)
+          // jszip is used for artifact downloads, jsPDF for report generation
+          // Splitting them reduces the max chunk size below the 200KB threshold
+
+          // jszip - ~30KB gzip, used for artifact ZIP downloads
+          if (id.includes('jszip')) {
+            return 'jszip';
+          }
+
+          // html2canvas - large canvas rendering lib, transitive dep of jsPDF
+          if (id.includes('html2canvas')) {
+            return 'html2canvas';
+          }
+
+          // canvg - SVG to canvas rendering, transitive dep of jsPDF
+          if (id.includes('canvg') || id.includes('@aspect-ratio') || id.includes('rvg-parse') || id.includes('svgpath')) {
+            return 'canvg';
+          }
+
+          // PDF/Export - jsPDF core + fflate compression
+          if (id.includes('jspdf') || id.includes('fflate')) {
             return 'pdf-export';
           }
 
