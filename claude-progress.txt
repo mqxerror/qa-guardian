@@ -1,7 +1,7 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 850/882 features passing (96.4%)**
+- **Progress: 851/882 features passing (96.5%)**
 - **Last Updated**: 2026-02-13
 - **Pending**: 0 features
 - **In Progress**: None
@@ -47315,3 +47315,40 @@ Removed mock CVE Database page (/security/cve-database) which had hardcoded fake
 
 ### Updated Status
 850/882 features passing (96.4%). Features #849, #850, #851 completed this session.
+
+
+---
+
+## Session 2026-02-13 (Session 289) - Feature #852: Remove Dependency Age page
+
+### Summary
+Removed mock Dependency Age page (/security/dependency-age) which had hardcoded fake dependency age data with simulated version tracking.
+
+### Feature Status
+- 851/882 features passing (96.5%)
+- Feature #852 completed and verified
+
+### Changes Made
+1. Removed lazy import of DependencyAgePage from frontend/src/App.tsx
+2. Removed route for /security/dependency-age from frontend/src/App.tsx
+3. Removed export from frontend/src/pages/index.ts
+4. Deleted frontend/src/pages/DependencyAgePage.tsx (~438 lines)
+5. Removed DependencyAgeConfig, ProjectDependency, DependencySummary types from useDependencySecurity.ts
+6. Removed 4 hooks (useDependencyAgeConfig, useProjectDependencies, useUpdateDependencyAgeConfig, useRefreshDependencies) from useDependencySecurity.ts
+7. Removed age query keys and invalidation helpers from useDependencySecurity.ts
+8. Removed 4 hook/type exports from hooks/api/index.ts
+9. Removed duplicate age hooks (useAgeConfig, useProjectDependencies, useUpdateAgeConfig) and query keys from useSecurity.ts
+10. Removed DependencyAgeConfig interface, ProjectDependency interface, 2 in-memory Maps from backend dependency-lists.ts
+11. Removed 5 backend API routes: GET/PATCH /organization/dependency-age/config, GET /projects/:id/dependencies, POST /projects/:id/dependencies/refresh, GET /organization/dependency-age/stats
+
+### Verification
+1. **/security/dependency-age** - Shows 404 "Page not found" (route removed successfully)
+2. **Frontend build** - Passes with zero TypeScript errors
+3. **Backend build** - Passes with zero TypeScript errors
+4. **Screenshot** - feature-852-dependency-age-404.png
+
+### Issues Found
+- Rate limiter very aggressive on fresh backend restart - login succeeds but subsequent dashboard API calls get 429'd. Pre-existing issue, not caused by changes.
+
+### Conclusion
+851/882 features passing (96.5%). Feature #852 completed. App stable.
