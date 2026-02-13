@@ -6,6 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '../components/ui/button';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { formatDuration } from '../utils/formatDuration';
 
 // Feature #317: API base URL from environment
@@ -254,20 +257,19 @@ export function ScanCachingPage() {
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Scan Caching' }]}
         actions={
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={() => runScan(false)}
               disabled={isScanning}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
             >
               {isScanning ? 'Scanning...' : '\u{1F50D} Run Scan'}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => runScan(true)}
               disabled={isScanning}
-              className="px-4 py-2 bg-muted text-foreground rounded hover:bg-muted/80 disabled:opacity-50"
+              variant="secondary"
             >
               {'\u{1F504}'} Force Refresh
-            </button>
+            </Button>
           </div>
         }
       />
@@ -393,18 +395,22 @@ export function ScanCachingPage() {
               </div>
 
               <div className="pt-4 border-t border-border flex gap-2">
-                <button
+                <Button
                   onClick={invalidateCache}
-                  className="flex-1 px-3 py-2 bg-warning/20 text-warning rounded hover:bg-warning/30 text-sm"
+                  variant="ghost"
+                  size="sm"
+                  className="flex-1 bg-warning/20 text-warning hover:bg-warning/30 hover:text-warning"
                 >
                   Invalidate All
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={clearCache}
-                  className="flex-1 px-3 py-2 bg-destructive/20 text-destructive rounded hover:bg-destructive/30 text-sm"
+                  variant="ghost"
+                  size="sm"
+                  className="flex-1 bg-destructive/20 text-destructive hover:bg-destructive/30 hover:text-destructive"
                 >
                   Clear Cache
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -426,12 +432,14 @@ export function ScanCachingPage() {
             </select>
           </div>
 
+          {/* Feature #728: EmptyState adoption */}
           {filteredEntries.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <div className="text-4xl mb-2">{'\u{1F4ED}'}</div>
-              <div>No cache entries found</div>
-              <div className="text-sm">Run a scan to create cache entries</div>
-            </div>
+            <EmptyState
+              icon={EmptyStateIcons.history}
+              title="No cache entries found"
+              description="Run a scan to create cache entries."
+              size="sm"
+            />
           ) : (
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {filteredEntries.map((entry) => (

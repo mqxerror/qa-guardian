@@ -14,6 +14,7 @@ import { EmptyState, EmptyStateIcons, EmptyStates } from '../components/ui/Empty
 import { useUrlState, useUrlStateArray, useUrlTab } from '../hooks/useUrlState';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { PageHeader } from '../components/ui';
+import { Button } from '../components/ui/button';
 import {
   useSecurityDashboard,
   useSecurityTrends,
@@ -261,19 +262,21 @@ export function SecurityDashboardPage() {
         {/* Tab Navigation */}
         <div className="mb-6 border-b border-border">
           <nav className="flex gap-4">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setActiveTab('findings')}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`rounded-none pb-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'findings'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               Findings
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
               onClick={() => setActiveTab('secrets')}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`rounded-none pb-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'secrets'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -285,30 +288,33 @@ export function SecurityDashboardPage() {
                   {secretsData.summary.active}
                 </span>
               )}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
               onClick={() => setActiveTab('trends')}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`rounded-none pb-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'trends'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               Trends
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
               onClick={() => navigate('/security/licenses')}
-              className="pb-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors"
+              className="rounded-none pb-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors"
             >
               Licenses
-            </button>
+            </Button>
             {/* Feature #268: SBOM tab */}
-            <button
+            <Button
+              variant="ghost"
               onClick={() => navigate('/security/sbom')}
-              className="pb-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors"
+              className="rounded-none pb-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors"
             >
               SBOM
-            </button>
+            </Button>
           </nav>
         </div>
 
@@ -384,27 +390,26 @@ export function SecurityDashboardPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <button
+                    <Button
                       onClick={() => scanForSecrets(true, false)}
                       disabled={isScanning}
-                      className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isScanning ? 'Scanning...' : 'Scan .env Files'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => scanForSecrets(false, true)}
                       disabled={isScanning}
-                      className="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-primary-foreground hover:bg-accent/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-accent text-primary-foreground hover:bg-accent/80"
                     >
                       {isScanning ? 'Scanning...' : 'Scan CI Configs'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => scanForSecrets(true, true)}
                       disabled={isScanning}
-                      className="px-4 py-2 text-sm font-medium rounded-lg bg-success text-primary-foreground hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-success text-primary-foreground hover:bg-success/90"
                     >
                       {isScanning ? 'Scanning...' : 'Scan All'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
                 {scanResult && (
@@ -463,25 +468,28 @@ export function SecurityDashboardPage() {
                     <option value="project">Project</option>
                     <option value="type">Type</option>
                   </select>
-                  <button
+                  <Button
                     onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                    className="rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-muted"
+                    variant="outline"
+                    size="sm"
                     title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
                   >
                     {sortOrder === 'asc' ? '↑' : '↓'}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               {/* Clear Filters */}
               {(secretsProjectFilter !== 'all' || secretsTypeFilter !== 'all') && (
                 <div className="mb-4">
-                  <button
+                  <Button
                     onClick={() => { setSecretsProjectFilter('all'); setSecretsTypeFilter('all'); }}
-                    className="text-sm text-primary hover:underline"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0"
                   >
                     Clear all filters
-                  </button>
+                  </Button>
                 </div>
               )}
 
@@ -598,10 +606,9 @@ export function SecurityDashboardPage() {
                                   </p>
                                 )}
                               </div>
-                              <button
+                              <Button
                                 onClick={(e) => { e.stopPropagation(); verifySecret(secret.id); }}
                                 disabled={verifyingSecrets.has(secret.id)}
-                                className="px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                               >
                                 {verifyingSecrets.has(secret.id) ? (
                                   <>
@@ -613,7 +620,7 @@ export function SecurityDashboardPage() {
                                     Verify Secret
                                   </>
                                 )}
-                              </button>
+                              </Button>
                             </div>
                           </div>
 
@@ -879,17 +886,19 @@ export function SecurityDashboardPage() {
                 <span className="text-sm font-medium text-muted-foreground">Severity:</span>
                 <div className="flex gap-1">
                   {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(sev => (
-                    <button
+                    <Button
                       key={sev}
                       onClick={() => toggleSeverityFilter(sev)}
-                      className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                      variant={severityFilter.includes(sev) ? 'default' : 'secondary'}
+                      size="sm"
+                      className={`rounded-full h-auto px-3 py-1 text-xs ${
                         severityFilter.includes(sev)
                           ? getSeverityColor(sev)
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          : ''
                       }`}
                     >
                       {sev}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -900,17 +909,15 @@ export function SecurityDashboardPage() {
                   <span className="text-sm font-medium text-muted-foreground">Category:</span>
                   <div className="flex flex-wrap gap-1">
                     {Object.keys(data.summary.byCategory).map(cat => (
-                      <button
+                      <Button
                         key={cat}
                         onClick={() => toggleCategoryFilter(cat)}
-                        className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                          categoryFilter.includes(cat)
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                        }`}
+                        variant={categoryFilter.includes(cat) ? 'default' : 'secondary'}
+                        size="sm"
+                        className="rounded-full h-auto px-3 py-1 text-xs"
                       >
                         {cat} ({data.summary.byCategory[cat]})
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -928,25 +935,28 @@ export function SecurityDashboardPage() {
                   <option value="severity">Severity</option>
                   <option value="project">Project</option>
                 </select>
-                <button
+                <Button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-muted"
+                  variant="outline"
+                  size="sm"
                   title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
                 >
                   {sortOrder === 'asc' ? '↑' : '↓'}
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Clear Filters */}
             {(severityFilter.length > 0 || categoryFilter.length > 0) && (
               <div className="mb-4">
-                <button
+                <Button
                   onClick={() => { setSeverityFilter([]); setCategoryFilter([]); }}
-                  className="text-sm text-primary hover:underline"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0"
                 >
                   Clear all filters
-                </button>
+                </Button>
               </div>
             )}
 
@@ -997,12 +1007,14 @@ export function SecurityDashboardPage() {
                           </p>
                         </div>
                         <div className="text-right text-sm shrink-0">
-                          <button
+                          <Button
                             onClick={(e) => { e.stopPropagation(); navigate(`/projects/${finding.projectId}`); }}
-                            className="text-primary hover:underline font-medium"
+                            variant="link"
+                            size="sm"
+                            className="h-auto p-0"
                           >
                             {finding.projectName}
-                          </button>
+                          </Button>
                           <p className="text-muted-foreground text-xs mt-1">
                             {formatDate(finding.scanDate)}
                           </p>
@@ -1046,12 +1058,12 @@ export function SecurityDashboardPage() {
                           </div>
                         )}
                         <div className="mt-4 flex gap-2">
-                          <button
+                          <Button
                             onClick={() => navigate(`/projects/${finding.projectId}`)}
-                            className="px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+                            size="sm"
                           >
                             View Project
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     )}
@@ -1063,11 +1075,11 @@ export function SecurityDashboardPage() {
             {/* Load More */}
             {data.pagination.hasMore && (
               <div className="mt-6 text-center">
-                <button
-                  className="px-6 py-2 text-sm font-medium rounded-md border border-border bg-background hover:bg-muted"
+                <Button
+                  variant="outline"
                 >
                   Load More
-                </button>
+                </Button>
               </div>
             )}
           </>

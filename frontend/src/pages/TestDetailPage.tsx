@@ -6,6 +6,7 @@
 import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 // Feature #571: Lucide icons for page-level tab navigation (replaces emoji)
+import { Button } from '../components/ui/button';
 import { LayoutDashboard, Play, Settings, History } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
@@ -997,12 +998,12 @@ function TestDetailPage() {
           <div className="text-center">
             <h2 className="text-2xl font-bold text-foreground">Test Not Found</h2>
             <p className="mt-2 text-muted-foreground">{error}</p>
-            <button
+            <Button
               onClick={() => navigate('/projects')}
-              className="mt-6 rounded-md bg-primary px-6 py-2 font-medium text-primary-foreground hover:bg-primary/90"
+              className="mt-6"
             >
               Go to Projects
-            </button>
+            </Button>
           </div>
         </div>
       </Layout>
@@ -1055,10 +1056,12 @@ function TestDetailPage() {
               { id: 'configuration' as PageSection, label: 'Configuration', icon: <Settings className="h-4 w-4" /> },
               { id: 'history' as PageSection, label: 'History', icon: <History className="h-4 w-4" />, badge: runs.length },
             ]).map(tab => (
-              <button
+              <Button
                 key={tab.id}
+                variant="ghost"
+                size="sm"
                 onClick={() => setPageSection(tab.id)}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
+                className={`rounded-none border-b-2 whitespace-nowrap flex items-center gap-2 ${
                   pageSection === tab.id
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
@@ -1071,7 +1074,7 @@ function TestDetailPage() {
                     {tab.badge}
                   </span>
                 )}
-              </button>
+              </Button>
             ))}
           </nav>
         </div>
@@ -1283,58 +1286,63 @@ function TestDetailPage() {
                 {/* Sub-tab Header for steps/code/baseline/k6script */}
                 <div className="flex items-center justify-between border-b border-border pb-3">
                   <div className="flex gap-4">
-                    <button
+                    <Button
+                      variant="ghost"
                       onClick={() => setActiveTab('steps')}
-                      className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
+                      className={`text-lg font-semibold rounded-none pb-2 border-b-2 ${
                         activeTab === 'steps'
                           ? 'text-foreground border-primary'
                           : 'text-muted-foreground border-transparent hover:text-foreground'
                       }`}
                     >
                       Test Steps
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
                       onClick={() => setActiveTab('code')}
-                      className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
+                      className={`text-lg font-semibold rounded-none pb-2 border-b-2 ${
                         activeTab === 'code'
                           ? 'text-foreground border-primary'
                           : 'text-muted-foreground border-transparent hover:text-foreground'
                       }`}
                     >
                       View Code
-                    </button>
+                    </Button>
                     {test?.test_type === 'visual_regression' && (
-                      <button
+                      <Button
+                        variant="ghost"
                         onClick={() => setActiveTab('baseline')}
-                        className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
+                        className={`text-lg font-semibold rounded-none pb-2 border-b-2 ${
                           activeTab === 'baseline'
                             ? 'text-foreground border-primary'
                             : 'text-muted-foreground border-transparent hover:text-foreground'
                         }`}
                       >
                         Baseline
-                      </button>
+                      </Button>
                     )}
                     {test?.test_type === 'load' && (
-                      <button
+                      <Button
+                        variant="ghost"
                         onClick={() => setActiveTab('k6script')}
-                        className={`text-lg font-semibold pb-2 border-b-2 transition-colors ${
+                        className={`text-lg font-semibold rounded-none pb-2 border-b-2 ${
                           activeTab === 'k6script'
                             ? 'text-foreground border-primary'
                             : 'text-muted-foreground border-transparent hover:text-foreground'
                         }`}
                       >
                         K6 Script
-                      </button>
+                      </Button>
                     )}
                   </div>
                   {canEdit && activeTab === 'steps' && !['visual_regression', 'lighthouse', 'accessibility'].includes(test?.test_type || '') && (
-                    <button
+                    <Button
+                      variant="link"
+                      size="sm"
                       onClick={() => setShowAddStepModal(true)}
-                      className="text-sm text-primary hover:underline"
                     >
                       + Add Step
-                    </button>
+                    </Button>
                   )}
                 </div>
 

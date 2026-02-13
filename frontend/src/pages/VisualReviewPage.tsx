@@ -15,6 +15,7 @@ import {
  useBatchApproveChanges,
  useBatchRejectChanges,
 } from '../hooks/api/useVisualReview';
+import { Button } from '../components/ui/button';
 import { Check, X, Loader2, CheckCircle2, FolderOpen, Server, Monitor, Clock, AlertTriangle } from 'lucide-react';
 
 // Types for Visual Review
@@ -509,28 +510,30 @@ Respond in this JSON format:
  <div className="flex items-center gap-3">
  {pendingChanges.length > 0 && (
  <>
- <button
+ <Button
  onClick={toggleSelectAll}
- className="text-sm text-primary hover:underline"
+ variant="link"
+ size="sm"
+ className="h-auto p-0"
  >
  {selectedChanges.size === pendingChanges.length ? 'Deselect All' : 'Select All'}
- </button>
- <button
+ </Button>
+ <Button
  onClick={() => setShowBatchApproveModal(true)}
  disabled={selectedChanges.size === 0}
- className="inline-flex items-center gap-2 rounded-md bg-success px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed"
+ className="bg-success text-primary-foreground hover:bg-success/90"
  >
  <Check className="h-4 w-4" />
  Batch Approve ({selectedChanges.size})
- </button>
- <button
+ </Button>
+ <Button
  onClick={() => setShowBatchRejectModal(true)}
  disabled={selectedChanges.size === 0}
- className="inline-flex items-center gap-2 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
+ variant="destructive"
  >
  <X className="h-4 w-4" />
  Batch Reject ({selectedChanges.size})
- </button>
+ </Button>
  </>
  )}
  </div>
@@ -572,12 +575,14 @@ Respond in this JSON format:
  ))}
  </select>
  {filterProjectId !== 'all' && (
- <button
+ <Button
  onClick={() => setFilterProjectId('all')}
- className="text-xs text-primary hover:underline"
+ variant="link"
+ size="sm"
+ className="h-auto p-0 text-xs"
  >
  Clear
- </button>
+ </Button>
  )}
  </div>
  )}
@@ -598,12 +603,14 @@ Respond in this JSON format:
  ))}
  </select>
  {filterSuiteId !== 'all' && (
- <button
+ <Button
  onClick={() => setFilterSuiteId('all')}
- className="text-xs text-primary hover:underline"
+ variant="link"
+ size="sm"
+ className="h-auto p-0 text-xs"
  >
  Clear
- </button>
+ </Button>
  )}
  </div>
  )}
@@ -624,12 +631,14 @@ Respond in this JSON format:
  <option value="20">≥ 20%</option>
  </select>
  {filterMinDiff !== 'all' && (
- <button
+ <Button
  onClick={() => setFilterMinDiff('all')}
- className="text-xs text-primary hover:underline"
+ variant="link"
+ size="sm"
+ className="h-auto p-0 text-xs"
  >
  Clear
- </button>
+ </Button>
  )}
  </div>
 
@@ -637,7 +646,7 @@ Respond in this JSON format:
  <div className="flex items-center gap-2">
  <span className="text-sm text-muted-foreground">Sort by:</span>
  <div className="flex items-center gap-1 rounded-md border border-border bg-background p-0.5">
- <button
+ <Button
  onClick={() => {
  if (sortBy === 'date') {
  setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
@@ -646,15 +655,13 @@ Respond in this JSON format:
  setSortOrder('desc');
  }
  }}
- className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
- sortBy === 'date'
- ? 'bg-primary text-primary-foreground'
- : 'text-muted-foreground hover:text-foreground hover:bg-muted'
- }`}
+ variant={sortBy === 'date' ? 'default' : 'ghost'}
+ size="sm"
+ className="h-auto px-3 py-1.5 text-xs"
  >
  Date {sortBy === 'date' && (sortOrder === 'desc' ? '↓' : '↑')}
- </button>
- <button
+ </Button>
+ <Button
  onClick={() => {
  if (sortBy === 'diff') {
  setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
@@ -663,14 +670,12 @@ Respond in this JSON format:
  setSortOrder('desc');
  }
  }}
- className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
- sortBy === 'diff'
- ? 'bg-primary text-primary-foreground'
- : 'text-muted-foreground hover:text-foreground hover:bg-muted'
- }`}
+ variant={sortBy === 'diff' ? 'default' : 'ghost'}
+ size="sm"
+ className="h-auto px-3 py-1.5 text-xs"
  >
  Diff % {sortBy === 'diff' && (sortOrder === 'desc' ? '↓' : '↑')}
- </button>
+ </Button>
  </div>
  </div>
  </div>
@@ -778,17 +783,21 @@ Respond in this JSON format:
 
  {/* Actions */}
  <div className="flex flex-col gap-2">
- <button
+ <Button
  onClick={() => navigate(`/tests/${change.testId}`)}
- className="text-xs text-primary hover:underline"
+ variant="link"
+ size="sm"
+ className="h-auto p-0 text-xs"
  >
  View Test →
- </button>
+ </Button>
  {/* Feature #1251: AI Impact Analysis button */}
- <button
+ <Button
  onClick={() => handleAnalyzeChange(change)}
  disabled={analyzingChangeId === key}
- className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent/80 disabled:opacity-50"
+ variant="ghost"
+ size="sm"
+ className="h-auto p-0 gap-1 text-xs text-accent hover:text-accent/80"
  >
  {analyzingChangeId === key ? (
  <>
@@ -800,7 +809,7 @@ Respond in this JSON format:
  ) : (
  '🤖 AI Analysis'
  )}
- </button>
+ </Button>
  </div>
  </div>
 
@@ -937,17 +946,17 @@ Respond in this JSON format:
  </p>
  </ModalBody>
  <ModalFooter>
- <button
+ <Button
  onClick={() => setShowBatchApproveModal(false)}
- className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+ variant="outline"
  disabled={batchApproveMutation.isPending}
  >
  Cancel
- </button>
- <button
+ </Button>
+ <Button
  onClick={handleBatchApprove}
  disabled={batchApproveMutation.isPending}
- className="rounded-md bg-success px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-success disabled:opacity-50"
+ className="bg-success text-primary-foreground hover:bg-success/90"
  >
  {batchApproveMutation.isPending ? (
  <span className="flex items-center gap-2">
@@ -957,7 +966,7 @@ Respond in this JSON format:
  ) : (
  `Approve ${selectedChanges.size} ${selectedChanges.size === 1 ? 'Change' : 'Changes'}`
  )}
- </button>
+ </Button>
  </ModalFooter>
  </Modal>
 
@@ -1001,20 +1010,20 @@ Respond in this JSON format:
  </div>
  </ModalBody>
  <ModalFooter>
- <button
+ <Button
  onClick={() => {
  setShowBatchRejectModal(false);
  setBatchRejectReason('');
  }}
- className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+ variant="outline"
  disabled={batchRejectMutation.isPending}
  >
  Cancel
- </button>
- <button
+ </Button>
+ <Button
  onClick={handleBatchReject}
  disabled={batchRejectMutation.isPending}
- className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+ variant="destructive"
  >
  {batchRejectMutation.isPending ? (
  <span className="flex items-center gap-2">
@@ -1024,7 +1033,7 @@ Respond in this JSON format:
  ) : (
  `Reject ${selectedChanges.size} ${selectedChanges.size === 1 ? 'Change' : 'Changes'}`
  )}
- </button>
+ </Button>
  </ModalFooter>
  </Modal>
 

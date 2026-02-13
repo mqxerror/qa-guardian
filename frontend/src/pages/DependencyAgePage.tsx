@@ -120,21 +120,22 @@ export function DependencyAgePage() {
           breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Dependency Age' }]}
           actions={
             <div className="flex items-center gap-3">
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setShowConfigModal(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+                className="flex items-center gap-2"
               >
                 <Settings className="h-4 w-4" />
                 Configure Thresholds
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleRefresh}
                 disabled={refreshMutation.isPending}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2"
               >
                 <RefreshCw className={`h-4 w-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
                 {refreshMutation.isPending ? 'Refreshing...' : 'Refresh'}
-              </button>
+              </Button>
             </div>
           }
         />
@@ -173,12 +174,13 @@ export function DependencyAgePage() {
                 Critical: &gt; {config.critical_age_days} days ({Math.round(config.critical_age_days / 30)} months / {(config.critical_age_days / 365).toFixed(1)} years)
               </div>
             </div>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setShowConfigModal(true)}
-              className="text-primary hover:text-primary/70 text-sm transition-colors"
             >
               Edit
-            </button>
+            </Button>
           </div>
         </div>
 

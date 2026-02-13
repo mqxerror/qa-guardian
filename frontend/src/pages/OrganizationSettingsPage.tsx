@@ -16,7 +16,10 @@ import { toast } from '../stores/toastStore';
 import { createLogger } from '../utils/logger';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { PageHeader } from '../components/ui';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { Loader2, AlertTriangle, Wifi, FileText, BarChart3, LayoutGrid, Search, CheckCircle2, Link2, X, ImageIcon, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // Feature #709: Import React Query hooks
 // Feature #712: Added useCleanupPreview to eliminate raw fetch()
@@ -121,8 +124,9 @@ function SessionManagementSection() {
  <span className="ml-2 text-muted-foreground">Loading sessions...</span>
  </div>
  ) : sessions.length === 0 ? (
- <div className="mt-4 text-center py-8 text-muted-foreground">
- No active sessions found.
+ /* Feature #728: EmptyState adoption */
+ <div className="mt-4">
+ <EmptyState icon={EmptyStateIcons.users} title="No active sessions found" size="sm" />
  </div>
  ) : (
  <div className="mt-4 space-y-3">
@@ -157,29 +161,32 @@ function SessionManagementSection() {
  </div>
  </div>
  {!session.is_current && (
- <button
+ <Button
+ variant="outline"
+ size="sm"
  onClick={() => handleLogoutSession(session.id)}
  disabled={loggingOutSessionId === session.id}
- className="px-3 py-1 text-sm font-medium text-destructive border border-destructive/50 rounded-md hover:bg-destructive/10 disabled:opacity-50"
+ className="text-destructive border-destructive/50 hover:bg-destructive/10"
  >
  {loggingOutSessionId === session.id ? 'Logging out...' : 'Logout'}
- </button>
+ </Button>
  )}
  </div>
  ))}
 
  {sessions.length > 1 && (
  <div className="pt-4 border-t border-border">
- <button
+ <Button
+ variant="outline"
  onClick={handleLogoutAllSessions}
  disabled={logoutAllMutation.isPending}
- className="w-full px-4 py-2 text-sm font-medium text-destructive border border-destructive/50 rounded-md hover:bg-destructive/10 disabled:opacity-50 flex items-center justify-center gap-2"
+ className="w-full text-destructive border-destructive/50 hover:bg-destructive/10"
  >
  {logoutAllMutation.isPending && (
  <Loader2 aria-hidden="true" className="animate-spin h-4 w-4" />
  )}
  {logoutAllMutation.isPending ? 'Logging out all sessions...' : 'Logout All Other Sessions'}
- </button>
+ </Button>
  </div>
  )}
  </div>
@@ -301,13 +308,13 @@ function ArtifactRetentionSection() {
  ({localRetentionDays === 1 ? '1 day' : `${localRetentionDays} days`})
  </span>
  {canManageRetention && localRetentionDays !== settings.retentionDays && (
- <button
+ <Button
+ size="sm"
  onClick={handleSaveRetention}
  disabled={saveRetentionMutation.isPending}
- className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
  >
  {saveRetentionMutation.isPending ? 'Saving...' : 'Save'}
- </button>
+ </Button>
  )}
  </div>
  </div>
@@ -316,20 +323,22 @@ function ArtifactRetentionSection() {
  <div className="border-t border-border pt-4 mt-4">
  <h4 className="text-sm font-medium text-foreground mb-2">Cleanup Actions</h4>
  <div className="flex flex-wrap gap-3">
- <button
+ <Button
+ variant="outline"
+ size="sm"
  onClick={handlePreviewCleanup}
  disabled={isLoadingPreview}
- className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
  >
  {isLoadingPreview ? 'Loading...' : 'Preview Cleanup'}
- </button>
- <button
+ </Button>
+ <Button
+ size="sm"
  onClick={handleRunCleanup}
  disabled={runCleanupMutation.isPending}
- className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-warning disabled:opacity-50"
+ className="bg-warning text-primary-foreground hover:bg-warning/90"
  >
  {runCleanupMutation.isPending ? 'Running Cleanup...' : 'Run Cleanup Now'}
- </button>
+ </Button>
  </div>
 
  {cleanupPreview && (
@@ -466,10 +475,9 @@ function StorageUsageSection() {
  </div>
  )}
 
+ {/* Feature #728: EmptyState adoption */}
  {storageData.project_breakdown.length === 0 && (
- <div className="text-center py-4 text-muted-foreground text-sm">
- No artifacts stored yet. Run some tests to generate trace files.
- </div>
+ <EmptyState icon={EmptyStateIcons.document} title="No artifacts stored yet" description="Run some tests to generate trace files." size="sm" />
  )}
  </div>
  </div>
@@ -609,11 +617,9 @@ function MCPAuditLogSection() {
  </select>
  </div>
 
+ {/* Feature #728: EmptyState adoption */}
  {auditLogs.length === 0 ? (
- <div className="text-center py-8 border border-dashed border-border rounded-lg">
- <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" strokeWidth={1.5} />
- <p className="mt-3 text-sm text-muted-foreground">No MCP audit logs found</p>
- </div>
+ <EmptyState icon={EmptyStateIcons.document} title="No MCP audit logs found" description="MCP tool invocations will be logged here." size="sm" />
  ) : (
  <>
  <div className="space-y-2">
@@ -655,8 +661,8 @@ function MCPAuditLogSection() {
  <div className="mt-4 flex items-center justify-between">
  <span className="text-sm text-muted-foreground">Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalLogs)} of {totalLogs}</span>
  <div className="flex gap-2">
- <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 text-sm border border-input rounded-md bg-background text-foreground disabled:opacity-50">Previous</button>
- <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 text-sm border border-input rounded-md bg-background text-foreground disabled:opacity-50">Next</button>
+ <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Previous</Button>
+ <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next</Button>
  </div>
  </div>
  )}
@@ -710,9 +716,9 @@ function MCPAnalyticsDashboard() {
  <option value="90d">Last 90 Days</option>
  <option value="all">All Time</option>
  </select>
- <button onClick={() => handleExport('csv')} disabled={exportMutation.isPending} className="px-3 py-1.5 text-sm border border-input rounded-md bg-background text-foreground hover:bg-muted disabled:opacity-50">
+ <Button variant="outline" size="sm" onClick={() => handleExport('csv')} disabled={exportMutation.isPending}>
  {exportMutation.isPending ? 'Exporting...' : '📥 Export CSV'}
- </button>
+ </Button>
  </div>
  </div>
  <p className="text-sm text-muted-foreground mb-6">View MCP usage statistics, trends, and performance metrics.</p>
@@ -728,7 +734,7 @@ function MCPAnalyticsDashboard() {
  <div>
  <h4 className="text-sm font-semibold text-foreground mb-3">🔧 Most Used Tools</h4>
  {sortedTools.length === 0 ? (
- <div className="text-sm text-muted-foreground py-4 text-center border border-dashed border-border rounded">No tool usage data yet</div>
+ <EmptyState icon={EmptyStateIcons.analytics} title="No tool usage data yet" size="sm" />
  ) : (
  <div className="space-y-2">
  {sortedTools.slice(0, 8).map((tool) => (
@@ -744,7 +750,7 @@ function MCPAnalyticsDashboard() {
  <div>
  <h4 className="text-sm font-semibold text-foreground mb-3">🔑 Requests by API Key</h4>
  {sortedApiKeys.length === 0 ? (
- <div className="text-sm text-muted-foreground py-4 text-center border border-dashed border-border rounded">No API key usage data yet</div>
+ <EmptyState icon={EmptyStateIcons.analytics} title="No API key usage data yet" size="sm" />
  ) : (
  <div className="space-y-2">
  {sortedApiKeys.slice(0, 8).map((key) => (
@@ -877,7 +883,7 @@ function MCPToolsCatalogSection() {
  {filteredTools.length === 0 ? (
  <div className="text-center py-8 border border-dashed border-border rounded-lg">
  <p className="mt-3 text-sm text-muted-foreground">No tools match your search</p>
- <button onClick={() => { setSearchQuery(''); setSelectedCategory('all'); setSelectedPermission('all'); }} className="mt-2 text-xs text-primary hover:underline">Clear filters</button>
+ <Button variant="link" size="sm" onClick={() => { setSearchQuery(''); setSelectedCategory('all'); setSelectedPermission('all'); }} className="mt-2 text-xs px-0 h-auto">Clear filters</Button>
  </div>
  ) : (
  <div className="space-y-4">
@@ -900,7 +906,7 @@ function MCPToolsCatalogSection() {
  <div className="mt-3 pt-3 border-t border-border text-xs">
  <div><span className="text-muted-foreground">Category:</span> <span className="text-foreground capitalize">{tool.category}</span></div>
  <div className="flex gap-2 mt-2">
- <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(tool.name); toast.success(`Copied "${tool.name}" to clipboard`); }} className="text-xs px-2 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20">Copy Name</button>
+ <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(tool.name); toast.success(`Copied "${tool.name}" to clipboard`); }} className="text-xs h-auto px-2 py-1 bg-primary/10 text-primary hover:bg-primary/20">Copy Name</Button>
  </div>
  </div>
  )}
@@ -976,9 +982,9 @@ function SlackIntegrationSection() {
  </div>
  )}
  <div className="pt-2 border-t border-border">
- <button onClick={handleDisconnect} disabled={disconnectMutation.isPending} className="rounded-md border border-destructive px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50">
+ <Button variant="outline" onClick={handleDisconnect} disabled={disconnectMutation.isPending} className="border-destructive text-destructive hover:bg-destructive/10">
  {disconnectMutation.isPending ? 'Disconnecting...' : 'Disconnect Slack'}
- </button>
+ </Button>
  </div>
  </div>
  ) : (
@@ -994,9 +1000,9 @@ function SlackIntegrationSection() {
  <label htmlFor="workspace-name" className="block text-sm font-medium text-foreground mb-1">Workspace Name</label>
  <input id="workspace-name" type="text" value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} placeholder="Dev Workspace" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
  </div>
- <button onClick={handleConnect} disabled={connectMutation.isPending} className="flex items-center gap-2 rounded-md bg-[#4A154B] px-4 py-2 text-sm font-medium text-white hover:bg-[#611f64] disabled:opacity-50">
+ <Button onClick={handleConnect} disabled={connectMutation.isPending} className="bg-[#4A154B] text-white hover:bg-[#611f64]">
  {connectMutation.isPending ? 'Connecting...' : 'Connect to Slack'}
- </button>
+ </Button>
  </div>
  </div>
  </div>
@@ -1138,9 +1144,9 @@ function OrganizationSettingsPage() {
  {logoUrl ? (
  <div className="relative">
  <img src={logoUrl} alt="Organization logo" className="h-16 w-16 rounded-lg object-cover border border-border" />
- <button type="button" onClick={handleRemoveLogo} className="absolute -top-2 -right-2 rounded-full bg-destructive p-1 text-primary-foreground hover:bg-destructive/90" aria-label="Remove logo">
+ <Button type="button" variant="destructive" size="icon" onClick={handleRemoveLogo} className="absolute -top-2 -right-2 rounded-full h-6 w-6 p-1" aria-label="Remove logo">
  <X className="h-3 w-3" />
- </button>
+ </Button>
  </div>
  ) : (
  <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted">
@@ -1165,10 +1171,10 @@ function OrganizationSettingsPage() {
  <option value="Asia/Tokyo">Tokyo (JST)</option>
  </select>
  </div>
- <button onClick={handleSaveSettings} disabled={isSaving} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
+ <Button onClick={handleSaveSettings} disabled={isSaving}>
  {isSaving && <Loader2 aria-hidden="true" className="animate-spin h-4 w-4" />}
  {isSaving ? 'Saving...' : 'Save Changes'}
- </button>
+ </Button>
  </div>
  </div>
 
@@ -1243,9 +1249,9 @@ function OrganizationSettingsPage() {
  <p className="mt-2 text-sm text-muted-foreground">These actions are irreversible. Please be careful.</p>
  <div className="mt-4 flex flex-wrap gap-3">
  {adminMembers.length > 0 && (
- <button onClick={() => { setShowTransferModal(true); setTransferPassword(''); setTransferError(''); setSelectedNewOwner(adminMembers[0]?.user_id || ''); }} className="rounded-md border border-warning px-4 py-2 font-medium text-warning hover:bg-warning/5">Transfer Ownership</button>
+ <Button variant="outline" onClick={() => { setShowTransferModal(true); setTransferPassword(''); setTransferError(''); setSelectedNewOwner(adminMembers[0]?.user_id || ''); }} className="border-warning text-warning hover:bg-warning/5">Transfer Ownership</Button>
  )}
- <button onClick={() => setShowDeleteModal(true)} className="rounded-md border border-destructive px-4 py-2 font-medium text-destructive hover:bg-destructive/10">Delete Organization</button>
+ <Button variant="outline" onClick={() => setShowDeleteModal(true)} className="border-destructive text-destructive hover:bg-destructive/10">Delete Organization</Button>
  </div>
  </div>
  </div>
@@ -1284,8 +1290,8 @@ function OrganizationSettingsPage() {
  </ModalBody>
  {!transferSuccess && (
  <ModalFooter>
- <button type="button" onClick={() => setShowTransferModal(false)} className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted">Cancel</button>
- <button type="submit" form="transfer-ownership-form" disabled={transferOwnershipMutation.isPending || !selectedNewOwner || !transferPassword} className="rounded-md bg-warning px-4 py-2 font-medium text-primary-foreground hover:bg-warning disabled:opacity-50">{transferOwnershipMutation.isPending ? 'Transferring...' : 'Transfer Ownership'}</button>
+ <Button type="button" variant="outline" onClick={() => setShowTransferModal(false)}>Cancel</Button>
+ <Button type="submit" form="transfer-ownership-form" disabled={transferOwnershipMutation.isPending || !selectedNewOwner || !transferPassword} className="bg-warning text-primary-foreground hover:bg-warning/90">{transferOwnershipMutation.isPending ? 'Transferring...' : 'Transfer Ownership'}</Button>
  </ModalFooter>
  )}
  </Modal>
@@ -1318,8 +1324,8 @@ function OrganizationSettingsPage() {
  </ModalBody>
  {!deleteSuccess && (
  <ModalFooter>
- <button type="button" onClick={() => { setShowDeleteModal(false); setDeletePassword(''); setDeleteError(''); }} className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted">Cancel</button>
- <button type="submit" form="delete-organization-form" disabled={deleteOrgMutation.isPending || !deletePassword} className="rounded-md bg-destructive px-4 py-2 font-medium text-primary-foreground hover:bg-destructive/90 disabled:opacity-50">{deleteOrgMutation.isPending ? 'Deleting...' : 'Delete Organization'}</button>
+ <Button type="button" variant="outline" onClick={() => { setShowDeleteModal(false); setDeletePassword(''); setDeleteError(''); }}>Cancel</Button>
+ <Button type="submit" variant="destructive" form="delete-organization-form" disabled={deleteOrgMutation.isPending || !deletePassword}>{deleteOrgMutation.isPending ? 'Deleting...' : 'Delete Organization'}</Button>
  </ModalFooter>
  )}
  </Modal>

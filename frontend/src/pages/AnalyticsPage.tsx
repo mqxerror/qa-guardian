@@ -9,6 +9,7 @@ import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { PageHeader } from '../components/ui';
+import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 
 // Feature #72: Import React Query hooks for caching
@@ -179,14 +180,13 @@ export function AnalyticsPage() {
           description="View test analytics and insights for your organization."
           breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Analytics' }]}
           actions={
-            <button
+            <Button
               onClick={handleExportCSV}
               disabled={isLoading || isTrendsLoading || isBrowserStatsLoading || isProjectStatsLoading}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Download className="h-4 w-4" />
               Export CSV
-            </button>
+            </Button>
           }
         />
 

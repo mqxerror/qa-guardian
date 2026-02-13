@@ -5,6 +5,7 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import { PageHeader } from "../components/ui";
+import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 import type {
   AIRouterConfig, RouterStats, CircuitBreakerState, ProviderSwitchLog,
@@ -246,7 +247,7 @@ function AIRouterPage() {
                 {activeProvider?.current_provider === 'kie' ? (
                   <span className="px-3 py-1 bg-success text-primary-foreground text-xs rounded-full font-medium flex items-center gap-1"><span className="w-2 h-2 bg-card rounded-full animate-pulse"></span> ACTIVE</span>
                 ) : (
-                  <button onClick={() => openSwitchModal('kie')} disabled={isSwitching || activeProvider?.switching} className="px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors">Switch to Kie.ai</button>
+                  <Button onClick={() => openSwitchModal('kie')} disabled={isSwitching || activeProvider?.switching} size="sm">Switch to Kie.ai</Button>
                 )}
               </div>
             </div>
@@ -265,7 +266,7 @@ function AIRouterPage() {
                 {activeProvider?.current_provider === 'anthropic' ? (
                   <span className="px-3 py-1 bg-success text-primary-foreground text-xs rounded-full font-medium flex items-center gap-1"><span className="w-2 h-2 bg-card rounded-full animate-pulse"></span> ACTIVE</span>
                 ) : (
-                  <button onClick={() => openSwitchModal('anthropic')} disabled={isSwitching || activeProvider?.switching} className="px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors">Switch to Anthropic</button>
+                  <Button onClick={() => openSwitchModal('anthropic')} disabled={isSwitching || activeProvider?.switching} size="sm">Switch to Anthropic</Button>
                 )}
               </div>
             </div>
@@ -312,11 +313,11 @@ function AIRouterPage() {
           )}
         </ModalBody>
         <ModalFooter>
-          <button onClick={() => setShowSwitchModal(false)} disabled={isSwitching} className="px-4 py-2 text-foreground hover:bg-muted rounded-lg">Cancel</button>
-          <button onClick={hotSwapProvider} disabled={isSwitching} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
+          <Button variant="ghost" onClick={() => setShowSwitchModal(false)} disabled={isSwitching}>Cancel</Button>
+          <Button onClick={hotSwapProvider} disabled={isSwitching} className="flex items-center gap-2">
             {isSwitching && <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>}
             {isSwitching ? 'Switching...' : 'Switch Provider'}
-          </button>
+          </Button>
         </ModalFooter>
       </Modal>
 
@@ -341,7 +342,7 @@ function AIRouterPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span>Router Enabled</span>
-                <button onClick={() => updateConfig({ enabled: !config.enabled })} disabled={isSaving} className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-success' : 'bg-muted'}`}>
+                <button onClick={() => updateConfig({ enabled: !config.enabled })} disabled={isSaving} className={`w-12 h-6 rounded-full transition-colors ${config.enabled ? 'bg-success' : 'bg-muted'}`} aria-label="Toggle router enabled">
                   <div className={`w-5 h-5 bg-card rounded-full shadow transform transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
               </div>
@@ -388,7 +389,7 @@ function AIRouterPage() {
                 {cb.recovery_at && <div>Recovers: {new Date(cb.recovery_at).toLocaleTimeString()}</div>}
               </div>
               {cb.state !== 'closed' && (
-                <button onClick={() => resetCircuitBreaker(cb.provider)} className="mt-2 text-xs px-2 py-1 bg-primary/10 text-primary rounded hover:bg-primary/20">Reset</button>
+                <Button variant="ghost" size="sm" onClick={() => resetCircuitBreaker(cb.provider)} className="mt-2 text-xs bg-primary/10 text-primary hover:bg-primary/20">Reset</Button>
               )}
             </div>
           ))}
@@ -407,9 +408,9 @@ function AIRouterPage() {
         <div className="bg-card rounded-lg shadow p-4">
           <h2 className="text-lg font-semibold mb-4">Test Failover</h2>
           <div className="space-y-2 mb-4">
-            <button onClick={() => testFailover('timeout')} disabled={isTesting} className="w-full px-4 py-2 bg-warning/10 text-warning rounded hover:bg-warning/20 disabled:opacity-50">Test Timeout Failover</button>
-            <button onClick={() => testFailover('rate_limit')} disabled={isTesting} className="w-full px-4 py-2 bg-accent/10 text-accent rounded hover:bg-accent/20 disabled:opacity-50">Test Rate Limit Failover</button>
-            <button onClick={() => testFailover('error')} disabled={isTesting} className="w-full px-4 py-2 bg-destructive/10 text-destructive rounded hover:bg-destructive/20 disabled:opacity-50">Test Error Failover</button>
+            <Button variant="outline" onClick={() => testFailover('timeout')} disabled={isTesting} className="w-full bg-warning/10 text-warning border-warning/20 hover:bg-warning/20">Test Timeout Failover</Button>
+            <Button variant="outline" onClick={() => testFailover('rate_limit')} disabled={isTesting} className="w-full bg-accent/10 text-accent border-accent/20 hover:bg-accent/20">Test Rate Limit Failover</Button>
+            <Button variant="destructive" onClick={() => testFailover('error')} disabled={isTesting} className="w-full bg-destructive/10 text-destructive hover:bg-destructive/20">Test Error Failover</Button>
           </div>
           {testResult && (
             <div className={`p-3 rounded ${testResult.success ? 'bg-success/5 border border-success/20' : 'bg-destructive/5 border border-destructive/20'}`}>

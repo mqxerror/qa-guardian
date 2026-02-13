@@ -22,6 +22,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { Clock } from 'lucide-react';
 import { PageHeader } from '../components/ui';
 import { Loader2, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // Feature #1256: AI Schedule Recommendation interfaces
 interface AIScheduleRecommendation {
@@ -280,10 +281,10 @@ export function SchedulesPage() {
   breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Schedules' }]}
   actions={
    <div className="flex gap-3">
-    <button
+    <Button
      onClick={loadAIRecommendations}
      disabled={isLoadingRecommendations}
-     className="rounded-md bg-gradient-to-r from-accent to-primary px-4 py-2 font-medium text-primary-foreground hover:from-accent/90 hover:to-primary flex items-center gap-2"
+     className="bg-gradient-to-r from-accent to-primary hover:from-accent/90 hover:to-primary"
     >
      {isLoadingRecommendations ? (
       <>
@@ -293,14 +294,13 @@ export function SchedulesPage() {
      ) : (
       <>AI Schedule Optimizer</>
      )}
-    </button>
+    </Button>
     {canCreateSchedule && (
-     <button
+     <Button
       onClick={() => setShowCreateModal(true)}
-      className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
      >
       Create Schedule
-     </button>
+     </Button>
     )}
    </div>
   }
@@ -318,12 +318,14 @@ export function SchedulesPage() {
  Based on test duration, resource usage, and team activity patterns
  </p>
  </div>
- <button
+ <Button
+ variant="ghost"
+ size="icon"
  onClick={() => setShowAIRecommendations(false)}
- className="p-1 rounded hover:bg-muted"
+ className="h-8 w-8"
  >
  <X className="h-5 w-5" />
- </button>
+ </Button>
  </div>
 
  {isLoadingRecommendations ? (
@@ -410,12 +412,12 @@ export function SchedulesPage() {
  Applied
  </span>
  ) : (
- <button
+ <Button
+ size="sm"
  onClick={() => applyRecommendation(rec)}
- className="px-3 py-1.5 rounded bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
  >
  Apply
- </button>
+ </Button>
  )}
  </div>
  </div>
@@ -488,7 +490,7 @@ export function SchedulesPage() {
  aria-checked={schedule.enabled}
  disabled={toggleScheduleMutation.isPending}
  onClick={() => handleToggleSchedule(schedule.id, schedule.enabled)}
- className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 ${
+ className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:pointer-events-none disabled:opacity-50 ${
  schedule.enabled ? 'bg-primary' : 'bg-muted'
  }`}
  >
@@ -502,12 +504,14 @@ export function SchedulesPage() {
  )}
  {/* View History Link */}
  <div className="mt-3 pt-3 border-t border-border">
- <button
+ <Button
+ variant="link"
+ size="sm"
  onClick={() => navigate(`/schedules/${schedule.id}`)}
- className="text-sm text-primary hover:underline"
+ className="px-0 h-auto"
  >
  View History {schedule.run_count ? `(${schedule.run_count} runs)` : ''}
- </button>
+ </Button>
  </div>
  </div>
  ))}
@@ -641,18 +645,15 @@ export function SchedulesPage() {
  </label>
  <div className="flex gap-2">
  {(['hourly', 'daily', 'weekly', 'custom'] as const).map((preset) => (
- <button
+ <Button
  key={preset}
  type="button"
+ variant={cronPreset === preset ? 'default' : 'secondary'}
+ size="sm"
  onClick={() => handleCronPresetChange(preset)}
- className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
- cronPreset === preset
- ? 'bg-primary text-primary-foreground'
- : 'bg-muted text-muted-foreground hover:bg-muted/80'
- }`}
  >
  {preset === 'custom' ? 'Custom' : cronPresets[preset].label}
- </button>
+ </Button>
  ))}
  </div>
  {cronPreset !== 'custom' && (
@@ -754,24 +755,23 @@ export function SchedulesPage() {
  </form>
  </ModalBody>
  <ModalFooter>
- <button
+ <Button
  type="button"
+ variant="outline"
  onClick={() => setShowCreateModal(false)}
- className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
  >
  Cancel
- </button>
- <button
+ </Button>
+ <Button
  type="submit"
  form="create-schedule-form"
  disabled={createScheduleMutation.isPending || testSuites.length === 0}
- className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
  >
  {createScheduleMutation.isPending && (
  <Loader2 className="animate-spin h-4 w-4" />
  )}
  {createScheduleMutation.isPending ? 'Creating...' : 'Create Schedule'}
- </button>
+ </Button>
  </ModalFooter>
  </Modal>
  </div>

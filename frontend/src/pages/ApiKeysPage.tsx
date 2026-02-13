@@ -6,11 +6,14 @@
 import { useState } from 'react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '@/components/ui/button';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 import { useApiKeys, useCreateApiKey, useDeleteApiKey } from '../hooks/api/useOrganization';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Check, Clock, ChevronDown, Loader2 } from 'lucide-react';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
 interface ApiKey {
   id: string;
@@ -120,12 +123,11 @@ export function ApiKeysPage() {
             { label: 'API Keys' }
           ]}
           actions={
-            <button
+            <Button
               onClick={() => setShowCreateModal(true)}
-              className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
             >
               Create API Key
-            </button>
+            </Button>
           }
         />
 
@@ -134,18 +136,13 @@ export function ApiKeysPage() {
           {isLoading ? (
             <p className="text-muted-foreground">Loading API keys...</p>
           ) : apiKeys.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border bg-card p-12 text-center">
-              <h3 className="text-lg font-semibold text-foreground">No API keys yet</h3>
-              <p className="mt-2 text-muted-foreground">
-                Create an API key to access the QA Guardian API programmatically.
-              </p>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="mt-4 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                Create API Key
-              </button>
-            </div>
+            /* Feature #728: EmptyState adoption */
+            <EmptyState
+              icon={EmptyStateIcons.document}
+              title="No API keys yet"
+              description="Create an API key to access the QA Guardian API programmatically."
+              action={{ label: 'Create API Key', onClick: () => setShowCreateModal(true) }}
+            />
           ) : (
             <div className="rounded-lg border border-border bg-card overflow-x-auto">
               <div className="min-w-[600px]">
@@ -174,12 +171,13 @@ export function ApiKeysPage() {
                     {formatDate(key.created_at)}
                   </div>
                   <div>
-                    <button
+                    <Button
+                      variant="link"
                       onClick={() => handleDeleteKey(key.id)}
-                      className="text-sm text-destructive hover:underline"
+                      className="text-sm text-destructive hover:text-destructive/80 p-0 h-auto"
                     >
                       Revoke
-                    </button>
+                    </Button>
                   </div>
                 </div>
                 ))}
@@ -219,12 +217,12 @@ export function ApiKeysPage() {
                       readOnly
                       className="flex-1 rounded-md border border-input bg-muted px-3 py-2 font-mono text-sm text-foreground"
                     />
-                    <button
+                    <Button
                       onClick={handleCopyKey}
-                      className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                      size="sm"
                     >
                       {keyCopied ? 'Copied!' : 'Copy'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
                 <div className="mb-4">
@@ -237,12 +235,12 @@ export function ApiKeysPage() {
                 </div>
               </ModalBody>
               <ModalFooter>
-                <button
+                <Button
                   onClick={handleCloseCreateModal}
-                  className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
+                  className="w-full"
                 >
                   Done
-                </button>
+                </Button>
               </ModalFooter>
             </>
           ) : (
@@ -274,35 +272,31 @@ export function ApiKeysPage() {
                   </span>
                   <div className="flex flex-wrap gap-2">
                     {['read', 'execute', 'write', 'admin'].map((scope) => (
-                      <button
+                      <Button
                         key={scope}
                         type="button"
+                        variant={newKeyScopes.includes(scope) ? 'default' : 'outline'}
+                        size="sm"
                         onClick={() => toggleScope(scope)}
-                        className={`rounded-full px-3 py-1 text-sm font-medium border transition-colors ${
-                          newKeyScopes.includes(scope)
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-background text-foreground border-border hover:border-primary'
-                        }`}
+                        className="rounded-full"
                       >
                         {scope}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                   <p className="mt-3 text-xs text-muted-foreground font-medium">MCP Scopes (for Claude Code integration)</p>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {['mcp', 'mcp:read', 'mcp:write', 'mcp:execute'].map((scope) => (
-                      <button
+                      <Button
                         key={scope}
                         type="button"
+                        variant={newKeyScopes.includes(scope) ? 'secondary' : 'outline'}
+                        size="sm"
                         onClick={() => toggleScope(scope)}
-                        className={`rounded-full px-3 py-1 text-sm font-medium border transition-colors ${
-                          newKeyScopes.includes(scope)
-                            ? 'bg-accent text-primary-foreground border-accent'
-                            : 'bg-background text-foreground border-border hover:border-accent'
-                        }`}
+                        className={`rounded-full ${newKeyScopes.includes(scope) ? 'bg-accent text-primary-foreground border-accent' : ''}`}
                       >
                         {scope}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -312,17 +306,18 @@ export function ApiKeysPage() {
 
                 {/* Rate Limiting Configuration (Collapsible) */}
                 <div className="border border-border rounded-md">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => setShowRateLimitConfig(!showRateLimitConfig)}
-                    className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/50 rounded-md"
+                    className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium h-auto"
                   >
                     <span className="flex items-center gap-2">
                       <Clock className="h-4 w-4" />
                       Rate Limiting {showRateLimitConfig && <span className="text-xs text-muted-foreground">(Custom)</span>}
                     </span>
                     <ChevronDown className={`h-4 w-4 transition-transform ${showRateLimitConfig ? 'rotate-180' : ''}`} />
-                  </button>
+                  </Button>
                   {showRateLimitConfig && (
                     <div className="px-3 pb-3 space-y-3 border-t border-border">
                       <div className="pt-3 grid grid-cols-2 gap-3">
@@ -389,23 +384,23 @@ export function ApiKeysPage() {
                 </div>
               </ModalBody>
               <ModalFooter>
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={handleCloseCreateModal}
-                  className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={createMutation.isPending || newKeyScopes.length === 0}
-                  className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+                  className="flex items-center gap-2"
                 >
                   {createMutation.isPending && (
                     <Loader2 className="animate-spin h-4 w-4" />
                   )}
                   {createMutation.isPending ? 'Creating...' : 'Create Key'}
-                </button>
+                </Button>
               </ModalFooter>
             </form>
           )}

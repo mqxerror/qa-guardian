@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { Loader2, FileText } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '@/components/ui/button';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 // Feature #689: React Query hooks for caching and automatic refetching
@@ -103,13 +106,12 @@ export function AuditLogsPage() {
  <span className="ml-2 text-muted-foreground">Loading audit logs...</span>
  </div>
  ) : auditLogs.length === 0 ? (
- <div className="rounded-lg border border-dashed border-border bg-card p-12 text-center">
- <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
- <h3 className="mt-4 text-lg font-semibold text-foreground">No audit logs yet</h3>
- <p className="mt-2 text-muted-foreground">
- Actions performed in your organization will appear here.
- </p>
- </div>
+ /* Feature #728: EmptyState adoption */
+ <EmptyState
+ icon={EmptyStateIcons.document}
+ title="No audit logs yet"
+ description="Actions performed in your organization will appear here."
+ />
  ) : (
  <>
  <div className="rounded-lg border border-border bg-card overflow-x-auto">
@@ -191,23 +193,25 @@ export function AuditLogsPage() {
  </div>
  {totalPages > 1 && (
  <div className="flex gap-2">
- <button
+ <Button
+ variant="outline"
+ size="sm"
  onClick={() => setOffset(Math.max(0, offset - limit))}
  disabled={offset === 0}
- className="rounded-md border border-border px-3 py-1 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
  >
  Previous
- </button>
+ </Button>
  <span className="px-3 py-1 text-sm text-muted-foreground">
  Page {currentPage} of {totalPages}
  </span>
- <button
+ <Button
+ variant="outline"
+ size="sm"
  onClick={() => setOffset(offset + limit)}
  disabled={offset + limit >= total}
- className="rounded-md border border-border px-3 py-1 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
  >
  Next
- </button>
+ </Button>
  </div>
  )}
  </div>

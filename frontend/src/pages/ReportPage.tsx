@@ -10,6 +10,7 @@ import { PageHeader } from '../components/ui';
 import { FileText, BarChart2, Code2, Download } from 'lucide-react';
 // Feature #712: React Query hooks
 import { useReport, useExportReport } from '../hooks/api/useReports';
+import { Button } from '@/components/ui/button';
 
 // Type definitions matching backend
 interface E2EReportSection {
@@ -348,10 +349,12 @@ export function ReportPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground mr-2">Export:</span>
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleExport('pdf')}
                   disabled={exportLoading !== null}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-destructive/10 hover:bg-destructive/20 text-destructive"
                   title="Print as PDF"
                 >
                   {exportLoading === 'pdf' ? (
@@ -360,11 +363,13 @@ export function ReportPage() {
                     <FileText className="w-4 h-4" />
                   )}
                   PDF
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleExport('csv')}
                   disabled={exportLoading !== null}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-success/10 hover:bg-success/20 text-success rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-success/10 hover:bg-success/20 text-success"
                   title="Download CSV"
                 >
                   {exportLoading === 'csv' ? (
@@ -373,11 +378,13 @@ export function ReportPage() {
                     <BarChart2 className="w-4 h-4" />
                   )}
                   CSV
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleExport('html')}
                   disabled={exportLoading !== null}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-primary/10 hover:bg-primary/20 text-primary"
                   title="Download HTML"
                 >
                   {exportLoading === 'html' ? (
@@ -386,11 +393,13 @@ export function ReportPage() {
                     <Code2 className="w-4 h-4" />
                   )}
                   HTML
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleExport('json')}
                   disabled={exportLoading !== null}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-warning/10 hover:bg-warning/20 text-warning rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-warning/10 hover:bg-warning/20 text-warning"
                   title="Download JSON"
                 >
                   {exportLoading === 'json' ? (
@@ -399,7 +408,7 @@ export function ReportPage() {
                     <Download className="w-4 h-4" />
                   )}
                   JSON
-                </button>
+                </Button>
               </div>
             </div>
           }
@@ -414,10 +423,11 @@ export function ReportPage() {
         <div className="bg-card rounded-lg border border-border overflow-hidden">
           <div className="flex overflow-x-auto border-b border-border">
             {sectionTabs.map((tab) => (
-              <button
+              <Button
                 key={tab.id}
+                variant="ghost"
                 onClick={() => setActiveSection(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 rounded-none ${
                   activeSection === tab.id
                     ? 'border-primary text-primary bg-primary/5'
                     : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -425,7 +435,7 @@ export function ReportPage() {
               >
                 <span>{tab.icon}</span>
                 {tab.label}
-              </button>
+              </Button>
             ))}
           </div>
 

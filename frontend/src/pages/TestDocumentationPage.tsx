@@ -5,6 +5,7 @@
 // Feature #712: Migrated to React Query
 
 import { useState, useEffect } from 'react';
+import { Button } from '../components/ui/button';
 import { Loader2, FileText, CheckCircle, AlertTriangle, X } from 'lucide-react';
 import { Modal, ModalHeader, ModalBody } from '../components/ui/Modal';
 import { Layout } from '../components/Layout';
@@ -323,15 +324,17 @@ export function TestDocumentationPage() {
  ) : (
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
  {displaySuites.map((suite) => (
- <button
+ <Button
  key={suite.id}
+ variant="ghost"
  onClick={() => setSelectedSuite(suite)}
- className={`p-4 rounded-lg border text-left transition-all hover:border-primary ${
+ className={`p-4 h-auto text-left items-start justify-start border hover:border-primary whitespace-normal ${
  selectedSuite?.id === suite.id
  ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
  : 'border-border bg-background'
  }`}
  >
+ <div className="w-full">
  <div className="flex items-start justify-between mb-2">
  <FileText className="h-8 w-8 text-primary" aria-hidden="true" />
  {selectedSuite?.id === suite.id && (
@@ -346,17 +349,18 @@ export function TestDocumentationPage() {
  </span>
  <span className="text-muted-foreground">{suite.projectName}</span>
  </div>
- </button>
+ </div>
+ </Button>
  ))}
  </div>
  )}
 
  {/* Step 2: Generate Documentation Button */}
  <div className="mt-6 flex items-center gap-4">
- <button
+ <Button
  onClick={generateDocumentation}
  disabled={!selectedSuite || isGenerating}
- className="px-6 py-2 rounded-lg bg-primary text-primary-foreground font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors flex items-center gap-2"
+ className="flex items-center gap-2"
  >
  {isGenerating ? (
  <>
@@ -369,7 +373,7 @@ export function TestDocumentationPage() {
  <span>Generate Documentation</span>
  </>
  )}
- </button>
+ </Button>
  {selectedSuite && (
  <span className="text-sm text-muted-foreground">
  Selected: <span className="font-medium text-foreground">{selectedSuite.name}</span>
@@ -384,39 +388,47 @@ export function TestDocumentationPage() {
  {/* Tab Navigation */}
  <div className="border-b border-border">
  <nav className="flex gap-4">
- <button
+ <Button
+ variant="ghost"
+ size="sm"
  onClick={() => setActiveTab('features')}
- className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+ className={`rounded-none border-b-2 ${
  activeTab === 'features'
  ? 'border-primary text-primary'
  : 'border-transparent text-muted-foreground hover:text-foreground'
  }`}
  >
  📋 Feature Documentation
- </button>
- <button
+ </Button>
+ <Button
+ variant="ghost"
+ size="sm"
  onClick={() => setActiveTab('flows')}
- className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+ className={`rounded-none border-b-2 ${
  activeTab === 'flows'
  ? 'border-primary text-primary'
  : 'border-transparent text-muted-foreground hover:text-foreground'
  }`}
  >
  🔄 User Flow Diagrams
- </button>
- <button
+ </Button>
+ <Button
+ variant="ghost"
+ size="sm"
  onClick={() => setActiveTab('coverage')}
- className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+ className={`rounded-none border-b-2 ${
  activeTab === 'coverage'
  ? 'border-primary text-primary'
  : 'border-transparent text-muted-foreground hover:text-foreground'
  }`}
  >
  📊 Coverage Summary
- </button>
- <button
+ </Button>
+ <Button
+ variant="ghost"
+ size="sm"
  onClick={() => setActiveTab('history')}
- className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+ className={`rounded-none border-b-2 ${
  activeTab === 'history'
  ? 'border-primary text-primary'
  : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -426,7 +438,7 @@ export function TestDocumentationPage() {
  {versionHistory.length > 1 && (
  <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary/20 text-primary">{versionHistory.length}</span>
  )}
- </button>
+ </Button>
  </nav>
  </div>
 
@@ -436,16 +448,18 @@ export function TestDocumentationPage() {
  <div className="flex items-center gap-2">
  <span className={`w-2 h-2 rounded-full ${isAutoUpdateEnabled ? 'bg-success' : 'bg-muted-foreground'}`} />
  <span className="text-sm text-muted-foreground">Auto-update:</span>
- <button
+ <Button
+ variant="ghost"
+ size="sm"
  onClick={() => setIsAutoUpdateEnabled(!isAutoUpdateEnabled)}
- className={`px-2 py-0.5 rounded text-xs font-medium ${
+ className={`h-auto px-2 py-0.5 text-xs font-medium ${
  isAutoUpdateEnabled
  ? 'bg-success/10 text-success'
  : 'bg-muted text-foreground'
  }`}
  >
  {isAutoUpdateEnabled ? 'ON' : 'OFF'}
- </button>
+ </Button>
  </div>
  {lastSyncTime && (
  <span className="text-xs text-muted-foreground">
@@ -459,12 +473,12 @@ export function TestDocumentationPage() {
  </span>
  )}
  </div>
- <button
+ <Button
+ size="sm"
  onClick={() => setShowTestEditor(true)}
- className="px-3 py-1.5 text-sm rounded bg-primary text-primary-foreground hover:bg-primary/90"
  >
  ✏️ Modify Test
- </button>
+ </Button>
  </div>
 
  {/* Step 4: Feature Documentation Tab */}
@@ -703,27 +717,30 @@ export function TestDocumentationPage() {
 
           <div className="space-y-3 mb-4">
             {modifiedTests.map((test) => (
-              <button
+              <Button
                 key={test.testId}
+                variant="ghost"
                 onClick={() => setEditingTest(test)}
-                className={`w-full p-3 rounded-lg border text-left transition-all ${
+                className={`w-full p-3 h-auto text-left items-start justify-start border whitespace-normal ${
                   editingTest?.testId === test.testId
                     ? 'border-primary bg-primary/10'
                     : 'border-border hover:border-primary/50'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <code className="text-sm font-mono text-foreground">{test.testName}</code>
-                  {test.currentCode !== test.originalCode && (
-                    <span className="px-1.5 py-0.5 rounded text-xs bg-warning/10 text-warning">
-                      Modified
-                    </span>
-                  )}
+                <div className="w-full">
+                  <div className="flex items-center justify-between">
+                    <code className="text-sm font-mono text-foreground">{test.testName}</code>
+                    {test.currentCode !== test.originalCode && (
+                      <span className="px-1.5 py-0.5 rounded text-xs bg-warning/10 text-warning">
+                        Modified
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Last modified: {test.lastModified.toLocaleTimeString()}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Last modified: {test.lastModified.toLocaleTimeString()}
-                </p>
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -738,18 +755,17 @@ export function TestDocumentationPage() {
                 className="w-full h-48 p-3 rounded-lg border border-border bg-background text-foreground font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   onClick={() => handleTestModification(editingTest.testId, editingTest.currentCode)}
-                  className="px-4 py-2 rounded bg-primary text-primary-foreground font-medium hover:bg-primary/90"
                 >
                   💾 Save & Regenerate Docs
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
                   onClick={() => setEditingTest({ ...editingTest, currentCode: editingTest.originalCode })}
-                  className="px-4 py-2 rounded bg-muted text-muted-foreground font-medium hover:bg-muted/80"
                 >
                   ↩️ Reset to Original
-                </button>
+                </Button>
               </div>
             </div>
           )}

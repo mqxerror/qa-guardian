@@ -6,7 +6,10 @@ import { useState } from 'react';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { Button } from '../components/ui/button';
 import { PageHeader } from '../components/ui';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { useTimezoneStore } from '../stores/timezoneStore';
 // Feature #690: React Query hooks for data fetching and mutations
 import {
@@ -244,12 +247,11 @@ export function WebhookConfigurationPage() {
               >
                 Integration Guides
               </Link>
-              <button
+              <Button
                 onClick={handleOpenCreate}
-                className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
               >
                 Create Webhook
-              </button>
+              </Button>
             </div>
           }
         />
@@ -264,12 +266,12 @@ export function WebhookConfigurationPage() {
               <p className="mt-2 text-muted-foreground">
                 Create a webhook to receive notifications when test events occur.
               </p>
-              <button
+              <Button
                 onClick={handleOpenCreate}
-                className="mt-4 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
+                className="mt-4"
               >
                 Create Webhook
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="space-y-4">
@@ -298,24 +300,28 @@ export function WebhookConfigurationPage() {
                             }`}
                           />
                         </button>
-                        <button
+                        <Button
                           onClick={() => handleViewHistory(webhook.id)}
-                          className="rounded-md px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+                          variant="ghost"
+                          size="sm"
                         >
                           History
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => handleOpenEdit(webhook)}
-                          className="rounded-md px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+                          variant="ghost"
+                          size="sm"
                         >
                           Edit
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => handleDelete(webhook.id)}
-                          className="rounded-md px-3 py-1.5 text-sm font-medium text-destructive hover:bg-destructive/10"
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
                         >
                           Delete
-                        </button>
+                        </Button>
                       </div>
                     </div>
 
@@ -553,20 +559,19 @@ export function WebhookConfigurationPage() {
               </div>
             </ModalBody>
             <ModalFooter>
-              <button
+              <Button
                 type="button"
                 onClick={() => { setShowCreateModal(false); resetForm(); }}
-                className="rounded-md px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                variant="ghost"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={isSubmitting || formEvents.length === 0}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
                 {isSubmitting ? 'Saving...' : (selectedWebhook ? 'Update' : 'Create')}
-              </button>
+              </Button>
             </ModalFooter>
           </form>
         </Modal>
@@ -583,14 +588,11 @@ export function WebhookConfigurationPage() {
               {/* Filter tabs */}
               <div className="flex gap-2 mb-4">
                 {(['all', 'success', 'failed'] as const).map(filter => (
-                  <button
+                  <Button
                     key={filter}
                     onClick={() => setHistoryFilter(filter)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md ${
-                      historyFilter === filter
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}
+                    variant={historyFilter === filter ? 'default' : 'secondary'}
+                    size="sm"
                   >
                     {filter === 'all' ? 'All' : filter === 'success' ? 'Successful' : 'Failed'}
                     <span className="ml-1.5 text-xs">
@@ -601,7 +603,7 @@ export function WebhookConfigurationPage() {
                           : deliveryLogs.filter(l => !l.success).length
                       })
                     </span>
-                  </button>
+                  </Button>
                 ))}
               </div>
 
@@ -610,9 +612,13 @@ export function WebhookConfigurationPage() {
                 {isLoadingHistory ? (
                   <p className="text-center text-muted-foreground py-8">Loading delivery history...</p>
                 ) : filteredLogs.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    {deliveryLogs.length === 0 ? 'No delivery history yet' : 'No deliveries match the filter'}
-                  </p>
+                  /* Feature #728: EmptyState adoption */
+                  <EmptyState
+                    icon={EmptyStateIcons.history}
+                    title={deliveryLogs.length === 0 ? 'No delivery history yet' : 'No deliveries match the filter'}
+                    description={deliveryLogs.length === 0 ? 'Webhook deliveries will appear here once events are triggered.' : 'Try changing the filter to see other deliveries.'}
+                    size="sm"
+                  />
                 ) : (
                   <div className="space-y-3">
                     {filteredLogs.map(log => (

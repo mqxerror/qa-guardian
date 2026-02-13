@@ -7,6 +7,7 @@ import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import { createLogger } from '../utils/logger';
 import { RefreshCw, Settings, Check, X, AlertTriangle, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const logger = createLogger('multi-language-dep');
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
@@ -235,21 +236,20 @@ export function MultiLanguageDependencyPage() {
           breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Multi-Language Dependencies' }]}
           actions={
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setShowConfigModal(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
               >
                 <Settings className="h-4 w-4" />
                 Configure
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleScan}
                 disabled={isScanning}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
                 <RefreshCw className={`h-4 w-4 ${isScanning ? 'animate-spin' : ''}`} />
                 {isScanning ? 'Scanning...' : 'Scan All Languages'}
-              </button>
+              </Button>
             </div>
           }
         />
@@ -553,18 +553,17 @@ export function MultiLanguageDependencyPage() {
               </div>
             </ModalBody>
             <ModalFooter>
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setShowConfigModal(false)}
-                className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleSaveConfig}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
               >
                 Save Configuration
-              </button>
+              </Button>
             </ModalFooter>
           </Modal>
         )}

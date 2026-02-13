@@ -7,6 +7,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '@/components/ui/button';
 import { useAIStatus, useExecuteWorkspaceTask, type TaskStatus, type AgentTask } from '../hooks/api/useAIWorkspace';
 
 // Types are imported from useAIWorkspace hook
@@ -191,12 +192,13 @@ export function AIAgentWorkspacePage() {
          )}
        </div>
        {tasks.some(t => t.status === 'completed' || t.status === 'failed') && (
-         <button
+         <Button
            onClick={clearFinishedTasks}
-           className="px-3 py-1.5 text-sm rounded-md border border-border hover:bg-muted"
+           variant="outline"
+           size="sm"
          >
            Clear Finished
-         </button>
+         </Button>
        )}
      </div>
    }
@@ -223,13 +225,13 @@ export function AIAgentWorkspacePage() {
  rows={3}
  disabled={isProcessing || !aiStatus?.ready}
  />
- <button
+ <Button
  onClick={handleCustomPrompt}
  disabled={!customPrompt.trim() || isProcessing || !aiStatus?.ready}
- className="w-full px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+ className="w-full"
  >
  {isProcessing ? 'Processing...' : 'Execute with AI'}
- </button>
+ </Button>
  </div>
  </div>
 
@@ -237,11 +239,12 @@ export function AIAgentWorkspacePage() {
  <div className="space-y-3">
  {TOOL_CATEGORIES.map((category) => (
  <div key={category.name} className="rounded-lg border border-border bg-card overflow-hidden">
- <button
+ <Button
+ variant="ghost"
  onClick={() => setSelectedCategory(
  selectedCategory === category.name ? null : category.name
  )}
- className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-muted/50 transition-colors"
+ className="w-full px-3 py-2.5 flex items-center justify-between h-auto"
  >
  <span className="flex items-center gap-2 font-medium">
  <span>{category.icon}</span>
@@ -252,21 +255,24 @@ export function AIAgentWorkspacePage() {
  }`}>
  {'\u25BC'}
  </span>
- </button>
+ </Button>
  {selectedCategory === category.name && (
  <div className="px-3 pb-3 space-y-1.5">
  {category.tools.map((tool) => (
- <button
+ <Button
  key={tool.name}
+ variant="ghost"
  onClick={() => handleQuickAction(tool)}
  disabled={isProcessing || !aiStatus?.ready}
- className="w-full px-3 py-2 text-left text-sm rounded-md bg-muted/50 hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+ className="w-full px-3 py-2 text-left text-sm h-auto justify-start bg-muted/50 hover:bg-muted"
  >
+ <span className="flex flex-col items-start">
  <span className="font-medium">{tool.label}</span>
  <span className="block text-xs text-muted-foreground mt-0.5 truncate">
  {tool.prompt}
  </span>
- </button>
+ </span>
+ </Button>
  ))}
  </div>
  )}
@@ -424,12 +430,14 @@ function TaskCard({ task, onRetry }: { task: AgentTask; onRetry?: () => void }) 
  {/* Result (collapsible) */}
  {task.result && (
  <div className="mt-2">
- <button
+ <Button
+ variant="link"
+ size="sm"
  onClick={() => setIsExpanded(!isExpanded)}
- className="text-xs text-primary hover:underline"
+ className="text-xs h-auto p-0"
  >
  {isExpanded ? 'Hide Result' : 'Show Result'}
- </button>
+ </Button>
  {isExpanded && (
  <div className="mt-2 p-2 rounded bg-muted text-xs font-mono whitespace-pre-wrap max-h-60 overflow-y-auto">
  {task.result}
@@ -440,12 +448,14 @@ function TaskCard({ task, onRetry }: { task: AgentTask; onRetry?: () => void }) 
 
  {/* Retry Button */}
  {task.status === 'failed' && onRetry && (
- <button
+ <Button
+ variant="destructive"
+ size="sm"
  onClick={onRetry}
- className="mt-2 w-full px-2 py-1 text-xs rounded bg-destructive/10 text-destructive hover:bg-destructive/20"
+ className="mt-2 w-full"
  >
  Retry
- </button>
+ </Button>
  )}
 
  {/* Timestamp */}

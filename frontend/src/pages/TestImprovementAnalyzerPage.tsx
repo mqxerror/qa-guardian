@@ -9,6 +9,9 @@ import { useAuthStore } from '../stores/authStore';
 import { fetchWithAuth } from '../hooks/api/fetchWithAuth';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '@/components/ui/button';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
 // Types for test improvement analysis
 interface TestImprovementAnalysis {
@@ -190,10 +193,10 @@ export function TestImprovementAnalyzerPage() {
  </select>
  </div>
  <div className="flex items-end">
- <button
+ <Button
  onClick={analyzeTest}
  disabled={isAnalyzing || !testCode.trim()}
- className="w-full px-4 py-2 rounded-md bg-primary text-primary-foreground font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 flex items-center justify-center gap-2"
+ className="w-full"
  >
  {isAnalyzing ? (
  <>
@@ -203,7 +206,7 @@ export function TestImprovementAnalyzerPage() {
  ) : (
  <>🤖 Analyze Test</>
  )}
- </button>
+ </Button>
  </div>
  </div>
 
@@ -261,46 +264,50 @@ export function TestImprovementAnalyzerPage() {
  <div className="rounded-lg border bg-card">
  <div className="border-b border-border">
  <nav className="flex">
- <button
+ <Button
+ variant="ghost"
  onClick={() => setActiveTab('best-practices')}
- className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+ className={`px-4 py-3 text-sm font-medium border-b-2 rounded-none ${
  activeTab === 'best-practices'
  ? 'border-primary text-primary'
  : 'border-transparent text-muted-foreground hover:text-foreground'
  }`}
  >
  🏆 Best Practices ({analysis.best_practices.length})
- </button>
- <button
+ </Button>
+ <Button
+ variant="ghost"
  onClick={() => setActiveTab('selectors')}
- className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+ className={`px-4 py-3 text-sm font-medium border-b-2 rounded-none ${
  activeTab === 'selectors'
  ? 'border-primary text-primary'
  : 'border-transparent text-muted-foreground hover:text-foreground'
  }`}
  >
  🎯 Selectors ({analysis.selector_improvements.length})
- </button>
- <button
+ </Button>
+ <Button
+ variant="ghost"
  onClick={() => setActiveTab('assertions')}
- className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+ className={`px-4 py-3 text-sm font-medium border-b-2 rounded-none ${
  activeTab === 'assertions'
  ? 'border-primary text-primary'
  : 'border-transparent text-muted-foreground hover:text-foreground'
  }`}
  >
  ✅ Assertions ({analysis.assertion_suggestions.length})
- </button>
- <button
+ </Button>
+ <Button
+ variant="ghost"
  onClick={() => setActiveTab('flakiness')}
- className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+ className={`px-4 py-3 text-sm font-medium border-b-2 rounded-none ${
  activeTab === 'flakiness'
  ? 'border-primary text-primary'
  : 'border-transparent text-muted-foreground hover:text-foreground'
  }`}
  >
  ⚡ Flakiness ({analysis.flakiness_risks.length})
- </button>
+ </Button>
  </nav>
  </div>
 
@@ -308,11 +315,9 @@ export function TestImprovementAnalyzerPage() {
  {/* Best Practices Tab */}
  {activeTab === 'best-practices' && (
  <div className="space-y-4">
+ {/* Feature #728: EmptyState adoption */}
  {analysis.best_practices.length === 0 ? (
- <div className="text-center py-8 text-muted-foreground">
- <span className="text-4xl">✅</span>
- <p className="mt-2">No best practice issues found!</p>
- </div>
+ <EmptyState icon={EmptyStateIcons.test} title="No best practice issues found!" description="Your tests follow all recommended best practices." size="sm" />
  ) : (
  analysis.best_practices.map((practice, index) => (
  <div key={index} className="p-4 rounded-lg border border-border">

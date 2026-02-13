@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '../components/ui/button';
 
 // Feature #317: API base URL from environment
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -231,12 +232,12 @@ export function ProviderHealthPage() {
           { label: 'Provider Health' }
         ]}
         actions={
-          <button
+          <Button
+            variant="outline"
             onClick={fetchData}
-            className="px-4 py-2 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
           >
             🔄 Refresh
-          </button>
+          </Button>
         }
       />
 
@@ -275,13 +276,13 @@ export function ProviderHealthPage() {
                   </div>
                 </div>
               </div>
-              <button
+              <Button
+                size="sm"
                 onClick={() => runHealthCheck(provider.provider)}
                 disabled={isRunningCheck === provider.provider}
-                className="px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
                 {isRunningCheck === provider.provider ? '⏳ Checking...' : '🔍 Run Check'}
-              </button>
+              </Button>
             </div>
 
             {/* Metrics Grid */}
@@ -444,12 +445,14 @@ export function ProviderHealthPage() {
                       </div>
                     </div>
                     {!alert.acknowledged && !alert.resolved_at && (
-                      <button
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => acknowledgeAlert(alert.id)}
-                        className="text-xs px-2 py-1 bg-card border border-border rounded hover:bg-muted/50"
+                        className="text-xs"
                       >
                         Acknowledge
-                      </button>
+                      </Button>
                     )}
                     {alert.acknowledged && (
                       <span className="text-xs text-success">✓ Ack</span>

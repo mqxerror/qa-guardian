@@ -12,6 +12,7 @@ import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { Lock, LogIn, ChevronDown, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
  slashCommandRegistry,
  getSlashCommandHelpText,
@@ -509,17 +510,19 @@ Just type naturally and I'll help you manage your QA workflows!`,
          <span className="text-xs text-muted-foreground">|</span>
          {/* Feature #2074: Model Selector */}
          <div className="relative">
-           <button
+           <Button
+             variant="outline"
+             size="sm"
              onClick={() => setShowModelSelector(!showModelSelector)}
-             className="flex items-center gap-1.5 px-2 py-1 text-xs rounded-md border border-border hover:bg-muted"
              title="Select AI model for chat"
+             className="text-xs gap-1.5"
            >
              <span className="text-muted-foreground">Model:</span>
              <span className="font-medium text-foreground">
                {chatPreference.model === 'auto' ? 'Auto' : MODELS.find(m => m.id === chatPreference.model)?.name || chatPreference.model}
              </span>
              <ChevronDown className="w-3 h-3 text-muted-foreground" />
-           </button>
+           </Button>
            {showModelSelector && (
              <div className="absolute right-0 top-full mt-1 w-64 bg-card border border-border rounded-lg shadow-lg z-50">
                <div className="p-2 border-b border-border">
@@ -527,24 +530,25 @@ Just type naturally and I'll help you manage your QA workflows!`,
                </div>
                <div className="max-h-64 overflow-y-auto">
                  {availableModels.map(model => (
-                   <button
+                   <Button
                      key={model.id}
+                     variant="ghost"
                      onClick={() => {
                        setTaskPreference('chat', { ...chatPreference, model: model.id });
                        setShowModelSelector(false);
                      }}
-                     className={`w-full px-3 py-2 text-left hover:bg-muted flex items-center justify-between ${
+                     className={`w-full justify-between ${
                        chatPreference.model === model.id ? 'bg-primary/10' : ''
                      }`}
                    >
-                     <div>
+                     <div className="text-left">
                        <div className="text-sm font-medium text-foreground">{model.name}</div>
                        <div className="text-xs text-muted-foreground">{model.description}</div>
                      </div>
                      {chatPreference.model === model.id && (
                        <Check className="w-4 h-4 text-primary" />
                      )}
-                   </button>
+                   </Button>
                  ))}
                </div>
                <div className="p-2 border-t border-border">
@@ -561,12 +565,13 @@ Just type naturally and I'll help you manage your QA workflows!`,
          </div>
          <span className="text-xs text-muted-foreground">|</span>
          <span className="text-xs text-muted-foreground">Conv: {conversationId.slice(-8)}</span>
-         <button
+         <Button
+           variant="outline"
+           size="sm"
            onClick={clearConversation}
-           className="px-3 py-1.5 text-sm rounded-md border border-border hover:bg-muted"
          >
            Clear
-         </button>
+         </Button>
        </div>
      }
    />
@@ -623,8 +628,16 @@ Just type naturally and I'll help you manage your QA workflows!`,
  {message.actions && message.actions.length > 0 && (
  <div className="mt-3 pt-2 border-t border-border/50 flex flex-wrap gap-2">
  {message.actions.map((action, idx) => (
- <button
+ <Button
  key={idx}
+ variant={
+ action.variant === 'primary'
+ ? 'default'
+ : action.variant === 'secondary'
+ ? 'secondary'
+ : 'ghost'
+ }
+ size="sm"
  onClick={() => {
  // Execute the command when button is clicked
  setInput(action.command);
@@ -634,17 +647,11 @@ Just type naturally and I'll help you manage your QA workflows!`,
  if (form) form.dispatchEvent(new Event('submit', { bubbles: true }));
  }, 100);
  }}
- className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
- action.variant === 'primary'
- ? 'bg-primary text-primary-foreground hover:bg-primary/90'
- : action.variant === 'secondary'
- ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
- : 'bg-muted hover:bg-muted/80 text-foreground'
- }`}
+ className="text-xs"
  >
  {action.icon && <span className="mr-1">{action.icon}</span>}
  {action.label}
- </button>
+ </Button>
  ))}
  </div>
  )}
@@ -674,13 +681,15 @@ Just type naturally and I'll help you manage your QA workflows!`,
  <p className="text-xs text-muted-foreground mb-2">Try asking:</p>
  <div className="flex flex-wrap gap-2">
  {exampleQueries.map((query, idx) => (
- <button
+ <Button
  key={idx}
+ variant="secondary"
+ size="sm"
  onClick={() => setInput(query)}
- className="px-3 py-1.5 text-sm rounded-full bg-muted hover:bg-muted/80 text-foreground"
+ className="rounded-full"
  >
  {query}
- </button>
+ </Button>
  ))}
  </div>
  </div>
@@ -698,10 +707,11 @@ Just type naturally and I'll help you manage your QA workflows!`,
  </div>
  <div className="max-h-64 overflow-y-auto">
  {commandSuggestions.map((suggestion, idx) => (
- <button
+ <Button
  key={suggestion.command}
+ variant="ghost"
  onClick={() => selectCommandSuggestion(suggestion)}
- className={`w-full px-4 py-3 text-left flex items-center justify-between hover:bg-muted/50 ${
+ className={`w-full justify-between ${
  idx === selectedSuggestionIndex ? 'bg-muted' : ''
  }`}
  >
@@ -718,7 +728,7 @@ Just type naturally and I'll help you manage your QA workflows!`,
  <span className="text-sm text-muted-foreground">
  {suggestion.description}
  </span>
- </button>
+ </Button>
  ))}
  </div>
  </div>
@@ -743,13 +753,13 @@ Just type naturally and I'll help you manage your QA workflows!`,
  className="flex-1 px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
  disabled={isLoading}
  />
- <button
+ <Button
  onClick={handleSend}
  disabled={!input.trim() || isLoading}
- className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+ className="px-6 py-3"
  >
  Send
- </button>
+ </Button>
  </div>
  </div>
  <p className="text-xs text-muted-foreground mt-2">

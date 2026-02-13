@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { Button } from '../components/ui/button';
 import { PageHeader } from '../components/ui';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { useAuthStore } from '../stores/authStore';
 import {
-  ArrowUp,
   AlertTriangle,
   AlertCircle,
   CheckCircle,
@@ -203,13 +205,13 @@ export function UpgradeRecommendationsPage() {
           breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Upgrade Recommendations' }]}
           actions={
             data && (
-              <button
+              <Button
                 onClick={exportReport}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+                variant="outline"
               >
                 <Download className="h-4 w-4" />
                 Export Report
-              </button>
+              </Button>
             )
           }
         />
@@ -233,10 +235,9 @@ export function UpgradeRecommendationsPage() {
                 ))}
               </select>
             </div>
-            <button
+            <Button
               onClick={fetchRecommendations}
               disabled={!selectedProject || loading}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
               {loading ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -244,7 +245,7 @@ export function UpgradeRecommendationsPage() {
                 <RefreshCw className="h-4 w-4" />
               )}
               Refresh
-            </button>
+            </Button>
           </div>
           {error && (
             <div className="mt-4 p-3 rounded-lg bg-destructive/10 text-destructive flex items-center gap-2">
@@ -300,49 +301,45 @@ export function UpgradeRecommendationsPage() {
             <div className="rounded-lg border border-border bg-card p-6 mb-6">
               <h3 className="text-lg font-semibold text-foreground mb-4">Filter by Risk Level</h3>
               <div className="flex gap-4 flex-wrap">
-                <button
+                <Button
                   onClick={() => setRiskFilter('all')}
-                  className={`px-4 py-2 rounded-lg border transition-colors ${
-                    riskFilter === 'all'
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-border hover:bg-muted'
-                  }`}
+                  variant={riskFilter === 'all' ? 'default' : 'outline'}
                 >
                   All ({data.summary.total_recommendations})
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setRiskFilter('safe')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-                    riskFilter === 'safe'
-                      ? 'bg-success text-primary-foreground border-success'
-                      : 'border-success text-success hover:bg-success/10'
-                  }`}
+                  variant="outline"
+                  className={riskFilter === 'safe'
+                    ? 'bg-success text-primary-foreground border-success hover:bg-success/90'
+                    : 'border-success text-success hover:bg-success/10'
+                  }
                 >
                   <CheckCircle className="h-4 w-4" />
                   Safe ({data.summary.by_risk_level.safe})
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setRiskFilter('caution')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-                    riskFilter === 'caution'
-                      ? 'bg-warning text-warning-foreground border-warning'
-                      : 'border-warning text-warning hover:bg-warning/10'
-                  }`}
+                  variant="outline"
+                  className={riskFilter === 'caution'
+                    ? 'bg-warning text-warning-foreground border-warning hover:bg-warning/90'
+                    : 'border-warning text-warning hover:bg-warning/10'
+                  }
                 >
                   <AlertTriangle className="h-4 w-4" />
                   Caution ({data.summary.by_risk_level.caution})
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setRiskFilter('breaking')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-                    riskFilter === 'breaking'
-                      ? 'bg-destructive text-primary-foreground border-destructive'
-                      : 'border-destructive text-destructive hover:bg-destructive/10'
-                  }`}
+                  variant={riskFilter === 'breaking' ? 'destructive' : 'outline'}
+                  className={riskFilter !== 'breaking'
+                    ? 'border-destructive text-destructive hover:bg-destructive/10'
+                    : undefined
+                  }
                 >
                   <AlertCircle className="h-4 w-4" />
                   Breaking ({data.summary.by_risk_level.breaking})
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -363,9 +360,10 @@ export function UpgradeRecommendationsPage() {
                       key={rec.package}
                       className={`rounded-lg border-l-4 ${riskBorderColors[rec.risk_level]} bg-muted/50 overflow-hidden`}
                     >
-                      <button
+                      <Button
                         onClick={() => togglePackageExpand(rec.package)}
-                        className="w-full p-4 text-left hover:bg-muted/80 transition-colors"
+                        variant="ghost"
+                        className="w-full p-4 text-left justify-start h-auto"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
@@ -399,7 +397,7 @@ export function UpgradeRecommendationsPage() {
                             )}
                           </div>
                         </div>
-                      </button>
+                      </Button>
                       {expandedPackages.has(rec.package) && (
                         <div className="px-4 pb-4 border-t border-border">
                           <p className="text-sm text-muted-foreground mt-4 mb-4">{rec.description}</p>
@@ -464,30 +462,14 @@ export function UpgradeRecommendationsPage() {
           </>
         )}
 
-        {/* Empty State */}
+        {/* Feature #728: EmptyState adoption */}
         {!data && !loading && !selectedProject && (
-          <div className="rounded-lg border border-border bg-card p-12 text-center">
-            <ArrowUp className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold text-foreground mb-2">Dependency Upgrade Recommendations</h2>
-            <p className="text-muted-foreground max-w-md mx-auto mb-6">
-              Select a project above to see upgrade recommendations for vulnerable dependencies,
-              with breaking change risk analysis and migration guidance.
-            </p>
-            <div className="flex flex-wrap gap-4 justify-center text-sm">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-success" />
-                <span className="text-muted-foreground">Safe (patch)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-warning" />
-                <span className="text-muted-foreground">Caution (minor)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-destructive" />
-                <span className="text-muted-foreground">Breaking (major)</span>
-              </div>
-            </div>
-          </div>
+          <EmptyState
+            icon={EmptyStateIcons.folder}
+            title="Dependency Upgrade Recommendations"
+            description="Select a project above to see upgrade recommendations for vulnerable dependencies, with breaking change risk analysis and migration guidance."
+            size="lg"
+          />
         )}
       </div>
     </Layout>

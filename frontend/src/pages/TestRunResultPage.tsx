@@ -25,6 +25,7 @@ import {
  useReducedMotion,
 } from '../components/ui';
 // Feature #571: Added Lucide icons to replace emoji in tab navigation
+import { Button } from '../components/ui/button';
 import { Download, RefreshCw, Share2, FlaskConical, ListOrdered, Camera, BarChart3, Globe, Eye, Accessibility, ScrollText, Loader2, Frown, Lock, Server, WifiOff, AlertTriangle, ArrowLeft, Info } from 'lucide-react';
 import { useMetricsState } from '../hooks/useMetricsState';
 import { useNetworkAnalysisState } from '../hooks/useNetworkAnalysisState';
@@ -1044,21 +1045,22 @@ export default function TestRunResultPage() {
  <div className="flex items-center justify-center gap-3">
  {/* Feature #1929: Retry button for recoverable errors */}
  {!isNotFound && !isPermission && (
- <button
+ <Button
  onClick={() => retry()}
- className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+ className="inline-flex items-center gap-2"
  >
  <RefreshCw className="w-4 h-4" />
  Try Again
- </button>
+ </Button>
  )}
- <button
+ <Button
+ variant="outline"
  onClick={() => navigate(-1)}
- className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-md text-foreground hover:bg-muted transition-colors"
+ className="inline-flex items-center gap-2"
  >
  <ArrowLeft className="w-4 h-4" />
  Go Back
- </button>
+ </Button>
  </div>
 
  {/* Run ID info for debugging */}
@@ -1116,28 +1118,26 @@ export default function TestRunResultPage() {
  </span>
  {/* Feature #1842: Compare button */}
  {previousRuns.length > 0 && (
- <button
+ <Button
+ variant={compareMode ? 'default' : 'outline'}
  onClick={() => setCompareMode(!compareMode)}
- className={`inline-flex items-center gap-2 px-4 py-2 rounded-md transition-all ${
- compareMode
- ? 'bg-primary text-primary-foreground'
- : 'border border-border text-foreground hover:bg-muted'
- }`}
  title="Compare with previous runs"
+ className="inline-flex items-center gap-2"
  >
  <BarChart3 className="h-5 w-5" />
  Compare
- </button>
+ </Button>
  )}
  {/* Feature #1843: Export button */}
- <button
+ <Button
+ variant="outline"
  onClick={() => setExportModalOpen(true)}
- className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-md text-foreground hover:bg-muted transition-all"
  title="Export test results"
+ className="inline-flex items-center gap-2"
  >
  <Download className="h-5 w-5" />
  Export
- </button>
+ </Button>
  {/* Feature #1962: AI button removed - AI analysis now only on Visual Review page */}
  {/* Feature #1951: Show tip for simple known errors (no AI cost) */}
  {run.status !== 'passed' && errorAnalysis.isSimple && (
@@ -1148,12 +1148,12 @@ export default function TestRunResultPage() {
  </span>
  </div>
  )}
- <button
+ <Button
+ variant="outline"
  onClick={() => navigate(-1)}
- className="px-4 py-2 border border-border rounded-md text-foreground hover:bg-muted"
  >
  Back
- </button>
+ </Button>
  </div>
  </div>
 

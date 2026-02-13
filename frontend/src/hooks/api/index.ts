@@ -239,6 +239,9 @@ export {
   useUpdateAutoPRConfig,
   useScanAndCreatePRs,
   useUpdateAutoPRStatus,
+  // npm Audit hooks (Feature #725)
+  useNpmAuditScan,
+  useRunNpmAuditScan,
   // Invalidation helper
   useInvalidateDependencySecurity,
   dependencySecurityKeys,
@@ -258,4 +261,10 @@ export {
   type AutoPR,
   type AutoPRSummary,
   type ScanAndCreateResult,
+  // npm Audit types (Feature #725)
+  type NpmAuditVulnerability,
+  type NpmAuditDependency,
+  type NpmAuditUpgradeSuggestion,
+  type NpmAuditRecommendation,
+  type NpmAuditScanResult,
 } from './useDependencySecurity';

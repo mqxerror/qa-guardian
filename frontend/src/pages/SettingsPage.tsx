@@ -9,6 +9,7 @@ import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import { Users, Settings, Monitor, CreditCard, Key, Bell, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // Feature #623: Lazy-load tab components - only the active tab is loaded
 const TeamTab = lazy(() => import('../components/settings/TeamTab').then(m => ({ default: m.TeamTab })));
@@ -139,10 +140,11 @@ export function SettingsPage() {
         <div className="border-b border-border mb-6">
           <nav className="flex gap-1 -mb-px overflow-x-auto">
             {visibleTabs.map(tab => (
-              <button
+              <Button
                 key={tab.id}
+                variant="ghost"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap rounded-none ${
                   activeTab === tab.id
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground'
@@ -150,7 +152,7 @@ export function SettingsPage() {
               >
                 {tab.icon}
                 {tab.label}
-              </button>
+              </Button>
             ))}
           </nav>
         </div>

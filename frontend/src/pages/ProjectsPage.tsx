@@ -24,6 +24,7 @@ import {
 } from '../components/ui';
 import { Plus, Archive, RotateCcw, Loader2 } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
+import { Button } from '@/components/ui/button';
 
 interface Project {
   id: string;
@@ -214,13 +215,12 @@ export function ProjectsPage() {
                 ))}
               </select>
               {canCreateProject && (
-                <button
+                <Button
                   onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                   Create Project
-                </button>
+                </Button>
               )}
             </div>
           }
@@ -267,17 +267,19 @@ export function ProjectsPage() {
                         )}
                       </div>
                       {(user?.role === 'admin' || user?.role === 'owner') && (
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleArchiveProject(project.id, !project.archived);
                           }}
                           disabled={archivingProjectId === project.id}
-                          className={`shrink-0 rounded-md p-2 transition-colors ${
+                          className={`shrink-0 ${
                             project.archived
                               ? 'text-success hover:bg-success/10'
                               : 'text-warning hover:bg-warning/10'
-                          } disabled:opacity-50`}
+                          }`}
                           title={project.archived ? 'Unarchive project' : 'Archive project'}
                         >
                           {archivingProjectId === project.id ? (
@@ -287,7 +289,7 @@ export function ProjectsPage() {
                           ) : (
                             <Archive className="h-4 w-4" />
                           )}
-                        </button>
+                        </Button>
                       )}
                     </div>
                     <p className="mt-4 text-xs text-muted-foreground">
@@ -381,23 +383,22 @@ export function ProjectsPage() {
               </div>
             </ModalBody>
             <ModalFooter>
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setShowCreateModal(false)}
-                className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={createProjectMutation.isPending}
-                className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
               >
                 {createProjectMutation.isPending && (
                   <Loader2 aria-hidden="true" className="animate-spin h-4 w-4" />
                 )}
                 {createProjectMutation.isPending ? 'Creating...' : 'Create Project'}
-              </button>
+              </Button>
             </ModalFooter>
           </form>
         </Modal>

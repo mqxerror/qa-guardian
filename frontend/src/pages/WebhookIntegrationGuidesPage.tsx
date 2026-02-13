@@ -11,6 +11,7 @@ import { Check, Copy } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 // Webhook event types and their descriptions
 const WEBHOOK_EVENTS = [
@@ -135,18 +136,21 @@ export function WebhookIntegrationGuidesPage() {
  };
 
  const CopyButton = ({ text, label }: { text: string; label: string }) => (
- <button
+ <Button
+ variant="secondary"
+ size="sm"
  onClick={() => copyToClipboard(text, label)}
- className="absolute top-2 right-2 rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/80 transition-colors"
+ className="absolute top-2 right-2 text-xs"
  >
  {copiedText === label ? 'Copied!' : 'Copy'}
- </button>
+ </Button>
  );
 
  const TabButton = ({ tab, label, icon }: { tab: TabType; label: string; icon: string }) => (
- <button
+ <Button
+ variant="ghost"
  onClick={() => setActiveTab(tab)}
- className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors ${
+ className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg rounded-b-none ${
  activeTab === tab
  ? 'bg-card text-foreground border-b-2 border-primary'
  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -154,7 +158,7 @@ export function WebhookIntegrationGuidesPage() {
  >
  <span className="text-lg">{icon}</span>
  {label}
- </button>
+ </Button>
  );
 
  return (
@@ -527,17 +531,19 @@ export function WebhookIntegrationGuidesPage() {
  <p className="text-sm text-foreground font-medium mt-1">{evt.label}</p>
  <p className="text-xs text-muted-foreground mt-1">{evt.description}</p>
  </div>
- <button
+ <Button
+ variant="ghost"
+ size="icon"
  onClick={() => copyToClipboard(evt.event, evt.event)}
- className="text-muted-foreground hover:text-foreground"
  title="Copy event name"
+ className="h-8 w-8"
  >
  {copiedText === evt.event ? (
                           <Check className="h-4 w-4 text-success" />
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
- </button>
+ </Button>
  </div>
  </div>
  ))}

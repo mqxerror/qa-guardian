@@ -46,6 +46,8 @@ import {
   FileJson,
   FileText,
 } from 'lucide-react';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 // Feature #514: Import extracted quick-test components and utilities
 import {
   // Types
@@ -69,6 +71,7 @@ import {
   // Feature #537: Detailed report
   DetailedReport,
 } from '../components/quick-test';
+import { Button } from '@/components/ui/button';
 import { getWaveDefinitionsWithStatus, WAVE_DEFINITIONS } from '../constants/waves';
 
 // ============================================================
@@ -619,16 +622,17 @@ export function QuickTestPage() {
                         Recent URLs
                       </div>
                       {recentUrls.map((recentUrl, idx) => (
-                        <button
+                        <Button
                           key={idx}
+                          variant="ghost"
                           onClick={() => {
                             setUrl(recentUrl);
                             setShowRecentUrls(false);
                           }}
-                          className="w-full px-3 py-2 text-left text-sm font-mono hover:bg-muted transition-colors"
+                          className="w-full px-3 py-2 justify-start text-sm font-mono rounded-none h-auto"
                         >
                           {recentUrl}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   )}
@@ -648,12 +652,10 @@ export function QuickTestPage() {
                   <option value="webkit">🧭 WebKit</option>
                 </select>
 
-                <button
+                <Button
                   onClick={startTest}
                   disabled={isRunning || !isConnected}
-                  className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium
-                    hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed
-                    flex items-center gap-2 transition-colors"
+                  className="px-6 py-3"
                 >
                   {isRunning ? (
                     <>
@@ -666,16 +668,17 @@ export function QuickTestPage() {
                       Test
                     </>
                   )}
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  variant="secondary"
+                  size="icon"
                   onClick={() => setShowHistory(!showHistory)}
-                  className="px-3 py-3 bg-muted text-muted-foreground rounded-lg
-                    hover:bg-muted/80 transition-colors"
+                  className="h-12 w-12"
                   title="History"
                 >
                   <History className="w-5 h-5" />
-                </button>
+                </Button>
 
                 {/* Feature #473: Compare button */}
                 <Link
@@ -735,42 +738,41 @@ export function QuickTestPage() {
               <div className="flex gap-3 justify-end">
                 {/* Feature #543: Export dropdown with JSON and PDF options */}
                 <div className="relative" ref={exportMenuRef}>
-                  <button
+                  <Button
+                    variant="secondary"
                     onClick={() => setShowExportMenu(!showExportMenu)}
-                    className="px-4 py-2 bg-muted text-muted-foreground rounded-lg
-                      hover:bg-muted/80 transition-colors flex items-center gap-2"
                   >
                     <Download className="w-4 h-4" />
                     Export
-                  </button>
+                  </Button>
                   {showExportMenu && (
                     <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
-                      <button
+                      <Button
+                        variant="ghost"
                         onClick={handleExportJSON}
-                        className="w-full px-4 py-2.5 text-sm text-left hover:bg-muted flex items-center gap-2 transition-colors"
+                        className="w-full justify-start rounded-none"
                       >
                         <FileJson className="w-4 h-4 text-info" />
                         Export as JSON
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="ghost"
                         onClick={handleExportPDF}
-                        className="w-full px-4 py-2.5 text-sm text-left hover:bg-muted flex items-center gap-2 transition-colors"
+                        className="w-full justify-start rounded-none"
                       >
                         <FileText className="w-4 h-4 text-destructive" />
                         Export as PDF
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
                 {/* Feature #474: Schedule Recurring Test button */}
-                <button
+                <Button
                   onClick={openScheduleModal}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg
-                    hover:bg-primary/90 transition-colors flex items-center gap-2"
                 >
                   <CalendarClock className="w-4 h-4" />
                   Schedule Recurring
-                </button>
+                </Button>
               </div>
             </CardContent>
           </AnimatedCard>
@@ -790,10 +792,9 @@ export function QuickTestPage() {
                   <span className="text-sm text-primary">Loading test results...</span>
                 </div>
               )}
+              {/* Feature #728: EmptyState adoption */}
               {history.length === 0 ? (
-                <div className="text-sm text-muted-foreground text-center py-6">
-                  No completed tests yet. Run a test to see it here.
-                </div>
+                <EmptyState icon={EmptyStateIcons.test} title="No completed tests yet" description="Run a test to see it here." size="sm" />
               ) : (
               <>
               <div className="space-y-2">
@@ -801,12 +802,12 @@ export function QuickTestPage() {
                   let hostname = entry.url;
                   try { hostname = new URL(entry.url).hostname; } catch { /* keep full url */ }
                   return (
-                  <button
+                  <Button
                     key={entry.runId}
+                    variant="ghost"
                     onClick={() => selectFromHistory(entry)}
                     disabled={historyLoading}
-                    className="w-full p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors
-                      flex items-center justify-between text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-auto p-3 flex items-center justify-between text-left bg-muted/50 hover:bg-muted"
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -827,7 +828,7 @@ export function QuickTestPage() {
                         {entry.score}
                       </div>
                     )}
-                  </button>
+                  </Button>
                   );
                 })}
               </div>

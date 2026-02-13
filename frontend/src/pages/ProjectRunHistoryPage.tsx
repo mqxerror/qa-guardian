@@ -4,7 +4,10 @@
 
 import { useState, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Loader2, ClipboardList, Eye } from 'lucide-react';
+import { Loader2, Eye } from 'lucide-react';
+// Feature #728: EmptyState adoption
+import { EmptyStates, EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
+import { Button } from '@/components/ui/button';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { useTimezoneStore } from '../stores/timezoneStore';
@@ -152,12 +155,13 @@ function ProjectRunHistoryPage() {
      { label: 'Run History' }
    ]}
    actions={
-     <button
+     <Button
+       variant="outline"
+       size="sm"
        onClick={() => navigate(`/projects/${projectId}`)}
-       className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
      >
        Back to Project
-     </button>
+     </Button>
    }
  />
 
@@ -265,14 +269,11 @@ function ProjectRunHistoryPage() {
  {/* Runs List */}
  {!loading && !error && (
  <>
+ {/* Feature #728: EmptyState adoption */}
  {filteredRuns.length === 0 ? (
- <div className="text-center py-12 border border-dashed border-border rounded-lg">
- <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
- <p className="text-muted-foreground">No test runs found.</p>
- <p className="text-sm text-muted-foreground mt-1">
- {runs.length > 0 ? 'Try adjusting your filters.' : 'Run some tests to see history here.'}
- </p>
- </div>
+ runs.length > 0
+   ? <EmptyState icon={EmptyStateIcons.search} title="No test runs found" description="Try adjusting your filters." />
+   : EmptyStates.noRuns()
  ) : (
  <div className="border border-border rounded-lg overflow-hidden">
  <table className="w-full">
@@ -372,37 +373,45 @@ function ProjectRunHistoryPage() {
  </select>
 
  <div className="flex items-center gap-1 ml-4">
- <button
+ <Button
+ variant="outline"
+ size="sm"
  onClick={() => setCurrentPage(1)}
  disabled={currentPage === 1}
- className="px-2 py-1 text-sm rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+ className="px-2 py-1"
  >
  ««
- </button>
- <button
+ </Button>
+ <Button
+ variant="outline"
+ size="sm"
  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
  disabled={currentPage === 1}
- className="px-2 py-1 text-sm rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+ className="px-2 py-1"
  >
  «
- </button>
+ </Button>
  <span className="px-3 text-sm text-foreground">
  {currentPage} / {totalPages || 1}
  </span>
- <button
+ <Button
+ variant="outline"
+ size="sm"
  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
  disabled={currentPage >= totalPages}
- className="px-2 py-1 text-sm rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+ className="px-2 py-1"
  >
  »
- </button>
- <button
+ </Button>
+ <Button
+ variant="outline"
+ size="sm"
  onClick={() => setCurrentPage(totalPages)}
  disabled={currentPage >= totalPages}
- className="px-2 py-1 text-sm rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+ className="px-2 py-1"
  >
  »»
- </button>
+ </Button>
  </div>
  </div>
  </div>

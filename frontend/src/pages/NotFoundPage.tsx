@@ -5,6 +5,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Frown, ArrowLeft, Home } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export function NotFoundPage() {
   const navigate = useNavigate();
@@ -48,13 +49,14 @@ export function NotFoundPage() {
 
         {/* Action buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8">
-          <button
+          <Button
+            variant="outline"
             onClick={() => navigate(-1)}
-            className="w-full sm:w-auto px-6 py-3 border border-border rounded-lg font-medium text-foreground hover:bg-muted transition-colors inline-flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-6 py-3"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Go Back
-          </button>
+          </Button>
 
           <Link
             to={isAuthenticated ? '/dashboard' : '/'}

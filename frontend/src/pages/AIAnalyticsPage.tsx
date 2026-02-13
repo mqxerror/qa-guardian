@@ -11,6 +11,7 @@ import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { ArrowLeft, RefreshCw, DollarSign, Zap, FileInput, FileOutput, Building2, Brain, TrendingUp, Settings } from 'lucide-react';
 import { PageHeader } from '../components/ui';
+import { Button } from '@/components/ui/button';
 // Feature #691: Migrated budget modal to shared Modal component
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { fetchWithAuth } from '../hooks/api/fetchWithAuth';
@@ -297,21 +298,21 @@ export function AIAnalyticsPage() {
                   <option value="pdf">PDF</option>
                   <option value="json">JSON</option>
                 </select>
-                <button
+                <Button
                   onClick={handleExport}
                   disabled={isExporting}
-                  className="px-4 py-2 bg-success text-primary-foreground rounded-lg hover:bg-success/90 disabled:opacity-50"
+                  className="bg-success text-primary-foreground hover:bg-success/90"
                 >
-                  {isExporting ? '⏳ Exporting...' : '📥 Export'}
-                </button>
+                  {isExporting ? 'Exporting...' : 'Export'}
+                </Button>
               </div>
-              <button
+              <Button
                 onClick={refetchAll}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 flex items-center gap-2"
+                className="flex items-center gap-2"
               >
                 <RefreshCw className="h-4 w-4" />
                 Refresh
-              </button>
+              </Button>
             </div>
           }
         />
@@ -324,10 +325,11 @@ export function AIAnalyticsPage() {
               { id: 'costs', label: 'Cost Tracking', icon: '💰' },
               { id: 'comparison', label: 'Provider Comparison', icon: '🔄' },
             ] as const).map(tab => (
-              <button
+              <Button
                 key={tab.id}
+                variant="ghost"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap rounded-none h-auto ${
                   activeTab === tab.id
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground'
@@ -335,7 +337,7 @@ export function AIAnalyticsPage() {
               >
                 <span>{tab.icon}</span>
                 {tab.label}
-              </button>
+              </Button>
             ))}
           </nav>
         </div>
@@ -529,16 +531,18 @@ export function AIAnalyticsPage() {
                         <TrendingUp className="h-5 w-5 text-primary" />
                         Monthly Budget
                       </h2>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => {
                           setNewBudget(budget.monthly_budget);
                           setShowBudgetModal(true);
                         }}
-                        className="text-sm text-primary hover:text-primary/80 flex items-center gap-1"
+                        className="text-primary hover:text-primary/80 flex items-center gap-1"
                       >
                         <Settings className="h-4 w-4" />
                         Edit Budget
-                      </button>
+                      </Button>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                       <div>
@@ -797,19 +801,18 @@ export function AIAnalyticsPage() {
             </div>
           </ModalBody>
           <ModalFooter>
-            <button
+            <Button
+              variant="outline"
               onClick={() => setShowBudgetModal(false)}
-              className="px-4 py-2 border border-border text-foreground rounded-lg hover:bg-muted"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={updateBudget}
               disabled={isSavingBudget}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
             >
               {isSavingBudget ? 'Saving...' : 'Save'}
-            </button>
+            </Button>
           </ModalFooter>
         </Modal>
       </div>

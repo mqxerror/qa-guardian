@@ -11,6 +11,7 @@ import { useTimezoneStore } from '../stores/timezoneStore';
 import { getStatusColor } from '../constants/colors';
 // Feature #689: React Query hooks for caching
 import { useSchedule, useScheduleRuns, useTriggerSchedule, type ScheduleRun } from '../hooks/api/useSchedules';
+import { Button } from '@/components/ui/button';
 
 export function ScheduleDetailsPage() {
  const { scheduleId } = useParams<{ scheduleId: string }>();
@@ -46,12 +47,13 @@ export function ScheduleDetailsPage() {
  <Layout>
  <div className="p-8">
  <div className="text-destructive">Schedule not found</div>
- <button
+ <Button
+ variant="link"
  onClick={() => navigate('/schedules')}
- className="mt-4 text-primary hover:underline"
+ className="mt-4 px-0"
  >
  Back to Schedules
- </button>
+ </Button>
  </div>
  </Layout>
  );
@@ -69,13 +71,12 @@ export function ScheduleDetailsPage() {
      { label: schedule.name }
    ]}
    actions={
-     <button
+     <Button
        onClick={handleTriggerRun}
        disabled={isTriggering}
-       className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
      >
        {isTriggering ? 'Triggering...' : 'Trigger Run Now'}
-     </button>
+     </Button>
    }
  />
 
@@ -94,26 +95,28 @@ export function ScheduleDetailsPage() {
 
  {/* Tabs */}
  <nav className="mb-6 flex border-b border-border" aria-label="Schedule tabs">
- <button
+ <Button
+ variant="ghost"
  onClick={() => setActiveTab('history')}
- className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+ className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px rounded-none ${
  activeTab === 'history'
  ? 'border-primary text-foreground'
  : 'border-transparent text-muted-foreground hover:text-foreground'
  }`}
  >
  History
- </button>
- <button
+ </Button>
+ <Button
+ variant="ghost"
  onClick={() => setActiveTab('details')}
- className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+ className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px rounded-none ${
  activeTab === 'details'
  ? 'border-primary text-foreground'
  : 'border-transparent text-muted-foreground hover:text-foreground'
  }`}
  >
  Details
- </button>
+ </Button>
  </nav>
 
  {/* Tab Content */}
@@ -173,12 +176,14 @@ export function ScheduleDetailsPage() {
  {run.started_at ? formatDateTime(run.started_at) : formatDateTime(run.created_at)}
  </td>
  <td className="px-4 py-3">
- <button
+ <Button
+ variant="link"
+ size="sm"
  onClick={() => navigate(`/runs/${run.id}`)}
- className="text-sm text-primary hover:underline"
+ className="px-0 h-auto"
  >
  View Results
- </button>
+ </Button>
  </td>
  </tr>
  ))}

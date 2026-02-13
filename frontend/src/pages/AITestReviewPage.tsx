@@ -9,6 +9,7 @@ import { Loader2, ClipboardCheck, CheckCircle } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useAuthStore } from '../stores/authStore';
 import { fetchWithAuth } from '../hooks/api/fetchWithAuth';
@@ -217,26 +218,28 @@ export function AITestReviewPage() {
 
         {/* Tabs */}
         <div className="flex border-b border-border">
-          <button
+          <Button
+            variant="ghost"
             onClick={() => setActiveTab('pending')}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
+            className={`px-4 py-2 text-sm font-medium rounded-none h-auto ${
               activeTab === 'pending'
                 ? 'border-b-2 border-primary text-primary'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             Pending ({queueData?.total_pending || 0})
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
             onClick={() => setActiveTab('reviewed')}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
+            className={`px-4 py-2 text-sm font-medium rounded-none h-auto ${
               activeTab === 'reviewed'
                 ? 'border-b-2 border-primary text-primary'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             Recently Reviewed
-          </button>
+          </Button>
         </div>
 
         {/* Error */}
@@ -363,34 +366,29 @@ export function AITestReviewPage() {
                     />
 
                     <div className="flex gap-2">
-                      <button
+                      <Button
                         onClick={() => handleApprove(selectedTest.id)}
                         disabled={isSubmitting}
-                        className="flex-1 px-4 py-2 rounded-lg bg-success hover:bg-success text-primary-foreground font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 bg-success hover:bg-success/90 text-primary-foreground flex items-center justify-center gap-2"
                       >
                         {isSubmitting ? (
                           <Loader2 className="animate-spin h-4 w-4" />
                         ) : (
-                          <>
-                            <span>✓</span>
-                            Approve
-                          </>
+                          'Approve'
                         )}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="destructive"
                         onClick={() => handleReject(selectedTest.id)}
                         disabled={isSubmitting}
-                        className="flex-1 px-4 py-2 rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 flex items-center justify-center gap-2"
                       >
                         {isSubmitting ? (
                           <Loader2 className="animate-spin h-4 w-4" />
                         ) : (
-                          <>
-                            <span>✕</span>
-                            Reject
-                          </>
+                          'Reject'
                         )}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}

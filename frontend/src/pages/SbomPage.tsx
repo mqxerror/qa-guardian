@@ -5,9 +5,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '../components/ui/button';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/authStore';
 import { Loader2, FileText, CheckCircle, Download, Check, AlertTriangle } from 'lucide-react';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
 // Types
 interface SbomSummary {
@@ -280,10 +283,10 @@ export function SbomPage() {
 
             {/* Generate Button */}
             <div className="flex items-end">
-              <button
+              <Button
                 onClick={() => generateMutation.mutate()}
                 disabled={!selectedProject || generateMutation.isPending}
-                className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                className="w-full"
               >
                 {generateMutation.isPending ? (
                   <>
@@ -296,7 +299,7 @@ export function SbomPage() {
                     Generate SBOM
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -315,13 +318,12 @@ export function SbomPage() {
                 <CheckCircle className="w-5 h-5" />
                 SBOM Generated Successfully
               </h3>
-              <button
+              <Button
                 onClick={() => handleDownload(generatedSbom.sbom_id, generatedSbom.download.filename)}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
               >
                 <Download className="w-4 h-4" />
                 Download
-              </button>
+              </Button>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -411,12 +413,13 @@ export function SbomPage() {
           <div className="bg-card rounded-lg border border-border p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">SBOM History</h3>
-              <button
+              <Button
                 onClick={() => refetchSboms()}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                variant="ghost"
+                size="sm"
               >
                 Refresh
-              </button>
+              </Button>
             </div>
 
             {isLoadingSboms ? (
@@ -424,11 +427,12 @@ export function SbomPage() {
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
               </div>
             ) : !sbomList || sbomList.sboms.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                <p>No SBOMs generated yet for this project.</p>
-                <p className="text-sm">Generate your first SBOM using the form above.</p>
-              </div>
+              /* Feature #728: EmptyState adoption */
+              <EmptyState
+                icon={EmptyStateIcons.document}
+                title="No SBOMs generated yet"
+                description="Generate your first SBOM using the form above."
+              />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -457,10 +461,10 @@ export function SbomPage() {
                         <td className="py-3 px-4 text-muted-foreground">{formatDate(sbom.generated_at)}</td>
                         <td className="py-3 px-4 text-muted-foreground">{sbom.generated_by}</td>
                         <td className="py-3 px-4 text-right">
-                          <button
+                          <Button
                             onClick={() => handleDownload(sbom.id, sbom.filename)}
                             disabled={downloadingId === sbom.id}
-                            className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                            size="sm"
                           >
                             {downloadingId === sbom.id ? (
                               <Loader2 className="animate-spin h-3 w-3" />
@@ -468,7 +472,7 @@ export function SbomPage() {
                               <Download className="w-3 h-3" />
                             )}
                             Download
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     ))}

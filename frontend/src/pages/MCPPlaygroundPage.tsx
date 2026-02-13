@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, PlayCircle, HelpCircle, Zap, Check, X, Copy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { Layout } from '../components/Layout';
@@ -352,10 +353,10 @@ export function MCPPlaygroundPage() {
  )}
 
  {/* Execute Button */}
- <button
+ <Button
  onClick={handleExecute}
  disabled={isExecuting || !selectedTool}
- className="mt-6 w-full py-3 px-4 rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+ className="mt-6 w-full py-3"
  >
  {isExecuting ? (
  <>
@@ -368,7 +369,7 @@ export function MCPPlaygroundPage() {
  Execute Tool
  </>
  )}
- </button>
+ </Button>
  </div>
  )}
  </div>
@@ -424,16 +425,18 @@ export function MCPPlaygroundPage() {
 
  {/* Response Data */}
  <div className="relative">
- <button
+ <Button
+ variant="ghost"
+ size="icon"
  onClick={() => {
  navigator.clipboard.writeText(JSON.stringify(response.data, null, 2));
  toast.success('Copied to clipboard');
  }}
- className="absolute top-2 right-2 p-2 rounded-md bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+ className="absolute top-2 right-2"
  title="Copy to clipboard"
  >
  <Copy className="h-4 w-4" />
- </button>
+ </Button>
  <pre className="p-4 rounded-md bg-muted/30 text-sm font-mono text-foreground overflow-x-auto max-h-[500px] overflow-y-auto whitespace-pre-wrap break-all">
  {JSON.stringify(response.data, null, 2)}
  </pre>

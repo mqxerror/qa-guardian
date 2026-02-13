@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '../components/ui/button';
 import { Loader2, Download, Copy } from 'lucide-react';
 
 // Types for release notes generation
@@ -415,10 +416,10 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  )}
 
  <div className="mt-4">
- <button
+ <Button
  onClick={compareReleases}
  disabled={!selectedFromRelease || !selectedToRelease || isComparing}
- className="px-4 py-2 rounded bg-primary text-primary-foreground font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 flex items-center gap-2"
+ className="flex items-center gap-2"
  >
  {isComparing ? (
  <>
@@ -428,7 +429,7 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  ) : (
  <>📊 Compare Test Changes</>
  )}
- </button>
+ </Button>
  </div>
  </div>
 
@@ -476,10 +477,10 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  ))}
  </div>
 
- <button
+ <Button
  onClick={generateReleaseNotes}
  disabled={isGenerating}
- className="px-4 py-2 rounded bg-primary text-primary-foreground font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 flex items-center gap-2"
+ className="flex items-center gap-2"
  >
  {isGenerating ? (
  <>
@@ -489,7 +490,7 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  ) : (
  <>🤖 Generate Release Notes</>
  )}
- </button>
+ </Button>
  </div>
  )}
 
@@ -506,12 +507,12 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  ✓ Published
  </span>
  ) : (
- <button
+ <Button
  onClick={publishReleaseNotes}
- className="px-4 py-2 rounded bg-success text-primary-foreground font-medium hover:bg-success flex items-center gap-2"
+ className="bg-success text-primary-foreground hover:bg-success/90 flex items-center gap-2"
  >
  🚀 Publish Release Notes
- </button>
+ </Button>
  )}
  </div>
 
@@ -589,7 +590,8 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  <option value="html">HTML</option>
  <option value="json">JSON</option>
  </select>
- <button
+ <Button
+ size="sm"
  onClick={() => {
  let content: string;
  let filename: string;
@@ -632,20 +634,22 @@ ${breakingChanges.map(c => `- ${c}`).join('\n')}
  document.body.removeChild(a);
  URL.revokeObjectURL(url);
  }}
- className="px-3 py-1 text-sm rounded bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1"
+ className="flex items-center gap-1"
  >
  <Download className="h-4 w-4" />
  Export
- </button>
- <button
+ </Button>
+ <Button
+ variant="outline"
+ size="sm"
  onClick={() => {
  navigator.clipboard.writeText(editedMarkdown);
  }}
- className="px-3 py-1 text-sm rounded border border-border bg-background text-foreground hover:bg-muted flex items-center gap-1"
+ className="flex items-center gap-1"
  >
  <Copy className="h-4 w-4" />
  Copy
- </button>
+ </Button>
  </div>
  </div>
  <textarea

@@ -9,6 +9,9 @@ import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '@/components/ui/button';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStates, EmptyStateIcons } from '../components/ui/EmptyState';
 import { CodeDiffView } from '../components/diff';
 import { ConfidenceBreakdown, MonacoTestEditor } from '../components/ai';
 
@@ -486,17 +489,13 @@ export function AITestGeneratorPage() {
    description="Generate Playwright tests from natural language descriptions using Claude AI"
    breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'AI Features', href: '/ai-insights' }, { label: 'Test Generator' }]}
    actions={
-     <button
+     <Button
+       variant={showHistory ? 'default' : 'outline'}
        onClick={() => setShowHistory(!showHistory)}
-       className={`px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
-         showHistory
-           ? 'bg-primary text-primary-foreground border-primary'
-           : 'bg-card border-border hover:bg-muted text-foreground'
-       }`}
+       className="flex items-center gap-2"
      >
-       <span>📜</span>
        History
-     </button>
+     </Button>
    }
  />
 
@@ -508,12 +507,14 @@ export function AITestGeneratorPage() {
  <span>📜</span>
  Generation History
  </h3>
- <button
+ <Button
+ variant="ghost"
+ size="icon"
  onClick={() => setShowHistory(false)}
- className="text-muted-foreground hover:text-foreground transition-colors"
+ className="text-muted-foreground hover:text-foreground h-8 w-8"
  >
  ✕
- </button>
+ </Button>
  </div>
 
  {/* Search */}
@@ -533,9 +534,10 @@ export function AITestGeneratorPage() {
  Loading history...
  </div>
  ) : savedHistory.length === 0 ? (
- <div className="text-center py-4 text-muted-foreground text-sm">
- {historySearch ? 'No matching tests found' : 'No saved tests yet'}
- </div>
+ /* Feature #728: EmptyState adoption */
+ historySearch
+ ? EmptyStates.noSearchResults(historySearch)
+ : <EmptyState icon={EmptyStateIcons.test} title="No saved tests yet" description="Generate a test to see it in your history." size="sm" />
  ) : (
  savedHistory.map((item) => (
  <div
@@ -622,14 +624,16 @@ Example: Test that a user can login with valid credentials and see the welcome m
  </label>
  <div className="flex flex-wrap gap-2">
  {exampleDescriptions.map((example, index) => (
- <button
+ <Button
  key={index}
+ variant="secondary"
+ size="sm"
  onClick={() => handleUseExample(example)}
- className="px-3 py-1.5 text-xs rounded-full bg-muted hover:bg-muted/80 text-muted-foreground transition-colors truncate max-w-[200px]"
+ className="text-xs rounded-full truncate max-w-[200px]"
  title={example}
  >
  {example.substring(0, 30)}...
- </button>
+ </Button>
  ))}
  </div>
  </div>
@@ -692,10 +696,11 @@ Example: Test that a user can login with valid credentials and see the welcome m
  </div>
 
  {/* Generate Button */}
- <button
+ <Button
  onClick={handleGenerate}
  disabled={isGenerating || !description.trim()}
- className="w-full px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+ className="w-full py-3 flex items-center justify-center gap-2"
+ size="lg"
  >
  {isGenerating ? (
  <>
@@ -703,12 +708,9 @@ Example: Test that a user can login with valid credentials and see the welcome m
  Generating with AI...
  </>
  ) : (
- <>
- <span>🤖</span>
- Generate Test
- </>
+ 'Generate Test'
  )}
- </button>
+ </Button>
 
  {/* Error Message */}
  {error && (
@@ -730,11 +732,13 @@ Example: Test that a user can login with valid credentials and see the welcome m
  {/* Confidence Badge with Tooltip */}
  {generatedTest.confidence_score !== undefined && (
  <div className="relative">
- <button
+ <Button
+ variant="ghost"
+ size="sm"
  onMouseEnter={() => setShowConfidenceTooltip(true)}
  onMouseLeave={() => setShowConfidenceTooltip(false)}
  onClick={() => setShowConfidenceTooltip(!showConfidenceTooltip)}
- className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 cursor-help transition-colors ${
+ className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 cursor-help h-auto ${
  generatedTest.confidence_score >= 0.8
  ? 'bg-success/10 text-success hover:bg-success/20'
  : generatedTest.confidence_score >= 0.5
@@ -753,7 +757,7 @@ Example: Test that a user can login with valid credentials and see the welcome m
  generatedTest.confidence_score >= 0.5 ? 'Medium' : 'Low'
  )} ({Math.round(generatedTest.confidence_score * 100)}%)
  </span>
- </button>
+ </Button>
  {/* Confidence Tooltip */}
  {showConfidenceTooltip && (
  <div className="absolute z-50 top-full right-0 mt-2 w-72 p-3 rounded-lg bg-popover border border-border shadow-lg">
@@ -845,14 +849,15 @@ Example: Test that a user can login with valid credentials and see the welcome m
  <div className="space-y-2">
  <div className="flex items-center justify-between">
  <span className="text-sm font-medium text-muted-foreground">Generated Code</span>
- <button
+ <Button
+ variant="outline"
+ size="sm"
  onClick={saveToHistory}
- className="px-3 py-1 rounded text-xs bg-background hover:bg-muted border border-border text-muted-foreground transition-colors flex items-center gap-1"
+ className="text-xs flex items-center gap-1"
  title="Save to history"
  >
- <span>💾</span>
  Save to History
- </button>
+ </Button>
  </div>
  <MonacoTestEditor
  code={generatedTest.test_code}
@@ -944,10 +949,11 @@ Example: Test that a user can login with valid credentials and see the welcome m
  placeholder="Example: Add more assertions for error handling, use data-testid selectors, make the test more robust..."
  className="w-full h-24 px-3 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none text-sm"
  />
- <button
+ <Button
+ variant="secondary"
  onClick={handleRegenerate}
  disabled={isRegenerating || !feedback.trim()}
- className="w-full px-4 py-2 rounded-lg bg-secondary text-secondary-foreground font-medium hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 text-sm"
+ className="w-full flex items-center justify-center gap-2 text-sm"
  >
  {isRegenerating ? (
  <>
@@ -955,12 +961,9 @@ Example: Test that a user can login with valid credentials and see the welcome m
  Regenerating...
  </>
  ) : (
- <>
- <span>🔄</span>
- Regenerate Test
- </>
+ 'Regenerate Test'
  )}
- </button>
+ </Button>
  </div>
  )}
 

@@ -17,6 +17,7 @@ import { UnifiedAIService } from '../services/UnifiedAIService';
 const logger = createLogger('test-suite');
 // Feature #673: Lazy-load CreateTestModal for better initial page load
 const CreateTestModal = lazy(() => import('../components/create-test').then(m => ({ default: m.CreateTestModal })));
+import { Button } from '../components/ui/button';
 import { ScoreCard } from '../components/ui/score-card';
 // Feature #580: Icons for AI health monitoring panel
 import { Sparkles, AlertTriangle, AlertCircle, Info, ChevronDown, ChevronUp, Loader2, TrendingUp, TrendingDown, Minus, Clock, ChevronRight } from 'lucide-react';
@@ -992,12 +993,12 @@ function TestSuitePage() {
           <div className="text-center">
             <h2 className="text-2xl font-bold text-foreground">Test Suite Not Found</h2>
             <p className="mt-2 text-muted-foreground">{error}</p>
-            <button
+            <Button
               onClick={() => navigate('/projects')}
-              className="mt-6 rounded-md bg-primary px-6 py-2 font-medium text-primary-foreground hover:bg-primary/90"
+              className="mt-6"
             >
               Go to Projects
-            </button>
+            </Button>
           </div>
         </div>
       </Layout>
@@ -1070,7 +1071,8 @@ function TestSuitePage() {
         {/* Feature #580: AI Health Monitoring - Proactive insights panel */}
         {tests.length > 0 && (
           <div className="rounded-lg border border-border bg-card overflow-hidden">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => {
                 if (!showHealthInsights && !aiHealthReport && !isLoadingHealthCheck) {
                   handleAIHealthCheck();
@@ -1078,7 +1080,7 @@ function TestSuitePage() {
                   aiHealth.toggleInsights();
                 }
               }}
-              className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+              className="w-full flex items-center justify-between p-4 h-auto rounded-none"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10">
@@ -1110,7 +1112,7 @@ function TestSuitePage() {
                   <ChevronDown className="h-5 w-5 text-muted-foreground" />
                 )}
               </div>
-            </button>
+            </Button>
 
             {showHealthInsights && aiHealthReport && (
               <div className="px-4 pb-4 border-t border-border pt-4 space-y-4">
@@ -1169,11 +1171,12 @@ function TestSuitePage() {
 
                 {/* Refresh button */}
                 <div className="flex justify-end">
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={handleAIHealthCheck}
                     disabled={isLoadingHealthCheck}
-                    className="px-3 py-1.5 text-xs bg-muted text-muted-foreground rounded-md
-                      hover:bg-muted/80 transition-colors disabled:opacity-50 flex items-center gap-1"
+                    className="flex items-center gap-1 text-xs"
                   >
                     {isLoadingHealthCheck ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -1181,7 +1184,7 @@ function TestSuitePage() {
                       <Sparkles className="h-3 w-3" />
                     )}
                     Refresh Analysis
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -1316,41 +1319,45 @@ function TestSuitePage() {
                 </select>
               </div>
               <div className="flex items-center gap-1">
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setCurrentPage(1)}
                   disabled={!pagination.hasPrev}
-                  className="rounded px-2 py-1 text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                   title="First page"
                 >
                   ««
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={!pagination.hasPrev}
-                  className="rounded px-2 py-1 text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Previous page"
                 >
                   «
-                </button>
+                </Button>
                 <span className="px-3 text-sm">
                   {currentPage} / {pagination.totalPages}
                 </span>
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
                   disabled={!pagination.hasNext}
-                  className="rounded px-2 py-1 text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Next page"
                 >
                   »
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setCurrentPage(pagination.totalPages)}
                   disabled={!pagination.hasNext}
-                  className="rounded px-2 py-1 text-sm hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Last page"
                 >
                   »»
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -1380,9 +1387,10 @@ function TestSuitePage() {
 
           return (
             <div className="mt-6 rounded-lg border border-border bg-card">
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setShowRecentRuns(!showRecentRuns)}
-                className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-muted/50 rounded-lg transition-colors"
+                className="w-full flex items-center justify-between text-left h-auto px-4 py-3"
               >
                 <span className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Clock className="w-4 h-4" />
@@ -1391,7 +1399,7 @@ function TestSuitePage() {
                 <ChevronDown
                   className={`w-4 h-4 text-muted-foreground transition-transform ${showRecentRuns ? 'rotate-180' : ''}`}
                 />
-              </button>
+              </Button>
 
               {showRecentRuns && (
                 <div className="px-4 pb-4 space-y-4">
@@ -1414,10 +1422,12 @@ function TestSuitePage() {
                   {/* Compact Run Rows */}
                   <div className="space-y-1">
                     {completedRuns.map((run: { id: string; status: string; created_at: string; duration_ms?: number; passed_count?: number; results_count?: number }) => (
-                      <button
+                      <Button
                         key={run.id}
+                        variant="ghost"
+                        size="sm"
                         onClick={() => navigate(`/runs/${run.id}`)}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-muted/50 transition-colors text-left"
+                        className="w-full flex items-center gap-3 h-auto px-3 py-2 text-left justify-start"
                       >
                         {/* Status dot */}
                         <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
@@ -1441,7 +1451,7 @@ function TestSuitePage() {
                         </span>
                         {/* Arrow */}
                         <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>

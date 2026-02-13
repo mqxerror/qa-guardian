@@ -10,6 +10,7 @@ import { getErrorMessage } from '../utils/errorHandling';
 import { BackgroundBeams, Input } from '../components/aceternity';
 import { Building2, ArrowRight, Loader2 } from 'lucide-react';
 import { useReducedMotion } from '../components/ui';
+import { Button } from '@/components/ui/button';
 import { useCreateOrganization } from '../hooks/api/useOrganization';
 
 export function CreateOrganizationPage() {
@@ -180,25 +181,23 @@ export function CreateOrganizationPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <button
+              <Button
                 type="submit"
                 disabled={isLoading || !name.trim() || !slug.trim()}
-                className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-primary to-primary px-4 py-3 font-medium text-primary-foreground transition-all hover:from-primary hover:to-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full py-3"
               >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      <span>Creating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Create Organization</span>
-                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </>
-                  )}
-                </span>
-              </button>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Creating...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Create Organization</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
             </m.div>
           </form>
 

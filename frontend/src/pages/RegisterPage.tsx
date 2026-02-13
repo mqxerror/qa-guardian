@@ -9,6 +9,7 @@ import { getErrorMessage } from '../utils/errorHandling';
 import { BackgroundBeams, Input } from '../components/aceternity';
 import { ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
 import { useReducedMotion } from '../components/ui';
+import { Button } from '@/components/ui/button';
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -317,10 +318,10 @@ export function RegisterPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <button
+              <Button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-primary to-primary px-4 py-3 font-medium text-primary-foreground transition-all hover:from-primary hover:to-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full py-3"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isLoading ? (
@@ -335,7 +336,7 @@ export function RegisterPage() {
                     </>
                   )}
                 </span>
-              </button>
+              </Button>
             </m.div>
           </form>
 

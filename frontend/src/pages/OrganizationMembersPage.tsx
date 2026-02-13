@@ -3,9 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { PageHeader } from '../components/ui';
+// Feature #728: EmptyState adoption
+import { EmptyStates } from '../components/ui/EmptyState';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
 import { Layout } from '../components/Layout';
+import { Button } from '../components/ui/button';
 import { toast } from '../stores/toastStore';
 import {
   useMembers,
@@ -123,12 +126,11 @@ export function OrganizationMembersPage() {
           ]}
           actions={
             canManageMembers ? (
-              <button
+              <Button
                 onClick={() => setShowInviteModal(true)}
-                className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
               >
                 Invite Member
-              </button>
+              </Button>
             ) : undefined
           }
         />
@@ -146,7 +148,8 @@ export function OrganizationMembersPage() {
               {isLoadingMembers ? (
                 <div className="px-6 py-8 text-center text-muted-foreground">Loading members...</div>
               ) : members.length === 0 ? (
-                <div className="px-6 py-8 text-center text-muted-foreground">No members found</div>
+                /* Feature #728: EmptyState preset adoption */
+                <div className="px-6">{EmptyStates.noTeamMembers()}</div>
               ) : (
                 members.map((member) => (
                   <div key={member.user_id} className="grid grid-cols-4 gap-4 border-b border-border px-6 py-4 last:border-0">
@@ -165,21 +168,24 @@ export function OrganizationMembersPage() {
                   <div className="flex gap-3">
                     {canManageMembers && member.role !== 'owner' && (
                       <>
-                        <button
+                        <Button
                           onClick={() => openEditRoleModal(member)}
-                          className="text-sm text-primary hover:underline"
+                          variant="link"
+                          size="sm"
                         >
                           Edit Role
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => {
                             setMemberToRemove(member);
                             setShowRemoveModal(true);
                           }}
-                          className="text-sm text-destructive hover:underline"
+                          variant="link"
+                          size="sm"
+                          className="text-destructive"
                         >
                           Remove
-                        </button>
+                        </Button>
                       </>
                     )}
                   </div>
@@ -280,20 +286,19 @@ export function OrganizationMembersPage() {
               </div>
             </ModalBody>
             <ModalFooter>
-              <button
+              <Button
                 type="button"
                 onClick={() => setShowInviteModal(false)}
-                className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
+                variant="outline"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={isInviting}
-                className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
                 {isInviting ? 'Sending...' : 'Send Invitation'}
-              </button>
+              </Button>
             </ModalFooter>
           </form>
         </Modal>
@@ -316,24 +321,24 @@ export function OrganizationMembersPage() {
             )}
           </ModalBody>
           <ModalFooter>
-            <button
+            <Button
               type="button"
               onClick={() => {
                 setShowRemoveModal(false);
                 setMemberToRemove(null);
               }}
-              className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
+              variant="outline"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={handleRemoveMember}
               disabled={isRemoving}
-              className="rounded-md bg-destructive px-4 py-2 font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+              variant="destructive"
             >
               {isRemoving ? 'Removing...' : 'Remove'}
-            </button>
+            </Button>
           </ModalFooter>
         </Modal>
 
@@ -383,25 +388,24 @@ export function OrganizationMembersPage() {
             )}
           </ModalBody>
           <ModalFooter>
-            <button
+            <Button
               type="button"
               onClick={() => {
                 setShowEditRoleModal(false);
                 setMemberToEdit(null);
                 setEditRoleError('');
               }}
-              className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted"
+              variant="outline"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={handleUpdateRole}
               disabled={isUpdatingRole || !!(memberToEdit && newRole === memberToEdit.role)}
-              className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               {isUpdatingRole ? 'Updating...' : 'Update Role'}
-            </button>
+            </Button>
           </ModalFooter>
         </Modal>
       </div>

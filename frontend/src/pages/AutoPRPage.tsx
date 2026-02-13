@@ -6,6 +6,9 @@ import { useState } from 'react';
 import { toast } from '../stores/toastStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '@/components/ui/button';
+// Feature #728: EmptyState adoption
+import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 // Feature #710: React Query hooks
 import {
   useAutoPRConfig,
@@ -139,13 +142,12 @@ export function AutoPRPage() {
         description="Automatically create PRs to update vulnerable dependencies"
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Auto-PR' }]}
         actions={
-          <button
+          <Button
             onClick={handleScanAndCreate}
             disabled={!config.enabled || scanAndCreateMutation.isPending}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
           >
             {scanAndCreateMutation.isPending ? 'Scanning...' : 'Scan & Create PRs'}
-          </button>
+          </Button>
         }
       />
 
@@ -328,9 +330,12 @@ export function AutoPRPage() {
             {isLoadingPRs ? (
               <div className="text-center py-8 text-muted-foreground">Loading PRs...</div>
             ) : filteredPRs.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No auto-PRs yet. {config.enabled ? 'Click "Scan & Create PRs" to get started.' : 'Enable Auto-PR first.'}
-              </div>
+              /* Feature #728: EmptyState adoption */
+              <EmptyState
+                icon={EmptyStateIcons.document}
+                title="No auto-PRs yet"
+                description={config.enabled ? 'Click "Scan & Create PRs" to get started.' : 'Enable Auto-PR first.'}
+              />
             ) : (
               <div className="space-y-3">
                 {filteredPRs.map(pr => (
@@ -404,20 +409,22 @@ export function AutoPRPage() {
                           </div>
                           {pr.status === 'created' && (
                             <div className="flex space-x-2 pt-2">
-                              <button
+                              <Button
+                                size="sm"
                                 onClick={() => handleUpdatePRStatus(pr.id, 'merged', 'passed')}
                                 disabled={updateStatusMutation.isPending}
-                                className="px-3 py-1.5 bg-success text-primary-foreground text-sm rounded hover:bg-success disabled:opacity-50"
+                                className="bg-success text-primary-foreground hover:bg-success/90"
                               >
                                 Merge
-                              </button>
-                              <button
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                size="sm"
                                 onClick={() => handleUpdatePRStatus(pr.id, 'closed')}
                                 disabled={updateStatusMutation.isPending}
-                                className="px-3 py-1.5 bg-muted text-foreground text-sm rounded hover:bg-muted/80 disabled:opacity-50"
                               >
                                 Close
-                              </button>
+                              </Button>
                             </div>
                           )}
                         </div>

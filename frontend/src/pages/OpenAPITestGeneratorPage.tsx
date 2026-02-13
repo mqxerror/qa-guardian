@@ -13,6 +13,7 @@
 import React, { useState, useRef } from 'react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '../components/ui/button';
 import { useAuthStore } from '../stores/authStore';
 
 interface GeneratedTest {
@@ -286,26 +287,20 @@ export function OpenAPITestGeneratorPage() {
  <div className="rounded-lg border border-border bg-card p-6 mb-8">
  {/* Tabs */}
  <div className="flex gap-2 mb-6">
- <button
+ <Button
  onClick={() => setActiveTab('upload')}
- className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
- activeTab === 'upload'
- ? 'bg-primary text-primary-foreground'
- : 'bg-muted text-muted-foreground hover:bg-muted/80'
- }`}
+ variant={activeTab === 'upload' ? 'default' : 'secondary'}
+ size="sm"
  >
  Upload File
- </button>
- <button
+ </Button>
+ <Button
  onClick={() => setActiveTab('url')}
- className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
- activeTab === 'url'
- ? 'bg-primary text-primary-foreground'
- : 'bg-muted text-muted-foreground hover:bg-muted/80'
- }`}
+ variant={activeTab === 'url' ? 'default' : 'secondary'}
+ size="sm"
  >
  Fetch from URL
- </button>
+ </Button>
  </div>
 
  {activeTab === 'upload' && (
@@ -321,9 +316,10 @@ export function OpenAPITestGeneratorPage() {
  onChange={handleFileSelect}
  className="hidden"
  />
- <button
+ <Button
  onClick={() => fileInputRef.current?.click()}
- className="rounded-md border border-dashed border-border bg-muted px-4 py-8 w-full text-center hover:bg-muted/80 transition-colors"
+ variant="outline"
+ className="border-dashed w-full py-8 h-auto"
  >
  <div className="text-muted-foreground">
  <svg className="mx-auto h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -332,7 +328,7 @@ export function OpenAPITestGeneratorPage() {
  <p className="font-medium">Click to upload or drag and drop</p>
  <p className="text-sm">JSON or YAML file</p>
  </div>
- </button>
+ </Button>
  </div>
  {fileName && (
  <p className="mt-2 text-sm text-muted-foreground">
@@ -355,13 +351,13 @@ export function OpenAPITestGeneratorPage() {
  placeholder="https://api.example.com/openapi.json"
  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
  />
- <button
+ <Button
  onClick={() => parseSpec()}
  disabled={!specUrl || isParsing}
- className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+ size="sm"
  >
  {isParsing ? 'Fetching...' : 'Fetch'}
- </button>
+ </Button>
  </div>
  </div>
  )}
@@ -415,19 +411,20 @@ export function OpenAPITestGeneratorPage() {
 
  {/* Generate Button */}
  <div className="mt-4 flex gap-2">
- <button
+ <Button
  onClick={generateTests}
  disabled={isGenerating}
- className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+ size="sm"
  >
  {isGenerating ? 'Generating Tests...' : `Generate ${parseResult.endpointCount} Tests`}
- </button>
- <button
+ </Button>
+ <Button
  onClick={reset}
- className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+ variant="outline"
+ size="sm"
  >
  Reset
- </button>
+ </Button>
  </div>
  </div>
  )}
@@ -446,12 +443,13 @@ export function OpenAPITestGeneratorPage() {
  {generationResult.summary.total} tests generated • Base URL: {generationResult.baseUrl}
  </p>
  </div>
- <button
+ <Button
  onClick={reset}
- className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+ variant="outline"
+ size="sm"
  >
  New Spec
- </button>
+ </Button>
  </div>
 
  {/* Method Stats */}
@@ -465,32 +463,35 @@ export function OpenAPITestGeneratorPage() {
 
  {/* Actions */}
  <div className="flex flex-wrap gap-2">
- <button
+ <Button
  onClick={selectAll}
- className="rounded-md bg-muted px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/80"
+ variant="secondary"
+ size="sm"
  >
  Select All ({filteredTests.length})
- </button>
- <button
+ </Button>
+ <Button
  onClick={deselectAll}
- className="rounded-md bg-muted px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/80"
+ variant="secondary"
+ size="sm"
  >
  Deselect All
- </button>
- <button
+ </Button>
+ <Button
  onClick={copyAllSelected}
  disabled={selectedTests.size === 0}
- className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+ size="sm"
  >
  {copiedTest === 'all' ? 'Copied!' : `Copy Selected (${selectedTests.size})`}
- </button>
- <button
+ </Button>
+ <Button
  onClick={downloadAllSelected}
  disabled={selectedTests.size === 0}
- className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
+ variant="outline"
+ size="sm"
  >
  Download Selected
- </button>
+ </Button>
  </div>
  </div>
 
@@ -566,18 +567,20 @@ export function OpenAPITestGeneratorPage() {
  </div>
  </div>
  <div className="flex gap-2">
- <button
+ <Button
  onClick={() => copyToClipboard(test.testCode, test.operationId)}
- className="rounded-md px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+ variant="ghost"
+ size="sm"
  >
  {copiedTest === test.operationId ? 'Copied!' : 'Copy'}
- </button>
- <button
+ </Button>
+ <Button
  onClick={() => setExpandedTest(expandedTest === test.operationId ? null : test.operationId)}
- className="rounded-md px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+ variant="ghost"
+ size="sm"
  >
  {expandedTest === test.operationId ? 'Hide' : 'View'}
- </button>
+ </Button>
  </div>
  </div>
 
@@ -586,12 +589,14 @@ export function OpenAPITestGeneratorPage() {
  <div className="border-t border-border p-4 bg-muted/30">
  <div className="flex items-center justify-between mb-2">
  <span className="text-xs font-medium text-muted-foreground">{test.testName}</span>
- <button
+ <Button
  onClick={() => copyToClipboard(test.testCode, test.operationId)}
- className="text-xs text-primary hover:underline"
+ variant="link"
+ size="sm"
+ className="text-xs h-auto p-0"
  >
  Copy Code
- </button>
+ </Button>
  </div>
  <pre className="bg-background border border-border rounded-md p-4 overflow-x-auto text-sm">
  <code>{test.testCode}</code>

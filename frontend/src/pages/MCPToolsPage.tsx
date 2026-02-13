@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, Meh } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
@@ -216,7 +217,7 @@ export function MCPToolsPage() {
  <div className="text-center py-12 border border-dashed border-border rounded-lg">
  <Meh className="mx-auto h-16 w-16 text-muted-foreground/50" strokeWidth={1.5} />
  <p className="mt-4 text-muted-foreground">No tools match your search</p>
- <button onClick={() => { setSearchQuery(''); setSelectedCategory('all'); setSelectedPermission('all'); }} className="mt-2 text-sm text-primary hover:underline">Clear all filters</button>
+ <Button variant="link" size="sm" onClick={() => { setSearchQuery(''); setSelectedCategory('all'); setSelectedPermission('all'); }} className="mt-2">Clear all filters</Button>
  </div>
  ) : (
  <div className="space-y-6">
@@ -235,8 +236,8 @@ export function MCPToolsPage() {
  <div className="mt-3 pt-3 border-t border-border text-xs space-y-2">
  <div><span className="text-muted-foreground">Required scope:</span> <code className="px-1 py-0.5 rounded bg-muted">mcp:{tool.permission}</code></div>
  <div className="flex gap-2">
- <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(tool.name); toast.success(`Copied "${tool.name}" to clipboard`); }} className="px-2 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20">Copy Name</button>
- <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`await callMCP('tools/call', { name: '${tool.name}', arguments: {} });`); toast.success('Copied usage example'); }} className="px-2 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20">Copy Usage</button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(tool.name); toast.success(`Copied "${tool.name}" to clipboard`); }}>Copy Name</Button>
+ <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`await callMCP('tools/call', { name: '${tool.name}', arguments: {} });`); toast.success('Copied usage example'); }}>Copy Usage</Button>
  </div>
  </div>
  )}

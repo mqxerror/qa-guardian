@@ -3,6 +3,7 @@
 
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '@/components/ui/button';
 
 export function BillingPage() {
   return (
@@ -21,9 +22,9 @@ export function BillingPage() {
           <div className="rounded-lg border border-border bg-card p-6">
             <h3 className="text-lg font-semibold text-foreground">Current Plan</h3>
             <p className="mt-2 text-muted-foreground">Free Trial</p>
-            <button className="mt-4 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90">
+            <Button className="mt-4">
               Upgrade Plan
-            </button>
+            </Button>
           </div>
         </div>
       </div>

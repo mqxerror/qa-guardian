@@ -43,6 +43,7 @@ import { useTimezoneStore } from "../stores/timezoneStore";
 // toast moved to hooks (Feature #718)
 import { createLogger } from "../utils/logger";
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
+import { Button } from '@/components/ui/button';
 
 const logger = createLogger('project-detail');
 // Feature #58: Import React Query hooks for parallel data fetching
@@ -505,19 +506,18 @@ function ProjectDetailPage() {
             )}
             <div className="mt-6 flex gap-3 justify-center">
               {isRateLimited && (
-                <button
+                <Button
                   onClick={() => window.location.reload()}
-                  className="rounded-md bg-primary px-6 py-2 font-medium text-primary-foreground hover:bg-primary/90"
                 >
                   Retry
-                </button>
+                </Button>
               )}
-              <button
+              <Button
+                variant={isRateLimited ? 'secondary' : 'default'}
                 onClick={() => navigate('/projects')}
-                className={`rounded-md px-6 py-2 font-medium ${isRateLimited ? 'bg-muted text-muted-foreground hover:bg-muted/80' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}
               >
                 Go to Projects
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -540,11 +540,11 @@ function ProjectDetailPage() {
           actions={
             <div className="flex items-center gap-3">
               {/* Feature #1975: One-click Smoke Test button */}
-              <button
+              <Button
                 onClick={smokeTest.handleQuickSmokeTest}
                 disabled={smokeTest.isRunningQuickSmokeTest || !project?.base_url}
                 title={!project?.base_url ? 'Set a base URL in project settings first' : 'Run a quick health check on the project'}
-                className={`rounded-md px-4 py-2 text-sm font-medium inline-flex items-center gap-2 transition-all ${
+                className={`${
                   smokeTest.isRunningQuickSmokeTest
                     ? 'bg-warning text-warning-foreground cursor-wait'
                     : !project?.base_url
@@ -563,7 +563,7 @@ function ProjectDetailPage() {
                     Smoke Test
                   </>
                 )}
-              </button>
+              </Button>
               {/* Feature #1852: View run history at project level */}
               <Link
                 to={`/projects/${id}/runs`}
@@ -573,12 +573,12 @@ function ProjectDetailPage() {
                 Run History
               </Link>
               {canDeleteProject && (
-                <button
+                <Button
+                  variant="destructive"
                   onClick={() => detailModals.setShowDeleteModal(true)}
-                  className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90"
                 >
                   Delete Project
-                </button>
+                </Button>
               )}
             </div>
           }
@@ -593,12 +593,13 @@ function ProjectDetailPage() {
                 Smoke Test
               </h3>
               {smokeTest.smokeTestResult && (
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={smokeTest.dismissSmokeTestResult}
-                  className="text-sm text-muted-foreground hover:text-foreground"
                 >
                   Dismiss
-                </button>
+                </Button>
               )}
             </div>
 
@@ -759,10 +760,11 @@ function ProjectDetailPage() {
               </div>
               <div className="divide-y divide-border">
                 {recentRuns.map((run: { id: string; suite_name?: string; test_name?: string; status: string; created_at: string; duration_ms?: number }) => (
-                  <button
+                  <Button
                     key={run.id}
+                    variant="ghost"
                     onClick={() => navigate(`/runs/${run.id}`)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted/50 transition-colors text-left"
+                    className="w-full h-auto flex items-center gap-3 px-4 py-2.5 text-sm text-left rounded-none"
                   >
                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                       run.status === 'passed' ? 'bg-success' :
@@ -781,7 +783,7 @@ function ProjectDetailPage() {
                         {run.duration_ms < 1000 ? `${run.duration_ms}ms` : `${(run.duration_ms / 1000).toFixed(1)}s`}
                       </span>
                     )}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -792,9 +794,10 @@ function ProjectDetailPage() {
         <div className="mt-6 border-b border-border">
           <nav className="-mb-px flex items-center gap-4" aria-label="Project tabs">
             {/* Primary Tab: Suites with test count badge */}
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setActiveTab('suites')}
-              className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              className={`py-3 px-1 text-sm font-medium border-b-2 rounded-none flex items-center gap-2 ${
                 activeTab === 'suites'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
@@ -808,12 +811,13 @@ function ProjectDetailPage() {
                   {suites.length}
                 </span>
               )}
-            </button>
+            </Button>
 
             {/* Primary Tab: Settings */}
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setActiveTab('settings')}
-              className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              className={`py-3 px-1 text-sm font-medium border-b-2 rounded-none flex items-center gap-2 ${
                 activeTab === 'settings'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
@@ -822,12 +826,13 @@ function ProjectDetailPage() {
             >
               <Settings className="h-4 w-4" />
               Settings
-            </button>
+            </Button>
 
             {/* Primary Tab: Security with vulnerability count badge */}
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setActiveTab('security')}
-              className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              className={`py-3 px-1 text-sm font-medium border-b-2 rounded-none flex items-center gap-2 ${
                 activeTab === 'security'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
@@ -854,13 +859,14 @@ function ProjectDetailPage() {
                 }
                 return null;
               })()}
-            </button>
+            </Button>
 
             {/* More Dropdown for overflow tabs */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button
-                  className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-1 ${
+                <Button
+                  variant="ghost"
+                  className={`py-3 px-1 text-sm font-medium border-b-2 rounded-none flex items-center gap-1 ${
                     activeTab === 'github'
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
@@ -869,7 +875,7 @@ function ProjectDetailPage() {
                   <MoreHorizontal className="h-4 w-4" />
                   More
                   <ChevronDown className="h-3 w-3" />
-                </button>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-40">
                 <DropdownMenuItem
@@ -905,22 +911,24 @@ function ProjectDetailPage() {
                       className="h-9 w-48 rounded-md border border-input bg-background pl-8 pr-8 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                     {suiteSearchQuery && (
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => setSuiteSearchQuery('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground hover:text-foreground"
                       >
                         <X className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )}
                 {canCreateSuite && (
-                  <button
+                  <Button
+                    size="sm"
                     onClick={() => suiteModal.setShowCreateSuiteModal(true)}
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                   >
                     Create Suite
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -1154,16 +1162,17 @@ function ProjectDetailPage() {
 
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {githubRepositories.map((repo) => (
-                <button
+                <Button
                   key={repo.full_name}
+                  variant="outline"
                   onClick={() => {
                     setSelectedRepo(repo);
                     setSelectedBranch(repo.default_branch);
                   }}
-                  className={`w-full flex items-center gap-3 rounded-md border p-3 text-left transition-colors ${
+                  className={`w-full h-auto flex items-center gap-3 p-3 text-left ${
                     selectedRepo?.full_name === repo.full_name
                       ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                      : 'hover:border-primary/50 hover:bg-muted/50'
                   }`}
                 >
                   <GitBranch className="h-5 w-5 text-muted-foreground flex-shrink-0" />
@@ -1176,7 +1185,7 @@ function ProjectDetailPage() {
                   {selectedRepo?.full_name === repo.full_name && (
                     <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
                   )}
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -1209,22 +1218,21 @@ function ProjectDetailPage() {
             )}
           </ModalBody>
           <ModalFooter>
-            <button
+            <Button
+              variant="outline"
               onClick={() => {
                 setShowRepoSelectModal(false);
                 setSelectedRepo(null);
               }}
-              className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleConnectRepo}
               disabled={!selectedRepo || isConnectingRepo}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               {isConnectingRepo ? 'Connecting...' : 'Connect Repository'}
-            </button>
+            </Button>
           </ModalFooter>
         </Modal>
 

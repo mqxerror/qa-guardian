@@ -13,6 +13,7 @@ import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Lock, Loader2, Clock, Calendar, Mail, ExternalLink, LogIn, Image, X, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 // Feature #712: React Query hook for shared runs
 import { useSharedRun, type SharedTestRun, type ExpiredLinkInfo } from '../hooks/api/useSharedRuns';
+import { Button } from '@/components/ui/button';
 
 // Types from the main test run page - using hook types where applicable
 interface StepResult {
@@ -219,10 +220,10 @@ export default function SharedTestRunPage() {
  </div>
  )}
 
- <button
+ <Button
  type="submit"
  disabled={authenticating || !password}
- className="w-full py-2.5 px-4 bg-primary hover:bg-primary/90 disabled:bg-primary/80 text-primary-foreground font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+ className="w-full"
  >
  {authenticating ? (
  <>
@@ -232,7 +233,7 @@ export default function SharedTestRunPage() {
  ) : (
  'View Results'
  )}
- </button>
+ </Button>
  </form>
 
  <p className="text-center text-sm text-muted-foreground mt-4">
@@ -630,40 +631,46 @@ export default function SharedTestRunPage() {
  onClick={() => setLightboxOpen(false)}
  >
  {/* Close button */}
- <button
+ <Button
+ variant="ghost"
+ size="icon"
  onClick={() => setLightboxOpen(false)}
- className="absolute top-4 right-4 text-white/80 hover:text-white p-2 z-10"
+ className="absolute top-4 right-4 text-white/80 hover:text-white z-10 h-12 w-12"
  aria-label="Close"
  >
  <X className="w-8 h-8" />
- </button>
+ </Button>
 
  {/* Navigation - Previous */}
  {lightboxIndex > 0 && (
- <button
+ <Button
+ variant="ghost"
+ size="icon"
  onClick={(e) => {
  e.stopPropagation();
  setLightboxIndex(prev => prev - 1);
  }}
- className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 bg-black/30 rounded-full hover:bg-black/50 transition-colors"
+ className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white bg-black/30 hover:bg-black/50 rounded-full h-14 w-14"
  aria-label="Previous screenshot"
  >
  <ChevronLeft className="w-8 h-8" />
- </button>
+ </Button>
  )}
 
  {/* Navigation - Next */}
  {lightboxIndex < galleryScreenshots.length - 1 && (
- <button
+ <Button
+ variant="ghost"
+ size="icon"
  onClick={(e) => {
  e.stopPropagation();
  setLightboxIndex(prev => prev + 1);
  }}
- className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 bg-black/30 rounded-full hover:bg-black/50 transition-colors"
+ className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white bg-black/30 hover:bg-black/50 rounded-full h-14 w-14"
  aria-label="Next screenshot"
  >
  <ChevronRight className="w-8 h-8" />
- </button>
+ </Button>
  )}
 
  {/* Image container */}

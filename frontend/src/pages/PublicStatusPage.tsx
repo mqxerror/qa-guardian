@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
+import { Button } from '@/components/ui/button';
 // Feature #690: React Query hooks for data fetching
 // Feature #712: Added useStatusVerify to eliminate raw fetch()
 import { usePublicStatus, useStatusSubscribe, useStatusVerify } from '../hooks/api/useMonitoring';
@@ -152,13 +153,12 @@ export function PublicStatusPage() {
                 )}
               </div>
             </div>
-            <button
+            <Button
               onClick={() => setShowSubscribeModal(true)}
-              className="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 text-sm font-medium"
             >
               <span>🔔</span>
               Subscribe
-            </button>
+            </Button>
           </div>
         </div>
       </header>
@@ -185,12 +185,13 @@ export function PublicStatusPage() {
                 {subscribeResult.message}
               </p>
               {subscribeResult.dev_verify_url && subscribeResult.verification_required && (
-                <button
+                <Button
+                  size="sm"
                   onClick={handleVerify}
-                  className="mt-2 px-3 py-1 text-sm bg-success text-primary-foreground rounded hover:bg-success"
+                  className="mt-2 bg-success text-primary-foreground hover:bg-success/90"
                 >
                   Verify Now (Dev Mode)
-                </button>
+                </Button>
               )}
             </div>
           ) : null}
@@ -214,31 +215,29 @@ export function PublicStatusPage() {
         <ModalFooter>
           {!subscribeResult?.success && (
             <>
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={handleCloseSubscribeModal}
-                className="px-4 py-2 rounded-md border border-border text-foreground hover:bg-muted"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 form="subscribe-form"
                 disabled={subscribeMutation.isPending || !subscribeEmail}
-                className="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {subscribeMutation.isPending ? 'Subscribing...' : 'Subscribe'}
-              </button>
+              </Button>
             </>
           )}
 
           {subscribeResult?.success && !subscribeResult?.verification_required && (
-            <button
+            <Button
               onClick={handleCloseSubscribeModal}
-              className="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Done
-            </button>
+            </Button>
           )}
         </ModalFooter>
       </Modal>

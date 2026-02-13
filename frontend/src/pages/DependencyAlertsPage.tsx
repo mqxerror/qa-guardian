@@ -8,6 +8,7 @@ import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
+import { Button } from '@/components/ui/button';
 // Feature #710: React Query hooks
 import {
   useDependencyAlertConfig,
@@ -130,13 +131,12 @@ export function DependencyAlertsPage() {
           description="Get notified when new CVEs affect your dependencies"
           breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Dependency Alerts' }]}
           actions={
-            <button
+            <Button
               onClick={() => setShowSimulateModal(true)}
               disabled={!config.enabled}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
             >
               <span>{'\u26A0'}</span> Simulate CVE
-            </button>
+            </Button>
           }
         />
 
@@ -389,27 +389,32 @@ export function DependencyAlertsPage() {
                     {/* Actions */}
                     {alert.status === 'new' && (
                       <div className="flex gap-2 pt-2 border-t border-border">
-                        <button
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={(e) => { e.stopPropagation(); handleUpdateAlertStatus(alert.id, 'acknowledged'); }}
                           disabled={updateAlertStatusMutation.isPending}
-                          className="px-3 py-1 bg-warning/20 text-warning rounded hover:bg-warning/30 text-sm disabled:opacity-50"
+                          className="bg-warning/20 text-warning hover:bg-warning/30"
                         >
                           Acknowledge
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={(e) => { e.stopPropagation(); handleUpdateAlertStatus(alert.id, 'dismissed', 'Not applicable'); }}
                           disabled={updateAlertStatusMutation.isPending}
-                          className="px-3 py-1 bg-muted text-muted-foreground rounded hover:bg-muted/80 text-sm disabled:opacity-50"
                         >
                           Dismiss
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={(e) => { e.stopPropagation(); handleUpdateAlertStatus(alert.id, 'fixed'); }}
                           disabled={updateAlertStatusMutation.isPending}
-                          className="px-3 py-1 bg-success/20 text-success rounded hover:bg-success/30 text-sm disabled:opacity-50"
+                          className="bg-success/20 text-success hover:bg-success/30"
                         >
                           Mark Fixed
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -460,19 +465,18 @@ export function DependencyAlertsPage() {
             </div>
           </ModalBody>
           <ModalFooter>
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setShowSimulateModal(false)}
-              className="px-4 py-2 text-muted-foreground hover:text-foreground"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleSimulateCVE}
               disabled={simulateCVEMutation.isPending || !simulatePackage}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
             >
               {simulateCVEMutation.isPending ? 'Simulating...' : 'Simulate CVE'}
-            </button>
+            </Button>
           </ModalFooter>
         </Modal>
       </div>

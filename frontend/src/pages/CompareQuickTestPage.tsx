@@ -21,6 +21,7 @@ import {
   AnimatedCard,
   CardContent,
 } from '../components/ui';
+import { Button } from '@/components/ui/button';
 import {
   // Zap, // Unused
   Globe,
@@ -186,9 +187,10 @@ function WaveCompareCard({ waveA, waveB, waveNumber }: WaveCompareCardProps) {
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
       {/* Header */}
-      <button
+      <Button
+        variant="ghost"
         onClick={() => setExpanded(!expanded)}
-        className="w-full p-3 flex items-center justify-between bg-muted/30 hover:bg-muted/50 transition-colors"
+        className="w-full flex items-center justify-between"
       >
         <div className="flex items-center gap-2">
           <Icon className="w-5 h-5 text-primary" />
@@ -201,7 +203,7 @@ function WaveCompareCard({ waveA, waveB, waveNumber }: WaveCompareCardProps) {
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
           )}
         </div>
-      </button>
+      </Button>
 
       {/* Side-by-side comparison */}
       <div className="grid grid-cols-2 divide-x divide-border">
@@ -651,10 +653,10 @@ export function CompareQuickTestPage() {
 
             {/* Compare Button */}
             <div className="mt-4 flex justify-center">
-              <button
+              <Button
                 onClick={startComparison}
                 disabled={isStarting || isRunning || !urlA || !urlB}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-6"
               >
                 {isStarting ? (
                   <>
@@ -672,7 +674,7 @@ export function CompareQuickTestPage() {
                     Compare
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </CardContent>
         </AnimatedCard>

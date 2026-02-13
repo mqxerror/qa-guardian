@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useInvitation, useAcceptInvitation } from '../hooks/api/useOrganization';
 import { X, Check, Mail, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export function AcceptInvitationPage() {
   const { inviteId } = useParams<{ inviteId: string }>();
@@ -169,13 +170,13 @@ export function AcceptInvitationPage() {
             </div>
           )}
 
-          <button
+          <Button
             onClick={handleAccept}
             disabled={acceptMutation.isPending || emailMismatch}
-            className="w-full rounded-md bg-primary py-3 font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full py-3"
           >
             {acceptMutation.isPending ? 'Accepting...' : 'Accept Invitation'}
-          </button>
+          </Button>
 
           <Link
             to="/dashboard"

@@ -5,7 +5,10 @@
 
 import { useState, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Loader2, ClipboardList, Eye } from 'lucide-react';
+import { Loader2, Eye } from 'lucide-react';
+import { Button } from '../components/ui/button';
+// Feature #728: EmptyState adoption
+import { EmptyStates, EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { Layout } from '../components/Layout';
 import { PageHeader, VirtualTable } from '../components/ui';
 import { useTimezoneStore } from '../stores/timezoneStore';
@@ -118,12 +121,12 @@ function SuiteRunHistoryPage() {
      { label: 'Run History' }
    ]}
    actions={
-     <button
+     <Button
        onClick={() => navigate(`/suites/${suiteId}`)}
-       className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+       variant="outline"
      >
        Back to Suite
-     </button>
+     </Button>
    }
  />
 
@@ -222,13 +225,10 @@ function SuiteRunHistoryPage() {
  getRowKey={(run) => run.id}
  isLoading={loading}
  emptyState={
- <div className="text-center py-12">
- <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
- <p className="text-muted-foreground">No test runs found.</p>
- <p className="text-sm text-muted-foreground mt-1">
-   {runs.length > 0 ? 'Try adjusting your filters.' : 'Run some tests to see history here.'}
- </p>
- </div>
+ /* Feature #728: EmptyState adoption */
+ runs.length > 0
+   ? <EmptyState icon={EmptyStateIcons.search} title="No test runs found" description="Try adjusting your filters." />
+   : EmptyStates.noRuns()
  }
  renderHeader={() => (
  <div className="grid grid-cols-8 gap-2 px-4 py-3 bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wider">

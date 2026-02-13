@@ -17,6 +17,7 @@ import { useRunsPaginated, useRunsInfinite, useProjects, type TestRun } from '..
 import { InfiniteScrollContainer } from '../components/ui/InfiniteScrollContainer';
 import { VirtualTable } from '../components/ui/VirtualList';
 import { SkeletonRunHistory } from '../components/ui/Skeleton';
+import { Button } from '@/components/ui/button';
 // Feature #126: Reusable empty state components
 import { EmptyStates } from '../components/ui/EmptyState';
 // Feature #129: URL state for shareable links
@@ -597,35 +598,43 @@ function RunHistoryPage() {
  </select>
  </div>
  <div className="flex items-center gap-1">
- <button
+ <Button
+ variant="outline"
+ size="sm"
  onClick={() => setCurrentPage(1)}
  disabled={currentPage === 1 || (pagination && !pagination.hasPrev) || undefined}
- className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
+ className="px-2 py-1"
  >
  &laquo;&laquo;
- </button>
- <button
+ </Button>
+ <Button
+ variant="outline"
+ size="sm"
  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
  disabled={currentPage === 1 || (pagination && !pagination.hasPrev) || undefined}
- className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
+ className="px-2 py-1"
  >
  &laquo;
- </button>
+ </Button>
  <span className="px-3 py-1">{currentPage} / {totalPages || 1}</span>
- <button
+ <Button
+ variant="outline"
+ size="sm"
  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
  disabled={currentPage >= totalPages || (pagination && !pagination.hasNext) || undefined}
- className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
+ className="px-2 py-1"
  >
  &raquo;
- </button>
- <button
+ </Button>
+ <Button
+ variant="outline"
+ size="sm"
  onClick={() => setCurrentPage(totalPages)}
  disabled={currentPage >= totalPages || (pagination && !pagination.hasNext) || undefined}
- className="px-2 py-1 rounded border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
+ className="px-2 py-1"
  >
  &raquo;&raquo;
- </button>
+ </Button>
  </div>
  </div>
  </div>

@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ChevronRight, RefreshCw, AlertCircle } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+import { Button } from '@/components/ui/button';
 import { toast } from '../stores/toastStore';
 // Feature #712: React Query hook for services status
 import { useServicesStatus, type ServiceInfo, type ServicesResponse } from '../hooks/api/useServices';
@@ -121,13 +122,15 @@ function ServiceCard({ service, history }: { service: ServiceInfo; history: Heal
         </div>
       )}
 
-      <button
+      <Button
+        variant="link"
+        size="sm"
         onClick={() => setExpanded(!expanded)}
-        className="text-xs text-primary hover:underline flex items-center gap-1 mt-1"
+        className="text-xs px-0 h-auto flex items-center gap-1 mt-1"
       >
         <ChevronRight className={`w-3 h-3 transition-transform ${expanded ? 'rotate-90' : ''}`} />
         {service.capabilities.length} capabilities
-      </button>
+      </Button>
 
       {expanded && (
         <div className="mt-2 pt-2 border-t border-border">
@@ -310,14 +313,15 @@ export function ServicesPage() {
                 Auto-refresh
                 {autoRefresh && <span className="text-muted-foreground">({nextRefreshIn}s)</span>}
               </label>
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => refetch()}
                 disabled={loading}
-                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-muted/50 disabled:opacity-50 transition-colors"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
-              </button>
+              </Button>
             </div>
           }
         />
@@ -366,9 +370,9 @@ export function ServicesPage() {
               <AlertCircle className="w-5 h-5 text-destructive" />
               <p className="text-sm text-destructive">{error}</p>
             </div>
-            <button onClick={() => refetch()} className="mt-2 text-sm text-destructive hover:underline">
+            <Button variant="link" onClick={() => refetch()} className="mt-2 text-sm text-destructive px-0">
               Try Again
-            </button>
+            </Button>
           </div>
         )}
 
