@@ -31,7 +31,7 @@ const RATE_LIMIT_WINDOW_MS = RATE_LIMIT_WINDOW_SECONDS * 1000;
 const RATE_LIMITS = {
   QUICK_TEST: 5,   // Feature #437: Quick Test: 5 requests per minute (amplification prevention)
   AUTH_LOGIN: 10,   // Login/register: 10 requests per minute (brute-force prevention)
-  AUTH_GENERAL: 60, // Auth reads (/me, /refresh, /sessions): 60/min (normal navigation traffic)
+  AUTH_GENERAL: 300, // Auth reads (/me, /refresh, /sessions): 300/min (raised for dev/testing traffic)
   ERROR_REPORT: 10, // Feature #389: Error reporting: 10 requests per minute (tighter limit)
   DEFAULT: 100,     // Feature #437: Default limit: 100 requests per minute (global safety net)
   READ_ONLY: 300,   // Read-only endpoints: 300 requests per minute (higher but safer)
