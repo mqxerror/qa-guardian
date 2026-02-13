@@ -213,46 +213,14 @@ export {
 } from './useOrganizationSettings';
 
 // Dependency Security hooks (Feature #710)
+// Feature #863: Removed dead exports (policy, alerts, auto-PR hooks/types) after page cuts
 export {
-  // Dependency Policy hooks
-  useDependencyPolicies,
-  usePolicyViolations,
-  useCreateDependencyPolicy,
-  useTogglePolicyEnabled,
-  useDeleteDependencyPolicy,
-  useSimulateBuild,
-  useOverrideViolation,
-  // Dependency Alerts hooks
-  useDependencyAlertConfig,
-  useDependencyAlerts,
-  useUpdateDependencyAlertConfig,
-  useSimulateCVE,
-  useUpdateAlertStatus,
-  // Auto-PR hooks
-  useAutoPRConfig,
-  useAutoPRs,
-  useUpdateAutoPRConfig,
-  useScanAndCreatePRs,
-  useUpdateAutoPRStatus,
   // npm Audit hooks (Feature #725)
   useNpmAuditScan,
   useRunNpmAuditScan,
   // Invalidation helper
   useInvalidateDependencySecurity,
   dependencySecurityKeys,
-  // Types
-  type DependencyPolicy,
-  type PolicyViolation,
-  type ViolationSummary,
-  type CreatePolicyInput,
-  type SimulateBuildResult,
-  type DependencyAlertConfig,
-  type CVEAlert,
-  type AlertSummary,
-  type AutoPRConfig,
-  type AutoPR,
-  type AutoPRSummary,
-  type ScanAndCreateResult,
   // npm Audit types (Feature #725)
   type NpmAuditVulnerability,
   type NpmAuditDependency,
