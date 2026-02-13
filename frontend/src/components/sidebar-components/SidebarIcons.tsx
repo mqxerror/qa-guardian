@@ -214,10 +214,7 @@ export const OrgInsightsIcon = () => (
 
 // Feature #453: BestPracticesIcon and IndustryBenchmarkIcon removed (orphaned - pages deleted)
 
-// Test Documentation icon (document with code)
-export const TestDocumentationIcon = () => (
-  <FileText className="h-5 w-5" aria-hidden="true" />
-);
+// Feature #885: TestDocumentationIcon removed - page removed
 
 // Feature #1501: Testing group icon (beaker/test tube)
 export const TestingGroupIcon = () => (

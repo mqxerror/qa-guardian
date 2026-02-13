@@ -43,7 +43,7 @@ export { TestImprovementAnalyzerPage } from './TestImprovementAnalyzerPage';
 // Feature #411: PersonalizedInsightsPage removed - dead demo page
 // Feature #411: TeamSkillGapsPage removed - dead demo page
 // Feature #411: AILearningPage removed - dead demo page
-export { TestDocumentationPage } from './TestDocumentationPage';
+// Feature #885: TestDocumentationPage removed - niche feature
 export { ProviderHealthPage } from './ProviderHealthPage';
 // Feature #412: AICostTrackingPage merged into AIAnalyticsPage
 // Feature #412: AIUsageAnalyticsDashboard merged into AIAnalyticsPage

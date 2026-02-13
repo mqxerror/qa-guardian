@@ -32,7 +32,6 @@ import {
   Settings2,
   Lightbulb,
   Zap,
-  FileText,
   ChevronRight,
   Code,
   Terminal,
@@ -534,17 +533,14 @@ export function DashboardPage() {
                   </div>
                 </div>
                 <p className="mt-4 text-sm text-muted-foreground">
-                  Analyze flaky tests, improve test quality, and generate documentation.
+                  Analyze flaky tests, improve test quality, and get AI-powered insights.
                 </p>
                 <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Zap className="h-4 w-4" />
                     Flaky Tests
                   </span>
-                  <span className="flex items-center gap-1">
-                    <FileText className="h-4 w-4" />
-                    Documentation
-                  </span>
+                  {/* Feature #885: Documentation removed */}
                   {/* Feature #884: Release Notes removed */}
                 </div>
                 <div className="mt-4 flex items-center text-sm font-medium text-accent group-hover:translate-x-1 transition-transform">

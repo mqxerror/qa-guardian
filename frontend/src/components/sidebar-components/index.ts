@@ -45,7 +45,7 @@ export {
   TechnicalDebtIcon,
   OrgInsightsIcon,
   // Feature #453: BestPracticesIcon, IndustryBenchmarkIcon removed (orphaned)
-  TestDocumentationIcon,
+  // Feature #885: TestDocumentationIcon removed
   TestingGroupIcon,
   TestSuitesIcon,
   TestResultsIcon,
