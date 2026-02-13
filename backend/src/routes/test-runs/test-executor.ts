@@ -1505,6 +1505,8 @@ async function executeTest(
 }
 
 async function launchBrowser(browserType: BrowserType): Promise<Browser> {
+  // Docker requires --no-sandbox and --disable-dev-shm-usage for Chromium
+  const chromiumArgs = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'];
   switch (browserType) {
     case 'firefox':
       return await firefox.launch({ headless: true });
@@ -1512,7 +1514,7 @@ async function launchBrowser(browserType: BrowserType): Promise<Browser> {
       return await webkit.launch({ headless: true });
     case 'chromium':
     default:
-      return await chromium.launch({ headless: true });
+      return await chromium.launch({ headless: true, args: chromiumArgs });
   }
 }
 

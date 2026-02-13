@@ -183,6 +183,10 @@ function emitWaveError(orgId: string, runId: string, wave: number, error: string
 export async function runQuickTest(request: QuickTestRequest): Promise<void> {
   const { url, runId, orgId, userId, browser: browserType = 'chromium' } = request;
   const browserLauncher = getBrowserLauncher(browserType);
+  // Docker requires --no-sandbox and --disable-dev-shm-usage for Chromium
+  const launchOptions = browserType === 'chromium'
+    ? { headless: true as const, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] }
+    : { headless: true as const };
 
   // Initialize result
   // Feature #461: Include orgId for IDOR protection
@@ -221,7 +225,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
 
   try {
     // Feature #579: Launch selected browser once for waves 2 and 3
-    browser = await browserLauncher.launch({ headless: true });
+    browser = await browserLauncher.launch(launchOptions);
 
     // Wave 1: Health Check
     emitWaveStart(orgId, runId, 1, 'Health Check');
@@ -368,7 +372,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
 
       if (!a11yBrowser) {
         // Feature #579: Use selected browser for a11y scan
-        a11yBrowser = await browserLauncher.launch({ headless: true });
+        a11yBrowser = await browserLauncher.launch(launchOptions);
         ownsBrowser = true;
       }
 
@@ -441,7 +445,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       let ownsBrowser = false;
       if (!seoBrowser) {
         // Feature #579: Use selected browser for SEO analysis
-        seoBrowser = await browserLauncher.launch({ headless: true });
+        seoBrowser = await browserLauncher.launch(launchOptions);
         ownsBrowser = true;
       }
 
