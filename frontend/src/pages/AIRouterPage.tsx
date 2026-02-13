@@ -1,9 +1,11 @@
 // AIRouterPage - AI Provider Router with circuit breaker, rate limiting, and fallback (Feature #405)
 // Feature #623: Added React.lazy for heavy panel components
+// Feature #691: Migrated provider switch modal to shared Modal component
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import { PageHeader } from "../components/ui";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 import type {
   AIRouterConfig, RouterStats, CircuitBreakerState, ProviderSwitchLog,
   ActiveProviderState, ProviderChangeLog, ProviderSwitchResult,
@@ -103,12 +105,12 @@ function AIRouterPage() {
     setIsLoading(true);
     try {
       const [configRes, statsRes, cbRes, logsRes, activeRes, changeLogsRes] = await Promise.all([
-        fetch('https://qa.pixelcraftedmedia.com/api/v1/ai/router/config', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('https://qa.pixelcraftedmedia.com/api/v1/ai/router/stats', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('https://qa.pixelcraftedmedia.com/api/v1/ai/router/circuit-breaker', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('https://qa.pixelcraftedmedia.com/api/v1/ai/router/logs?limit=20', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('https://qa.pixelcraftedmedia.com/api/v1/ai/provider/active', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('https://qa.pixelcraftedmedia.com/api/v1/ai/provider/change-logs?limit=10', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/router/config`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/router/stats`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/router/circuit-breaker`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/router/logs?limit=20`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/provider/active`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/provider/change-logs?limit=10`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       if (configRes.ok) setConfig(await configRes.json());
       if (statsRes.ok) setStats(await statsRes.json());
@@ -125,7 +127,7 @@ function AIRouterPage() {
   const updateConfig = async (updates: Partial<AIRouterConfig>) => {
     setIsSaving(true);
     try {
-      const response = await fetch('https://qa.pixelcraftedmedia.com/api/v1/ai/router/config', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/router/config`, {
         method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       });
@@ -137,7 +139,7 @@ function AIRouterPage() {
   const testFailover = async (failureType: 'timeout' | 'rate_limit' | 'error') => {
     setIsTesting(true); setTestResult(null);
     try {
-      const response = await fetch('https://qa.pixelcraftedmedia.com/api/v1/ai/router/test-failover', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/router/test-failover`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ simulate_failure: failureType }),
       });
@@ -148,7 +150,7 @@ function AIRouterPage() {
 
   const resetCircuitBreaker = async (provider: string) => {
     try {
-      await fetch('https://qa.pixelcraftedmedia.com/api/v1/ai/router/circuit-breaker/reset', {
+      await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/router/circuit-breaker/reset`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider }),
       });
@@ -159,7 +161,7 @@ function AIRouterPage() {
   const hotSwapProvider = async () => {
     setIsSwitching(true); setSwitchResult(null);
     try {
-      const response = await fetch('https://qa.pixelcraftedmedia.com/api/v1/ai/provider/switch', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/provider/switch`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ target_provider: targetProvider, reason: switchReason || 'Manual switch via admin UI', graceful_switch: gracefulSwitch, drain_timeout_ms: 5000 }),
       });
@@ -282,41 +284,41 @@ function AIRouterPage() {
         )}
       </div>
 
-      {/* Provider Switch Modal */}
-      {showSwitchModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><span>⚡</span> Switch Provider</h3>
-            <div className="mb-4 p-3 bg-primary/5 rounded-lg">
-              <div className="text-sm text-primary"><strong>Current:</strong> {activeProvider?.current_provider === 'kie' ? 'Kie.ai' : 'Anthropic Direct'}</div>
-              <div className="text-sm text-primary"><strong>Target:</strong> {targetProvider === 'kie' ? 'Kie.ai' : 'Anthropic Direct'}</div>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-foreground mb-1">Reason for switch</label>
-              <input type="text" value={switchReason} onChange={(e) => setSwitchReason(e.target.value)} placeholder="e.g., Cost optimization, performance testing..." className="w-full border rounded-lg p-2 text-sm bg-input text-foreground" />
-            </div>
-            <div className="mb-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={gracefulSwitch} onChange={(e) => setGracefulSwitch(e.target.checked)} className="rounded" />
-                <div><div className="text-sm font-medium">Graceful switch</div><div className="text-xs text-muted-foreground">Wait for pending requests to complete (recommended)</div></div>
-              </label>
-            </div>
-            {switchResult && (
-              <div className={`mb-4 p-3 rounded-lg ${switchResult.success ? 'bg-success/5 border border-success/20' : 'bg-destructive/5 border border-destructive/20'}`}>
-                <div className="font-medium text-sm">{switchResult.success ? 'Switch successful!' : 'Switch failed'}</div>
-                <div className="text-xs mt-1">{switchResult.message}</div>
-              </div>
-            )}
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowSwitchModal(false)} disabled={isSwitching} className="px-4 py-2 text-foreground hover:text-foreground">Cancel</button>
-              <button onClick={hotSwapProvider} disabled={isSwitching} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
-                {isSwitching && <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>}
-                {isSwitching ? 'Switching...' : 'Switch Provider'}
-              </button>
-            </div>
+      {/* Provider Switch Modal - Feature #691: Using shared Modal component */}
+      <Modal isOpen={showSwitchModal} onClose={() => setShowSwitchModal(false)} title="Switch Provider" size="md">
+        <ModalHeader onClose={() => setShowSwitchModal(false)}>
+          <span className="flex items-center gap-2"><span>⚡</span> Switch Provider</span>
+        </ModalHeader>
+        <ModalBody>
+          <div className="mb-4 p-3 bg-primary/5 rounded-lg">
+            <div className="text-sm text-primary"><strong>Current:</strong> {activeProvider?.current_provider === 'kie' ? 'Kie.ai' : 'Anthropic Direct'}</div>
+            <div className="text-sm text-primary"><strong>Target:</strong> {targetProvider === 'kie' ? 'Kie.ai' : 'Anthropic Direct'}</div>
           </div>
-        </div>
-      )}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-foreground mb-1">Reason for switch</label>
+            <input type="text" value={switchReason} onChange={(e) => setSwitchReason(e.target.value)} placeholder="e.g., Cost optimization, performance testing..." className="w-full border rounded-lg p-2 text-sm bg-input text-foreground" />
+          </div>
+          <div className="mb-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={gracefulSwitch} onChange={(e) => setGracefulSwitch(e.target.checked)} className="rounded" />
+              <div><div className="text-sm font-medium">Graceful switch</div><div className="text-xs text-muted-foreground">Wait for pending requests to complete (recommended)</div></div>
+            </label>
+          </div>
+          {switchResult && (
+            <div className={`p-3 rounded-lg ${switchResult.success ? 'bg-success/5 border border-success/20' : 'bg-destructive/5 border border-destructive/20'}`}>
+              <div className="font-medium text-sm">{switchResult.success ? 'Switch successful!' : 'Switch failed'}</div>
+              <div className="text-xs mt-1">{switchResult.message}</div>
+            </div>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <button onClick={() => setShowSwitchModal(false)} disabled={isSwitching} className="px-4 py-2 text-foreground hover:bg-muted rounded-lg">Cancel</button>
+          <button onClick={hotSwapProvider} disabled={isSwitching} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
+            {isSwitching && <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>}
+            {isSwitching ? 'Switching...' : 'Switch Provider'}
+          </button>
+        </ModalFooter>
+      </Modal>
 
       {/* Stats Grid */}
       {stats && (

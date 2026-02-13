@@ -3,11 +3,13 @@
  * Feature #46: Extracted from TestRunResultPage.tsx for modularity
  * Feature #1954: Batch failure analysis with common pattern detection
  * Feature #127: Mobile responsive design - p-4 backdrop, max-h-[90vh] overflow, responsive padding
+ * Feature #691: Migrated to shared Modal component
  */
 
 import React, { useState, useCallback } from 'react';
 import { TestRun, ResultSummary } from './types';
 import { logger } from '../../utils/logger';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 
 export interface BatchAnalysisModalProps {
  isOpen: boolean;
@@ -70,7 +72,7 @@ export default function BatchAnalysisModal({
  });
 
  try {
- const response = await fetch('https://qa.pixelcraftedmedia.com/api/v1/mcp-tools/chat', {
+ const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/mcp-tools/chat`, {
  method: 'POST',
  headers: {
  'Content-Type': 'application/json',
@@ -123,44 +125,27 @@ Please identify:
  }
  }, [isOpen, run, batchAnalysisResult, batchAnalysisLoading, handleBatchAnalysis]);
 
- if (!isOpen || !run) return null;
+ if (!run) return null;
 
  const failedTests = run.results.filter(r => r.status === 'failed' || r.status === 'error');
 
  return (
- <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
- <div
- role="dialog"
- aria-modal="true"
- aria-labelledby="batch-analysis-title"
- className="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
- >
- <div className="p-4 border-b border-border bg-gradient-to-r from-accent/10 to-accent/10">
- <div className="flex items-center justify-between">
+ <Modal isOpen={isOpen} onClose={onClose} title="Batch Failure Analysis" size="lg">
+ <ModalHeader onClose={onClose}>
  <div className="flex items-center gap-3">
  <div className="h-10 w-10 rounded-full bg-gradient-to-r from-accent to-accent/80 flex items-center justify-center" aria-hidden="true">
  <span className="text-white text-lg">🤖</span>
  </div>
  <div>
- <h3 id="batch-analysis-title" className="font-semibold text-foreground">Batch Failure Analysis</h3>
- <p className="text-sm text-muted-foreground">
+ <span className="font-semibold text-foreground">Batch Failure Analysis</span>
+ <p className="text-sm text-muted-foreground font-normal">
  Analyzing {resultSummary.failed} failed tests for common patterns
  </p>
  </div>
  </div>
- <button
- onClick={onClose}
- aria-label="Close dialog"
- className="p-2 rounded-full hover:bg-muted transition-colors"
- >
- <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
- </svg>
- </button>
- </div>
- </div>
+ </ModalHeader>
 
- <div className="p-4 overflow-y-auto max-h-[60vh]">
+ <ModalBody>
  {/* Failed Tests Summary */}
  <div className="mb-4 p-3 bg-destructive/5 rounded-lg border border-destructive/20">
  <div className="text-sm font-medium text-destructive mb-2">Failed Tests:</div>
@@ -214,17 +199,16 @@ Please identify:
  </button>
  </div>
  )}
- </div>
+ </ModalBody>
 
- <div className="p-4 border-t border-border bg-muted/30 flex justify-end">
+ <ModalFooter>
  <button
  onClick={onClose}
  className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
  >
  Close
  </button>
- </div>
- </div>
- </div>
+ </ModalFooter>
+ </Modal>
  );
 }

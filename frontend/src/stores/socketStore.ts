@@ -66,11 +66,12 @@ const MAX_RECONNECTION_EVENTS = 50; // Keep last 50 events
 
 // Get the WebSocket server URL
 function getSocketUrl(): string {
-  // In development, use localhost; in production, use the production URL
+  // In development, use localhost; in production, use VITE_SOCKET_URL env var
   if (import.meta.env.DEV) {
     return 'http://localhost:3001';
   }
-  return 'https://qa.pixelcraftedmedia.com';
+  // Use environment variable for production/staging deployments
+  return import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_BASE_URL || '';
 }
 
 // Feature #218: Get authentication token from Zustand auth store

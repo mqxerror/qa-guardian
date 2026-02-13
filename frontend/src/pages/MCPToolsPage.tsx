@@ -37,7 +37,7 @@ export function MCPToolsPage() {
  useEffect(() => {
  const fetchTools = async () => {
  try {
- const response = await fetch('https://qa.pixelcraftedmedia.com/mcp/message', {
+ const response = await fetch(`${import.meta.env.VITE_MCP_URL || ''}/mcp/message`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify({

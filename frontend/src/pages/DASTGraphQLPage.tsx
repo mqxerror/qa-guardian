@@ -7,7 +7,7 @@ import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://qa.pixelcraftedmedia.com';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 // GraphQL scanning interfaces
 interface GraphQLOperation {

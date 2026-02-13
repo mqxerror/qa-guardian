@@ -306,7 +306,7 @@ export function ReportPage() {
     const fetchReport = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`https://qa.pixelcraftedmedia.com/api/v1/reports/${reportId}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/reports/${reportId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

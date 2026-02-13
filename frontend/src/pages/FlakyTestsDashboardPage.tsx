@@ -419,7 +419,7 @@ export function FlakyTestsDashboardPage() {
  };
 
  try {
- const response = await fetch('https://qa.pixelcraftedmedia.com/api/v1/mcp-tools/chat', {
+ const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/mcp-tools/chat`, {
  method: 'POST',
  headers: {
  'Content-Type': 'application/json',

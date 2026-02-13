@@ -66,7 +66,7 @@ export function useTestPageUtilities({
     setIsDownloadingArtifacts(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || 'https://qa.pixelcraftedmedia.com'}/api/v1/runs/${runId}/artifacts/download`,
+        `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/runs/${runId}/artifacts/download`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
