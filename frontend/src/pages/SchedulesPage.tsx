@@ -23,6 +23,7 @@ import { Clock } from 'lucide-react';
 import { PageHeader } from '../components/ui';
 import { Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from '../stores/toastStore';
 
 import type { AIScheduleRecommendation } from '@/types/tests';
 
@@ -82,8 +83,17 @@ export function SchedulesPage() {
  const canCreateSchedule = user?.role !== 'viewer';
 
  // Toggle schedule enabled/disabled using React Query mutation
+ // Feature #779: Added toast notification on toggle success
  const handleToggleSchedule = (scheduleId: string, currentEnabled: boolean) => {
- toggleScheduleMutation.mutate({ id: scheduleId, enabled: !currentEnabled });
+ const newEnabled = !currentEnabled;
+ toggleScheduleMutation.mutate({ id: scheduleId, enabled: newEnabled }, {
+   onSuccess: () => {
+     toast.success(newEnabled ? 'Schedule enabled successfully' : 'Schedule paused successfully');
+   },
+   onError: () => {
+     toast.error('Failed to update schedule');
+   },
+ });
  };
 
  // Feature #1256: Load AI Schedule Recommendations
