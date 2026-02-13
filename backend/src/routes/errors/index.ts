@@ -13,6 +13,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { pool } from '../../services/database.js';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
 
+import { sendError } from '../../utils/errors.js';
 // Feature #653: Payload size limits for error reporting endpoint
 const MAX_PAYLOAD_SIZE_BYTES = 10 * 1024; // 10KB max payload
 const MAX_METADATA_SIZE_BYTES = 2 * 1024; // 2KB max for metadata field
@@ -100,15 +101,13 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
     bodyLimit: MAX_PAYLOAD_SIZE_BYTES,
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     if (!pool) {
-      return reply.status(503).send({ error: 'Database not available' });
+      return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Database not available');
     }
 
     // Feature #653: Double-check Content-Length header as backup validation
     const contentLength = parseInt(request.headers['content-length'] || '0', 10);
     if (contentLength > MAX_PAYLOAD_SIZE_BYTES) {
-      return reply.status(413).send({
-        error: `Payload too large: ${contentLength} bytes exceeds limit of ${MAX_PAYLOAD_SIZE_BYTES} bytes (10KB)`,
-      });
+      return sendError(reply, 413, 'PAYLOAD_TOO_LARGE', `Payload too large: ${contentLength} bytes exceeds limit of ${MAX_PAYLOAD_SIZE_BYTES} bytes (10KB)`);
     }
 
     const body = request.body as {
@@ -125,18 +124,14 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
 
     // Validate required fields
     if (!body.message || !body.url) {
-      return reply.status(400).send({
-        error: 'Missing required fields: message and url are required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Missing required fields: message and url are required');
     }
 
     // Feature #653: Validate metadata size to prevent oversized JSON
     if (body.metadata) {
       const metadataSize = JSON.stringify(body.metadata).length;
       if (metadataSize > MAX_METADATA_SIZE_BYTES) {
-        return reply.status(400).send({
-          error: `Metadata too large: ${metadataSize} bytes exceeds limit of ${MAX_METADATA_SIZE_BYTES} bytes`,
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', `Metadata too large: ${metadataSize} bytes exceeds limit of ${MAX_METADATA_SIZE_BYTES} bytes`);
       }
     }
 
@@ -210,9 +205,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
       });
     } catch (error) {
       request.log.error({ error }, 'Failed to store frontend error');
-      return reply.status(500).send({
-        error: 'Failed to store error report',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to store error report');
     }
   });
 
@@ -225,14 +218,14 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
     { preHandler: [authenticate] },
     async (request: FastifyRequest, reply: FastifyReply) => {
       if (!pool) {
-        return reply.status(503).send({ error: 'Database not available' });
+        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Database not available');
       }
 
       const user = request.user as JwtPayload;
       const organizationId = user?.organization_id;
 
       if (!organizationId) {
-        return reply.status(403).send({ error: 'Organization context required' });
+        return sendError(reply, 403, 'FORBIDDEN', 'Organization context required');
       }
 
       const query = request.query as {
@@ -312,9 +305,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
         });
       } catch (error) {
         request.log.error({ error }, 'Failed to fetch frontend errors');
-        return reply.status(500).send({
-          error: 'Failed to fetch errors',
-        });
+        return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to fetch errors');
       }
     }
   );
@@ -328,7 +319,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
     { preHandler: [authenticate] },
     async (request: FastifyRequest, reply: FastifyReply) => {
       if (!pool) {
-        return reply.status(503).send({ error: 'Database not available' });
+        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Database not available');
       }
 
       const params = request.params as { id: string };
@@ -337,7 +328,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
       const organizationId = user?.organization_id;
 
       if (!organizationId) {
-        return reply.status(403).send({ error: 'Organization context required' });
+        return sendError(reply, 403, 'FORBIDDEN', 'Organization context required');
       }
 
       try {
@@ -350,7 +341,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
         );
 
         if (result.rows.length === 0) {
-          return reply.status(404).send({ error: 'Error not found' });
+          return sendError(reply, 404, 'NOT_FOUND', 'Error not found');
         }
 
         return reply.send({
@@ -360,9 +351,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
         });
       } catch (error) {
         request.log.error({ error }, 'Failed to resolve frontend error');
-        return reply.status(500).send({
-          error: 'Failed to resolve error',
-        });
+        return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to resolve error');
       }
     }
   );
@@ -376,7 +365,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
     { preHandler: [authenticate] },
     async (request: FastifyRequest, reply: FastifyReply) => {
       if (!pool) {
-        return reply.status(503).send({ error: 'Database not available' });
+        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Database not available');
       }
 
       const params = request.params as { id: string };
@@ -384,7 +373,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
       const organizationId = user?.organization_id;
 
       if (!organizationId) {
-        return reply.status(403).send({ error: 'Organization context required' });
+        return sendError(reply, 403, 'FORBIDDEN', 'Organization context required');
       }
 
       try {
@@ -394,15 +383,13 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
         );
 
         if (result.rowCount === 0) {
-          return reply.status(404).send({ error: 'Error not found' });
+          return sendError(reply, 404, 'NOT_FOUND', 'Error not found');
         }
 
         return reply.status(204).send();
       } catch (error) {
         request.log.error({ error }, 'Failed to delete frontend error');
-        return reply.status(500).send({
-          error: 'Failed to delete error',
-        });
+        return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to delete error');
       }
     }
   );
@@ -416,14 +403,14 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
     { preHandler: [authenticate] },
     async (request: FastifyRequest, reply: FastifyReply) => {
       if (!pool) {
-        return reply.status(503).send({ error: 'Database not available' });
+        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Database not available');
       }
 
       const user = request.user as JwtPayload;
       const organizationId = user?.organization_id;
 
       if (!organizationId) {
-        return reply.status(403).send({ error: 'Organization context required' });
+        return sendError(reply, 403, 'FORBIDDEN', 'Organization context required');
       }
 
       try {
@@ -486,9 +473,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
         });
       } catch (error) {
         request.log.error({ error }, 'Failed to fetch error stats');
-        return reply.status(500).send({
-          error: 'Failed to fetch error stats',
-        });
+        return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to fetch error stats');
       }
     }
   );

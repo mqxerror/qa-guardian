@@ -22,6 +22,7 @@ import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../serv
 import { getTestSuite } from '../test-suites.js';
 import { getProject as dbGetProject } from '../projects/stores.js';
 
+import { sendError } from '../../utils/errors.js';
 /**
  * Get a test run with fallback: check in-memory Map first (for in-flight runs), then DB.
  */
@@ -63,10 +64,7 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
 
     // Verify user has access to this organization
     if (orgId !== userOrgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
     }
 
     const retentionDays = artifactRetentionSettings.get(orgId) || 30;
@@ -90,26 +88,17 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
 
       // Verify user has access to this organization
       if (orgId !== userOrgId) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this organization',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
       }
 
       // Only owners and admins can change retention policy
       if (!['owner', 'admin'].includes(user.role)) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'Only owners and admins can change artifact retention policy',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'Only owners and admins can change artifact retention policy');
       }
 
       // Validate retention_days
       if (typeof retention_days !== 'number' || retention_days < 1 || retention_days > 365) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Retention days must be between 1 and 365',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Retention days must be between 1 and 365');
       }
 
       // Update the setting
@@ -133,10 +122,7 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
 
     // Verify user has access to this organization
     if (orgId !== userOrgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
     }
 
     const colors = getDiffColors(orgId);
@@ -178,18 +164,12 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
 
       // Verify user has access to this organization
       if (orgId !== userOrgId) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this organization',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
       }
 
       // Only owners and admins can change diff colors
       if (!['owner', 'admin'].includes(user.role)) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'Only owners and admins can change visual diff settings',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'Only owners and admins can change visual diff settings');
       }
 
       // Handle preset selection
@@ -206,10 +186,7 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
       if (preset) {
         const presetColors = presets[preset.toLowerCase()];
         if (!presetColors) {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: `Invalid preset. Available presets: ${Object.keys(presets).join(', ')}`,
-          });
+          return sendError(reply, 400, 'BAD_REQUEST', `Invalid preset. Available presets: ${Object.keys(presets).join(', ')}`);
         }
         newColors = presetColors;
       } else {
@@ -222,30 +199,21 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
 
         if (diff_color) {
           if (!validateRgb(diff_color)) {
-            return reply.status(400).send({
-              error: 'Bad Request',
-              message: 'diff_color must be an array of 3 numbers [R, G, B] between 0-255',
-            });
+            return sendError(reply, 400, 'BAD_REQUEST', 'diff_color must be an array of 3 numbers [R, G, B] between 0-255');
           }
           newColors.diffColor = diff_color;
         }
 
         if (diff_color_alt) {
           if (!validateRgb(diff_color_alt)) {
-            return reply.status(400).send({
-              error: 'Bad Request',
-              message: 'diff_color_alt must be an array of 3 numbers [R, G, B] between 0-255',
-            });
+            return sendError(reply, 400, 'BAD_REQUEST', 'diff_color_alt must be an array of 3 numbers [R, G, B] between 0-255');
           }
           newColors.diffColorAlt = diff_color_alt;
         }
       }
 
       if (Object.keys(newColors).length === 0) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Provide diff_color, diff_color_alt, or preset',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Provide diff_color, diff_color_alt, or preset');
       }
 
       const updatedColors = setDiffColors(orgId, newColors);
@@ -279,18 +247,12 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
 
     // Verify user has access to this organization
     if (orgId !== userOrgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
     }
 
     // Only owners and admins can view cleanup preview
     if (!['owner', 'admin'].includes(user.role)) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Only owners and admins can view artifact cleanup preview',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Only owners and admins can view artifact cleanup preview');
     }
 
     const retentionDays = artifactRetentionSettings.get(orgId) || 30;
@@ -351,18 +313,12 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
 
     // Verify user has access to this organization
     if (orgId !== userOrgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
     }
 
     // Only owners and admins can execute cleanup
     if (!['owner', 'admin'].includes(user.role)) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Only owners and admins can execute artifact cleanup',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Only owners and admins can execute artifact cleanup');
     }
 
     const retentionDays = artifactRetentionSettings.get(orgId) || 30;
@@ -433,10 +389,7 @@ export async function organizationSettingsRoutes(app: FastifyInstance): Promise<
 
     // Verify user has access to this organization
     if (orgId !== userOrgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
     }
 
     // Calculate storage used by trace files

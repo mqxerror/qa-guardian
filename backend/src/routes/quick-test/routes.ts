@@ -55,6 +55,7 @@ import { createLogger } from '../../services/logger.js';
 // Feature #685: Cron expression validation
 import { validateCronExpression } from '../../utils/cron-parser.js';
 
+import { sendError } from '../../utils/errors.js';
 const log = createLogger('quick-test-routes');
 
 // Request body type
@@ -190,10 +191,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
 
       // Validate URL
       if (!url) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'URL is required',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'URL is required');
       }
 
       // Feature #433: SSRF protection - validate URL before any HTTP request
@@ -205,10 +203,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       });
 
       if (!ssrfValidation.safe) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: ssrfValidation.error || 'URL is not allowed for security reasons',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', ssrfValidation.error || 'URL is not allowed for security reasons');
       }
 
       // Generate run ID
@@ -313,10 +308,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
 
       // Validate URLs
       if (!urlA || !urlB) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Both urlA and urlB are required',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Both urlA and urlB are required');
       }
 
       // Feature #433: SSRF protection for both URLs
@@ -327,10 +319,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
         allowLocalhost: !isProduction,
       });
       if (!ssrfA.safe) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: `URL A is not allowed: ${ssrfA.error}`,
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', `URL A is not allowed: ${ssrfA.error}`);
       }
 
       const ssrfB = validateURLForSSRF(urlB, {
@@ -338,10 +327,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
         allowLocalhost: !isProduction,
       });
       if (!ssrfB.safe) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: `URL B is not allowed: ${ssrfB.error}`,
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', `URL B is not allowed: ${ssrfB.error}`);
       }
 
       // Generate compare ID and individual run IDs
@@ -460,10 +446,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       // Feature #670: Look up the actual run UUIDs from database
       const comparisonMapping = await getQuickTestComparison(compareId);
       if (!comparisonMapping) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Comparison not found or has expired',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Comparison not found or has expired');
       }
 
       // Get both results using proper UUIDs
@@ -471,20 +454,14 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       const resultB = await getQuickTestResultAsync(comparisonMapping.runIdB);
 
       if (!resultA && !resultB) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Comparison not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Comparison not found');
       }
 
       // Feature #461: IDOR protection - verify org-scoping for both results
       // Return 404 (not 403) to avoid information disclosure
       if ((resultA?.orgId && resultA.orgId !== orgId) ||
           (resultB?.orgId && resultB.orgId !== orgId)) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Comparison not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Comparison not found');
       }
 
       // Calculate deltas if both are complete
@@ -588,10 +565,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
 
       // Validate URL
       if (!url) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'URL is required',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'URL is required');
       }
 
       // SSRF protection
@@ -602,19 +576,13 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       });
 
       if (!ssrfValidation.safe) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: ssrfValidation.error || 'URL is not allowed for security reasons',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', ssrfValidation.error || 'URL is not allowed for security reasons');
       }
 
       // Feature #685: Validate cron expression before creating schedule
       const cronValidation = validateCronExpression(cron_expression);
       if (!cronValidation.valid) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: `Invalid cron expression: ${cronValidation.error}`,
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', `Invalid cron expression: ${cronValidation.error}`);
       }
 
       // Feature #671: Persist schedule to database
@@ -629,10 +597,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       });
 
       if (!schedule) {
-        return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to create schedule',
-        });
+        return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to create schedule');
       }
 
       // Log the schedule creation
@@ -749,10 +714,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
 
       const schedule = await getQuickTestScheduleById(scheduleId);
       if (!schedule || schedule.organizationId !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Schedule not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Schedule not found');
       }
 
       return reply.send({
@@ -814,20 +776,14 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       // Verify ownership
       const existing = await getQuickTestScheduleById(scheduleId);
       if (!existing || existing.organizationId !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Schedule not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Schedule not found');
       }
 
       // Feature #685: Validate cron expression if being updated
       if (cron_expression) {
         const cronValidation = validateCronExpression(cron_expression);
         if (!cronValidation.valid) {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: `Invalid cron expression: ${cronValidation.error}`,
-          });
+          return sendError(reply, 400, 'BAD_REQUEST', `Invalid cron expression: ${cronValidation.error}`);
         }
       }
 
@@ -840,10 +796,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       });
 
       if (!updated) {
-        return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to update schedule',
-        });
+        return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to update schedule');
       }
 
       logAuditEntry(request, 'update', 'quick_test_schedule', scheduleId, 'Quick test schedule updated', {});
@@ -891,18 +844,12 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       // Verify ownership
       const existing = await getQuickTestScheduleById(scheduleId);
       if (!existing || existing.organizationId !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Schedule not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Schedule not found');
       }
 
       const deleted = await deleteQuickTestSchedule(scheduleId);
       if (!deleted) {
-        return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to delete schedule',
-        });
+        return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to delete schedule');
       }
 
       logAuditEntry(request, 'delete', 'quick_test_schedule', scheduleId, 'Quick test schedule deleted', {});
@@ -1093,19 +1040,13 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
       // Feature #465: Use async lookup that checks DB if not in memory
       const result = await getQuickTestResultAsync(runId);
       if (!result) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Quick test run not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Quick test run not found');
       }
 
       // Feature #461: IDOR protection - verify org-scoping
       // Return 404 (not 403) to avoid information disclosure about other orgs' test runs
       if (result.orgId && result.orgId !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Quick test run not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Quick test run not found');
       }
 
       // Feature #535: Regenerate fresh signed URLs for screenshots
@@ -1182,10 +1123,7 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
 
       // Validate type
       if (type !== 'desktop' && type !== 'mobile') {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Screenshot type must be "desktop" or "mobile"',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Screenshot type must be "desktop" or "mobile"');
       }
 
       // Feature #478: Determine authenticated orgId using soft auth
@@ -1210,45 +1148,30 @@ const quickTestRoutes: FastifyPluginAsync = async (app) => {
 
       // If neither authentication method succeeded, return 404 (avoid leaking resource existence)
       if (!authenticatedOrgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Quick test run not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Quick test run not found');
       }
 
       // Feature #478: Get the run to verify org-scoping
       const result = await getQuickTestResultAsync(runId);
       if (!result) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Quick test run not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Quick test run not found');
       }
 
       // Feature #478: IDOR protection - verify org-scoping
       // Return 404 (not 403) to avoid information disclosure
       if (result.orgId && result.orgId !== authenticatedOrgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Quick test run not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Quick test run not found');
       }
 
       // Check if screenshot exists
       if (!screenshotExists(runId, type as ScreenshotType)) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: `Screenshot not found for run ${runId}`,
-        });
+        return sendError(reply, 404, 'NOT_FOUND', `Screenshot not found for run ${runId}`);
       }
 
       // Read and return the screenshot
       const imageBuffer = await readScreenshot(runId, type as ScreenshotType);
       if (!imageBuffer) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Screenshot could not be read',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Screenshot could not be read');
       }
 
       return reply

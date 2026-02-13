@@ -22,6 +22,7 @@ import { createLogger } from '../../services/logger.js';
 
 const logger = createLogger('secret-patterns');
 import { SecretPattern, SASTSeverity } from './types.js';
+import { sendError } from '../../utils/errors.js';
 import {
   getSecretPatterns,
   addSecretPattern,
@@ -53,11 +54,11 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
       // Check project exists and user has access
       const project = await getProject(projectId);
       if (!project) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       if (project.organization_id !== user.organization_id) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       const patterns = await getSecretPatterns(projectId);
@@ -89,38 +90,29 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
 
       // Check permissions
       if (user.role === 'viewer') {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'Viewers cannot add secret patterns',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot add secret patterns');
       }
 
       // Check project exists and user has access
       const project = await getProject(projectId);
       if (!project) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       if (project.organization_id !== user.organization_id) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       // Validate required fields
       if (!name || !pattern) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Name and pattern are required',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Name and pattern are required');
       }
 
       // Validate regex pattern
       try {
         new RegExp(pattern);
       } catch (error) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Invalid regex pattern',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid regex pattern');
       }
 
       // Create new pattern
@@ -182,20 +174,17 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
 
       // Check permissions
       if (user.role === 'viewer') {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'Viewers cannot update secret patterns',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot update secret patterns');
       }
 
       // Check project exists and user has access
       const project = await getProject(projectId);
       if (!project) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       if (project.organization_id !== user.organization_id) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       // Validate pattern if being updated
@@ -203,20 +192,14 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
         try {
           new RegExp(updates.pattern);
         } catch (error) {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: 'Invalid regex pattern',
-          });
+          return sendError(reply, 400, 'BAD_REQUEST', 'Invalid regex pattern');
         }
       }
 
       const updatedPattern = await updateSecretPattern(projectId, patternId, updates);
 
       if (!updatedPattern) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Secret pattern not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Secret pattern not found');
       }
 
       // Log audit entry
@@ -243,20 +226,17 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
 
       // Check permissions
       if (user.role === 'viewer') {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'Viewers cannot delete secret patterns',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot delete secret patterns');
       }
 
       // Check project exists and user has access
       const project = await getProject(projectId);
       if (!project) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       if (project.organization_id !== user.organization_id) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       // Get pattern name for audit log before deleting
@@ -266,10 +246,7 @@ export async function secretPatternsRoutes(app: FastifyInstance): Promise<void> 
       const success = await removeSecretPattern(projectId, patternId);
 
       if (!success) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Secret pattern not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Secret pattern not found');
       }
 
       // Log audit entry

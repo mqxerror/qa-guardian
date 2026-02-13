@@ -13,6 +13,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { aiService } from '../../services/ai-service.js';
 
+import { sendError } from '../../utils/errors.js';
 // ============================================================================
 // Type Definitions
 // ============================================================================
@@ -110,10 +111,7 @@ export async function aiBestPracticesRoutes(app: FastifyInstance): Promise<void>
       return response;
     } catch (error) {
       app.log.error('Failed to generate best practices analysis: ' + (error instanceof Error ? error.message : String(error)));
-      return reply.status(500).send({
-        error: 'Internal Server Error',
-        message: 'Failed to generate best practices analysis',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to generate best practices analysis');
     }
   });
 }

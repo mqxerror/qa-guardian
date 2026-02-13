@@ -28,6 +28,7 @@ const logger = createLogger('artifact-routes');
 // TestRunResult available from execution.js if needed
 import { AddressInfo } from 'net';
 
+import { sendError } from '../../utils/errors.js';
 // Feature #414: Type-safe server port extraction
 interface FastifyServerWithAddress {
   server?: {
@@ -56,20 +57,14 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     // Security: Ensure filename doesn't contain path traversal
     if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Invalid file name',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Invalid file name');
     }
 
     const tracePath = path.join(TRACES_DIR, fileName);
 
     // Check if file exists
     if (!fs.existsSync(tracePath)) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Trace file not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Trace file not found');
     }
 
     // Extract runId from filename to verify organization ownership
@@ -79,10 +74,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
       const runId: string = parts[1];
       const run = await getTestRunWithFallback(runId);
       if (run && run.organization_id !== orgId) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this trace file',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this trace file');
       }
     }
 
@@ -102,20 +94,14 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     // Security: Ensure filename doesn't contain path traversal
     if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Invalid file name',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Invalid file name');
     }
 
     const videoPath = path.join(VIDEOS_DIR, fileName);
 
     // Check if file exists
     if (!fs.existsSync(videoPath)) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Video file not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Video file not found');
     }
 
     // Extract runId from filename to verify organization ownership
@@ -125,10 +111,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
       const runId: string = parts[1];
       const run = await getTestRunWithFallback(runId);
       if (run && run.organization_id !== orgId) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this video file',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this video file');
       }
     }
 
@@ -171,29 +154,20 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     // Security: Ensure filename doesn't contain path traversal
     if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Invalid file name',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Invalid file name');
     }
 
     // Verify run exists and belongs to user's organization
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const videoPath = path.join(VIDEOS_DIR, fileName);
 
     // Check if file exists
     if (!fs.existsSync(videoPath)) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Video file not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Video file not found');
     }
 
     // Get file stats for Content-Length
@@ -235,29 +209,20 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     // Security: Ensure filename doesn't contain path traversal
     if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Invalid file name',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Invalid file name');
     }
 
     // Verify run exists and belongs to user's organization
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const tracePath = path.join(TRACES_DIR, fileName);
 
     // Check if file exists
     if (!fs.existsSync(tracePath)) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Trace file not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Trace file not found');
     }
 
     // Get file stats for Content-Length
@@ -283,10 +248,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     // Verify run exists and belongs to user's organization
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Check if run has results
@@ -447,10 +409,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     // Verify run exists and belongs to user's organization
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Check if run has results
@@ -597,18 +556,12 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const result = run.results?.find(r => r.test_id === testId);
     if (!result || !result.screenshot_base64) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Screenshot not found for this test result',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Screenshot not found for this test result');
     }
 
     const imageBuffer = Buffer.from(result.screenshot_base64, 'base64');
@@ -626,18 +579,12 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const result = run.results?.find(r => r.test_id === testId);
     if (!result || !result.baseline_screenshot_base64) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Baseline screenshot not found for this test result',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Baseline screenshot not found for this test result');
     }
 
     const imageBuffer = Buffer.from(result.baseline_screenshot_base64, 'base64');
@@ -655,18 +602,12 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const result = run.results?.find(r => r.test_id === testId);
     if (!result || !result.diff_image_base64) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Diff image not found for this test result',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Diff image not found for this test result');
     }
 
     const imageBuffer = Buffer.from(result.diff_image_base64, 'base64');
@@ -684,18 +625,12 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const result = run.results?.find(r => r.test_id === testId);
     if (!result || !result.screenshot_base64) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Screenshot not found for this test result',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Screenshot not found for this test result');
     }
 
     return {
@@ -722,18 +657,12 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const result = run.results?.find(r => r.test_id === testId);
     if (!result || !result.baseline_screenshot_base64) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Baseline screenshot not found for this test result',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Baseline screenshot not found for this test result');
     }
 
     return {
@@ -761,18 +690,12 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const result = run.results?.find(r => r.test_id === testId);
     if (!result || !result.diff_image_base64) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Diff image not found for this test result',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Diff image not found for this test result');
     }
 
     return {
@@ -801,26 +724,16 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test result not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     if (!result.video_file) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No video recording available for this test result.',
-        video_available: false,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No video recording available for this test result.', { video_available: false });
     }
 
     const videoPath = path.join(VIDEOS_DIR, result.video_file);
@@ -876,26 +789,16 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test result not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     if (!result.trace_file) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No trace file available for this test result.',
-        trace_available: false,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No trace file available for this test result.', { trace_available: false });
     }
 
     const tracePath = path.join(TRACES_DIR, result.trace_file);
@@ -952,17 +855,11 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     if (!run.results || run.results.length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'No test results available for this run',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'No test results available for this run');
     }
 
     const filteredResults = test_id
@@ -970,10 +867,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
       : run.results;
 
     if (filteredResults.length === 0) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: test_id ? `No results found for test ID: ${test_id}` : 'No test results available',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', test_id ? `No results found for test ID: ${test_id}` : 'No test results available');
     }
 
     // Use DownloadArtifactInfo from types module
@@ -1026,16 +920,12 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
     }
 
     if (artifacts.length === 0) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No artifacts found matching the specified criteria',
-        filters: {
+      return sendError(reply, 404, 'NOT_FOUND', 'No artifacts found matching the specified criteria', { filters: {
           test_id: test_id || null,
           include_screenshots: includeScreenshots,
           include_videos: includeVideos,
           include_traces: includeTraces,
-        },
-      });
+        } });
     }
 
     if (returnMetadataOnly) {
@@ -1131,17 +1021,11 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     if (!run.results || run.results.length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'No test results available for this run',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'No test results available for this run');
     }
 
     const filteredResults = test_id
@@ -1149,10 +1033,7 @@ export async function artifactRoutes(app: FastifyInstance): Promise<void> {
       : run.results;
 
     if (filteredResults.length === 0) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: test_id ? `No results found for test ID: ${test_id}` : 'No test results available',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', test_id ? `No results found for test ID: ${test_id}` : 'No test results available');
     }
 
     const typesToDelete = artifact_types && artifact_types.length > 0

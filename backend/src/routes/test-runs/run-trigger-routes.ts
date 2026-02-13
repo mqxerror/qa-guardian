@@ -20,6 +20,7 @@ import { getCache, CacheKeys } from '../../services/cache.js';
 import { enqueueOrExecute } from '../../services/execution-queue.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('route:test-runs:run-trigger');
 
 // Type definitions for route params/body
@@ -75,19 +76,13 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
       // Verify suite exists
       const suite = await getTestSuite(suiteId);
       if (!suite || suite.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Test suite not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
       }
 
       // Check if there are tests in the suite
       const suiteTests = await listTests(suiteId);
       if (suiteTests.length === 0) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'No tests found in this suite',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'No tests found in this suite');
       }
 
       // Use request browser, suite browser, or default to chromium
@@ -159,10 +154,7 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
       // Verify test exists
       const test = await getTest(testId);
       if (!test || test.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Test not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
       }
 
       // Get suite to determine default browser
@@ -236,29 +228,20 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
       const orgId = getOrganizationId(request);
 
       if (!suite_id || !test_ids || !Array.isArray(test_ids) || test_ids.length === 0) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'suite_id and non-empty test_ids array are required',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'suite_id and non-empty test_ids array are required');
       }
 
       // Verify suite exists and belongs to org
       const suite = await getTestSuite(suite_id);
       if (!suite || suite.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Test suite not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
       }
 
       // Verify at least some tests exist in the suite
       const suiteTests = await listTests(suite_id);
       const validTestIds = test_ids.filter(tid => suiteTests.some(t => t.id === tid));
       if (validTestIds.length === 0) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'None of the provided test_ids belong to the specified suite',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'None of the provided test_ids belong to the specified suite');
       }
 
       const browserToUse: BrowserType = requestBrowser || suite.browser || 'chromium';

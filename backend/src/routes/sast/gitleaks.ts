@@ -32,6 +32,7 @@ import { getSecretPatterns } from './stores.js';
 import * as gitleaksRepo from '../../services/repositories/gitleaks.js';
 import { generateId } from '../../utils/index.js';
 
+import { sendError } from '../../utils/errors.js';
 const execFileAsync = promisify(execFile);
 
 // ============================================================
@@ -775,17 +776,11 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
 
       const project = await getProject(projectId);
       if (!project) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Project not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       if (project.organization_id !== user.organization_id) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this project',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
       }
 
       const config = await gitleaksRepo.getGitleaksConfigOrDefault(projectId);
@@ -805,17 +800,11 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
 
       const project = await getProject(projectId);
       if (!project) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Project not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       if (project.organization_id !== user.organization_id) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this project',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
       }
 
       const existingConfig = await gitleaksRepo.getGitleaksConfigOrDefault(projectId);
@@ -850,25 +839,16 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
 
       const project = await getProject(projectId);
       if (!project) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Project not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       if (project.organization_id !== user.organization_id) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this project',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
       }
 
       const config = await gitleaksRepo.getGitleaksConfig(projectId);
       if (!config?.enabled) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Gitleaks scanning is not enabled for this project. Enable it in settings first.',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Gitleaks scanning is not enabled for this project. Enable it in settings first.');
       }
 
       // Feature #1511: Run actual Gitleaks CLI scan
@@ -977,17 +957,11 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
 
       const project = await getProject(projectId);
       if (!project) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Project not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       if (project.organization_id !== user.organization_id) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this project',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
       }
 
       const scans = await gitleaksRepo.getGitleaksScans(projectId, limit);
@@ -1009,26 +983,17 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
 
       const project = await getProject(projectId);
       if (!project) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Project not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       if (project.organization_id !== user.organization_id) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this project',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
       }
 
       const scan = await gitleaksRepo.getGitleaksScan(projectId, scanId);
 
       if (!scan) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Scan not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Scan not found');
       }
 
       return { scan };
@@ -1056,17 +1021,11 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
 
       const project = await getProject(projectId);
       if (!project) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Project not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       if (project.organization_id !== user.organization_id) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this project',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
       }
 
       // Get custom patterns for the project
@@ -1117,17 +1076,11 @@ export async function gitleaksRoutes(app: FastifyInstance): Promise<void> {
 
       const project = await getProject(projectId);
       if (!project) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Project not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       if (project.organization_id !== user.organization_id) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this project',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
       }
 
       const customPatterns = await getSecretPatterns(projectId);

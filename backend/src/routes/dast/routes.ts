@@ -42,6 +42,7 @@ import {
   performGraphQLIntrospection,
 } from './graphql.js';
 import { createLogger } from '../../services/logger.js';
+import { sendError } from '../../utils/errors.js';
 // Feature #715: Zod validation middleware and schemas
 import {
   validateParams,
@@ -94,7 +95,7 @@ export async function dastRoutes(app: FastifyInstance) {
 
     const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const config = await getDASTConfig(projectId);
@@ -115,7 +116,7 @@ export async function dastRoutes(app: FastifyInstance) {
 
     const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const updatedConfig = await updateDASTConfig(projectId, request.body);
@@ -147,7 +148,7 @@ export async function dastRoutes(app: FastifyInstance) {
 
     const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const scans = await getDastScansByProject(projectId);
@@ -177,7 +178,7 @@ export async function dastRoutes(app: FastifyInstance) {
 
     const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const config = await getDASTConfig(projectId);
@@ -185,19 +186,13 @@ export async function dastRoutes(app: FastifyInstance) {
     const scanProfile = request.body.scanProfile || config.scanProfile;
 
     if (!targetUrl) {
-      return reply.status(400).send({
-        error: 'Target URL required',
-        message: 'Please configure a target URL in DAST settings or provide one in the request.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please configure a target URL in DAST settings or provide one in the request.');
     }
 
     try {
       new URL(targetUrl);
     } catch {
-      return reply.status(400).send({
-        error: 'Invalid URL',
-        message: 'Please provide a valid target URL (e.g., https://example.com)',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please provide a valid target URL (e.g., https://example.com)');
     }
 
     // SSRF protection: prevent scans against internal/private networks
@@ -206,10 +201,7 @@ export async function dastRoutes(app: FastifyInstance) {
       requireHttps: false,
     });
     if (!ssrfValidation.safe) {
-      return reply.status(400).send({
-        error: 'URL blocked by security policy',
-        message: ssrfValidation.error || 'Internal or private network URLs are not allowed for DAST scans.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', ssrfValidation.error || 'Internal or private network URLs are not allowed for DAST scans.');
     }
 
     // Try ZAP first; fallback to lightweight scanner if ZAP is unavailable
@@ -258,14 +250,14 @@ export async function dastRoutes(app: FastifyInstance) {
 
     const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Feature #124: Direct lookup instead of getDastScansByProject + filter
     const scan = await getDastScan(scanId);
 
     if (!scan || scan.projectId !== projectId) {
-      return reply.status(404).send({ error: 'Scan not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Scan not found');
     }
 
     return reply.send({ scan });
@@ -287,14 +279,14 @@ export async function dastRoutes(app: FastifyInstance) {
 
     const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Feature #124: Direct lookup instead of getDastScansByProject + filter
     const scan = await getDastScan(scanId);
 
     if (!scan || scan.projectId !== projectId) {
-      return reply.status(404).send({ error: 'Scan not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Scan not found');
     }
 
     let alerts = [...scan.alerts];
@@ -340,30 +332,24 @@ export async function dastRoutes(app: FastifyInstance) {
 
     const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Feature #124: Direct lookup instead of getDastScansByProject + filter
     const scan = await getDastScan(scanId);
 
     if (!scan || scan.projectId !== projectId) {
-      return reply.status(404).send({ error: 'Scan not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Scan not found');
     }
 
     if (scan.status !== 'completed') {
-      return reply.status(400).send({
-        error: 'Scan not completed',
-        message: 'Reports can only be generated for completed scans.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Reports can only be generated for completed scans.');
     }
 
     const validFormats: ReportFormat[] = ['pdf', 'html', 'json'];
     const reportFormat = format.toLowerCase() as ReportFormat;
     if (!validFormats.includes(reportFormat)) {
-      return reply.status(400).send({
-        error: 'Invalid format',
-        message: `Supported formats: ${validFormats.join(', ')}`,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Supported formats: ${validFormats.join(', ')}`);
     }
 
     const projectName = project.name;
@@ -460,26 +446,23 @@ export async function dastRoutes(app: FastifyInstance) {
 
     const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (!reason || reason.trim().length < 10) {
-      return reply.status(400).send({
-        error: 'Reason required',
-        message: 'Please provide a reason of at least 10 characters.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please provide a reason of at least 10 characters.');
     }
 
     // Feature #124: Direct lookup instead of getDastScansByProject + filter
     const scan = await getDastScan(scanId);
 
     if (!scan || scan.projectId !== projectId) {
-      return reply.status(404).send({ error: 'Scan not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Scan not found');
     }
 
     const alert = scan.alerts.find(a => a.id === alertId);
     if (!alert) {
-      return reply.status(404).send({ error: 'Alert not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Alert not found');
     }
 
     const fp: DASTFalsePositive = {
@@ -533,7 +516,7 @@ export async function dastRoutes(app: FastifyInstance) {
 
     const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const fps = await getDastFalsePositives(projectId);
@@ -557,14 +540,14 @@ export async function dastRoutes(app: FastifyInstance) {
 
     const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const fps = await getDastFalsePositives(projectId);
     const fp = fps.find(f => f.id === falsePositiveId);
 
     if (!fp) {
-      return reply.status(404).send({ error: 'False positive record not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'False positive record not found');
     }
 
     await deleteDastFalsePositive(falsePositiveId);
@@ -658,14 +641,11 @@ export async function dastRoutes(app: FastifyInstance) {
 
     const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (!content || typeof content !== 'string') {
-      return reply.status(400).send({
-        error: 'Invalid OpenAPI specification',
-        message: 'Please provide the OpenAPI specification content as a JSON or YAML string.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please provide the OpenAPI specification content as a JSON or YAML string.');
     }
 
     try {
@@ -706,10 +686,7 @@ export async function dastRoutes(app: FastifyInstance) {
         },
       });
     } catch (error) {
-      return reply.status(400).send({
-        error: 'Invalid OpenAPI specification',
-        message: error instanceof Error ? error.message : 'Failed to parse OpenAPI specification',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', error instanceof Error ? error.message : 'Failed to parse OpenAPI specification');
     }
   });
 
@@ -726,20 +703,17 @@ export async function dastRoutes(app: FastifyInstance) {
 
     const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const config = await getDASTConfig(projectId);
     if (!config.openApiSpecId) {
-      return reply.status(404).send({
-        error: 'No OpenAPI specification found',
-        message: 'Upload an OpenAPI specification to enable API scanning.',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Upload an OpenAPI specification to enable API scanning.');
     }
 
     const spec = await getOpenApiSpec(config.openApiSpecId);
     if (!spec) {
-      return reply.status(404).send({ error: 'OpenAPI specification not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'OpenAPI specification not found');
     }
 
     return reply.send({
@@ -768,12 +742,12 @@ export async function dastRoutes(app: FastifyInstance) {
 
     const project = await getProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const config = await getDASTConfig(projectId);
     if (!config.openApiSpecId) {
-      return reply.status(404).send({ error: 'No OpenAPI specification to delete' });
+      return sendError(reply, 404, 'NOT_FOUND', 'No OpenAPI specification to delete');
     }
 
     const spec = await getOpenApiSpec(config.openApiSpecId);
@@ -818,7 +792,7 @@ export async function dastRoutes(app: FastifyInstance) {
     const config = request.body;
 
     if (!config.endpoint) {
-      return reply.status(400).send({ error: 'GraphQL endpoint URL is required' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'GraphQL endpoint URL is required');
     }
 
     // SSRF protection: prevent scans against internal/private networks
@@ -827,10 +801,7 @@ export async function dastRoutes(app: FastifyInstance) {
       requireHttps: false,
     });
     if (!ssrfCheck.safe) {
-      return reply.status(400).send({
-        error: 'URL blocked by security policy',
-        message: ssrfCheck.error || 'Internal or private network URLs are not allowed for GraphQL scans.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', ssrfCheck.error || 'Internal or private network URLs are not allowed for GraphQL scans.');
     }
 
     const scan = await startGraphQLScan(config);
@@ -863,7 +834,7 @@ export async function dastRoutes(app: FastifyInstance) {
     const scan = await getGraphQLScan(scanId);
 
     if (!scan) {
-      return reply.status(404).send({ error: 'GraphQL scan not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'GraphQL scan not found');
     }
 
     return reply.send({ scan });
@@ -899,7 +870,7 @@ export async function dastRoutes(app: FastifyInstance) {
     const { endpoint, authHeader } = request.body;
 
     if (!endpoint) {
-      return reply.status(400).send({ error: 'GraphQL endpoint URL is required' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'GraphQL endpoint URL is required');
     }
 
     // SSRF protection: prevent introspection against internal/private networks
@@ -908,20 +879,14 @@ export async function dastRoutes(app: FastifyInstance) {
       requireHttps: false,
     });
     if (!ssrfCheck.safe) {
-      return reply.status(400).send({
-        error: 'URL blocked by security policy',
-        message: ssrfCheck.error || 'Internal or private network URLs are not allowed for GraphQL introspection.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', ssrfCheck.error || 'Internal or private network URLs are not allowed for GraphQL introspection.');
     }
 
     try {
       const schema = performGraphQLIntrospection(endpoint, authHeader);
       return reply.send({ schema });
     } catch (error: unknown) {
-      return reply.status(500).send({
-        error: 'Failed to introspect GraphQL schema',
-        details: error instanceof Error ? error.message : String(error),
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to introspect GraphQL schema', { details: error instanceof Error ? error.message : String(error) });
     }
   });
 }

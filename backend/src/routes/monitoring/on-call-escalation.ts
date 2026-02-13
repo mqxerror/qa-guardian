@@ -19,6 +19,7 @@ import {
   escalationPolicies,
 } from './stores.js';
 import { createLogger } from '../../services/logger.js';
+import { sendError } from '../../utils/errors.js';
 // Feature #716: Zod validation middleware and schemas
 import {
   validateBody,
@@ -83,7 +84,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
       };
 
       if (!body.name || !body.members || body.members.length === 0) {
-        return reply.status(400).send({ error: 'Name and at least one member are required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Name and at least one member are required');
       }
 
       const scheduleId = Date.now().toString();
@@ -144,7 +145,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
 
       const schedule = onCallSchedules.get(scheduleId);
       if (!schedule || schedule.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'On-call schedule not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'On-call schedule not found');
       }
 
       return {
@@ -179,7 +180,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
 
       const schedule = onCallSchedules.get(scheduleId);
       if (!schedule || schedule.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'On-call schedule not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'On-call schedule not found');
       }
 
       if (body.name !== undefined) schedule.name = body.name.trim();
@@ -244,11 +245,11 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
 
       const schedule = onCallSchedules.get(scheduleId);
       if (!schedule || schedule.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'On-call schedule not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'On-call schedule not found');
       }
 
       if (schedule.members.length === 0) {
-        return reply.status(400).send({ error: 'Schedule has no members' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Schedule has no members');
       }
 
       const previousOnCall = schedule.members[schedule.current_on_call_index];
@@ -302,7 +303,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
 
       const schedule = onCallSchedules.get(scheduleId);
       if (!schedule || schedule.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'On-call schedule not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'On-call schedule not found');
       }
 
       onCallSchedules.delete(scheduleId);
@@ -396,11 +397,11 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
       };
 
       if (!name?.trim()) {
-        return reply.status(400).send({ error: 'Name is required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Name is required');
       }
 
       if (!levels || levels.length === 0) {
-        return reply.status(400).send({ error: 'At least one escalation level is required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'At least one escalation level is required');
       }
 
       const policyId = Date.now().toString();
@@ -473,7 +474,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
 
       const policy = escalationPolicies.get(policyId);
       if (!policy || policy.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Escalation policy not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Escalation policy not found');
       }
 
       return {
@@ -500,7 +501,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
 
       const policy = escalationPolicies.get(policyId);
       if (!policy || policy.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Escalation policy not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Escalation policy not found');
       }
 
       const {
@@ -587,7 +588,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
 
       const policy = escalationPolicies.get(policyId);
       if (!policy || policy.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Escalation policy not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Escalation policy not found');
       }
 
       escalationPolicies.delete(policyId);
@@ -618,7 +619,7 @@ export async function onCallEscalationRoutes(app: FastifyInstance): Promise<void
 
       const policy = escalationPolicies.get(policyId);
       if (!policy || policy.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Escalation policy not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Escalation policy not found');
       }
 
       // Simulate escalation flow

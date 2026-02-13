@@ -16,6 +16,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 // Create logger for this module
 const logger = createLogger('route:monitoring:alert-correlation');
 
@@ -172,7 +173,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
 
       const correlation = alertCorrelations.get(correlationId);
       if (!correlation || correlation.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Correlation not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Correlation not found');
       }
 
       return correlation;
@@ -195,7 +196,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
 
       const correlation = alertCorrelations.get(correlationId);
       if (!correlation || correlation.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Correlation not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Correlation not found');
       }
 
       correlation.status = 'acknowledged';
@@ -222,7 +223,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
 
       const correlation = alertCorrelations.get(correlationId);
       if (!correlation || correlation.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Correlation not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Correlation not found');
       }
 
       correlation.status = 'resolved';
@@ -494,7 +495,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
 
       const runbook = alertRunbooks.get(runbookId);
       if (!runbook || runbook.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Runbook not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Runbook not found');
       }
 
       return runbook;
@@ -526,7 +527,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
 
       const runbook = alertRunbooks.get(runbookId);
       if (!runbook || runbook.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Runbook not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Runbook not found');
       }
 
       // Update fields
@@ -558,7 +559,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
 
       const runbook = alertRunbooks.get(runbookId);
       if (!runbook || runbook.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Runbook not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Runbook not found');
       }
 
       alertRunbooks.delete(runbookId);
@@ -727,10 +728,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
           alertData = JSON.parse(processedTemplate);
         } catch (parseError: unknown) {
           const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown error';
-          return reply.status(400).send({
-            error: `Invalid payload template: ${errorMessage}`,
-            hint: 'Ensure your template is valid JSON with {{variable}} placeholders',
-          });
+          return sendError(reply, 400, 'BAD_REQUEST', `Invalid payload template: ${errorMessage}`, { hint: 'Ensure your template is valid JSON with {{variable}} placeholders' });
         }
       } else {
         // Default alert data structure
@@ -754,7 +752,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
           case 'pagerduty': {
             // PagerDuty Events API v2
             if (!config.integration_key) {
-              return reply.status(400).send({ error: 'integration_key is required for PagerDuty' });
+              return sendError(reply, 400, 'BAD_REQUEST', 'integration_key is required for PagerDuty');
             }
 
             // Map severity to PagerDuty severity
@@ -822,7 +820,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
           case 'opsgenie': {
             // OpsGenie Alert API
             if (!config.api_key) {
-              return reply.status(400).send({ error: 'api_key is required for OpsGenie' });
+              return sendError(reply, 400, 'BAD_REQUEST', 'api_key is required for OpsGenie');
             }
 
             // Map severity to OpsGenie priority (P1-P5)
@@ -883,7 +881,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
           case 'teams': {
             // Microsoft Teams Incoming Webhook (Adaptive Card format)
             if (!config.teams_webhook_url) {
-              return reply.status(400).send({ error: 'teams_webhook_url is required for Microsoft Teams' });
+              return sendError(reply, 400, 'BAD_REQUEST', 'teams_webhook_url is required for Microsoft Teams');
             }
 
             // Map severity to color
@@ -971,7 +969,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
           case 'n8n':
             webhookUrl = config.n8n_webhook_url;
             if (!webhookUrl) {
-              return reply.status(400).send({ error: 'n8n_webhook_url is required for n8n destination' });
+              return sendError(reply, 400, 'BAD_REQUEST', 'n8n_webhook_url is required for n8n destination');
             }
             break;
 
@@ -1012,7 +1010,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
             // Fall through to use n8n webhook for Telegram
             webhookUrl = config.n8n_webhook_url || config.webhook_url;
             if (!webhookUrl) {
-              return reply.status(400).send({ error: 'n8n_webhook_url or telegram_bot_token+telegram_chat_id required' });
+              return sendError(reply, 400, 'BAD_REQUEST', 'n8n_webhook_url or telegram_bot_token+telegram_chat_id required');
             }
             break;
 
@@ -1020,12 +1018,12 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
           case 'slack':
             webhookUrl = config.webhook_url;
             if (!webhookUrl) {
-              return reply.status(400).send({ error: 'webhook_url is required' });
+              return sendError(reply, 400, 'BAD_REQUEST', 'webhook_url is required');
             }
             break;
 
           default:
-            return reply.status(400).send({ error: `Unsupported destination type: ${destination_type}` });
+            return sendError(reply, 400, 'BAD_REQUEST', `Unsupported destination type: ${destination_type}`);
         }
 
         // Send to webhook (n8n or generic)

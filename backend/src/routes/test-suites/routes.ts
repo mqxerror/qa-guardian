@@ -61,6 +61,7 @@ import { generatePlaywrightCode } from './utils.js';
 import { getTestRunMetadataForSuite } from '../../services/repositories/test-runs.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('test-suites');
 
 export async function coreRoutes(app: FastifyInstance) {
@@ -147,10 +148,7 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     if (!suite || suite.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test suite not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     return { suite };
@@ -182,17 +180,11 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Viewers cannot create test suites
     if (user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot create test suites',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot create test suites');
     }
 
     if (!name) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Test suite name is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Test suite name is required');
     }
 
     const id = crypto.randomUUID();
@@ -248,19 +240,13 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Viewers cannot update test suites
     if (user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot update test suites',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot update test suites');
     }
 
     // Use async database function
     const existingSuite = await dbGetTestSuite(suiteId);
     if (!existingSuite || existingSuite.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test suite not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     // Build updates object for database
@@ -309,19 +295,13 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Only admin or owner can delete suites
     if (user.role !== 'admin' && user.role !== 'owner') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Only administrators can delete test suites',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Only administrators can delete test suites');
     }
 
     // Use async database function
     const suite = await dbGetTestSuite(suiteId);
     if (!suite || suite.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test suite not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     const suiteName = suite.name;
@@ -378,10 +358,7 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     if (!suite || suite.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test suite not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     // Feature #99: Cache key now includes page/limit for proper cache scoping
@@ -465,10 +442,7 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     return { test };
@@ -488,10 +462,7 @@ export async function coreRoutes(app: FastifyInstance) {
     // Use async database function
     const test = await dbGetTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     // Get the suite for base URL using async database function
@@ -539,74 +510,47 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Viewers cannot create tests
     if (user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot create tests',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot create tests');
     }
 
     // Use async database function
     const suite = await dbGetTestSuite(suiteId);
     if (!suite || suite.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test suite not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     if (!name) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Test name is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Test name is required');
     }
 
     // Validate visual regression test requirements
     if (test_type === 'visual_regression' && !target_url) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Target URL is required for visual regression tests',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Target URL is required for visual regression tests');
     }
 
     // Validate lighthouse test requirements
     if (test_type === 'lighthouse' && !target_url) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Target URL is required for Lighthouse performance tests',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Target URL is required for Lighthouse performance tests');
     }
 
     // Validate element capture mode requires a selector
     if (test_type === 'visual_regression' && capture_mode === 'element' && !element_selector) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Element selector is required when using element capture mode',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Element selector is required when using element capture mode');
     }
 
     // Validate multi-viewport mode requires at least 2 viewports
     if (test_type === 'visual_regression' && multi_viewport && (!viewports || viewports.length < 2)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Multi-viewport mode requires at least 2 viewports selected',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Multi-viewport mode requires at least 2 viewports selected');
     }
 
     // Validate load test requirements
     if (test_type === 'load' && !target_url) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Target URL is required for load tests',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Target URL is required for load tests');
     }
 
     // Validate accessibility test requirements
     if (test_type === 'accessibility' && !target_url) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Target URL is required for accessibility tests',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Target URL is required for accessibility tests');
     }
 
     const { wcag_level, accessibility_rules, include_best_practices, include_experimental, include_pa11y, disable_javascript, a11y_fail_on_any, a11y_fail_on_critical, a11y_fail_on_serious, a11y_fail_on_moderate, a11y_fail_on_minor, a11y_timeout, a11y_wait_for, a11y_wait_selector, a11y_wait_time, a11y_scroll_page, a11y_scroll_behavior } = request.body;
@@ -747,19 +691,13 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Viewers cannot update tests
     if (user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot update tests',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot update tests');
     }
 
     // Use async database function
     const existingTest = await dbGetTest(testId);
     if (!existingTest || existingTest.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     // Build updates object for database
@@ -836,19 +774,13 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Viewers cannot reorder steps
     if (user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot reorder test steps',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot reorder test steps');
     }
 
     // Use async database function
     const existingTest = await dbGetTest(testId);
     if (!existingTest || existingTest.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     // Update the steps with new order
@@ -884,35 +816,23 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Viewers cannot add steps
     if (user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot add test steps',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot add test steps');
     }
 
     // Use async database function
     const existingTest = await dbGetTest(testId);
     if (!existingTest || existingTest.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     if (!action) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Step action is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Step action is required');
     }
 
     // Validate action type
     const validActions = ['click', 'fill', 'navigate', 'assert', 'wait', 'hover', 'select', 'press', 'screenshot', 'scroll', 'check', 'uncheck', 'focus', 'blur', 'dblclick', 'type', 'clear', 'upload', 'download', 'evaluate'];
     if (!validActions.includes(action)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Invalid action type. Valid actions: ${validActions.join(', ')}`,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Invalid action type. Valid actions: ${validActions.join(', ')}`);
     }
 
     // Create new step
@@ -969,46 +889,31 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Viewers cannot update steps
     if (user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot update test steps',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot update test steps');
     }
 
     // Use async database function
     const existingTest = await dbGetTest(testId);
     if (!existingTest || existingTest.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     // Find the step
     const stepIndex = existingTest.steps.findIndex(s => s.id === stepId);
     if (stepIndex === -1) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Step not found in this test',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Step not found in this test');
     }
 
     const step = existingTest.steps[stepIndex];
     if (!step) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Step not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Step not found');
     }
 
     // Validate action type if provided
     if (action) {
       const validActions = ['click', 'fill', 'navigate', 'assert', 'wait', 'hover', 'select', 'press', 'screenshot', 'scroll', 'check', 'uncheck', 'focus', 'blur', 'dblclick', 'type', 'clear', 'upload', 'download', 'evaluate'];
       if (!validActions.includes(action)) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: `Invalid action type. Valid actions: ${validActions.join(', ')}`,
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', `Invalid action type. Valid actions: ${validActions.join(', ')}`);
       }
       step.action = action;
     }
@@ -1052,28 +957,19 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Viewers cannot delete steps
     if (user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot delete test steps',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot delete test steps');
     }
 
     // Use async database function
     const existingTest = await dbGetTest(testId);
     if (!existingTest || existingTest.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     // Find the step
     const stepIndex = existingTest.steps.findIndex(s => s.id === stepId);
     if (stepIndex === -1) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Step not found in this test',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Step not found in this test');
     }
 
     const deletedStep = existingTest.steps[stepIndex];
@@ -1120,26 +1016,17 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Viewers cannot reorder tests
     if (user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot reorder tests',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot reorder tests');
     }
 
     // Use async database function
     const suite = await dbGetTestSuite(suiteId);
     if (!suite || suite.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test suite not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     if (!Array.isArray(test_ids) || test_ids.length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'test_ids must be a non-empty array of test IDs',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'test_ids must be a non-empty array of test IDs');
     }
 
     // Get all tests in this suite using async database function
@@ -1149,10 +1036,7 @@ export async function coreRoutes(app: FastifyInstance) {
     const suiteTestIds = new Set(suiteTests.map(t => t.id));
     const invalidIds = test_ids.filter(id => !suiteTestIds.has(id));
     if (invalidIds.length > 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Some test IDs do not belong to this suite: ${invalidIds.join(', ')}`,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Some test IDs do not belong to this suite: ${invalidIds.join(', ')}`);
     }
 
     // Update order for each test using async database function
@@ -1197,19 +1081,13 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Only admin, owner, or developer can delete tests
     if (user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot delete tests',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot delete tests');
     }
 
     // Use async database function
     const existingTest = await dbGetTest(testId);
     if (!existingTest || existingTest.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     const testName = existingTest.name;

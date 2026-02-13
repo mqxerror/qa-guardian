@@ -9,6 +9,7 @@ import { generatePlaywrightCode } from './utils.js';
 import { logAuditEntry } from '../audit-logs.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('ai-variations');
 
 // Feature #1146: Interface for test variation suggestion
@@ -627,10 +628,7 @@ export async function aiVariationsRoutes(app: FastifyInstance) {
     } = request.body;
 
     if (!description || description.trim().length < 10) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Description must be at least 10 characters long',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Description must be at least 10 characters long');
     }
 
     logger.info({ descriptionPreview: description.substring(0, 50) }, 'Generating AI test variations');
@@ -690,19 +688,13 @@ export async function aiVariationsRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     if (!variation_description || !suite_id) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'variation_description and suite_id are required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'variation_description and suite_id are required');
     }
 
     // Verify suite exists
     const suite = await getTestSuite(suite_id);
     if (!suite || suite.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test suite not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     logger.info({ variationId: variation_id }, 'Generating AI test variation');

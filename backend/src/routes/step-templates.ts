@@ -11,6 +11,7 @@ import { TestStep } from './test-suites/types.js';
 import { createLogger } from '../services/logger.js';
 // Feature #509: Safe JSON parsing
 import { safeJsonParseOrPassthrough } from '../utils/index.js';
+import { sendError } from '../utils/errors.js';
 // Feature #716: Zod validation middleware and schemas
 import {
   validateBody,
@@ -121,7 +122,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       });
     } catch (error) {
       log.error({ err: error, orgId, code: 'TEMPLATE_LIST_FAILED' }, 'Failed to list step templates');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to list step templates' });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to list step templates');
     }
   });
 
@@ -141,7 +142,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       ));
 
       if ((result.rowCount ?? 0) === 0) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Step template not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Step template not found');
       }
 
       const row = result.rows[0];
@@ -154,7 +155,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       });
     } catch (error) {
       log.error({ err: error, templateId, orgId, code: 'TEMPLATE_GET_FAILED' }, 'Failed to get step template');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to get step template' });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to get step template');
     }
   });
 
@@ -169,16 +170,16 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     if (!name?.trim()) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'Template name is required' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Template name is required');
     }
 
     if (!steps || !Array.isArray(steps) || steps.length === 0) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'At least one step is required' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'At least one step is required');
     }
 
     // Viewers cannot create templates
     if (user.role === 'viewer') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Viewers cannot create step templates' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot create step templates');
     }
 
     const id = crypto.randomUUID();
@@ -201,7 +202,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       });
     } catch (error) {
       log.error({ err: error, orgId, name, code: 'TEMPLATE_CREATE_FAILED' }, 'Failed to create step template');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to create step template' });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to create step template');
     }
   });
 
@@ -217,7 +218,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     const { name, description, steps, tags, suite_id } = request.body;
 
     if (user.role === 'viewer') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Viewers cannot update step templates' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot update step templates');
     }
 
     try {
@@ -227,7 +228,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
         [templateId, orgId]
       ));
       if ((existing.rowCount ?? 0) === 0) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Step template not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Step template not found');
       }
 
       const updates: string[] = [];
@@ -241,7 +242,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       if (suite_id !== undefined) { updates.push(`suite_id = $${idx++}`); params.push(suite_id || null); }
 
       if (updates.length === 0) {
-        return reply.status(400).send({ error: 'Bad Request', message: 'No fields to update' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'No fields to update');
       }
 
       updates.push(`updated_at = NOW()`);
@@ -262,7 +263,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       });
     } catch (error) {
       log.error({ err: error, templateId, orgId, code: 'TEMPLATE_UPDATE_FAILED' }, 'Failed to update step template');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to update step template' });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to update step template');
     }
   });
 
@@ -277,7 +278,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     if (user.role === 'viewer') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Viewers cannot delete step templates' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot delete step templates');
     }
 
     try {
@@ -287,7 +288,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       ));
 
       if ((result.rowCount ?? 0) === 0) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Step template not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Step template not found');
       }
 
       return reply.send({
@@ -296,7 +297,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       });
     } catch (error) {
       log.error({ err: error, templateId, orgId, code: 'TEMPLATE_DELETE_FAILED' }, 'Failed to delete step template');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to delete step template' });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to delete step template');
     }
   });
 
@@ -310,11 +311,11 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     if (user.role === 'viewer') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Viewers cannot modify tests' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot modify tests');
     }
 
     if (!newSteps || !Array.isArray(newSteps) || newSteps.length === 0) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'Steps array is required' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Steps array is required');
     }
 
     try {
@@ -325,12 +326,12 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       ));
 
       if ((testResult.rowCount ?? 0) === 0) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
       }
 
       const test = testResult.rows[0];
       if (test.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
       }
 
       // Parse existing config and append steps
@@ -359,7 +360,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       });
     } catch (error) {
       log.error({ err: error, testId, orgId, code: 'STEPS_APPEND_FAILED' }, 'Failed to append steps to test');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to append steps' });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to append steps');
     }
   });
 
@@ -372,7 +373,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     if (user.role === 'viewer') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Viewers cannot duplicate tests' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot duplicate tests');
     }
 
     try {
@@ -383,12 +384,12 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       ));
 
       if ((testResult.rowCount ?? 0) === 0) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
       }
 
       const test = testResult.rows[0];
       if (test.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
       }
 
       const newId = crypto.randomUUID();
@@ -408,7 +409,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       });
     } catch (error) {
       log.error({ err: error, testId, orgId, code: 'TEST_DUPLICATE_FAILED' }, 'Failed to duplicate test');
-      return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to duplicate test' });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to duplicate test');
     }
   });
 }

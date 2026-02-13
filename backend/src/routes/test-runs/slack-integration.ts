@@ -16,6 +16,7 @@ import {
 } from './alerts.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('slack-integration');
 
 // ============================================================================
@@ -33,10 +34,7 @@ export async function slackIntegrationRoutes(app: FastifyInstance) {
     const userOrgId = getOrganizationId(request);
 
     if (orgId !== userOrgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
     }
 
     const connection = slackConnections.get(orgId);
@@ -70,26 +68,17 @@ export async function slackIntegrationRoutes(app: FastifyInstance) {
       const user = request.user as JwtPayload;
 
       if (orgId !== userOrgId) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this organization',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
       }
 
       // Only owners and admins can connect Slack
       if (!['owner', 'admin'].includes(user.role)) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'Only owners and admins can connect Slack',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'Only owners and admins can connect Slack');
       }
 
       // Check if already connected
       if (slackConnections.has(orgId)) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Slack is already connected for this organization',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Slack is already connected for this organization');
       }
 
       // Simulate Slack OAuth - in production this would be a real OAuth flow
@@ -140,26 +129,17 @@ export async function slackIntegrationRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     if (orgId !== userOrgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
     }
 
     // Only owners and admins can disconnect Slack
     if (!['owner', 'admin'].includes(user.role)) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Only owners and admins can disconnect Slack',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Only owners and admins can disconnect Slack');
     }
 
     const connection = slackConnections.get(orgId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No Slack workspace connected',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No Slack workspace connected');
     }
 
     slackConnections.delete(orgId);
@@ -179,18 +159,12 @@ export async function slackIntegrationRoutes(app: FastifyInstance) {
     const userOrgId = getOrganizationId(request);
 
     if (orgId !== userOrgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
     }
 
     const connection = slackConnections.get(orgId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No Slack workspace connected',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No Slack workspace connected');
     }
 
     return {

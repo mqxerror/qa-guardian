@@ -41,6 +41,7 @@ import {
 
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 // Feature #716: Zod validation middleware and schemas
 import {
   validateBody,
@@ -115,11 +116,11 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       };
 
       if (!name?.trim()) {
-        return reply.status(400).send({ error: 'Name is required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Name is required');
       }
 
       if (!group_by || group_by.length === 0) {
-        return reply.status(400).send({ error: 'At least one grouping criterion is required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'At least one grouping criterion is required');
       }
 
       const ruleId = Date.now().toString();
@@ -180,7 +181,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
 
       const rule = alertGroupingRules.get(ruleId);
       if (!rule || rule.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Alert grouping rule not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Alert grouping rule not found');
       }
 
       return {
@@ -206,7 +207,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
 
       const rule = alertGroupingRules.get(ruleId);
       if (!rule || rule.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Alert grouping rule not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Alert grouping rule not found');
       }
 
       const {
@@ -279,7 +280,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
 
       const rule = alertGroupingRules.get(ruleId);
       if (!rule || rule.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Alert grouping rule not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Alert grouping rule not found');
       }
 
       alertGroupingRules.delete(ruleId);
@@ -350,19 +351,19 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
 
       const group = alertGroups.get(groupId);
       if (!group) {
-        return reply.status(404).send({ error: 'Alert group not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Alert group not found');
       }
 
       if (group.organization_id !== orgId) {
-        return reply.status(403).send({ error: 'Access denied' });
+        return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
       }
 
       if (group.status === 'acknowledged') {
-        return reply.status(400).send({ error: 'Alert group already acknowledged' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Alert group already acknowledged');
       }
 
       if (group.status === 'resolved') {
-        return reply.status(400).send({ error: 'Alert group already resolved' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Alert group already resolved');
       }
 
       // Update group status to acknowledged
@@ -408,15 +409,15 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
 
       const group = alertGroups.get(groupId);
       if (!group) {
-        return reply.status(404).send({ error: 'Alert group not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Alert group not found');
       }
 
       if (group.organization_id !== orgId) {
-        return reply.status(403).send({ error: 'Access denied' });
+        return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
       }
 
       if (group.status === 'resolved') {
-        return reply.status(400).send({ error: 'Alert group already resolved' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Alert group already resolved');
       }
 
       // Calculate resolution time (from first alert to now)
@@ -469,20 +470,20 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       const user = getUser(request);
 
       if (!duration_hours || ![1, 4, 24].includes(duration_hours)) {
-        return reply.status(400).send({ error: 'Invalid duration. Must be 1, 4, or 24 hours.' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid duration. Must be 1, 4, or 24 hours.');
       }
 
       const group = alertGroups.get(groupId);
       if (!group) {
-        return reply.status(404).send({ error: 'Alert group not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Alert group not found');
       }
 
       if (group.organization_id !== orgId) {
-        return reply.status(403).send({ error: 'Access denied' });
+        return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
       }
 
       if (group.status === 'resolved') {
-        return reply.status(400).send({ error: 'Cannot snooze resolved alert group' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Cannot snooze resolved alert group');
       }
 
       const snoozedAt = new Date();
@@ -531,15 +532,15 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
 
       const group = alertGroups.get(groupId);
       if (!group) {
-        return reply.status(404).send({ error: 'Alert group not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Alert group not found');
       }
 
       if (group.organization_id !== orgId) {
-        return reply.status(403).send({ error: 'Access denied' });
+        return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
       }
 
       if (!group.snoozed_until) {
-        return reply.status(400).send({ error: 'Alert group is not snoozed' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Alert group is not snoozed');
       }
 
       const wasSnoozedUntil = group.snoozed_until;
@@ -817,7 +818,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       };
 
       if (!alerts || alerts.length === 0) {
-        return reply.status(400).send({ error: 'At least one alert is required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'At least one alert is required');
       }
 
       // Get active rules for this org
@@ -826,7 +827,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
         .sort((a, b) => a.priority - b.priority);
 
       if (activeRules.length === 0) {
-        return reply.status(400).send({ error: 'No active alert grouping rules configured' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'No active alert grouping rules configured');
       }
 
       const rule = activeRules[0]!; // Use highest priority rule (non-null asserted since we checked length)

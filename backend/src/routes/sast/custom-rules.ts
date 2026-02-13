@@ -18,6 +18,7 @@ import { logAuditEntry } from '../audit-logs.js';
 import { CustomRule } from './types.js';
 import { getSASTConfig, updateSASTConfig, generateId } from './stores.js';
 
+import { sendError } from '../../utils/errors.js';
 export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
   // Get custom rules for a project
   app.get<{ Params: { projectId: string } }>('/api/v1/projects/:projectId/sast/custom-rules', {
@@ -29,11 +30,11 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const config = await getSASTConfig(projectId);
@@ -53,30 +54,27 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
 
     // Check permissions
     if (user.role === 'viewer') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Viewers cannot add custom rules' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot add custom rules');
     }
 
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Validate required fields
     if (!name || !yaml) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'Name and YAML are required' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Name and YAML are required');
     }
 
     // Basic YAML validation (check if it contains "rules:" key)
     if (!yaml.includes('rules:') && !yaml.includes('pattern:')) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Invalid Semgrep rule YAML. Must contain "rules:" or "pattern:" key.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Invalid Semgrep rule YAML. Must contain "rules:" or "pattern:" key.');
     }
 
     const config = await getSASTConfig(projectId);
@@ -121,17 +119,17 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
 
     // Check permissions
     if (user.role === 'viewer') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Viewers cannot update custom rules' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot update custom rules');
     }
 
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const config = await getSASTConfig(projectId);
@@ -139,7 +137,7 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
     const ruleIndex = customRules.findIndex(r => r.id === ruleId);
 
     if (ruleIndex === -1) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Custom rule not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Custom rule not found');
     }
 
     // Update rule
@@ -177,17 +175,17 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
 
     // Check permissions
     if (user.role === 'viewer') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Viewers cannot delete custom rules' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot delete custom rules');
     }
 
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const config = await getSASTConfig(projectId);
@@ -195,7 +193,7 @@ export async function customRulesRoutes(app: FastifyInstance): Promise<void> {
     const ruleIndex = customRules.findIndex(r => r.id === ruleId);
 
     if (ruleIndex === -1) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Custom rule not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Custom rule not found');
     }
 
     const deletedRule = customRules[ruleIndex]!;

@@ -18,6 +18,7 @@ import { createLogger } from '../../services/logger.js';
 // Create logger for this module
 const log = createLogger('route:status-pages');
 import { logAuditEntry } from '../audit-logs.js';
+import { sendError } from '../../utils/errors.js';
 // Feature #716: Zod validation middleware and schemas
 import {
   validateBody,
@@ -277,7 +278,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       };
 
       if (!body.name || body.name.trim().length === 0) {
-        return reply.status(400).send({ error: 'Name is required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Name is required');
       }
 
       // Generate or validate slug
@@ -339,7 +340,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
 
       const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Status page not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Status page not found');
       }
 
       return { status_page: statusPage };
@@ -361,7 +362,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
 
       const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Status page not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Status page not found');
       }
 
       // If slug is being changed, validate it
@@ -369,7 +370,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
         const newSlug = generateSlug(body.slug);
         const existingBySlug = await dbGetStatusPageBySlug(newSlug);
         if (existingBySlug && existingBySlug.id !== pageId) {
-          return reply.status(400).send({ error: 'Slug is already taken' });
+          return sendError(reply, 400, 'BAD_REQUEST', 'Slug is already taken');
         }
         statusPage.slug = newSlug;
       }
@@ -418,7 +419,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
 
       const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Status page not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Status page not found');
       }
 
       // Remove status page from DB
@@ -498,7 +499,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
 
       const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Status page not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Status page not found');
       }
 
       const incidents = statusPageIncidents.get(pageId) || [];
@@ -532,11 +533,11 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
 
       const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Status page not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Status page not found');
       }
 
       if (!body.title || !body.message) {
-        return reply.status(400).send({ error: 'Title and message are required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Title and message are required');
       }
 
       const incidentId = Date.now().toString();
@@ -601,13 +602,13 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
 
       const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Status page not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Status page not found');
       }
 
       const incidents = statusPageIncidents.get(pageId) || [];
       const incident = incidents.find(i => i.id === incidentId);
       if (!incident) {
-        return reply.status(404).send({ error: 'Incident not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Incident not found');
       }
 
       return { incident };
@@ -632,17 +633,17 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
 
       const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Status page not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Status page not found');
       }
 
       if (!body.message) {
-        return reply.status(400).send({ error: 'Message is required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Message is required');
       }
 
       const incidents = statusPageIncidents.get(pageId) || [];
       const incidentIndex = incidents.findIndex(i => i.id === incidentId);
       if (incidentIndex === -1) {
-        return reply.status(404).send({ error: 'Incident not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Incident not found');
       }
 
       const incident = incidents[incidentIndex];
@@ -705,13 +706,13 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
 
       const statusPage = await dbGetStatusPage(pageId);
       if (!statusPage || statusPage.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Status page not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Status page not found');
       }
 
       const incidents = statusPageIncidents.get(pageId) || [];
       const incidentIndex = incidents.findIndex(i => i.id === incidentId);
       if (incidentIndex === -1) {
-        return reply.status(404).send({ error: 'Incident not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Incident not found');
       }
 
       const deletedIncident = incidents.splice(incidentIndex, 1)[0];
@@ -745,13 +746,13 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
 
       const statusPage = await dbGetStatusPageBySlug(slug);
       if (!statusPage) {
-        return reply.status(404).send({ error: 'Status page not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Status page not found');
       }
 
       const pageId = statusPage.id;
 
       if (!statusPage.is_public) {
-        return reply.status(403).send({ error: 'This status page is private' });
+        return sendError(reply, 403, 'FORBIDDEN', 'This status page is private');
       }
 
       // Build status page data
@@ -856,18 +857,18 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       const { email } = request.body as { email?: string };
 
       if (!email || typeof email !== 'string') {
-        return reply.status(400).send({ error: 'Email is required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Email is required');
       }
 
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        return reply.status(400).send({ error: 'Invalid email format' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid email format');
       }
 
       const statusPage = await dbGetStatusPageBySlug(slug);
       if (!statusPage || !statusPage.is_public) {
-        return reply.status(404).send({ error: 'Status page not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Status page not found');
       }
       const pageId = statusPage.id;
 
@@ -949,12 +950,12 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       const { token } = request.query as { token?: string };
 
       if (!token) {
-        return reply.status(400).send({ error: 'Verification token is required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Verification token is required');
       }
 
       const statusPage = await dbGetStatusPageBySlug(slug);
       if (!statusPage) {
-        return reply.status(404).send({ error: 'Status page not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Status page not found');
       }
       const pageId = statusPage.id;
 
@@ -962,7 +963,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       const subscription = subscriptions.find(s => s.verification_token === token);
 
       if (!subscription) {
-        return reply.status(404).send({ error: 'Invalid or expired verification token' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Invalid or expired verification token');
       }
 
       if (subscription.verified) {
@@ -1001,12 +1002,12 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       const { token } = request.query as { token?: string };
 
       if (!token) {
-        return reply.status(400).send({ error: 'Unsubscribe token is required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Unsubscribe token is required');
       }
 
       const statusPage = await dbGetStatusPageBySlug(slug);
       if (!statusPage) {
-        return reply.status(404).send({ error: 'Status page not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Status page not found');
       }
       const pageId = statusPage.id;
 
@@ -1014,7 +1015,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
       const subscriptionIndex = subscriptions.findIndex(s => s.unsubscribe_token === token);
 
       if (subscriptionIndex === -1) {
-        return reply.status(404).send({ error: 'Invalid unsubscribe token' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Invalid unsubscribe token');
       }
 
       const subscription = subscriptions[subscriptionIndex];
@@ -1040,7 +1041,7 @@ export async function statusPageRoutes(app: FastifyInstance): Promise<void> {
 
       const statusPage = await dbGetStatusPageBySlug(slug);
       if (!statusPage || !statusPage.is_public) {
-        return reply.status(404).send({ error: 'Status page not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Status page not found');
       }
       const pageId = statusPage.id;
 

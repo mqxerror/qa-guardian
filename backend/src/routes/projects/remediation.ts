@@ -7,6 +7,7 @@ import { getProject } from './stores.js';
 import { getTest, getTestSuite } from '../test-suites/stores.js';
 import { listTestRunsByOrg } from '../../services/repositories/test-runs.js';
 
+import { sendError } from '../../utils/errors.js';
 // Remediation suggestion interface
 interface RemediationSuggestion {
   id: string;
@@ -42,17 +43,17 @@ export async function remediationRoutes(app: FastifyInstance) {
     // Verify test exists and belongs to org (async DB calls)
     const test = await getTest(testId);
     if (!test) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     const suite = await getTestSuite(test.suite_id);
     if (!suite) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test suite not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     const project = await getProject(suite.project_id);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test not found in your organization' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found in your organization');
     }
 
     // Get flakiness data for this test (async DB call)

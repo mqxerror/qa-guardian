@@ -27,6 +27,7 @@ import {
 import { startCheckInterval, stopCheckInterval } from './helpers.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('maintenance');
 
 export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
@@ -41,7 +42,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const check = await getUptimeCheck(checkId);
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Uptime check not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
       const windows = await getMaintenanceWindows(checkId);
       const now = new Date();
@@ -98,18 +99,18 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const userId = (request.user as JwtPayload | ApiKeyPayload).id || 'api-key';
       const check = await getUptimeCheck(checkId);
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Uptime check not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
       if (!name || !start_time || !end_time) {
-        return reply.status(400).send({ error: 'Bad Request', message: 'Name, start_time, and end_time are required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Name, start_time, and end_time are required');
       }
       const startDate = new Date(start_time);
       const endDate = new Date(end_time);
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        return reply.status(400).send({ error: 'Bad Request', message: 'Invalid date format for start_time or end_time' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid date format for start_time or end_time');
       }
       if (endDate <= startDate) {
-        return reply.status(400).send({ error: 'Bad Request', message: 'end_time must be after start_time' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'end_time must be after start_time');
       }
       const newWindow: MaintenanceWindow = {
         id: `mw-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -162,20 +163,14 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Uptime check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
 
       const windows = await getMaintenanceWindows(checkId);
       const deletedWindow = windows.find(w => w.id === windowId);
 
       if (!deletedWindow) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Maintenance window not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Maintenance window not found');
       }
 
       await dbDeleteMaintenanceWindow(windowId);
@@ -223,27 +218,18 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
 
       // Validate required fields
       if (!name || !start_time || !end_time) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Name, start_time, and end_time are required',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Name, start_time, and end_time are required');
       }
 
       const startDate = new Date(start_time);
       const endDate = new Date(end_time);
 
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Invalid date format for start_time or end_time',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid date format for start_time or end_time');
       }
 
       if (endDate <= startDate) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'end_time must be after start_time',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'end_time must be after start_time');
       }
 
       // Determine which checks to apply the maintenance window to
@@ -265,17 +251,11 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
           c.tags && c.tags.some(tag => tags.includes(tag))
         );
       } else {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Specify check_ids, tags, or set all_checks=true',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Specify check_ids, tags, or set all_checks=true');
       }
 
       if (targetChecks.length === 0) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'No checks found matching the specified criteria',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'No checks found matching the specified criteria');
       }
 
       // Generate a group ID to link all windows from this request
@@ -421,19 +401,11 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Uptime check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
 
       if (!check.enabled) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Check is already paused',
-          paused_at: check.paused_at,
-          paused_by: check.paused_by,
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Check is already paused', { paused_at: check.paused_at, paused_by: check.paused_by });
       }
 
       // Pause the check
@@ -486,17 +458,11 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Uptime check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
 
       if (check.enabled) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Check is already running',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Check is already running');
       }
 
       // Calculate how long it was paused
@@ -551,10 +517,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Uptime check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
 
       check.enabled = !check.enabled;
@@ -604,10 +567,7 @@ export async function maintenanceRoutes(app: FastifyInstance): Promise<void> {
       const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Uptime check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
 
       const results = await getCheckResults(checkId);

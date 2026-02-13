@@ -17,6 +17,7 @@ import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { testRuns, TestRun } from './execution.js';
 import { getTestRun } from '../../services/repositories/test-runs.js';
 import { getTestSuite, getTest } from '../test-suites.js';
+import { sendError } from '../../utils/errors.js';
 // listTests available from test-suites.js if needed
 
 /**
@@ -45,19 +46,13 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     // Verify run exists and belongs to user's organization
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Find the test result
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test result not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     // Check if already reviewed
@@ -100,19 +95,13 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     // Verify run exists and belongs to user's organization
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Find the test result
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test result not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     return {
@@ -139,19 +128,13 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     // Verify run exists and belongs to user's organization
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Find the test result
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test result not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     // Check if was reviewed
@@ -192,28 +175,18 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     // Verify run exists and belongs to user's organization
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Find the test result
     const result = run.results?.find(r => r.test_id === testId);
     if (!result) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test result not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     // Check if test failed
     if (result.status !== 'failed' && result.status !== 'error') {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Bug reports can only be generated for failed or error tests.',
-        test_status: result.status,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Bug reports can only be generated for failed or error tests.', { test_status: result.status });
     }
 
     // Get test and suite info
@@ -430,19 +403,13 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
 
     const run = await getTestRunWithFallback(runId);
     if (!run) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Validate format
     const validFormats = ['json', 'csv', 'junit', 'junit-xml'];
     if (!validFormats.includes(format)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Invalid format. Must be one of: ${validFormats.join(', ')}`,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Invalid format. Must be one of: ${validFormats.join(', ')}`);
     }
 
     // Get test suite info
@@ -658,9 +625,6 @@ export async function reviewExportRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Should not reach here
-    return reply.status(400).send({
-      error: 'Bad Request',
-      message: 'Unsupported format',
-    });
+    return sendError(reply, 400, 'BAD_REQUEST', 'Unsupported format');
   });
 }

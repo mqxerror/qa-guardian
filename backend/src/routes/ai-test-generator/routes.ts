@@ -14,6 +14,7 @@
 
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import { authenticate, JwtPayload, ApiKeyPayload, InternalServicePayload } from '../../middleware/auth.js';
+import { sendError } from '../../utils/errors.js';
 import {
   AIGeneratedTest,
   SaveGeneratedTestBody,
@@ -150,10 +151,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       request.log.error(error, 'Failed to save generated test');
-      return reply.status(500).send({
-        success: false,
-        error: 'Failed to save generated test',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to save generated test');
     }
   });
 
@@ -219,10 +217,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       return reply.send(response);
     } catch (error) {
       request.log.error(error, 'Failed to get generation history');
-      return reply.status(500).send({
-        success: false,
-        error: 'Failed to get generation history',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to get generation history');
     }
   });
 
@@ -241,10 +236,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
 
       const test = await getAiGeneratedTest(testId);
       if (!test) {
-        return reply.status(404).send({
-          success: false,
-          error: 'Generated test not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Generated test not found');
       }
 
       return reply.send({
@@ -253,10 +245,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       request.log.error(error, 'Failed to get generated test');
-      return reply.status(500).send({
-        success: false,
-        error: 'Failed to get generated test',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to get generated test');
     }
   });
 
@@ -274,10 +263,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       const { description } = request.query;
 
       if (!description) {
-        return reply.status(400).send({
-          success: false,
-          error: 'Description is required',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Description is required');
       }
 
       // Feature #312: Get user from authenticated request
@@ -298,10 +284,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       request.log.error(error, 'Failed to get version chain');
-      return reply.status(500).send({
-        success: false,
-        error: 'Failed to get version chain',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to get version chain');
     }
   });
 
@@ -320,10 +303,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
 
       const test = await getAiGeneratedTest(testId);
       if (!test) {
-        return reply.status(404).send({
-          success: false,
-          error: 'Generated test not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Generated test not found');
       }
 
       // Remove from store
@@ -335,10 +315,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       request.log.error(error, 'Failed to delete generated test');
-      return reply.status(500).send({
-        success: false,
-        error: 'Failed to delete generated test',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to delete generated test');
     }
   });
 
@@ -383,10 +360,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       request.log.error(error, 'Failed to get review queue');
-      return reply.status(500).send({
-        success: false,
-        error: 'Failed to get review queue',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to get review queue');
     }
   });
 
@@ -407,10 +381,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
 
       const test = await getAiGeneratedTest(testId);
       if (!test) {
-        return reply.status(404).send({
-          success: false,
-          error: 'Generated test not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Generated test not found');
       }
 
       // Feature #312: Get user from authenticated request
@@ -453,10 +424,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       request.log.error(error, 'Failed to approve/reject test');
-      return reply.status(500).send({
-        success: false,
-        error: 'Failed to process approval',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to process approval');
     }
   });
 
@@ -489,10 +457,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       request.log.error(error, 'Failed to get approval stats');
-      return reply.status(500).send({
-        success: false,
-        error: 'Failed to get approval stats',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to get approval stats');
     }
   });
 
@@ -525,10 +490,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       const { text } = request.body;
 
       if (!text || typeof text !== 'string') {
-        return reply.status(400).send({
-          success: false,
-          error: 'Text is required and must be a string',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Text is required and must be a string');
       }
 
       const input = text.toLowerCase().trim();
@@ -699,10 +661,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       request.log.error(error, 'Failed to parse intent');
-      return reply.status(500).send({
-        success: false,
-        error: 'Failed to parse intent',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to parse intent');
     }
   });
 
@@ -725,10 +684,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
 
       // Need either spec content or URL
       if (!specContent && !specUrl) {
-        return reply.status(400).send({
-          success: false,
-          error: 'Either "spec" (OpenAPI content) or "specUrl" (URL to fetch) is required',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Either "spec" (OpenAPI content) or "specUrl" (URL to fetch) is required');
       }
 
       let content = specContent;
@@ -744,26 +700,17 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
           });
 
           if (!response.ok) {
-            return reply.status(400).send({
-              success: false,
-              error: `Failed to fetch spec from URL: HTTP ${response.status}`,
-            });
+            return sendError(reply, 400, 'BAD_REQUEST', `Failed to fetch spec from URL: HTTP ${response.status}`);
           }
 
           content = await response.text();
         } catch (fetchError) {
-          return reply.status(400).send({
-            success: false,
-            error: `Failed to fetch spec from URL: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`,
-          });
+          return sendError(reply, 400, 'BAD_REQUEST', `Failed to fetch spec from URL: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`);
         }
       }
 
       if (!content) {
-        return reply.status(400).send({
-          success: false,
-          error: 'No spec content available',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'No spec content available');
       }
 
       // Import the parser dynamically to avoid circular dependencies
@@ -772,20 +719,14 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       // Parse the spec first to get metadata
       const parseResult = parseOpenAPISpec(content);
       if (!parseResult.success) {
-        return reply.status(400).send({
-          success: false,
-          error: parseResult.error,
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', parseResult.error || 'Failed to parse OpenAPI spec');
       }
 
       // Generate tests
       const result = parseAndGenerateTests(content, baseUrl);
 
       if (!result.success) {
-        return reply.status(400).send({
-          success: false,
-          error: result.error,
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', result.error || 'Failed to generate tests');
       }
 
       return reply.send({
@@ -806,10 +747,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       request.log.error(error, 'Failed to generate tests from OpenAPI spec');
-      return reply.status(500).send({
-        success: false,
-        error: 'Failed to generate tests from OpenAPI spec',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to generate tests from OpenAPI spec');
     }
   });
 
@@ -830,10 +768,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       const { spec: specContent, specUrl } = request.body;
 
       if (!specContent && !specUrl) {
-        return reply.status(400).send({
-          success: false,
-          error: 'Either "spec" (OpenAPI content) or "specUrl" (URL to fetch) is required',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Either "spec" (OpenAPI content) or "specUrl" (URL to fetch) is required');
       }
 
       let content = specContent;
@@ -848,36 +783,24 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
           });
 
           if (!response.ok) {
-            return reply.status(400).send({
-              success: false,
-              error: `Failed to fetch spec from URL: HTTP ${response.status}`,
-            });
+            return sendError(reply, 400, 'BAD_REQUEST', `Failed to fetch spec from URL: HTTP ${response.status}`);
           }
 
           content = await response.text();
         } catch (fetchError) {
-          return reply.status(400).send({
-            success: false,
-            error: `Failed to fetch spec from URL: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`,
-          });
+          return sendError(reply, 400, 'BAD_REQUEST', `Failed to fetch spec from URL: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`);
         }
       }
 
       if (!content) {
-        return reply.status(400).send({
-          success: false,
-          error: 'No spec content available',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'No spec content available');
       }
 
       const { parseOpenAPISpec } = await import('../../services/openapi-parser.js');
       const result = parseOpenAPISpec(content);
 
       if (!result.success) {
-        return reply.status(400).send({
-          success: false,
-          error: result.error,
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', result.error || 'Failed to parse OpenAPI spec');
       }
 
       return reply.send({
@@ -899,10 +822,7 @@ export default async function aiTestGeneratorRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       request.log.error(error, 'Failed to parse OpenAPI spec');
-      return reply.status(500).send({
-        success: false,
-        error: 'Failed to parse OpenAPI spec',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to parse OpenAPI spec');
     }
   });
 }

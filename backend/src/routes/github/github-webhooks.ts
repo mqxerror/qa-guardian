@@ -28,6 +28,7 @@ import {
 } from '../sast/gitleaks.js';
 import * as gitleaksRepo from '../../services/repositories/gitleaks.js';
 
+import { sendError } from '../../utils/errors.js';
 // Create logger for this module
 const log = createLogger('route:github-webhooks');
 
@@ -704,10 +705,7 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
       const payload = JSON.stringify(request.body);
       if (!verifyWebhookSignature(payload, signature, WEBHOOK_SECRET)) {
         log.warn({ deliveryId }, 'Invalid webhook signature');
-        return reply.status(401).send({
-          error: 'Unauthorized',
-          message: 'Invalid webhook signature',
-        });
+        return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid webhook signature');
       }
     }
 
@@ -968,10 +966,7 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
     const pr = parseInt(prNumber, 10);
 
     if (isNaN(pr)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Invalid PR number',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Invalid PR number');
     }
 
     // Simulate getting PR info
@@ -1045,20 +1040,14 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
     const pr = parseInt(prNumber, 10);
 
     if (isNaN(pr)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Invalid PR number',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Invalid PR number');
     }
 
     const scanKey = `${repoFullName}:${pr}`;
     const scan = webhookScans.get(scanKey);
 
     if (!scan) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `No scan results found for ${repoFullName} PR #${pr}`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `No scan results found for ${repoFullName} PR #${pr}`);
     }
 
     return {
@@ -1172,10 +1161,7 @@ export async function githubWebhookRoutes(app: FastifyInstance): Promise<void> {
 
     const scan = pushSecretScans.get(scanKey);
     if (!scan) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `No push scan found for ${owner}/${repo} at commit ${sha}`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `No push scan found for ${owner}/${repo} at commit ${sha}`);
     }
 
     // If scan has a scan_id, get the full Gitleaks scan from database

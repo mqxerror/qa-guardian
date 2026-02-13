@@ -43,6 +43,7 @@ import {
   getTest as dbGetTestAsync,
 } from './test-suites/stores.js';
 import { getProject as dbGetProjectAsync, listProjects as dbListProjectsAsync, deleteProject as dbDeleteProjectAsync } from './projects/stores.js';
+import { sendError } from '../utils/errors.js';
 // Feature #2109: Fully migrated to async DB calls - no more in-memory Maps
 import {
   Organization,
@@ -173,10 +174,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     const targetOrg = userOrgs.find(o => o.organization_id === organization_id);
 
     if (!targetOrg) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You are not a member of this organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You are not a member of this organization');
     }
 
     // Generate a new token with the new organization
@@ -216,19 +214,13 @@ export async function organizationRoutes(app: FastifyInstance) {
     const slug = providedSlug || generateSlug(name);
 
     if (!/^[a-z0-9-]+$/.test(slug)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Slug can only contain lowercase letters, numbers, and hyphens',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Slug can only contain lowercase letters, numbers, and hyphens');
     }
 
     // Check for duplicate slug
     const existingOrg = await repoGetOrganizationBySlug(slug);
     if (existingOrg) {
-      return reply.status(409).send({
-        error: 'Conflict',
-        message: 'An organization with this slug already exists',
-      });
+      return sendError(reply, 409, 'CONFLICT', 'An organization with this slug already exists');
     }
 
     // Create the organization
@@ -266,10 +258,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     const org = await repoGetOrganizationById(id);
 
     if (!org) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Organization not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Organization not found');
     }
 
     return { organization: org };
@@ -315,10 +304,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     // Check if organization exists
     const orgExists = await repoGetOrganizationById(id);
     if (!orgExists) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Organization not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Organization not found');
     }
 
     // Create invitation
@@ -376,10 +362,7 @@ export async function organizationRoutes(app: FastifyInstance) {
 
     const invToDelete = await repoGetInvitationById(inviteId);
     if (!invToDelete) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Invitation not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Invitation not found');
     }
 
     await repoDeleteInvitation(inviteId);
@@ -396,19 +379,13 @@ export async function organizationRoutes(app: FastifyInstance) {
 
     const invitation = await repoGetInvitationById(inviteId);
     if (!invitation) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Invitation not found or has expired',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Invitation not found or has expired');
     }
 
     if (invitation.status !== 'pending') {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: invitation.status === 'accepted'
+      return sendError(reply, 400, 'BAD_REQUEST', invitation.status === 'accepted'
           ? 'This invitation has already been accepted'
-          : 'This invitation has expired',
-      });
+          : 'This invitation has expired');
     }
 
     // Get organization details
@@ -440,36 +417,24 @@ export async function organizationRoutes(app: FastifyInstance) {
 
     const invitation = await repoGetInvitationById(inviteId);
     if (!invitation) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Invitation not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Invitation not found');
     }
 
     if (invitation.status !== 'pending') {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: invitation.status === 'accepted'
+      return sendError(reply, 400, 'BAD_REQUEST', invitation.status === 'accepted'
           ? 'This invitation has already been accepted'
-          : 'This invitation has expired',
-      });
+          : 'This invitation has expired');
     }
 
     // Verify the logged in user's email matches the invitation
     if (user.email.toLowerCase() !== invitation.email.toLowerCase()) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'This invitation was sent to a different email address',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'This invitation was sent to a different email address');
     }
 
     // Check if organization still exists
     const org = await repoGetOrganizationById(invitation.organization_id);
     if (!org) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'The organization no longer exists',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'The organization no longer exists');
     }
 
     // Check if user is already a member
@@ -536,10 +501,7 @@ export async function organizationRoutes(app: FastifyInstance) {
 
     const org = await repoGetOrganizationById(id);
     if (!org) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Organization not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Organization not found');
     }
 
     // Update allowed fields
@@ -566,36 +528,24 @@ export async function organizationRoutes(app: FastifyInstance) {
     // Feature #2116: Get user using async DB call
     const user = await dbGetUserByEmail(jwtUser.email);
     if (!user) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'User not found',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'User not found');
     }
 
     // Verify password
     const validPassword = await bcrypt.compare(password, user.password_hash);
     if (!validPassword) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'Incorrect password. Please try again.',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'Incorrect password. Please try again.');
     }
 
     // Check if organization exists
     const orgToDelete = await repoGetOrganizationById(id);
     if (!orgToDelete) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Organization not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Organization not found');
     }
 
     // Verify user owns this organization
     if (jwtUser.organization_id !== id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You can only delete your own organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You can only delete your own organization');
     }
 
     // Cascade delete all organization data using async DB calls
@@ -660,10 +610,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     // Check if organization exists
     const orgForRemove = await repoGetOrganizationById(id);
     if (!orgForRemove) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Organization not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Organization not found');
     }
 
     // Get current members
@@ -672,26 +619,17 @@ export async function organizationRoutes(app: FastifyInstance) {
     // Find the member to remove
     const memberToRemove = members.find(m => m.user_id === memberId);
     if (!memberToRemove) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Member not found in organization',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Member not found in organization');
     }
 
     // Cannot remove the owner
     if (memberToRemove.role === 'owner') {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Cannot remove the organization owner',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Cannot remove the organization owner');
     }
 
     // Cannot remove yourself
     if (memberToRemove.user_id === jwtUser.id) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Cannot remove yourself from the organization',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Cannot remove yourself from the organization');
     }
 
     // Remove the member
@@ -719,10 +657,7 @@ export async function organizationRoutes(app: FastifyInstance) {
       // Check if organization exists
       const orgForUpdate = await repoGetOrganizationById(id);
       if (!orgForUpdate) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Organization not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Organization not found');
       }
 
       // Get current members
@@ -731,26 +666,17 @@ export async function organizationRoutes(app: FastifyInstance) {
       // Find the member to update
       const memberToUpdate = members.find(m => m.user_id === memberId);
       if (!memberToUpdate) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Member not found in organization',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Member not found in organization');
       }
 
       // Cannot change the owner's role
       if (memberToUpdate.role === 'owner') {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Cannot change the organization owner\'s role',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Cannot change the organization owner\'s role');
       }
 
       // Admins cannot promote others to admin (only owner can)
       if (jwtUser.role === 'admin' && role === 'admin') {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'Only the organization owner can promote members to admin',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'Only the organization owner can promote members to admin');
       }
 
       // Update the role
@@ -786,27 +712,18 @@ export async function organizationRoutes(app: FastifyInstance) {
       // Check if organization exists
       const orgForTransfer = await repoGetOrganizationById(id);
       if (!orgForTransfer) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Organization not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Organization not found');
       }
 
       // Feature #2116: Verify password using async DB call
       const currentUser = await dbGetUserByEmail(jwtUser.email);
       if (!currentUser) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'User not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'User not found');
       }
 
       const validPassword = await bcrypt.compare(password, currentUser.password_hash);
       if (!validPassword) {
-        return reply.status(401).send({
-          error: 'Unauthorized',
-          message: 'Invalid password',
-        });
+        return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid password');
       }
 
       // Get current members
@@ -815,27 +732,18 @@ export async function organizationRoutes(app: FastifyInstance) {
       // Find the new owner in members
       const newOwner = members.find(m => m.user_id === new_owner_id);
       if (!newOwner) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'New owner must be a member of the organization',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'New owner must be a member of the organization');
       }
 
       // Find current owner
       const currentOwner = members.find(m => m.user_id === jwtUser.id);
       if (!currentOwner) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Current owner not found in organization',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Current owner not found in organization');
       }
 
       // Cannot transfer to yourself
       if (new_owner_id === jwtUser.id) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Cannot transfer ownership to yourself',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Cannot transfer ownership to yourself');
       }
 
       // Transfer ownership
@@ -886,10 +794,7 @@ export async function organizationRoutes(app: FastifyInstance) {
 
       // Verify user has access to this organization
       if (orgId !== userOrgId) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this organization',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
       }
 
       // Parse period (already validated by Zod regex)
@@ -1230,10 +1135,7 @@ export async function organizationRoutes(app: FastifyInstance) {
     // Find the test using async DB call
     const test = await dbGetTestAsync(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     // Get the test's flakiness score (use 0 if not available)

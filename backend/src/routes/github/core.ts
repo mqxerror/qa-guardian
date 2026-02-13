@@ -21,6 +21,7 @@ const logger = createLogger('route:github:core');
 import { getProject as dbGetProject } from '../projects/stores.js';
 import { createTestSuite as dbCreateTestSuite, createTest as dbCreateTest } from '../test-suites/stores.js';
 
+import { sendError } from '../../utils/errors.js';
 import {
   GitHubConnection,
   PRStatusCheck,
@@ -100,10 +101,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const user = request.user as JwtPayload;
 
     if (!userGithubTokens.has(user.id)) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'GitHub account not connected. Please connect your GitHub account first.',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'GitHub account not connected. Please connect your GitHub account first.');
     }
 
     return {
@@ -120,20 +118,14 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const { owner, repo } = request.params;
 
     if (!userGithubTokens.has(user.id)) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'GitHub account not connected',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'GitHub account not connected');
     }
 
     const fullName = `${owner}/${repo}`;
     const repoInfo = demoRepositories.find(r => r.full_name === fullName);
 
     if (!repoInfo) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Repository not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Repository not found');
     }
 
     return {
@@ -152,10 +144,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const { branch } = request.query;
 
     if (!userGithubTokens.has(user.id)) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'GitHub account not connected',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'GitHub account not connected');
     }
 
     const fullName = `${owner}/${repo}`;
@@ -180,44 +169,29 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
 
     // Check if user has GitHub connected
     if (!userGithubTokens.has(user.id)) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'GitHub account not connected. Please connect your GitHub account first.',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'GitHub account not connected. Please connect your GitHub account first.');
     }
 
     // Verify project exists and belongs to user's organization
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     // Check if already connected
     if (githubConnections.has(projectId)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'This project already has a GitHub repository connected. Disconnect first to connect a different repository.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'This project already has a GitHub repository connected. Disconnect first to connect a different repository.');
     }
 
     // Validate repository exists in our demo list
     const fullName = `${owner}/${repo}`;
     const repoInfo = demoRepositories.find(r => r.full_name === fullName);
     if (!repoInfo) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Repository not found or you do not have access to it',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Repository not found or you do not have access to it');
     }
 
     // Create connection
@@ -314,17 +288,11 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     // Verify project exists and user has access
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
@@ -369,25 +337,16 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     // Verify project exists and user has access
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No GitHub repository connected to this project',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     // Remove the connection
@@ -413,25 +372,16 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     // Verify project exists and user has access
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No GitHub repository connected to this project',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     // Update last synced timestamp
@@ -465,44 +415,29 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const { branch } = request.body;
 
     if (!branch) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Branch is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Branch is required');
     }
 
     // Verify project exists and user has access
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No GitHub repository connected to this project',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     // Verify branch exists for this repo
     const fullName = `${connection.github_owner}/${connection.github_repo}`;
     const repoInfo = demoRepositories.find(r => r.full_name === fullName);
     if (!repoInfo || !repoInfo.branches.includes(branch)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Branch '${branch}' not found in repository`,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Branch '${branch}' not found in repository`);
     }
 
     const oldBranch = connection.github_branch;
@@ -546,25 +481,16 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
 
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No GitHub repository connected to this project',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     connection.pr_checks_enabled = pr_checks_enabled;
@@ -591,25 +517,16 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
 
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No GitHub repository connected to this project',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     const fullName = `${connection.github_owner}/${connection.github_repo}`;
@@ -646,32 +563,20 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
 
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No GitHub repository connected to this project',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     if (!connection.pr_checks_enabled) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'PR status checks are not enabled for this project',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'PR status checks are not enabled for this project');
     }
 
     const fullName = `${connection.github_owner}/${connection.github_repo}`;
@@ -679,10 +584,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const pr = pullRequests.find(p => p.number === parseInt(prNumber));
 
     if (!pr) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Pull request #${prNumber} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Pull request #${prNumber} not found`);
     }
 
     // Create or update status check
@@ -739,25 +641,16 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
 
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No GitHub repository connected to this project',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     const projectChecks = prStatusChecks.get(projectId) || [];
@@ -782,25 +675,16 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
 
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No GitHub repository connected to this project',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     connection.pr_comments_enabled = pr_comments_enabled;
@@ -828,32 +712,20 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
 
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No GitHub repository connected to this project',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     if (!connection.pr_comments_enabled) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'PR comments are not enabled for this project',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'PR comments are not enabled for this project');
     }
 
     const fullName = `${connection.github_owner}/${connection.github_repo}`;
@@ -861,10 +733,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const pr = pullRequests.find(p => p.number === parseInt(prNumber));
 
     if (!pr) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Pull request #${prNumber} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Pull request #${prNumber} not found`);
     }
 
     const total = passed + failed + skipped;
@@ -944,25 +813,16 @@ ${status}
 
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No GitHub repository connected to this project',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     const projectComments = prComments.get(projectId) || [];

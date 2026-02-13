@@ -5,6 +5,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticate } from '../../middleware/auth.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('ai-assertions');
 
 // Feature #1140: Interface for generated assertion
@@ -259,10 +260,7 @@ export async function aiAssertionsRoutes(app: FastifyInstance): Promise<void> {
     const { expected_outcomes, context, include_soft_assertions = false, include_wait_variants = true } = request.body;
 
     if (!expected_outcomes || expected_outcomes.length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'At least one expected outcome must be provided',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'At least one expected outcome must be provided');
     }
 
     logger.info({ outcomeCount: expected_outcomes.length }, 'Generating AI assertions');

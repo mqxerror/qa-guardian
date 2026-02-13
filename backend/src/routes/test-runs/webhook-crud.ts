@@ -20,6 +20,7 @@ import {
 import { validateWebhookURL, validateWebhookURLWithDNS, generateId } from '../../utils/index.js';
 import { WebhookLogEntry, webhookLog } from './alerts.js';
 import { createLogger } from '../../services/logger.js';
+import { sendError } from '../../utils/errors.js';
 // Feature #716: Zod validation middleware and schemas
 import {
   validateBody,
@@ -167,30 +168,18 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
 
     // Validate URL
     if (!url) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'url is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'url is required');
     }
 
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'URL must start with http:// or https://',
-        reachable: false,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'URL must start with http:// or https://', { reachable: false });
     }
 
     // Feature #315 + #400: SSRF protection with DNS resolution check
     // This prevents DNS rebinding attacks where a hostname resolves to a private IP
     const ssrfValidation = await validateWebhookURLWithDNS(url);
     if (!ssrfValidation.safe) {
-      return reply.status(400).send({
-        error: 'Security Error',
-        message: ssrfValidation.error,
-        reachable: false,
-        ssrf_blocked: true,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', ssrfValidation.error || 'URL rejected by SSRF validation', { reachable: false, ssrf_blocked: true });
     }
 
     logger.info(`[WEBHOOK] Testing URL "${url}" by ${user.email}`);
@@ -341,39 +330,26 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
 
     // Validate required fields
     if (!name || !url || !events || events.length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'name, url, and events are required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'name, url, and events are required');
     }
 
     // Validate URL format
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'URL must start with http:// or https://',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'URL must start with http:// or https://');
     }
 
     // Feature #315 + #400: SSRF protection with DNS resolution check
     // This prevents DNS rebinding attacks where a hostname resolves to a private IP
     const ssrfValidation = await validateWebhookURLWithDNS(url);
     if (!ssrfValidation.safe) {
-      return reply.status(400).send({
-        error: 'Security Error',
-        message: `Webhook URL rejected: ${ssrfValidation.error}`,
-        ssrf_blocked: true,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Webhook URL rejected: ${ssrfValidation.error}`, { ssrf_blocked: true });
     }
 
     // Validate events
     const validEvents = ['test.run.started', 'test.run.completed', 'test.run.failed', 'test.run.passed', 'test.completed', 'test.created', 'baseline.approved', 'schedule.triggered', 'visual.diff.detected', 'performance.budget.exceeded', 'security.vulnerability.found', 'flaky.test.detected', 'accessibility.issue.found'];
     for (const event of events) {
       if (!validEvents.includes(event)) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: `Invalid event: ${event}. Valid events are: ${validEvents.join(', ')}`,
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', `Invalid event: ${event}. Valid events are: ${validEvents.join(', ')}`);
       }
     }
 
@@ -381,10 +357,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
     if (project_id) {
       const project = await dbGetProject(project_id);
       if (!project || project.organization_id !== orgId) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Invalid project_id',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid project_id');
       }
     }
 
@@ -395,10 +368,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       for (const pid of project_ids) {
         const project = await dbGetProject(pid);
         if (!project || project.organization_id !== orgId) {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: `Invalid project_id: ${pid}`,
-          });
+          return sendError(reply, 400, 'BAD_REQUEST', `Invalid project_id: ${pid}`);
         }
         validatedProjectIds.push(pid);
       }
@@ -411,10 +381,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       validatedResultStatuses = [];
       for (const status of result_statuses) {
         if (!validResultStatuses.includes(status)) {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: `Invalid result_status: ${status}. Valid statuses are: ${validResultStatuses.join(', ')}`,
-          });
+          return sendError(reply, 400, 'BAD_REQUEST', `Invalid result_status: ${status}. Valid statuses are: ${validResultStatuses.join(', ')}`);
         }
         validatedResultStatuses.push(status);
       }
@@ -428,34 +395,22 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
         const testTemplate = payload_template.replace(/\{\{[^}]+\}\}/g, 'PLACEHOLDER');
         JSON.parse(testTemplate);
       } catch (err) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Invalid payload_template: must be valid JSON with {{variable}} placeholders',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid payload_template: must be valid JSON with {{variable}} placeholders');
       }
     }
 
     // Feature #1294/#330: Validate max_retries (default is 3, max is 5 to prevent long retry windows)
     if (max_retries !== undefined && (max_retries < 0 || max_retries > 5)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'max_retries must be between 0 and 5',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'max_retries must be between 0 and 5');
     }
 
     // Feature #1304: Validate batch settings
     if (batch_size !== undefined && (batch_size < 1 || batch_size > 100)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'batch_size must be between 1 and 100',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'batch_size must be between 1 and 100');
     }
 
     if (batch_interval_seconds !== undefined && (batch_interval_seconds < 5 || batch_interval_seconds > 3600)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'batch_interval_seconds must be between 5 and 3600 (1 hour)',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'batch_interval_seconds must be between 5 and 3600 (1 hour)');
     }
 
     const now = new Date();
@@ -519,10 +474,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
 
     const subscription = webhookSubscriptions.get(subscriptionId);
     if (!subscription || subscription.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Webhook subscription not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Webhook subscription not found');
     }
 
     return {
@@ -586,18 +538,12 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
 
     const subscription = webhookSubscriptions.get(subscriptionId);
     if (!subscription || subscription.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Webhook subscription not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Webhook subscription not found');
     }
 
     // Validate URL if provided
     if (updates.url && !updates.url.startsWith('http://') && !updates.url.startsWith('https://')) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'URL must start with http:// or https://',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'URL must start with http:// or https://');
     }
 
     // Feature #315 + #400: SSRF protection with DNS resolution check
@@ -605,11 +551,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
     if (updates.url) {
       const ssrfValidation = await validateWebhookURLWithDNS(updates.url);
       if (!ssrfValidation.safe) {
-        return reply.status(400).send({
-          error: 'Security Error',
-          message: `Webhook URL rejected: ${ssrfValidation.error}`,
-          ssrf_blocked: true,
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', `Webhook URL rejected: ${ssrfValidation.error}`, { ssrf_blocked: true });
       }
     }
 
@@ -618,10 +560,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       const validEvents = ['test.run.started', 'test.run.completed', 'test.run.failed', 'test.run.passed', 'test.completed', 'test.created', 'baseline.approved', 'schedule.triggered', 'visual.diff.detected', 'performance.budget.exceeded', 'security.vulnerability.found', 'flaky.test.detected', 'accessibility.issue.found'];
       for (const event of updates.events) {
         if (!validEvents.includes(event)) {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: `Invalid event: ${event}. Valid events are: ${validEvents.join(', ')}`,
-          });
+          return sendError(reply, 400, 'BAD_REQUEST', `Invalid event: ${event}. Valid events are: ${validEvents.join(', ')}`);
         }
       }
     }
@@ -633,34 +572,22 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
         const testTemplate = updates.payload_template.replace(/\{\{[^}]+\}\}/g, 'PLACEHOLDER');
         JSON.parse(testTemplate);
       } catch (err) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Invalid payload_template: must be valid JSON with {{variable}} placeholders',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid payload_template: must be valid JSON with {{variable}} placeholders');
       }
     }
 
     // Feature #1294: Validate max_retries if provided
     if (updates.max_retries !== undefined && (updates.max_retries < 0 || updates.max_retries > 10)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'max_retries must be between 0 and 10',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'max_retries must be between 0 and 10');
     }
 
     // Feature #1304: Validate batch settings if provided
     if (updates.batch_size !== undefined && (updates.batch_size < 1 || updates.batch_size > 100)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'batch_size must be between 1 and 100',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'batch_size must be between 1 and 100');
     }
 
     if (updates.batch_interval_seconds !== undefined && (updates.batch_interval_seconds < 5 || updates.batch_interval_seconds > 3600)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'batch_interval_seconds must be between 5 and 3600 (1 hour)',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'batch_interval_seconds must be between 5 and 3600 (1 hour)');
     }
 
     // Feature #1299: Validate project_ids if provided
@@ -670,10 +597,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       for (const pid of updates.project_ids) {
         const project = await dbGetProject(pid);
         if (!project || project.organization_id !== orgId) {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: `Invalid project_id: ${pid}`,
-          });
+          return sendError(reply, 400, 'BAD_REQUEST', `Invalid project_id: ${pid}`);
         }
         validatedProjectIds.push(pid);
       }
@@ -686,10 +610,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
       validatedResultStatuses = [];
       for (const status of updates.result_statuses) {
         if (!validResultStatuses.includes(status)) {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: `Invalid result_status: ${status}. Valid statuses are: ${validResultStatuses.join(', ')}`,
-          });
+          return sendError(reply, 400, 'BAD_REQUEST', `Invalid result_status: ${status}. Valid statuses are: ${validResultStatuses.join(', ')}`);
         }
         validatedResultStatuses.push(status);
       }
@@ -760,10 +681,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
 
     const subscription = webhookSubscriptions.get(subscriptionId);
     if (!subscription || subscription.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Webhook subscription not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Webhook subscription not found');
     }
 
     // Feature #329: Delete subscription from both memory and database

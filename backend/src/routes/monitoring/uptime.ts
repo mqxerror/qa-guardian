@@ -34,6 +34,7 @@ import { MONITORING_LOCATIONS, runCheckFromAllLocations, startCheckInterval, sto
 // Feature #123: Import cache service for read-heavy endpoints
 import { getCache, CacheKeys } from '../../services/cache.js';
 
+import { sendError } from '../../utils/errors.js';
 export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
   // Get available monitoring locations
   app.get(
@@ -127,28 +128,19 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
 
       // Validate interval (30s - 5min)
       if (interval < 30 || interval > 300) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Interval must be between 30 and 300 seconds',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Interval must be between 30 and 300 seconds');
       }
 
       // Validate URL
       try {
         new URL(url);
       } catch {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Invalid URL format',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid URL format');
       }
 
       // Validate timeout (1s - 30s)
       if (timeout < 1000 || timeout > 30000) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Timeout must be between 1000 and 30000 milliseconds',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Timeout must be between 1000 and 30000 milliseconds');
       }
 
       // Validate locations
@@ -157,10 +149,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       ) as MonitoringLocation[];
 
       if (validLocations.length === 0) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'At least one valid location is required',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'At least one valid location is required');
       }
 
       const check: UptimeCheck = {
@@ -229,10 +218,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Uptime check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
 
       const latestResult = await getLatestCheckResult(checkId);
@@ -281,18 +267,12 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Uptime check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
 
       // Validate interval if provided
       if (updates.interval !== undefined && (updates.interval < 30 || updates.interval > 300)) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Interval must be between 30 and 300 seconds',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Interval must be between 30 and 300 seconds');
       }
 
       // Validate URL if provided
@@ -300,10 +280,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
         try {
           new URL(updates.url);
         } catch {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: 'Invalid URL format',
-          });
+          return sendError(reply, 400, 'BAD_REQUEST', 'Invalid URL format');
         }
       }
 
@@ -367,10 +344,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Uptime check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
 
       // Stop the interval
@@ -469,10 +443,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const history = await getDeletedCheckHistory(checkId);
 
       if (!history || history.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Deleted check history not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Deleted check history not found');
       }
 
       return {
@@ -499,10 +470,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const originalCheck = await getUptimeCheck(checkId);
 
       if (!originalCheck || originalCheck.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Uptime check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
 
       // Create duplicate with new ID and optionally new name
@@ -556,10 +524,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const { action, checkIds, group } = request.body;
 
       if (!action) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Action is required',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Action is required');
       }
 
       // Get checks to operate on
@@ -578,17 +543,11 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
         const allOrgChecks = await listUptimeChecks(orgId);
         targetChecks = allOrgChecks.filter(check => check.group === group);
       } else {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Either checkIds or group must be provided',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Either checkIds or group must be provided');
       }
 
       if (targetChecks.length === 0) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'No matching checks found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'No matching checks found');
       }
 
       let affectedCount = 0;
@@ -669,10 +628,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Uptime check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
 
       const results = await getCheckResults(checkId);
@@ -737,10 +693,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Uptime check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
 
       const results = await getCheckResults(checkId);
@@ -815,10 +768,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Uptime check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
 
       // Get closed incidents
@@ -867,10 +817,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Uptime check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
 
       const results = await getCheckResults(checkId);
@@ -959,10 +906,7 @@ export async function uptimeRoutes(app: FastifyInstance): Promise<void> {
       const check = await getUptimeCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Uptime check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Uptime check not found');
       }
 
       const results = await runCheckFromAllLocations(check);

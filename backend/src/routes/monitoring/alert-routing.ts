@@ -41,6 +41,7 @@ import {
 } from './stores.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('alert-routing');
 
 import {
@@ -94,15 +95,15 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
       const user = request.user as JwtPayload;
 
       if (!name?.trim()) {
-        return reply.status(400).send({ error: 'Rule name is required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Rule name is required');
       }
 
       if (!conditions || conditions.length === 0) {
-        return reply.status(400).send({ error: 'At least one condition is required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'At least one condition is required');
       }
 
       if (!destinations || destinations.length === 0) {
-        return reply.status(400).send({ error: 'At least one destination is required' });
+        return sendError(reply, 400, 'BAD_REQUEST', 'At least one destination is required');
       }
 
       // Validate conditions
@@ -110,10 +111,10 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
       const validOperators = ['equals', 'not_equals', 'contains', 'in', 'not_in'];
       for (const condition of conditions) {
         if (!validFields.includes(condition.field)) {
-          return reply.status(400).send({ error: `Invalid condition field: ${condition.field}` });
+          return sendError(reply, 400, 'BAD_REQUEST', `Invalid condition field: ${condition.field}`);
         }
         if (!validOperators.includes(condition.operator)) {
-          return reply.status(400).send({ error: `Invalid condition operator: ${condition.operator}` });
+          return sendError(reply, 400, 'BAD_REQUEST', `Invalid condition operator: ${condition.operator}`);
         }
       }
 
@@ -121,7 +122,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
       const validTypes = ['pagerduty', 'slack', 'email', 'webhook', 'opsgenie', 'on_call', 'n8n', 'telegram', 'teams', 'discord'];
       for (const dest of destinations) {
         if (!validTypes.includes(dest.type)) {
-          return reply.status(400).send({ error: `Invalid destination type: ${dest.type}` });
+          return sendError(reply, 400, 'BAD_REQUEST', `Invalid destination type: ${dest.type}`);
         }
       }
 
@@ -180,7 +181,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
       const rule = alertRoutingRules.get(ruleId);
 
       if (!rule || rule.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Alert routing rule not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Alert routing rule not found');
       }
 
       return {
@@ -219,7 +220,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
       const rule = alertRoutingRules.get(ruleId);
 
       if (!rule || rule.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Alert routing rule not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Alert routing rule not found');
       }
 
       if (name !== undefined) rule.name = name.trim();
@@ -265,7 +266,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
       const rule = alertRoutingRules.get(ruleId);
 
       if (!rule || rule.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Alert routing rule not found' });
+        return sendError(reply, 404, 'NOT_FOUND', 'Alert routing rule not found');
       }
 
       alertRoutingRules.delete(ruleId);

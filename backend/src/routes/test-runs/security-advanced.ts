@@ -12,6 +12,7 @@ import { runGitleaksScan, checkGitleaksAvailability } from '../sast/gitleaks.js'
 // GitleaksFinding type available from sast/gitleaks.js
 import { scanContainerImage, checkTrivyAvailability, type TrivyScanResult } from '../../services/trivy-scanner.js';
 
+import { sendError } from '../../utils/errors.js';
 // Import types and helpers from extracted module
 import {
   DastScanBody,
@@ -52,10 +53,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     // Verify project exists
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Project with ID ${projectId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${projectId} not found`);
     }
 
     // Run real Gitleaks scan on the project repository
@@ -331,10 +329,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     // Parse secret ID format: secret-{projectId}-{index}
     const secretIdMatch = secretId.match(/^secret-([^-]+)-(\d+)$/);
     if (!secretIdMatch) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Invalid secret ID format. Expected format: secret-{projectId}-{index}',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Invalid secret ID format. Expected format: secret-{projectId}-{index}');
     }
 
     const projectId = secretIdMatch[1]!;
@@ -343,10 +338,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     // Verify project exists and belongs to org
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Project with ID ${projectId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${projectId} not found`);
     }
 
     // Get secret type based on index
@@ -458,19 +450,13 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     // Verify project exists
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Project with ID ${projectId} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${projectId} not found`);
     }
 
     // Validate format
     const validFormats = ['cyclonedx', 'spdx'];
     if (!validFormats.includes(format)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Invalid format. Supported formats: ${validFormats.join(', ')}`,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Invalid format. Supported formats: ${validFormats.join(', ')}`);
     }
 
     // Use sample SBOM components from types module
@@ -598,21 +584,21 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     if (!target_url) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'target_url is required' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'target_url is required');
     }
 
     // Validate URL format
     try {
       new URL(target_url);
     } catch {
-      return reply.status(400).send({ error: 'Bad Request', message: 'Invalid target_url format' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Invalid target_url format');
     }
 
     // If project_id provided, verify ownership
     if (project_id) {
       const project = await dbGetProject(project_id);
       if (!project || project.organization_id !== orgId) {
-        return reply.status(404).send({ error: 'Not Found', message: `Project with ID ${project_id} not found` });
+        return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${project_id} not found`);
       }
     }
 
@@ -936,7 +922,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
 
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Not Found', message: `Project with ID ${projectId} not found` });
+      return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${projectId} not found`);
     }
 
     const reportId = `report-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -1010,7 +996,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
 
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Not Found', message: `Project with ID ${projectId} not found` });
+      return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${projectId} not found`);
     }
 
     const existingPolicy = securityPolicies.get(projectId) || {
@@ -1051,7 +1037,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
 
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Not Found', message: `Project with ID ${projectId} not found` });
+      return sendError(reply, 404, 'NOT_FOUND', `Project with ID ${projectId} not found`);
     }
 
     const policy = securityPolicies.get(projectId) || {
@@ -1084,7 +1070,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     const skipCache = skip_cache === 'true';
 
     if (!image) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'image parameter is required' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'image parameter is required');
     }
 
     // Map severity filter to Trivy format
@@ -1147,7 +1133,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     const includeDetails = include_details === 'true';
 
     if (!baseline || !current) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'baseline and current scan IDs are required' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'baseline and current scan IDs are required');
     }
 
     // Simulated baseline and current vulnerabilities
@@ -1490,7 +1476,7 @@ export async function securityAdvancedRoutes(app: FastifyInstance) {
     const projects = await dbListProjects(orgId);
     const project = projects.find(p => p.id === projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Simulated vulnerable dependencies with upgrade recommendations

@@ -14,6 +14,7 @@ import * as webhookRepo from '../../services/repositories/webhooks.js';
 // Feature #484: Pino structured logging
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const log = createLogger('webhook-delivery');
 
 // ============================================================================
@@ -104,10 +105,7 @@ export async function webhookDeliveryRoutes(app: FastifyInstance) {
 
     const subscription = webhookSubscriptions.get(subscriptionId);
     if (!subscription || subscription.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Webhook subscription not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Webhook subscription not found');
     }
 
     // Filter logs for this subscription
@@ -157,10 +155,7 @@ export async function webhookDeliveryRoutes(app: FastifyInstance) {
 
     const subscription = webhookSubscriptions.get(subscriptionId);
     if (!subscription || subscription.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Webhook subscription not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Webhook subscription not found');
     }
 
     // Get recent delivery logs for this subscription
@@ -314,21 +309,14 @@ export async function webhookDeliveryRoutes(app: FastifyInstance) {
 
     const subscription = webhookSubscriptions.get(subscriptionId);
     if (!subscription || subscription.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Webhook subscription not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Webhook subscription not found');
     }
 
     // Feature #315 + #400: SSRF protection with DNS resolution check
     // This prevents DNS rebinding attacks where a hostname resolves to a private IP
     const ssrfValidation = await validateWebhookURLWithDNS(subscription.url);
     if (!ssrfValidation.safe) {
-      return reply.status(400).send({
-        error: 'Security Error',
-        message: `Webhook URL rejected: ${ssrfValidation.error}`,
-        ssrf_blocked: true,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Webhook URL rejected: ${ssrfValidation.error}`, { ssrf_blocked: true });
     }
 
     // Build test payload
@@ -479,10 +467,7 @@ export async function webhookDeliveryRoutes(app: FastifyInstance) {
 
     const subscription = webhookSubscriptions.get(subscriptionId);
     if (!subscription || subscription.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Webhook subscription not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Webhook subscription not found');
     }
 
     // Build sample payload based on event type
@@ -912,10 +897,7 @@ def verify_webhook_signature(body: bytes, signature_header: str, secret: str, to
 
     const subscription = webhookSubscriptions.get(subscriptionId);
     if (!subscription || subscription.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Webhook subscription not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Webhook subscription not found');
     }
 
     const limitNum = Math.min(parseInt(limit) || 50, 100);
@@ -955,10 +937,7 @@ def verify_webhook_signature(body: bytes, signature_header: str, secret: str, to
       };
     } catch (error: unknown) {
       log.error({ err: error, code: 'WEBHOOK_DELIVERY_HISTORY_FAILED' }, 'Failed to get delivery history from database');
-      return reply.status(500).send({
-        error: 'Internal Server Error',
-        message: 'Failed to retrieve delivery history',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to retrieve delivery history');
     }
   });
 
@@ -1011,10 +990,7 @@ def verify_webhook_signature(body: bytes, signature_header: str, secret: str, to
       };
     } catch (error: unknown) {
       log.error({ err: error, code: 'WEBHOOK_DELIVERY_HISTORY_FAILED' }, 'Failed to get delivery history from database');
-      return reply.status(500).send({
-        error: 'Internal Server Error',
-        message: 'Failed to retrieve delivery history',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to retrieve delivery history');
     }
   });
 }

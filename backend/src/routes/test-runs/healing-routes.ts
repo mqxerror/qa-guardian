@@ -36,6 +36,7 @@ import {
 import { testRuns, TestRun } from './execution.js';
 import { getTestRun } from '../../services/repositories/test-runs.js';
 import { createLogger } from '../../services/logger.js';
+import { sendError } from '../../utils/errors.js';
 // Feature #716: Zod validation middleware and schemas
 import {
   validateBody,
@@ -279,18 +280,12 @@ export async function healingRoutes(app: FastifyInstance) {
     const userId = user?.email || user?.id;
 
     if (typeof approved !== 'boolean') {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Request body must include "approved" boolean field',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Request body must include "approved" boolean field');
     }
 
     const success = resolveHealingApproval(approvalId, approved, userId);
     if (!success) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Pending healing approval not found or already resolved',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Pending healing approval not found or already resolved');
     }
 
     return {
@@ -311,10 +306,7 @@ export async function healingRoutes(app: FastifyInstance) {
 
     const run = await getTestRunWithFallback(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Filter pending approvals for this run
@@ -345,10 +337,7 @@ export async function healingRoutes(app: FastifyInstance) {
 
     const result = await applyHealedSelector(healingId, userId);
     if (!result.success) {
-      return reply.status(404).send({
-        error: 'Error',
-        message: result.error || 'Failed to apply healing update',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', result.error || 'Failed to apply healing update');
     }
 
     const record = pendingHealingUpdates.get(healingId);
@@ -372,10 +361,7 @@ export async function healingRoutes(app: FastifyInstance) {
 
     const success = dismissHealingUpdate(healingId);
     if (!success) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Pending healing update not found or already resolved',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Pending healing update not found or already resolved');
     }
 
     return {
@@ -394,10 +380,7 @@ export async function healingRoutes(app: FastifyInstance) {
 
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     // Filter pending updates for this test
@@ -424,10 +407,7 @@ export async function healingRoutes(app: FastifyInstance) {
 
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     const history = getSelectorHistory(testId, parseInt(stepIndex, 10));
@@ -449,10 +429,7 @@ export async function healingRoutes(app: FastifyInstance) {
 
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     const history = getHealingHistory(testId);
@@ -499,20 +476,14 @@ export async function healingRoutes(app: FastifyInstance) {
 
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     const history = getHealingHistory(testId);
     const event = history.find((e: HealingEventEntry) => e.id === eventId);
 
     if (!event) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Healing event not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Healing event not found');
     }
 
     // Generate DOM diff highlights
@@ -576,33 +547,21 @@ export async function healingRoutes(app: FastifyInstance) {
 
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     if (!sha) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'sha is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'sha is required');
     }
 
     const history = healingEventHistory.get(testId);
     if (!history) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Healing event not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Healing event not found');
     }
 
     const event = history.find(e => e.id === eventId);
     if (!event) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Healing event not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Healing event not found');
     }
 
     // Initialize domContext if needed
@@ -781,10 +740,7 @@ export async function healingRoutes(app: FastifyInstance) {
     const { updates } = request.body;
 
     if (!updates || !Array.isArray(updates) || updates.length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'updates array is required and must not be empty',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'updates array is required and must not be empty');
     }
 
     const results: Array<{

@@ -23,6 +23,7 @@ import type { AuditLogEntry } from '../services/repositories/audit-logs.js';
 // Feature #123: Import cache service for read-heavy endpoints
 import { getCache, CacheKeys, CacheTTL } from '../services/cache.js';
 
+import { sendError } from '../utils/errors.js';
 // Re-export interface for backward compatibility
 export type { AuditLogEntry };
 
@@ -99,10 +100,7 @@ export async function auditLogRoutes(app: FastifyInstance) {
 
       // Verify user has access to this organization
       if (orgId !== userOrgId) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this organization',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
       }
 
       // Use repository to list logs with filters and pagination
@@ -172,10 +170,7 @@ export async function auditLogRoutes(app: FastifyInstance) {
       const userOrgId = getOrganizationId(request);
 
       if (orgId !== userOrgId) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this organization',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
       }
 
       // Feature #123: Cache actions list for 5 minutes (rarely changes)
@@ -205,10 +200,7 @@ export async function auditLogRoutes(app: FastifyInstance) {
       const userOrgId = getOrganizationId(request);
 
       if (orgId !== userOrgId) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'You do not have access to this organization',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this organization');
       }
 
       // Feature #123: Cache resource types for 5 minutes (rarely changes)

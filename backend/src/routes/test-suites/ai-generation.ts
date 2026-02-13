@@ -9,6 +9,7 @@ import { getTestSuite, createTest } from './stores.js';
 import { generatePlaywrightCode } from './utils.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('ai-generation');
 
 // Feature #1137: Request body for AI test generation
@@ -289,19 +290,13 @@ export async function aiGenerationRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     if (!description || description.trim().length < 10) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Test description must be at least 10 characters long',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Test description must be at least 10 characters long');
     }
 
     // Verify suite exists and belongs to organization
     const suite = await getTestSuite(suite_id);
     if (!suite || suite.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test suite not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     logger.info({ descriptionPreview: description.substring(0, 100) }, 'Generating AI test from description');

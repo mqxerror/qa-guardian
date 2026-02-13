@@ -11,6 +11,7 @@ import { listTestRunsByOrg, getFlakinessTrendData } from '../../services/reposit
 import { getCache } from '../../services/cache.js';
 import { CacheKeys, CacheTTL } from '../../services/cache-keys.js';
 
+import { sendError } from '../../utils/errors.js';
 // Feature #142: Default to last 30 days for flaky test analysis
 const FLAKY_ANALYSIS_DAYS = 30;
 function getThirtyDaysAgo(): Date {
@@ -456,17 +457,17 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     // Verify test exists and belongs to org
     const test = await getTest(testId);
     if (!test) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     const suite = await getTestSuite(test.suite_id);
     if (!suite) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test suite not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     const project = await getProject(suite.project_id);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Test not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     // Feature #184: Cache the heavy flakiness-trend computation (5 min TTL)
@@ -869,20 +870,16 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     // Find the test (async DB call)
     const test = await getTest(testId);
     if (!test) {
-      return reply.status(404).send({ error: 'Test not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     if (test.organization_id !== orgId) {
-      return reply.status(403).send({ error: 'Access denied' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
     }
 
     // Already quarantined?
     if (test.quarantined) {
-      return reply.status(400).send({
-        error: 'Test is already quarantined',
-        quarantined_at: (test as { quarantined_at?: Date }).quarantined_at,
-        quarantine_reason: (test as { quarantine_reason?: string }).quarantine_reason,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Test is already quarantined', { quarantined_at: (test as { quarantined_at?: Date }).quarantined_at, quarantine_reason: (test as { quarantine_reason?: string }).quarantine_reason });
     }
 
     // Quarantine the test
@@ -924,18 +921,16 @@ export async function flakyTestsRoutes(app: FastifyInstance) {
     // Find the test (async DB call)
     const test = await getTest(testId);
     if (!test) {
-      return reply.status(404).send({ error: 'Test not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     if (test.organization_id !== orgId) {
-      return reply.status(403).send({ error: 'Access denied' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
     }
 
     // Not quarantined?
     if (!test.quarantined) {
-      return reply.status(400).send({
-        error: 'Test is not quarantined',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Test is not quarantined');
     }
 
     // Unquarantine the test

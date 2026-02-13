@@ -6,6 +6,7 @@ import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { SuiteParams } from './types.js';
 import { getTestSuite, listTests } from './stores.js';
 
+import { sendError } from '../../utils/errors.js';
 // Selector suggestion interface
 interface SelectorSuggestion {
   test_id: string;
@@ -73,10 +74,7 @@ export async function healingRoutes(app: FastifyInstance) {
 
     const suite = await getTestSuite(suiteId);
     if (!suite || suite.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test suite not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     // Get all tests in the suite

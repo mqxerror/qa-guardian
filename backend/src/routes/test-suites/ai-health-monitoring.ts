@@ -9,6 +9,7 @@ import { listTests } from './stores.js';
 import { getTestRunMetadataForSuite } from '../../services/repositories/test-runs.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const log = createLogger('ai-health-monitoring');
 
 // ============================================================
@@ -366,10 +367,7 @@ export async function aiHealthMonitoringRoutes(app: FastifyInstance) {
       const suiteTests = await listTests(suiteId);
 
       if (suiteTests.length === 0) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'No tests found for this suite',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'No tests found for this suite');
       }
 
       // Get run metadata (last_result, run_count, avg_duration, last_run_at) for each test

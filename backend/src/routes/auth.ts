@@ -8,6 +8,7 @@ import { createSigner, createVerifier } from 'fast-jwt';
 // Feature #439: Use structured logger instead of console.*
 import { logger } from '../services/logger.js';
 import { getUserOrganization, DEFAULT_ORG_ID } from './organizations.js';
+import { sendError } from '../utils/errors.js';
 // Feature #713: Zod validation middleware
 import {
   validateBody,
@@ -283,10 +284,7 @@ export async function authRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     // Feature #2099: Guard against race conditions during server initialization
     if (!seedingComplete) {
-      return reply.status(503).send({
-        error: 'Service Unavailable',
-        message: 'Server is initializing, please try again shortly',
-      });
+      return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Server is initializing, please try again shortly');
     }
 
     // Feature #713: Zod validation now handles required field checks
@@ -296,19 +294,13 @@ export async function authRoutes(app: FastifyInstance) {
     const user = await dbGetUserByEmail(email);
 
     if (!user) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'Invalid email or password',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid email or password');
     }
 
     const validPassword = await bcrypt.compare(password, user.password_hash);
 
     if (!validPassword) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'Invalid email or password',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid email or password');
     }
 
     // Get user's organization
@@ -316,10 +308,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     // If user is not a member of any organization, deny login
     if (!organizationId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Your account is not associated with any organization. Please contact an administrator.',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Your account is not associated with any organization. Please contact an administrator.');
     }
 
     // Feature #213: Generate short-lived access token (1 hour)
@@ -365,10 +354,7 @@ export async function authRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     // Feature #2099: Guard against race conditions during server initialization
     if (!seedingComplete) {
-      return reply.status(503).send({
-        error: 'Service Unavailable',
-        message: 'Server is initializing, please try again shortly',
-      });
+      return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Server is initializing, please try again shortly');
     }
 
     // Feature #713: Zod validation now handles required fields and password complexity
@@ -377,10 +363,7 @@ export async function authRoutes(app: FastifyInstance) {
     // Feature #2116: Check if user already exists using async DB call
     const existingUser = await dbUserExists(email);
     if (existingUser) {
-      return reply.status(409).send({
-        error: 'Conflict',
-        message: 'User with this email already exists',
-      });
+      return sendError(reply, 409, 'CONFLICT', 'User with this email already exists');
     }
 
     const password_hash = await bcrypt.hash(password, 10);
@@ -469,17 +452,11 @@ export async function authRoutes(app: FastifyInstance) {
           if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.substring(7);
             if (await dbIsTokenBlacklisted(token)) {
-              return reply.status(401).send({
-                error: 'Unauthorized',
-                message: 'Token has been invalidated',
-              });
+              return sendError(reply, 401, 'UNAUTHORIZED', 'Token has been invalidated');
             }
           }
         } catch {
-          return reply.status(401).send({
-            error: 'Unauthorized',
-            message: 'Invalid or expired token',
-          });
+          return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid or expired token');
         }
       },
     ],
@@ -554,18 +531,12 @@ export async function authRoutes(app: FastifyInstance) {
     try {
       payload = getVerifyRefreshToken()(refresh_token) as RefreshTokenPayload;
     } catch (err) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'Invalid or expired refresh token',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid or expired refresh token');
     }
 
     // Ensure it's a refresh token
     if (payload.type !== 'refresh') {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'Invalid token type',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid token type');
     }
 
     // Step 2: Feature #233 - Atomically revoke the token and check if it was valid
@@ -575,30 +546,21 @@ export async function authRoutes(app: FastifyInstance) {
     const revokedUserId = await atomicRevoke(refresh_token);
     if (!revokedUserId) {
       // Token was already revoked by another concurrent request, or expired
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'Refresh token has been revoked or expired',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'Refresh token has been revoked or expired');
     }
 
     // Step 3: Get user to ensure they still exist and are valid
     const user = await dbGetUserByEmail(payload.email);
     if (!user) {
       // Token already revoked above, just return error
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'User not found',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'User not found');
     }
 
     // Step 4: Get current organization (may have changed)
     const organizationId = await getUserOrganization(user.id);
     if (!organizationId) {
       // Token already revoked above, just return error
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'User is not associated with any organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'User is not associated with any organization');
     }
 
     // Step 5: Generate new access token
@@ -645,19 +607,13 @@ export async function authRoutes(app: FastifyInstance) {
     const user = await dbGetUserByEmail(email);
 
     if (!user) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'Invalid email or password',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid email or password');
     }
 
     const validPassword = await bcrypt.compare(password, user.password_hash);
 
     if (!validPassword) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'Invalid email or password',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid email or password');
     }
 
     // Get user's organization
@@ -733,37 +689,25 @@ export async function authRoutes(app: FastifyInstance) {
     const resetToken = await dbGetResetToken(token);
 
     if (!resetToken) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Invalid or expired reset token',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Invalid or expired reset token');
     }
 
     // Check if token has been used
     if (resetToken.used) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'This reset link has already been used',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'This reset link has already been used');
     }
 
     // Check if token is expired (1 hour)
     const tokenAge = Date.now() - resetToken.createdAt.getTime();
     const oneHour = 60 * 60 * 1000;
     if (tokenAge > oneHour) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Reset token has expired. Please request a new one.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Reset token has expired. Please request a new one.');
     }
 
     // Feature #2116: Get the user using async DB call
     const user = await dbGetUserByEmail(resetToken.email);
     if (!user) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'User not found',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'User not found');
     }
 
     // Feature #2116: Update the password using async DB call
@@ -793,17 +737,11 @@ export async function authRoutes(app: FastifyInstance) {
           if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.substring(7);
             if (await dbIsTokenBlacklisted(token)) {
-              return reply.status(401).send({
-                error: 'Unauthorized',
-                message: 'Token has been invalidated',
-              });
+              return sendError(reply, 401, 'UNAUTHORIZED', 'Token has been invalidated');
             }
           }
         } catch {
-          return reply.status(401).send({
-            error: 'Unauthorized',
-            message: 'Invalid or expired token',
-          });
+          return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid or expired token');
         }
       },
     ],
@@ -847,17 +785,11 @@ export async function authRoutes(app: FastifyInstance) {
           if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.substring(7);
             if (await dbIsTokenBlacklisted(token)) {
-              return reply.status(401).send({
-                error: 'Unauthorized',
-                message: 'Token has been invalidated',
-              });
+              return sendError(reply, 401, 'UNAUTHORIZED', 'Token has been invalidated');
             }
           }
         } catch {
-          return reply.status(401).send({
-            error: 'Unauthorized',
-            message: 'Invalid or expired token',
-          });
+          return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid or expired token');
         }
       },
     ],
@@ -870,10 +802,7 @@ export async function authRoutes(app: FastifyInstance) {
     // Find the session to invalidate
     const session = sessions.find(s => s.id === sessionId);
     if (!session) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Session not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Session not found');
     }
 
     // Feature #222: Since session.token is now a hash, we can't blacklist it directly.
@@ -898,17 +827,11 @@ export async function authRoutes(app: FastifyInstance) {
           if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.substring(7);
             if (await dbIsTokenBlacklisted(token)) {
-              return reply.status(401).send({
-                error: 'Unauthorized',
-                message: 'Token has been invalidated',
-              });
+              return sendError(reply, 401, 'UNAUTHORIZED', 'Token has been invalidated');
             }
           }
         } catch {
-          return reply.status(401).send({
-            error: 'Unauthorized',
-            message: 'Invalid or expired token',
-          });
+          return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid or expired token');
         }
       },
     ],

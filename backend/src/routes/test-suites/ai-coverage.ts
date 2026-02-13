@@ -10,6 +10,7 @@ import { Test, TestStep } from './types.js';
 import { generatePlaywrightCode } from './utils.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('ai-coverage');
 
 // Feature #1147: Interface for coverage gap
@@ -869,10 +870,7 @@ export async function aiCoverageRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     if (!changes || changes.length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'At least one code change must be provided',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'At least one code change must be provided');
     }
 
     logger.info({ changeCount: changes.length }, 'Analyzing code changes');
@@ -938,19 +936,13 @@ export async function aiCoverageRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     if (!suite_id || !suggestions || suggestions.length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'suite_id and at least one suggestion are required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'suite_id and at least one suggestion are required');
     }
 
     // Verify suite exists
     const suite = await getTestSuite(suite_id);
     if (!suite || suite.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test suite not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     logger.info({ suggestionCount: suggestions.length }, 'Bulk generating AI tests');

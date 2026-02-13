@@ -57,6 +57,7 @@ const execFileAsync = promisify(execFile);
 
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('sast-pr-integration');
 
 /**
@@ -146,11 +147,11 @@ export async function prIntegrationRoutes(
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const config = await getSASTConfig(projectId);
@@ -180,17 +181,17 @@ export async function prIntegrationRoutes(
 
     // Check permissions
     if (user.role === 'viewer') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Viewers cannot modify SAST PR integration settings' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot modify SAST PR integration settings');
     }
 
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const config = await updateSASTConfig(projectId, updates);
@@ -237,22 +238,22 @@ export async function prIntegrationRoutes(
 
     // Check permissions
     if (user.role === 'viewer') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Viewers cannot trigger SAST scans' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot trigger SAST scans');
     }
 
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const config = await getSASTConfig(projectId);
     if (!config.prChecksEnabled) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'SAST PR checks are not enabled for this project' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'SAST PR checks are not enabled for this project');
     }
 
     // Create a pending PR check
@@ -450,11 +451,11 @@ ${findingsList ? `### Top Findings:\n${findingsList}\n` : ''}`
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     let checks = await getSastPRChecks(projectId);
@@ -479,18 +480,18 @@ ${findingsList ? `### Top Findings:\n${findingsList}\n` : ''}`
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const checks = await getSastPRChecks(projectId);
     const check = checks.find(c => c.id === checkId);
 
     if (!check) {
-      return reply.status(404).send({ error: 'Not Found', message: 'PR check not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'PR check not found');
     }
 
     return { check };
@@ -510,11 +511,11 @@ ${findingsList ? `### Top Findings:\n${findingsList}\n` : ''}`
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     let comments = await getSastPRComments(projectId);

@@ -20,6 +20,7 @@ import {
 // Feature #484: Pino structured logging
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const log = createLogger('alert-channels');
 
 // ============================================================================
@@ -39,10 +40,7 @@ export async function alertChannelRoutes(app: FastifyInstance) {
     // Verify project exists and belongs to user's organization
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const channels = Array.from(alertChannels.values())
@@ -89,43 +87,28 @@ export async function alertChannelRoutes(app: FastifyInstance) {
 
     // Only owner/admin/developer can create alert channels
     if (!['owner', 'admin', 'developer'].includes(user.role)) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Only owners, admins, and developers can create alert channels',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Only owners, admins, and developers can create alert channels');
     }
 
     // Verify project exists and belongs to user's organization
     const project = await dbGetProject(projectId);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Validate required fields
     if (!name || !type || !condition) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Name, type, and condition are required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Name, type, and condition are required');
     }
 
     // Validate email addresses for email type
     if (type === 'email' && (!email_addresses || email_addresses.length === 0)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'At least one email address is required for email alerts',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'At least one email address is required for email alerts');
     }
 
     // Validate webhook URL for webhook type
     if (type === 'webhook' && (!webhook_url || !webhook_url.startsWith('http'))) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'A valid webhook URL is required (must start with http:// or https://)',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'A valid webhook URL is required (must start with http:// or https://)');
     }
 
     // Validate Slack channel for slack type
@@ -133,33 +116,21 @@ export async function alertChannelRoutes(app: FastifyInstance) {
       // Check if Slack is connected
       const slackConnection = slackConnections.get(orgId);
       if (!slackConnection) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Slack workspace must be connected before creating Slack alerts',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Slack workspace must be connected before creating Slack alerts');
       }
       if (!slack_channel) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'A Slack channel is required for Slack alerts',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'A Slack channel is required for Slack alerts');
       }
       // Verify channel exists
       const validChannel = slackConnection.channels.find(c => c.id === slack_channel);
       if (!validChannel) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Invalid Slack channel selected',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid Slack channel selected');
       }
     }
 
     // Validate threshold for threshold condition
     if (condition === 'threshold' && (threshold_percent === undefined || threshold_percent < 0 || threshold_percent > 100)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Threshold percent must be between 0 and 100',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Threshold percent must be between 0 and 100');
     }
 
     const id = crypto.randomUUID();
@@ -227,19 +198,13 @@ export async function alertChannelRoutes(app: FastifyInstance) {
 
     // Only owner/admin/developer can update alert channels
     if (!['owner', 'admin', 'developer'].includes(user.role)) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Only owners, admins, and developers can update alert channels',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Only owners, admins, and developers can update alert channels');
     }
 
     // Get channel
     const channel = alertChannels.get(channelId);
     if (!channel || channel.project_id !== projectId || channel.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Alert channel not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Alert channel not found');
     }
 
     // Update fields
@@ -294,19 +259,13 @@ export async function alertChannelRoutes(app: FastifyInstance) {
 
       // Only owner/admin/developer can delete alert channels
       if (!['owner', 'admin', 'developer'].includes(user.role)) {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'Only owners, admins, and developers can delete alert channels',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'Only owners, admins, and developers can delete alert channels');
       }
 
       // Get channel
       const channel = alertChannels.get(channelId);
       if (!channel || channel.project_id !== projectId || channel.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Alert channel not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Alert channel not found');
       }
 
       alertChannels.delete(channelId);

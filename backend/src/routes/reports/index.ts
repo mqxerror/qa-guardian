@@ -9,6 +9,7 @@ import { getReport, listReports, deleteReport } from './stores.js';
 import { generateReport } from './generator.js';
 import { GenerateReportRequest, ComprehensiveReport } from './types.js';
 
+import { sendError } from '../../utils/errors.js';
 /**
  * Generate CSV content from report data
  */
@@ -433,7 +434,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       try {
         await request.jwtVerify();
       } catch (err) {
-        reply.status(401).send({ error: 'Unauthorized' });
+        sendError(reply, 401, 'UNAUTHORIZED', 'Unauthorized');
       }
     },
   }, async (request, reply) => {
@@ -462,10 +463,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({
-        error: 'Failed to generate report',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', error instanceof Error ? error.message : 'Unknown error');
     }
   });
 
@@ -477,7 +475,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       try {
         await request.jwtVerify();
       } catch (err) {
-        reply.status(401).send({ error: 'Unauthorized' });
+        sendError(reply, 401, 'UNAUTHORIZED', 'Unauthorized');
       }
     },
   }, async (request, reply) => {
@@ -485,10 +483,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
     const report = await getReport(reportId);
 
     if (!report) {
-      return reply.status(404).send({
-        error: 'Report not found',
-        message: `No report found with ID: ${reportId}`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `No report found with ID: ${reportId}`);
     }
 
     return reply.send({ report });
@@ -502,7 +497,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       try {
         await request.jwtVerify();
       } catch (err) {
-        reply.status(401).send({ error: 'Unauthorized' });
+        sendError(reply, 401, 'UNAUTHORIZED', 'Unauthorized');
       }
     },
   }, async (request, reply) => {
@@ -523,7 +518,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       try {
         await request.jwtVerify();
       } catch (err) {
-        reply.status(401).send({ error: 'Unauthorized' });
+        sendError(reply, 401, 'UNAUTHORIZED', 'Unauthorized');
       }
     },
   }, async (request, reply) => {
@@ -531,10 +526,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
     const deleted = await deleteReport(reportId);
 
     if (!deleted) {
-      return reply.status(404).send({
-        error: 'Report not found',
-        message: `No report found with ID: ${reportId}`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `No report found with ID: ${reportId}`);
     }
 
     return reply.send({
@@ -552,7 +544,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
       try {
         await request.jwtVerify();
       } catch (err) {
-        reply.status(401).send({ error: 'Unauthorized' });
+        sendError(reply, 401, 'UNAUTHORIZED', 'Unauthorized');
       }
     },
   }, async (request, reply) => {
@@ -562,10 +554,7 @@ export async function reportsRoutes(fastify: FastifyInstance) {
     const report = await getReport(reportId);
 
     if (!report) {
-      return reply.status(404).send({
-        error: 'Report not found',
-        message: `No report found with ID: ${reportId}`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `No report found with ID: ${reportId}`);
     }
 
     // Generate filename with date

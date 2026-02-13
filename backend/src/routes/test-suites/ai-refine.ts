@@ -9,6 +9,7 @@ import { Test, TestStep } from './types.js';
 import { generatePlaywrightCode } from './utils.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('ai-refine');
 
 // Feature #1141: Interface for clarifying question
@@ -69,10 +70,7 @@ export async function aiRefineRoutes(app: FastifyInstance) {
     const { description, context, auto_generate_if_clear = false, suite_id } = request.body;
 
     if (!description || description.trim().length < 5) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Description must be at least 5 characters long',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Description must be at least 5 characters long');
     }
 
     logger.info({ descriptionPreview: description.substring(0, 50) }, 'Analyzing test description');
@@ -88,10 +86,7 @@ export async function aiRefineRoutes(app: FastifyInstance) {
       const suite = await getTestSuite(suite_id);
 
       if (!suite || suite.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Test suite not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
       }
 
       // Generate the test directly since description is clear
@@ -132,19 +127,13 @@ export async function aiRefineRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     if (!description || !answers || Object.keys(answers).length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Description and answers are required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Description and answers are required');
     }
 
     // Verify suite exists
     const suite = await getTestSuite(suite_id);
     if (!suite || suite.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test suite not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     logger.info({ answerCount: Object.keys(answers).length }, 'Refining test with answers');

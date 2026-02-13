@@ -6,6 +6,7 @@ import { authenticate, JwtPayload } from '../../middleware/auth.js';
 import { getProject, getProjectMembers, addProjectMember, removeProjectMember } from './stores.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const log = createLogger('projects-members');
 
 export async function memberRoutes(app: FastifyInstance) {
@@ -18,26 +19,17 @@ export async function memberRoutes(app: FastifyInstance) {
 
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Check organization membership
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Only admins/owners can see project members
     if (user.role !== 'owner' && user.role !== 'admin') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Only administrators can view project members',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Only administrators can view project members');
     }
 
     const members = await getProjectMembers(projectId);
@@ -57,41 +49,26 @@ export async function memberRoutes(app: FastifyInstance) {
 
       // Validate input
       if (!user_id || !role) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'User ID and role are required',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'User ID and role are required');
       }
 
       if (!['developer', 'viewer'].includes(role)) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Role must be developer or viewer',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Role must be developer or viewer');
       }
 
       const project = await getProject(projectId);
       if (!project) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Project not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       // Check organization membership
       if (project.organization_id !== user.organization_id) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Project not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       // Only admins/owners can add project members
       if (user.role !== 'owner' && user.role !== 'admin') {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'Only administrators can manage project members',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'Only administrators can manage project members');
       }
 
       // Get or initialize project members array
@@ -99,10 +76,7 @@ export async function memberRoutes(app: FastifyInstance) {
 
       // Check if user is already a member
       if (members.some(m => m.user_id === user_id)) {
-        return reply.status(409).send({
-          error: 'Conflict',
-          message: 'User is already a member of this project',
-        });
+        return sendError(reply, 409, 'CONFLICT', 'User is already a member of this project');
       }
 
       // Add the new member
@@ -135,26 +109,17 @@ export async function memberRoutes(app: FastifyInstance) {
 
       const project = await getProject(projectId);
       if (!project) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Project not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       // Check organization membership
       if (project.organization_id !== user.organization_id) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Project not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       // Only admins/owners can remove project members
       if (user.role !== 'owner' && user.role !== 'admin') {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'Only administrators can manage project members',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'Only administrators can manage project members');
       }
 
       // Get project members
@@ -162,10 +127,7 @@ export async function memberRoutes(app: FastifyInstance) {
       const memberIndex = members.findIndex(m => m.user_id === memberId);
 
       if (memberIndex === -1) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Member not found in project',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Member not found in project');
       }
 
       // Remove the member
@@ -189,34 +151,22 @@ export async function memberRoutes(app: FastifyInstance) {
       const user = request.user as JwtPayload;
 
       if (!role || !['developer', 'viewer'].includes(role)) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Valid role is required (developer or viewer)',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Valid role is required (developer or viewer)');
       }
 
       const project = await getProject(projectId);
       if (!project) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Project not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       // Check organization membership
       if (project.organization_id !== user.organization_id) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Project not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
       }
 
       // Only admins/owners can update project member roles
       if (user.role !== 'owner' && user.role !== 'admin') {
-        return reply.status(403).send({
-          error: 'Forbidden',
-          message: 'Only administrators can manage project members',
-        });
+        return sendError(reply, 403, 'FORBIDDEN', 'Only administrators can manage project members');
       }
 
       // Get project members
@@ -224,10 +174,7 @@ export async function memberRoutes(app: FastifyInstance) {
       const member = members.find(m => m.user_id === memberId);
 
       if (!member) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Member not found in project',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Member not found in project');
       }
 
       const oldRole = member.role;

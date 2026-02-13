@@ -11,6 +11,7 @@ import { authenticate, JwtPayload } from '../../middleware/auth.js';
 import { getProject as dbGetProject } from '../projects/stores.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('dependency-auto-pr');
 
 // ============================================================
@@ -179,10 +180,7 @@ export async function dependencyAutoPRRoutes(app: FastifyInstance): Promise<void
 
     const config = autoPRConfigs.get(orgId);
     if (!config?.enabled) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Auto-PR is not enabled. Enable it in settings first.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Auto-PR is not enabled. Enable it in settings first.');
     }
 
     // Get project name
@@ -276,10 +274,7 @@ export async function dependencyAutoPRRoutes(app: FastifyInstance): Promise<void
 
     const config = autoPRConfigs.get(orgId);
     if (!config?.enabled) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Auto-PR is not enabled. Enable it in settings first.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Auto-PR is not enabled. Enable it in settings first.');
     }
 
     // Get project name
@@ -421,10 +416,7 @@ export async function dependencyAutoPRRoutes(app: FastifyInstance): Promise<void
     const prIndex = orgPRs.findIndex(pr => pr.id === prId);
 
     if (prIndex === -1) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Auto-PR not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Auto-PR not found');
     }
 
     const pr = orgPRs[prIndex];

@@ -77,12 +77,13 @@ export function mockFetchResponse<T>(data: T, status = 200) {
 
 /**
  * Mock fetch error helper
+ * Feature #722: Returns standardized error response shape
  */
-export function mockFetchError(status = 500, message = 'Server error') {
+export function mockFetchError(status = 500, message = 'Server error', code = 'ERROR') {
   return vi.mocked(global.fetch).mockResolvedValueOnce({
     ok: false,
     status,
-    json: () => Promise.resolve({ error: message }),
+    json: () => Promise.resolve({ error: { code, message } }),
   } as Response);
 }
 

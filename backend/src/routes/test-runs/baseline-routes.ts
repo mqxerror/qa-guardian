@@ -20,6 +20,7 @@ import { getTest } from '../test-suites.js';
 // testRuns available from execution.js if needed
 // Feature #484: Pino structured logging
 import { createLogger } from '../../services/logger.js';
+import { sendError } from '../../utils/errors.js';
 // Feature #716: Zod validation middleware and schemas
 import {
   validateParams,
@@ -115,10 +116,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     // Verify test exists and belongs to user's organization
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     // Check if baseline exists - try requested viewport first, then fallback to common patterns
@@ -151,23 +149,13 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
           baselinePath = path.join(baselineDir, matchingFile);
           viewport = matchingFile.replace(baselinePattern, '').replace('.png', '');
         } else {
-          return reply.status(404).send({
-            error: 'Not Found',
-            message: `No baseline exists for this test on branch '${requestedBranch}' yet. Run the test once to create a baseline.`,
-            hasBaseline: false,
-            branch: requestedBranch,
-          });
+          return sendError(reply, 404, 'NOT_FOUND', `No baseline exists for this test on branch '${requestedBranch}' yet. Run the test once to create a baseline.`, { hasBaseline: false, branch: requestedBranch });
         }
       }
     }
 
     if (!fs.existsSync(baselinePath)) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `No baseline exists for this test on branch '${requestedBranch}' yet. Run the test once to create a baseline.`,
-        hasBaseline: false,
-        branch: requestedBranch,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `No baseline exists for this test on branch '${requestedBranch}' yet. Run the test once to create a baseline.`, { hasBaseline: false, branch: requestedBranch });
     }
 
     // Get file stats for metadata
@@ -287,10 +275,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     // Verify test exists and belongs to user's organization
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     const history = getBaselineHistory(testId, viewport, branch);
@@ -317,27 +302,18 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     // Verify test exists and belongs to user's organization
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     const entry = getBaselineHistoryEntry(testId, viewport, historyId, branch);
     if (!entry) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'History entry not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'History entry not found');
     }
 
     if (format === 'image') {
       const imageBuffer = getBaselineHistoryImage(entry);
       if (!imageBuffer) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'History image not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'History image not found');
       }
       return reply
         .header('Content-Type', 'image/png')
@@ -364,36 +340,24 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     // Verify test exists and belongs to user's organization
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     const entry = getBaselineHistoryEntry(testId, viewport, historyId, branch);
     if (!entry) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'History entry not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'History entry not found');
     }
 
     // Get current baseline
     const currentBaselinePath = getBaselinePath(testId, viewport, branch);
     if (!fs.existsSync(currentBaselinePath)) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Current baseline not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Current baseline not found');
     }
 
     // Get history image
     const historyImage = getBaselineHistoryImage(entry);
     if (!historyImage) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'History image not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'History image not found');
     }
 
     const currentImage = fs.readFileSync(currentBaselinePath);
@@ -421,27 +385,18 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     // Verify test exists and belongs to user's organization
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     const entry = getBaselineHistoryEntry(testId, viewport, historyId, branch);
     if (!entry) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'History entry not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'History entry not found');
     }
 
     // Get history image
     const historyImage = getBaselineHistoryImage(entry);
     if (!historyImage) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'History image not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'History image not found');
     }
 
     // Save history image as current baseline
@@ -539,18 +494,12 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
 
     const failedUpload = failedUploads.get(uploadId);
     if (!failedUpload) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Failed upload not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Failed upload not found');
     }
 
     // Verify organization ownership
     if (failedUpload.organizationId !== orgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Access denied to this upload',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied to this upload');
     }
 
     log.info({ uploadId, code: 'VISUAL_RETRY_REQUESTED' }, 'Manual retry requested for failed upload');
@@ -579,13 +528,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     failedUpload.attemptCount += result.attempts;
     failedUpload.error = result.error || 'Retry failed';
 
-    return reply.status(500).send({
-      error: 'Upload Failed',
-      message: result.error || 'Failed to upload screenshot - network error',
-      uploadId,
-      attemptCount: failedUpload.attemptCount,
-      canRetry: true,
-    });
+    return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', result.error || 'Failed to upload screenshot - network error');
   });
 
   // Delete a failed upload
@@ -597,18 +540,12 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
 
     const failedUpload = failedUploads.get(uploadId);
     if (!failedUpload) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Failed upload not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Failed upload not found');
     }
 
     // Verify organization ownership
     if (failedUpload.organizationId !== orgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Access denied to this upload',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied to this upload');
     }
 
     failedUploads.delete(uploadId);
@@ -636,18 +573,12 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     // Verify test exists and belongs to user's organization
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     const baselinePath = getBaselinePath(testId, viewport, branch);
     if (!fs.existsSync(baselinePath)) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Baseline not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Baseline not found');
     }
 
     fs.unlinkSync(baselinePath);
@@ -675,10 +606,7 @@ export async function baselineRoutes(app: FastifyInstance): Promise<void> {
     // Verify test exists and belongs to user's organization
     const test = await getTest(testId);
     if (!test || test.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
     }
 
     const branches: string[] = [];

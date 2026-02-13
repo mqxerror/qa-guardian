@@ -26,6 +26,7 @@ const execFileAsync = promisify(execFile);
 
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('sast');
 
 // Semgrep result type
@@ -525,11 +526,11 @@ export async function coreRoutes(app: FastifyInstance) {
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const config = await getSASTConfig(projectId);
@@ -548,17 +549,17 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Check permissions (only developers or higher can modify)
     if (user.role === 'viewer') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Viewers cannot modify SAST configuration' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot modify SAST configuration');
     }
 
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const config = await updateSASTConfig(projectId, updates);
@@ -607,17 +608,17 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Check permissions
     if (user.role === 'viewer') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Viewers cannot trigger SAST scans' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot trigger SAST scans');
     }
 
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const config = await getSASTConfig(projectId);
@@ -941,11 +942,11 @@ export async function coreRoutes(app: FastifyInstance) {
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const allScans = await getSastScansByProject(projectId);
@@ -965,17 +966,17 @@ export async function coreRoutes(app: FastifyInstance) {
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const scan = await getSastScan(scanId);
 
     if (!scan) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Scan not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Scan not found');
     }
 
     return { scan };

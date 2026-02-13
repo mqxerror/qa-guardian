@@ -36,6 +36,7 @@ import {
 import { trackMcpToolCall, getMcpAnalytics } from './mcp-analytics.js';
 import { logMcpAuditEntry, getMcpAuditLogs } from './mcp-audit.js';
 
+import { sendError } from '../../utils/errors.js';
 export async function registerMcpRoutes(app: FastifyInstance) {
   // Feature #405: Register MCP connection
   app.post<{ Body: { api_key: string; client_name?: string; client_version?: string } }>('/api/v1/mcp/connect', async (request, reply) => {
@@ -43,10 +44,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     const ip_address = request.ip;
 
     if (!api_key) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'API key is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'API key is required');
     }
 
     const keyHash = crypto.createHash('sha256').update(api_key).digest('hex');
@@ -55,17 +53,11 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     const foundKey = foundKeyResult && !foundKeyResult.revoked_at ? foundKeyResult : undefined;
 
     if (!foundKey) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'Invalid or revoked API key',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid or revoked API key');
     }
 
     if (foundKey.expires_at && new Date() > foundKey.expires_at) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'API key has expired',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'API key has expired');
     }
 
     const connectionId = await registerMcpConnection(
@@ -90,18 +82,12 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     const { connection_id } = request.body;
 
     if (!connection_id) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Connection ID is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Connection ID is required');
     }
 
     const connection = await dbGetMcpConnection(connection_id);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'MCP connection not found or expired',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'MCP connection not found or expired');
     }
 
     await updateMcpActivity(connection_id);
@@ -117,18 +103,12 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     const { connection_id } = request.body;
 
     if (!connection_id) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Connection ID is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Connection ID is required');
     }
 
     const conn = await dbGetMcpConnection(connection_id);
     if (!conn) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'MCP connection not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'MCP connection not found');
     }
 
     await unregisterMcpConnection(connection_id);
@@ -147,10 +127,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     if (user.organization_id !== orgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You can only view MCP connections for your organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You can only view MCP connections for your organization');
     }
 
     // Query MCP connections for this org from DB
@@ -202,18 +179,12 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     const { connection_id, tool_name, duration_ms, success = true, error } = request.body;
 
     if (!connection_id || !tool_name) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'connection_id and tool_name are required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'connection_id and tool_name are required');
     }
 
     const connection = await dbGetMcpConnection(connection_id);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'MCP connection not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'MCP connection not found');
     }
 
     await trackMcpToolCall(connection_id, tool_name, duration_ms, success, error);
@@ -234,20 +205,14 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     if (user.organization_id !== orgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You can only view MCP analytics for your organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You can only view MCP analytics for your organization');
     }
 
     let sinceDate: Date | undefined;
     if (since) {
       sinceDate = new Date(since);
       if (isNaN(sinceDate.getTime())) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Invalid since date format',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid since date format');
       }
     }
 
@@ -268,20 +233,14 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     if (user.organization_id !== orgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You can only export MCP analytics for your organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You can only export MCP analytics for your organization');
     }
 
     let sinceDate: Date | undefined;
     if (since) {
       sinceDate = new Date(since);
       if (isNaN(sinceDate.getTime())) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Invalid since date format',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid since date format');
       }
     }
 
@@ -349,10 +308,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     if (user.organization_id !== orgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You can only view MCP audit logs for your organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You can only view MCP audit logs for your organization');
     }
 
     let sinceDate: Date | undefined;
@@ -361,20 +317,14 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     if (since) {
       sinceDate = new Date(since);
       if (isNaN(sinceDate.getTime())) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Invalid since date format',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid since date format');
       }
     }
 
     if (until) {
       untilDate = new Date(until);
       if (isNaN(untilDate.getTime())) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Invalid until date format',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Invalid until date format');
       }
     }
 
@@ -450,10 +400,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     } = request.body;
 
     if (!api_key || !method || !response_type) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'api_key, method, and response_type are required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'api_key, method, and response_type are required');
     }
 
     const keyHash = crypto.createHash('sha256').update(api_key).digest('hex');
@@ -462,10 +409,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     const foundApiKey = foundApiKeyResult && !foundApiKeyResult.revoked_at ? foundApiKeyResult : undefined;
 
     if (!foundApiKey) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'API key not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'API key not found');
     }
 
     const ipAddress = (request.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || request.ip || '127.0.0.1';
@@ -505,10 +449,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     if (user.organization_id !== orgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You can only view MCP audit logs for your organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You can only view MCP audit logs for your organization');
     }
 
     return {

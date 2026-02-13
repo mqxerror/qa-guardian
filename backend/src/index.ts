@@ -67,6 +67,7 @@ import { generateRequestId } from './utils/index.js';
 import { getTestRun } from './services/repositories/test-runs.js'; // Feature #388: Organization check for Socket.IO join-run
 import { getQuickTestResultAsync } from './services/quick-test-runner.js'; // Feature #461: Organization check for Socket.IO join-quick-test
 import { createLogger } from './services/logger.js'; // Feature #447: Structured logging
+import { sendError } from './utils/errors.js'; // Feature #722: Standardized error responses
 
 // Feature #447: Server logger for startup and lifecycle logging
 const log = createLogger('server');
@@ -346,21 +347,19 @@ async function registerPlugins() {
   await app.register(aiUsageRoutes); // Feature #477: AI usage tracking
 
   // Global error handler - don't expose stack traces to clients
+  // Feature #722: Global error handler uses standardized error shape
   app.setErrorHandler((error, request, reply) => {
     // Log the full error on the server
     app.log.error(error);
 
     // Return a safe error response without stack trace
     const statusCode = error.statusCode || 500;
+    const code = statusCode >= 500 ? 'INTERNAL_SERVER_ERROR' : (error.name || 'ERROR');
     const message = statusCode >= 500
       ? 'An internal server error occurred. Please try again later.'
       : error.message;
 
-    reply.status(statusCode).send({
-      error: statusCode >= 500 ? 'Internal Server Error' : error.name || 'Error',
-      message,
-      statusCode,
-    });
+    return sendError(reply, statusCode, code, message);
   });
 
   // Feature #90: Request timeout middleware - prevent 502 gateway timeouts

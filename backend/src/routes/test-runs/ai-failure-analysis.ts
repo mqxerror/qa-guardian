@@ -18,6 +18,7 @@ import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 // Import from extracted modules
 import { testRuns, TestRun } from './execution.js';
 import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg } from '../../services/repositories/test-runs.js';
+import { sendError } from '../../utils/errors.js';
 // testSuites Map removed in Feature #2110 - use async DB functions instead
 
 /**
@@ -470,17 +471,17 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     // Get the test run
     const run = await getTestRunWithFallback(runId);
     if (!run) {
-      return reply.status(404).send({ error: 'Test run not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     if (run.organization_id !== orgId) {
-      return reply.status(403).send({ error: 'Access denied' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
     }
 
     // Find the test result
     const testResult = run.results?.find(r => r.test_id === testId);
     if (!testResult) {
-      return reply.status(404).send({ error: 'Test result not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     // Get the error message to help identify potential causes
@@ -527,7 +528,7 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     const commitDetails = generateCommitDetails(commitSha);
 
     if (!commitDetails) {
-      return reply.status(404).send({ error: 'Commit not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Commit not found');
     }
 
     return commitDetails;
@@ -548,21 +549,21 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     // Get the test run
     const run = await getTestRunWithFallback(runId);
     if (!run) {
-      return reply.status(404).send({ error: 'Test run not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     if (run.organization_id !== orgId) {
-      return reply.status(403).send({ error: 'Access denied' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
     }
 
     // Find the test result
     const testResult = run.results?.find(r => r.test_id === testId);
     if (!testResult) {
-      return reply.status(404).send({ error: 'Test result not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     if (testResult.status !== 'failed' || !testResult.error) {
-      return reply.status(400).send({ error: 'Test did not fail or has no error message' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Test did not fail or has no error message');
     }
 
     // Find the failed step for additional context
@@ -598,21 +599,21 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     // Get the test run
     const run = await getTestRunWithFallback(runId);
     if (!run) {
-      return reply.status(404).send({ error: 'Test run not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     if (run.organization_id !== orgId) {
-      return reply.status(403).send({ error: 'Access denied' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
     }
 
     // Find the test result
     const testResult = run.results?.find(r => r.test_id === testId);
     if (!testResult) {
-      return reply.status(404).send({ error: 'Test result not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     if (testResult.status !== 'failed' || !testResult.error) {
-      return reply.status(400).send({ error: 'Test did not fail or has no error message' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Test did not fail or has no error message');
     }
 
     // Find the failed step for additional context
@@ -650,11 +651,11 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     // Get the test run
     const run = await getTestRunWithFallback(runId);
     if (!run) {
-      return reply.status(404).send({ error: 'Test run not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     if (run.organization_id !== orgId) {
-      return reply.status(403).send({ error: 'Access denied' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
     }
 
     // Generate executive summary
@@ -683,17 +684,17 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     // Get the test run
     const run = await getTestRunWithFallback(runId);
     if (!run) {
-      return reply.status(404).send({ error: 'Test run not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     if (run.organization_id !== orgId) {
-      return reply.status(403).send({ error: 'Access denied' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
     }
 
     // Find the test result
     const testResult = run.results?.find(r => r.test_id === testId);
     if (!testResult) {
-      return reply.status(404).send({ error: 'Test result not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     // Get the error message
@@ -768,25 +769,22 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
     // Get the test run
     const run = await getTestRunWithFallback(runId);
     if (!run) {
-      return reply.status(404).send({ error: 'Test run not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     if (run.organization_id !== orgId) {
-      return reply.status(403).send({ error: 'Access denied' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Access denied');
     }
 
     // Find the test result
     const testResult = run.results?.find(r => r.test_id === testId);
     if (!testResult) {
-      return reply.status(404).send({ error: 'Test result not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test result not found');
     }
 
     // Check if test actually failed
     if (testResult.status !== 'failed') {
-      return reply.status(400).send({
-        error: 'Cannot analyze passing test',
-        message: 'LLM root cause analysis is only available for failed tests'
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'LLM root cause analysis is only available for failed tests');
     }
 
     // Get the error message
@@ -828,10 +826,7 @@ export async function aiFailureAnalysisRoutes(app: FastifyInstance) {
       };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      return reply.status(500).send({
-        error: 'Analysis failed',
-        message: `Failed to generate LLM root cause analysis: ${errorMsg}`
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', `Failed to generate LLM root cause analysis: ${errorMsg}`);
     }
   });
 

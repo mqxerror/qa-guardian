@@ -14,6 +14,7 @@ import {
 } from './stores.js';
 import { generateApiKey } from './utils.js';
 import { createLogger } from '../../services/logger.js';
+import { sendError } from '../../utils/errors.js';
 // Feature #716: Zod validation middleware and schemas
 import {
   validateBody,
@@ -37,10 +38,7 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     if (user.organization_id !== orgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You can only view API keys for your organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You can only view API keys for your organization');
     }
 
     const allKeys = await dbListApiKeysByOrg(orgId);
@@ -71,26 +69,17 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
 
     if (user.organization_id !== orgId) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You can only create API keys for your organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You can only create API keys for your organization');
     }
 
     if (!name || name.trim().length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'API key name is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'API key name is required');
     }
 
     const validScopes = ['read', 'execute', 'write', 'admin', 'mcp', 'mcp:read', 'mcp:write', 'mcp:execute'];
     const invalidScopes = scopes.filter(s => !validScopes.includes(s));
     if (invalidScopes.length > 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Invalid scopes: ${invalidScopes.join(', ')}. Valid scopes are: ${validScopes.join(', ')}`,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Invalid scopes: ${invalidScopes.join(', ')}. Valid scopes are: ${validScopes.join(', ')}`);
     }
 
     const { key, prefix, hash } = generateApiKey();
@@ -154,17 +143,11 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
 
     const apiKey = await dbGetApiKeyById(id);
     if (!apiKey) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'API key not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'API key not found');
     }
 
     if (user.organization_id !== apiKey.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You can only delete API keys from your organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You can only delete API keys from your organization');
     }
 
     await dbRevokeApiKey(id);
@@ -185,17 +168,11 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
 
     const oldKey = await dbGetApiKeyById(id);
     if (!oldKey || oldKey.revoked_at) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'API key not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'API key not found');
     }
 
     if (user.organization_id !== oldKey.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You can only rotate API keys from your organization',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You can only rotate API keys from your organization');
     }
 
     await dbRevokeApiKey(id);
@@ -243,10 +220,7 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
     const { api_key, required_scope = 'mcp' } = request.body;
 
     if (!api_key) {
-      return reply.status(400).send({
-        valid: false,
-        error: 'API key is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'API key is required');
     }
 
     const keyHash = crypto.createHash('sha256').update(api_key).digest('hex');
@@ -255,17 +229,11 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
     const foundKey = foundKeyResult && !foundKeyResult.revoked_at ? foundKeyResult : undefined;
 
     if (!foundKey) {
-      return reply.status(401).send({
-        valid: false,
-        error: 'Invalid or revoked API key',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid or revoked API key');
     }
 
     if (foundKey.expires_at && new Date() > foundKey.expires_at) {
-      return reply.status(401).send({
-        valid: false,
-        error: 'API key has expired',
-      });
+      return sendError(reply, 401, 'UNAUTHORIZED', 'API key has expired');
     }
 
     const hasMcpAccess = foundKey.scopes.some(scope => {
@@ -279,11 +247,7 @@ export async function registerApiKeyRoutes(app: FastifyInstance) {
     });
 
     if (!hasMcpAccess) {
-      return reply.status(403).send({
-        valid: false,
-        error: 'API key does not have MCP access. Required scope: mcp or mcp:*',
-        scopes: foundKey.scopes,
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'API key does not have MCP access. Required scope: mcp or mcp:*', { scopes: foundKey.scopes });
     }
 
     await dbUpdateApiKey(foundKey.id, { last_used_at: new Date() });

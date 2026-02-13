@@ -14,6 +14,7 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate } from '../../middleware/auth.js';
 
+import { sendError } from '../../utils/errors.js';
 // ============================================================
 // Types
 // ============================================================
@@ -489,9 +490,7 @@ export async function secretVerificationRoutes(app: FastifyInstance): Promise<vo
       const { secretType, secretValue, findingId } = request.body;
 
       if (!secretType || !secretValue) {
-        return reply.status(400).send({
-          error: 'Missing required fields: secretType and secretValue',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Missing required fields: secretType and secretValue');
       }
 
       // Verify the secret

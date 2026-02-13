@@ -46,6 +46,7 @@ import {
 } from './ai-test-gen-utils.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('ai-test-generation');
 
 // =============================================================================
@@ -61,17 +62,11 @@ export async function aiTestGenerationRoutes(app: FastifyInstance): Promise<void
     const { description, base_url, test_type, include_assertions, include_screenshot } = request.body;
 
     if (!description || description.trim().length < 10) {
-      return reply.status(400).send({
-        error: 'Description must be at least 10 characters',
-        message: 'Please provide a more detailed description of the test you want to generate.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please provide a more detailed description of the test you want to generate.');
     }
 
     if (description.length > 2000) {
-      return reply.status(400).send({
-        error: 'Description too long',
-        message: 'Description must be less than 2000 characters.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Description must be less than 2000 characters.');
     }
 
     try {
@@ -174,7 +169,7 @@ export async function aiTestGenerationRoutes(app: FastifyInstance): Promise<void
           },
         });
       } catch (fallbackError) {
-        return reply.status(500).send({ error: 'Generation failed', message: 'Failed to generate test. Please try again.' });
+        return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to generate test. Please try again.');
       }
     }
   });
@@ -187,11 +182,11 @@ export async function aiTestGenerationRoutes(app: FastifyInstance): Promise<void
     const { user_story, base_url, include_edge_cases = true, test_type = 'e2e' } = request.body;
 
     if (!user_story || user_story.trim().length < 10) {
-      return reply.status(400).send({ error: 'User story is required', message: 'Please provide a user story with at least 10 characters.' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please provide a user story with at least 10 characters.');
     }
 
     if (user_story.length > 1000) {
-      return reply.status(400).send({ error: 'User story too long', message: 'User story must be less than 1000 characters.' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'User story must be less than 1000 characters.');
     }
 
     try {
@@ -287,7 +282,7 @@ export async function aiTestGenerationRoutes(app: FastifyInstance): Promise<void
       });
     } catch (error) {
       logger.error({ err: error }, 'Error generating test suite');
-      return reply.status(500).send({ error: 'Suite generation failed', message: 'Failed to generate test suite. Please try again.' });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to generate test suite. Please try again.');
     }
   });
 
@@ -299,11 +294,11 @@ export async function aiTestGenerationRoutes(app: FastifyInstance): Promise<void
     const { gherkin, base_url, feature_name } = request.body;
 
     if (!gherkin || gherkin.trim().length < 10) {
-      return reply.status(400).send({ error: 'Gherkin scenario is required', message: 'Please provide a valid Gherkin scenario with at least 10 characters.' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please provide a valid Gherkin scenario with at least 10 characters.');
     }
 
     if (!/\b(given|when|then|and|but)\b/i.test(gherkin)) {
-      return reply.status(400).send({ error: 'Invalid Gherkin format', message: 'Gherkin scenario must contain Given/When/Then keywords.' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Gherkin scenario must contain Given/When/Then keywords.');
     }
 
     try {
@@ -409,7 +404,7 @@ ${steps.map(s => s.playwright_code).join('\n\n')}
       });
     } catch (error) {
       logger.error({ err: error }, 'Error converting Gherkin');
-      return reply.status(500).send({ error: 'Conversion failed', message: 'Failed to convert Gherkin scenario. Please try again.' });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to convert Gherkin scenario. Please try again.');
     }
   });
 
@@ -418,7 +413,7 @@ ${steps.map(s => s.playwright_code).join('\n\n')}
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { code } = request.body;
-    if (!code) return reply.status(400).send({ error: 'Code is required' });
+    if (!code) return sendError(reply, 400, 'BAD_REQUEST', 'Code is required');
 
     const validation = validatePlaywrightSyntax(code);
     return reply.send({
@@ -438,11 +433,11 @@ ${steps.map(s => s.playwright_code).join('\n\n')}
     const { image_data, image_type = 'png', base_url, context } = request.body;
 
     if (!image_data) {
-      return reply.status(400).send({ error: 'Image data is required', message: 'Please upload a screenshot to analyze.' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please upload a screenshot to analyze.');
     }
 
     if (!image_data.match(/^[A-Za-z0-9+/=]+$/)) {
-      return reply.status(400).send({ error: 'Invalid image data', message: 'Image data must be valid base64 encoded.' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Image data must be valid base64 encoded.');
     }
 
     try {
@@ -579,7 +574,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
       });
     } catch (error) {
       logger.error({ err: error }, 'Error analyzing screenshot');
-      return reply.status(500).send({ error: 'Analysis failed', message: 'Failed to analyze screenshot. Please try again.' });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to analyze screenshot. Please try again.');
     }
   });
 
@@ -591,11 +586,11 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
     const { image_data, image_type = 'png', base_url, context, annotations } = request.body;
 
     if (!image_data) {
-      return reply.status(400).send({ error: 'Image data is required', message: 'Please upload a screenshot to analyze.' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please upload a screenshot to analyze.');
     }
 
     if (!annotations || annotations.length === 0) {
-      return reply.status(400).send({ error: 'Annotations required', message: 'Please add at least one annotation to the screenshot.' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please add at least one annotation to the screenshot.');
     }
 
     try {
@@ -719,7 +714,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
       });
     } catch (error) {
       logger.error({ err: error }, 'Error processing annotated screenshot');
-      return reply.status(500).send({ error: 'Processing failed', message: 'Failed to process annotated screenshot. Please try again.' });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to process annotated screenshot. Please try again.');
     }
   });
 
@@ -731,7 +726,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
     const { code, test_name, test_type } = request.body;
 
     if (!code || code.trim().length < 20) {
-      return reply.status(400).send({ error: 'Code is required', message: 'Please provide valid Playwright test code to explain.' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please provide valid Playwright test code to explain.');
     }
 
     try {
@@ -899,7 +894,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
       });
     } catch (error) {
       logger.error({ err: error }, 'Error explaining test');
-      return reply.status(500).send({ error: 'Explanation failed', message: 'Failed to explain test code. Please try again.' });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to explain test code. Please try again.');
     }
   });
 
@@ -911,11 +906,11 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
     const { page_screenshot, original_selector, selector_type, element_context, page_url, test_name } = request.body;
 
     if (!original_selector) {
-      return reply.status(400).send({ error: 'Selector required', message: 'Please provide the original selector that failed.' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please provide the original selector that failed.');
     }
 
     if (!page_screenshot) {
-      return reply.status(400).send({ error: 'Screenshot required', message: 'Please provide a page screenshot for vision-based healing.' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please provide a page screenshot for vision-based healing.');
     }
 
     try {
@@ -1032,7 +1027,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
       });
     } catch (error) {
       logger.error({ err: error }, 'Error healing with vision');
-      return reply.status(500).send({ error: 'Healing failed', message: 'Failed to heal selector with vision. Please try again.' });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to heal selector with vision. Please try again.');
     }
   });
 
@@ -1062,7 +1057,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
     const { anomaly_type, anomaly_data } = request.body;
 
     if (!anomaly_type || !anomaly_data) {
-      return reply.status(400).send({ error: 'Missing required fields', message: 'Please provide anomaly_type and anomaly_data.' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please provide anomaly_type and anomaly_data.');
     }
 
     const deviation = Math.abs(anomaly_data.deviation_percentage);
@@ -1106,7 +1101,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
     const { from_version, to_version, project_name: _project_name, test_changes, format = 'all' } = request.body;
 
     if (!from_version || !to_version) {
-      return reply.status(400).send({ error: 'Missing required fields', message: 'Please provide from_version and to_version.' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please provide from_version and to_version.');
     }
 
     const changes = test_changes || [
@@ -1142,7 +1137,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
     const { test_code, test_name, test_type = 'e2e', framework = 'playwright', include_best_practices, include_selector_analysis, include_assertion_suggestions, include_flakiness_analysis } = request.body;
 
     if (!test_code || test_code.trim().length === 0) {
-      return reply.status(400).send({ error: 'Missing required field', message: 'Please provide test_code to analyze.' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Please provide test_code to analyze.');
     }
 
     try {
@@ -1288,7 +1283,7 @@ ${elements.filter(e => e.suggested_action !== 'none').slice(0, 10).map(e => {
       });
     } catch (error) {
       logger.error({ err: error }, 'Error analyzing test improvements');
-      return reply.status(500).send({ error: 'Analysis failed', message: 'Failed to analyze test improvements. Please try again.' });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to analyze test improvements. Please try again.');
     }
   });
 }

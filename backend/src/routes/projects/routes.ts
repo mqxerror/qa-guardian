@@ -56,6 +56,7 @@ import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
 // Feature #108: WebSocket events for real-time cache invalidation
 import { emitProjectCreated, emitProjectUpdated, emitProjectDeleted } from '../../services/websocket-events.js';
 
+import { sendError } from '../../utils/errors.js';
 export async function coreRoutes(app: FastifyInstance) {
   // List all projects (requires authentication, only from user's organization)
   // API keys need 'read' scope
@@ -130,26 +131,17 @@ export async function coreRoutes(app: FastifyInstance) {
     }
 
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Check if user belongs to the project's organization
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Check project-level access for non-admin users
     if (!hasProjectAccess(id, user.id, user.role)) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     return { project };
@@ -167,10 +159,7 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // For JWT users, viewers cannot create projects
     if (!('type' in user) && user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot create projects',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot create projects');
     }
 
     // Name is already validated by Zod schema - just trim for database
@@ -179,10 +168,7 @@ export async function coreRoutes(app: FastifyInstance) {
     // Check for duplicate name within organization (use trimmed name)
     const existingProject = await dbGetProjectByName(orgId, trimmedName);
     if (existingProject) {
-      return reply.status(409).send({
-        error: 'Conflict',
-        message: 'A project with this name already exists in your organization',
-      });
+      return sendError(reply, 409, 'CONFLICT', 'A project with this name already exists in your organization');
     }
 
     const id = crypto.randomUUID();
@@ -243,26 +229,17 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Viewers cannot update projects
     if (user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot update projects',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot update projects');
     }
 
     const project = await dbGetProject(id);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Check organization membership
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Prepare update fields
@@ -302,26 +279,17 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Only admin or owner can delete projects
     if (user.role !== 'admin' && user.role !== 'owner') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Only administrators can delete projects',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Only administrators can delete projects');
     }
 
     const project = await dbGetProject(id);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Check organization membership
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Cascade delete: first delete all tests in suites belonging to this project
@@ -366,26 +334,17 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Only admin or owner can archive projects
     if (user.role !== 'admin' && user.role !== 'owner') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Only administrators can archive or unarchive projects',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Only administrators can archive or unarchive projects');
     }
 
     const project = await dbGetProject(id);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Check organization membership
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Update archive status in database
@@ -422,18 +381,12 @@ export async function coreRoutes(app: FastifyInstance) {
 
     const project = await dbGetProject(id);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Check organization membership
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const envVars = await dbGetProjectEnvVars(id);
@@ -459,26 +412,17 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Only admin or owner can modify env vars
     if (user.role !== 'admin' && user.role !== 'owner') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Only administrators can manage environment variables',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Only administrators can manage environment variables');
     }
 
     const project = await dbGetProject(id);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Check organization membership
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Note: Key validation now handled by Zod schema (createEnvVarSchema)
@@ -488,10 +432,7 @@ export async function coreRoutes(app: FastifyInstance) {
     // Check for duplicate keys
     const envVars = await dbGetProjectEnvVars(id);
     if (envVars.some(v => v.key === trimmedKey)) {
-      return reply.status(409).send({
-        error: 'Conflict',
-        message: `Environment variable '${trimmedKey}' already exists`,
-      });
+      return sendError(reply, 409, 'CONFLICT', `Environment variable '${trimmedKey}' already exists`);
     }
 
     const envVar: EnvironmentVariable = {
@@ -530,36 +471,24 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Only admin or owner can modify env vars
     if (user.role !== 'admin' && user.role !== 'owner') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Only administrators can manage environment variables',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Only administrators can manage environment variables');
     }
 
     const project = await dbGetProject(id);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Check organization membership
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const envVars = await dbGetProjectEnvVars(id);
     const varIndex = envVars.findIndex(v => v.id === varId);
 
     if (varIndex === -1) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Environment variable not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Environment variable not found');
     }
 
     // Get the env var (guaranteed to exist after findIndex check)
@@ -599,36 +528,24 @@ export async function coreRoutes(app: FastifyInstance) {
 
     // Only admin or owner can modify env vars
     if (user.role !== 'admin' && user.role !== 'owner') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Only administrators can manage environment variables',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Only administrators can manage environment variables');
     }
 
     const project = await dbGetProject(id);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Check organization membership
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const envVars = await dbGetProjectEnvVars(id);
     const envVar = envVars.find(v => v.id === varId);
 
     if (!envVar) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Environment variable not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Environment variable not found');
     }
 
     // Delete from database (falls back to in-memory if DB not available)
@@ -654,25 +571,16 @@ export async function coreRoutes(app: FastifyInstance) {
     // Verify project exists and user has access
     const project = await dbGetProject(id);
     if (!project || project.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (!hasProjectAccess(id, user.id, user.role)) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const url = target_url || project.base_url;
     if (!url) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'No target URL provided and no base URL configured for the project',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'No target URL provided and no base URL configured for the project');
     }
 
     // Find or create a "Quick Smoke Tests" suite for this project

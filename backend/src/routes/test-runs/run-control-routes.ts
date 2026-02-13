@@ -11,6 +11,7 @@ import { getTestRun as dbGetTestRun, updateTestRun as dbUpdateTestRun } from '..
 // listTestRunsByOrg available from test-runs repository if needed
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('route:test-runs:run-control');
 
 // Helper: get test run from Map first, then fall back to DB
@@ -69,19 +70,12 @@ export async function runControlRoutes(app: FastifyInstance) {
 
     const run = testRuns.get(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Can only cancel running or cancelling tests
     if (run.status !== 'running' && run.status !== 'cancelling') {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Cannot cancel test run with status "${run.status}". Only running or cancelling tests can be cancelled.`,
-        current_status: run.status,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Cannot cancel test run with status "${run.status}". Only running or cancelling tests can be cancelled.`, { current_status: run.status });
     }
 
     // If force mode and already cancelling, force to cancelled immediately
@@ -206,19 +200,12 @@ export async function runControlRoutes(app: FastifyInstance) {
 
     const run = testRuns.get(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Can only pause running tests
     if (run.status !== 'running') {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Cannot pause test run with status "${run.status}". Only running tests can be paused.`,
-        current_status: run.status,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Cannot pause test run with status "${run.status}". Only running tests can be paused.`, { current_status: run.status });
     }
 
     // Mark the run as paused
@@ -260,19 +247,12 @@ export async function runControlRoutes(app: FastifyInstance) {
 
     const run = testRuns.get(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Can only resume paused tests
     if (run.status !== 'paused') {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Cannot resume test run with status "${run.status}". Only paused tests can be resumed.`,
-        current_status: run.status,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Cannot resume test run with status "${run.status}". Only paused tests can be resumed.`, { current_status: run.status });
     }
 
     // Mark the run as running again
@@ -408,27 +388,17 @@ export async function runControlRoutes(app: FastifyInstance) {
 
     const run = testRuns.get(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Can only prioritize pending runs
     if (run.status !== 'pending') {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Cannot prioritize test run with status "${run.status}". Only pending tests can be prioritized.`,
-        current_status: run.status,
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', `Cannot prioritize test run with status "${run.status}". Only pending tests can be prioritized.`, { current_status: run.status });
     }
 
     // Validate priority (1-1000, lower is higher priority)
     if (priority < 1 || priority > 1000) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Priority must be between 1 and 1000 (1 = highest priority)',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Priority must be between 1 and 1000 (1 = highest priority)');
     }
 
     const oldPriority = run.priority ?? 100;
@@ -468,10 +438,7 @@ export async function runControlRoutes(app: FastifyInstance) {
 
     const run = testRuns.get(runId);
     if (!run || run.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test run not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
     // Get queue position if pending

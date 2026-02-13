@@ -19,6 +19,7 @@ import { authenticate, requireRoles, getOrganizationId, JwtPayload } from '../..
 import { logAuditEntry } from '../audit-logs.js';
 import { generateId } from '../../utils/index.js';
 import { WebhookCheck, WebhookEvent } from './types.js';
+import { sendError } from '../../utils/errors.js';
 import {
   createWebhookCheck,
   getWebhookCheck,
@@ -94,17 +95,11 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
       const user = request.user as JwtPayload;
 
       if (!name || name.trim().length === 0) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Name is required',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Name is required');
       }
 
       if (!expected_interval || expected_interval < 60) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Expected interval must be at least 60 seconds',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Expected interval must be at least 60 seconds');
       }
 
       // Generate unique webhook ID and URL using crypto for security
@@ -161,17 +156,11 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
       const check = await getWebhookCheckByToken(token);
 
       if (!check) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Invalid webhook endpoint',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Invalid webhook endpoint');
       }
 
       if (!check.enabled) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Webhook check not found or disabled',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Webhook check not found or disabled');
       }
 
       // Validate signature if secret is configured
@@ -248,10 +237,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
       const check = await getWebhookCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Webhook check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Webhook check not found');
       }
 
       const events = await getWebhookEvents(checkId);
@@ -285,10 +271,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
       const check = await getWebhookCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Webhook check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Webhook check not found');
       }
 
       await deleteWebhookCheck(checkId);
@@ -320,10 +303,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
       const check = await getWebhookCheck(checkId);
 
       if (!check || check.organization_id !== orgId) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Webhook check not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Webhook check not found');
       }
 
       // Simulate receiving a webhook with the test payload

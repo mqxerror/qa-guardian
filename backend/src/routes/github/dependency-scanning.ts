@@ -16,6 +16,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
 import { getProject as dbGetProject, listProjects as dbListProjects } from '../projects/stores.js';
 import { createLogger } from '../../services/logger.js';
+import { sendError } from '../../utils/errors.js';
 // Feature #716: Zod validation middleware and schemas
 import {
   validateBody,
@@ -210,25 +211,16 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
 
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No GitHub repository connected to this project',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     if (pr_dependency_scan_enabled !== undefined) {
@@ -274,25 +266,16 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
 
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No GitHub repository connected to this project',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     return {
@@ -314,32 +297,20 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
 
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No GitHub repository connected to this project',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     if (!connection.pr_dependency_scan_enabled) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'PR dependency scanning is not enabled for this project',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'PR dependency scanning is not enabled for this project');
     }
 
     const fullName = `${connection.github_owner}/${connection.github_repo}`;
@@ -347,10 +318,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     const pr = pullRequests.find(p => p.number === parseInt(prNumber));
 
     if (!pr) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: `Pull request #${prNumber} not found`,
-      });
+      return sendError(reply, 404, 'NOT_FOUND', `Pull request #${prNumber} not found`);
     }
 
     // Check if any watched files are in the changed files
@@ -516,25 +484,16 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
 
     const project = await dbGetProject(projectId);
     if (!project) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
     const connection = githubConnections.get(projectId);
     if (!connection) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'No GitHub repository connected to this project',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     const projectScans = prDependencyScans.get(projectId) || [];
@@ -643,10 +602,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
 
     const config = dependencyAlertConfigs.get(orgId);
     if (!config?.enabled) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Dependency alerts are not enabled. Enable them first.',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Dependency alerts are not enabled. Enable them first.');
     }
 
     const generatedCveId = cve_id || `CVE-2026-${String(Math.floor(Math.random() * 90000) + 10000)}`;
@@ -753,10 +709,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     const alertIndex = orgAlerts.findIndex(a => a.id === alertId);
 
     if (alertIndex === -1) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Alert not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Alert not found');
     }
 
     const alert = orgAlerts[alertIndex];
@@ -792,10 +745,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     const alert = orgAlerts.find(a => a.id === alertId);
 
     if (!alert) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Alert not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Alert not found');
     }
 
     const sentNotifications = notificationsSent.get(orgId) || [];
@@ -901,10 +851,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
       const policyIndex = orgPolicies.findIndex(p => p.id === policyId);
 
       if (policyIndex === -1) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Policy not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Policy not found');
       }
 
       const policy = orgPolicies[policyIndex];
@@ -956,10 +903,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
       const policyIndex = orgPolicies.findIndex(p => p.id === policyId);
 
       if (policyIndex === -1) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Policy not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Policy not found');
       }
 
       orgPolicies.splice(policyIndex, 1);
@@ -1183,19 +1127,13 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
       const violationIndex = orgViolations.findIndex(v => v.id === violationId);
 
       if (violationIndex === -1) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Violation not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Violation not found');
       }
 
       const violation = orgViolations[violationIndex];
 
       if (violation.status !== 'blocked') {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Only blocked violations can be overridden',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Only blocked violations can be overridden');
       }
 
       violation.status = 'overridden';
@@ -1236,10 +1174,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
       const violationIndex = orgViolations.findIndex(v => v.id === violationId);
 
       if (violationIndex === -1) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Violation not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Violation not found');
       }
 
       const violation = orgViolations[violationIndex];

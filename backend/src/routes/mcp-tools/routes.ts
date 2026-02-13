@@ -16,6 +16,7 @@ import type {
   AvailableToolsResponse,
 } from './types.js';
 import { createLogger } from '../../services/logger.js';
+import { sendError } from '../../utils/errors.js';
 // Feature #715: Zod validation middleware and schemas
 import {
   validateBody,
@@ -270,15 +271,11 @@ export default async function mcpToolsRoutes(fastify: FastifyInstance) {
       return reply.send(response);
     } catch (error) {
       logger.error('Failed to get AI status', error);
-      return reply.status(500).send({
-        ready: false,
-        providers: {
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to check AI status', { ready: false, providers: {
           available: false,
           primary: { name: 'Kie.ai', available: false },
           fallback: { name: 'Anthropic', available: false },
-        },
-        message: 'Failed to check AI status',
-      });
+        } });
     }
   });
 
@@ -337,28 +334,20 @@ export default async function mcpToolsRoutes(fastify: FastifyInstance) {
       const { tool_name, args, use_real_ai = true } = request.body;
 
       if (!tool_name) {
-        return reply.status(400).send({
-          success: false,
-          error: 'Missing required parameter: tool_name',
-          metadata: {
+        return sendError(reply, 400, 'BAD_REQUEST', 'Missing required parameter: tool_name', { metadata: {
             tool_name: '',
             used_real_ai: false,
             execution_time_ms: Date.now() - startTime,
-          },
-        });
+          } });
       }
 
       // Check if tool exists
       if (!hasHandler(tool_name)) {
-        return reply.status(404).send({
-          success: false,
-          error: `Unknown tool: ${tool_name}. Use GET /api/v1/mcp/tools to see available tools.`,
-          metadata: {
+        return sendError(reply, 404, 'NOT_FOUND', `Unknown tool: ${tool_name}. Use GET /api/v1/mcp/tools to see available tools.`, { metadata: {
             tool_name,
             used_real_ai: false,
             execution_time_ms: Date.now() - startTime,
-          },
-        });
+          } });
       }
 
       // Create handler context
@@ -409,15 +398,11 @@ export default async function mcpToolsRoutes(fastify: FastifyInstance) {
 
       logger.error(`Tool execution failed: ${errorMessage}`, error);
 
-      return reply.status(500).send({
-        success: false,
-        error: errorMessage,
-        metadata: {
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', errorMessage, { metadata: {
           tool_name: request.body?.tool_name || 'unknown',
           used_real_ai: false,
           execution_time_ms: executionTime,
-        },
-      });
+        } });
     }
   });
 
@@ -462,10 +447,7 @@ export default async function mcpToolsRoutes(fastify: FastifyInstance) {
       logger.info(`User model: ${model || 'auto'}, Complexity: ${complexity}, Selected model: ${selectedModel}`);
 
       if (!message) {
-        return reply.status(400).send({
-          success: false,
-          error: 'Missing required parameter: message',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Missing required parameter: message');
       }
 
       // Ensure AI is initialized (handles late env var loading)
@@ -473,14 +455,10 @@ export default async function mcpToolsRoutes(fastify: FastifyInstance) {
 
       // Check if AI is available
       if (!aiRouter.isInitialized()) {
-        return reply.status(503).send({
-          success: false,
-          error: 'AI service is not available. Please check your API keys in .env',
-          metadata: {
+        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'AI service is not available. Please check your API keys in .env', { metadata: {
             used_real_ai: false,
             execution_time_ms: Date.now() - startTime,
-          },
-        });
+          } });
       }
 
       logger.info(`Processing chat: "${message.substring(0, 80)}..."`);
@@ -903,16 +881,12 @@ Tool fails → Continue anyway → Report "completed successfully" ❌`;
         const elapsedTime = Date.now() - startTime;
         if (elapsedTime > MAX_EXECUTION_TIME_MS) {
           logger.info(`Chat request exceeded maximum execution time (${elapsedTime}ms > ${MAX_EXECUTION_TIME_MS}ms)`);
-          return reply.status(504).send({
-            success: false,
-            error: 'AI analysis timed out. The request took too long to process. Please try again.',
-            metadata: {
+          return sendError(reply, 504, 'ERROR', 'AI analysis timed out. The request took too long to process. Please try again.', { metadata: {
               used_real_ai: true,
               execution_time_ms: elapsedTime,
               turns_completed: turnCount,
               tools_executed: allToolsExecuted.length,
-            },
-          });
+            } });
         }
 
         turnCount++;
@@ -1166,11 +1140,7 @@ Tool fails → Continue anyway → Report "completed successfully" ❌`;
 
       logger.error(`Chat failed: ${errorMessage}`, error);
 
-      return reply.status(500).send({
-        success: false,
-        error: errorMessage,
-        execution_time_ms: executionTime,
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', errorMessage, { execution_time_ms: executionTime });
     }
   });
 
@@ -1203,17 +1173,11 @@ Tool fails → Continue anyway → Report "completed successfully" ❌`;
       const { message, image, context = {}, complexity = 'complex' } = request.body;
 
       if (!message) {
-        return reply.status(400).send({
-          success: false,
-          error: 'Missing required parameter: message',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Missing required parameter: message');
       }
 
       if (!image?.data) {
-        return reply.status(400).send({
-          success: false,
-          error: 'Missing required parameter: image.data',
-        });
+        return sendError(reply, 400, 'BAD_REQUEST', 'Missing required parameter: image.data');
       }
 
       // Ensure AI is initialized
@@ -1221,14 +1185,10 @@ Tool fails → Continue anyway → Report "completed successfully" ❌`;
 
       // Check if vision is available (requires Anthropic)
       if (!aiRouter.isVisionAvailable()) {
-        return reply.status(503).send({
-          success: false,
-          error: 'Vision API requires Anthropic provider which is not initialized. Check ANTHROPIC_API_KEY in .env',
-          metadata: {
+        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Vision API requires Anthropic provider which is not initialized. Check ANTHROPIC_API_KEY in .env', { metadata: {
             used_real_ai: false,
             execution_time_ms: Date.now() - startTime,
-          },
-        });
+          } });
       }
 
       logger.info(`[Vision] Processing visual analysis: ${context.diff_percentage?.toFixed(2) || 0}% diff, ${context.viewport?.width || 0}x${context.viewport?.height || 0}`);
@@ -1314,15 +1274,11 @@ Be specific and actionable in your recommendations.`,
 
       logger.error(`[Vision] Analysis failed: ${errorMessage}`, error);
 
-      return reply.status(500).send({
-        success: false,
-        error: errorMessage,
-        metadata: {
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', errorMessage, { metadata: {
           used_real_ai: false,
           vision: true,
           execution_time_ms: executionTime,
-        },
-      });
+        } });
     }
   });
 }

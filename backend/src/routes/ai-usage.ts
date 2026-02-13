@@ -10,6 +10,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../middleware/auth.js';
+import { sendError } from '../utils/errors.js';
 import {
   getAIUsageAggregation,
   getCurrentPeriodUsage,
@@ -154,10 +155,7 @@ export async function aiUsageRoutes(app: FastifyInstance) {
     );
 
     if (!budget) {
-      return reply.status(500).send({
-        error: 'Internal Server Error',
-        message: 'Failed to set budget',
-      });
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', 'Failed to set budget');
     }
 
     // Guard against timeout middleware having already sent a 504

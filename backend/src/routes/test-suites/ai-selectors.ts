@@ -5,6 +5,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticate } from '../../middleware/auth.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('ai-selectors');
 
 // Feature #1139: Interface for AI selector suggestion
@@ -289,10 +290,7 @@ export async function aiSelectorsRoutes(app: FastifyInstance) {
     const { url, html, element_descriptions, max_results = 50 } = request.body;
 
     if (!url && !html) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Either url or html must be provided',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Either url or html must be provided');
     }
 
     logger.info({ url: url || 'provided HTML' }, 'Analyzing page for optimal selectors');

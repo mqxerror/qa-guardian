@@ -9,6 +9,7 @@ import { getCache } from '../services/cache.js';
 import { CacheKeys } from '../services/cache-keys.js';
 // Feature #484: Pino structured logging
 import { createLogger } from '../services/logger.js';
+import { sendError } from '../utils/errors.js';
 // Feature #716: Zod validation middleware and schemas
 import {
   validateBody,
@@ -109,10 +110,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
 
     const schedule = await getScheduleRepo(id);
     if (!schedule || schedule.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Schedule not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Schedule not found');
     }
 
     return { schedule };
@@ -140,41 +138,26 @@ export async function scheduleRoutes(app: FastifyInstance) {
 
     // Viewers cannot create schedules
     if (user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot create schedules',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot create schedules');
     }
 
     if (!name) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Schedule name is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Schedule name is required');
     }
 
     if (!suite_id) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Test suite ID is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Test suite ID is required');
     }
 
     // Verify suite exists and belongs to organization
     const suite = await getTestSuite(suite_id);
     if (!suite || suite.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Test suite not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
     }
 
     // Must have either cron_expression or run_at
     if (!cron_expression && !run_at) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Either cron_expression (recurring) or run_at (one-time) is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Either cron_expression (recurring) or run_at (one-time) is required');
     }
 
     const id = crypto.randomUUID();
@@ -230,18 +213,12 @@ export async function scheduleRoutes(app: FastifyInstance) {
 
     // Viewers cannot update schedules
     if (user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot update schedules',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot update schedules');
     }
 
     const schedule = await getScheduleRepo(id);
     if (!schedule || schedule.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Schedule not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Schedule not found');
     }
 
     // Build the updates object for the repository
@@ -295,18 +272,12 @@ export async function scheduleRoutes(app: FastifyInstance) {
 
     // Only admin or owner can delete schedules
     if (user.role !== 'admin' && user.role !== 'owner' && user.role !== 'developer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Only administrators and developers can delete schedules',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Only administrators and developers can delete schedules');
     }
 
     const schedule = await getScheduleRepo(id);
     if (!schedule || schedule.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Schedule not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Schedule not found');
     }
 
     await deleteScheduleRepo(id);
@@ -331,10 +302,7 @@ export async function scheduleRoutes(app: FastifyInstance) {
 
     const schedule = await getScheduleRepo(id);
     if (!schedule || schedule.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Schedule not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Schedule not found');
     }
 
     // Feature #141: Query directly by schedule_id instead of loading all org runs
@@ -368,18 +336,12 @@ export async function scheduleRoutes(app: FastifyInstance) {
 
     // Viewers cannot trigger schedules
     if (user.role === 'viewer') {
-      return reply.status(403).send({
-        error: 'Forbidden',
-        message: 'Viewers cannot trigger schedules',
-      });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot trigger schedules');
     }
 
     const schedule = await getScheduleRepo(id);
     if (!schedule || schedule.organization_id !== orgId) {
-      return reply.status(404).send({
-        error: 'Not Found',
-        message: 'Schedule not found',
-      });
+      return sendError(reply, 404, 'NOT_FOUND', 'Schedule not found');
     }
 
     // Create a test run with schedule_id

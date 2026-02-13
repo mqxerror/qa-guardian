@@ -6,6 +6,7 @@ import { authenticate } from '../../middleware/auth.js';
 import { generatePlaywrightCode } from './utils.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('ai-feedback');
 
 // Feature #1144: Interface for regeneration with feedback
@@ -627,17 +628,11 @@ export async function aiFeedbackRoutes(app: FastifyInstance) {
     } = request.body;
 
     if (!description || description.trim().length < 10) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Description must be at least 10 characters long',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Description must be at least 10 characters long');
     }
 
     if (!feedback || feedback.length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'At least one feedback item is required',
-      });
+      return sendError(reply, 400, 'BAD_REQUEST', 'At least one feedback item is required');
     }
 
     logger.info({ feedbackCount: feedback.length }, 'Regenerating with AI feedback');

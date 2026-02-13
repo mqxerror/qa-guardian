@@ -15,6 +15,7 @@ import { authenticate, JwtPayload } from '../../middleware/auth.js';
 import { getProject } from '../../services/repositories/projects.js';
 import { logAuditEntry } from '../audit-logs.js';
 import { FalsePositive } from './types.js';
+import { sendError } from '../../utils/errors.js';
 import {
   generateId,
   getFalsePositives,
@@ -33,11 +34,11 @@ export async function falsePositivesRoutes(app: FastifyInstance) {
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const fps = getFalsePositives(projectId);
@@ -63,22 +64,22 @@ export async function falsePositivesRoutes(app: FastifyInstance) {
 
     // Check permissions
     if (user.role === 'viewer') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Viewers cannot mark false positives' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot mark false positives');
     }
 
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     // Validate required fields
     if (!ruleId || !filePath || line === undefined || !reason) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'Missing required fields: ruleId, filePath, line, reason' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'Missing required fields: ruleId, filePath, line, reason');
     }
 
     // Check if already marked as false positive
@@ -88,7 +89,7 @@ export async function falsePositivesRoutes(app: FastifyInstance) {
     );
 
     if (alreadyExists) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'This finding is already marked as a false positive' });
+      return sendError(reply, 400, 'BAD_REQUEST', 'This finding is already marked as a false positive');
     }
 
     // Create false positive record
@@ -128,22 +129,22 @@ export async function falsePositivesRoutes(app: FastifyInstance) {
 
     // Check permissions
     if (user.role === 'viewer') {
-      return reply.status(403).send({ error: 'Forbidden', message: 'Viewers cannot remove false positives' });
+      return sendError(reply, 403, 'FORBIDDEN', 'Viewers cannot remove false positives');
     }
 
     // Check project exists and user has access
     const project = await getProject(projectId);
     if (!project) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     if (project.organization_id !== user.organization_id) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Project not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'Project not found');
     }
 
     const removed = removeFalsePositive(projectId, fpId);
     if (!removed) {
-      return reply.status(404).send({ error: 'Not Found', message: 'False positive not found' });
+      return sendError(reply, 404, 'NOT_FOUND', 'False positive not found');
     }
 
     // Log audit entry

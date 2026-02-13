@@ -13,6 +13,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticate, JwtPayload } from '../../middleware/auth.js';
 import { createLogger } from '../../services/logger.js';
 
+import { sendError } from '../../utils/errors.js';
 const logger = createLogger('dependency-lists');
 
 // ============================================================
@@ -238,10 +239,7 @@ export async function dependencyListsRoutes(app: FastifyInstance): Promise<void>
       const entryIndex = orgEntries.findIndex(e => e.id === entryId);
 
       if (entryIndex === -1) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Entry not found',
-        });
+        return sendError(reply, 404, 'NOT_FOUND', 'Entry not found');
       }
 
       const removedEntry = orgEntries.splice(entryIndex, 1)[0];
