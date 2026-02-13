@@ -10,6 +10,8 @@ import { CacheKeys } from '../services/cache-keys.js';
 // Feature #484: Pino structured logging
 import { createLogger } from '../services/logger.js';
 import { sendError } from '../utils/errors.js';
+// Feature #872: Full cron expression support via cron-parser utility
+import { getNextRunTime } from '../utils/cron-parser.js';
 // Feature #716: Zod validation middleware and schemas
 import {
   validateBody,
@@ -31,44 +33,12 @@ import {
   listSchedules as listSchedulesRepo,
 } from '../services/repositories/schedules.js';
 
-// Calculate next run time from cron expression (simplified implementation)
+// Feature #872: Full cron expression support using utils/cron-parser.ts
+// Replaces the previous simplified parser that only handled basic patterns.
+// Now supports: ranges (1-5), lists (1,3,5), steps (*/5), complex day-of-week/month combinations.
 function calculateNextRun(cronExpression: string, _timezone: string): Date | undefined {
-  // Simple cron parsing for common patterns
-  // Format: minute hour day-of-month month day-of-week
-  const parts = cronExpression.split(' ');
-  if (parts.length !== 5) return undefined;
-
-  const [minute, hour, , , dayOfWeek] = parts;
-  const now = new Date();
-  const next = new Date(now);
-
-  // Set the time
-  if (minute !== '*') {
-    next.setMinutes(parseInt(minute, 10));
-    next.setSeconds(0);
-    next.setMilliseconds(0);
-  }
-
-  if (hour !== '*') {
-    next.setHours(parseInt(hour, 10));
-    // If we've already passed this time today, move to tomorrow
-    if (next <= now) {
-      next.setDate(next.getDate() + 1);
-    }
-  }
-
-  // Handle weekly schedules (day-of-week: 0=Sunday, 1=Monday, etc.)
-  if (dayOfWeek !== '*') {
-    const targetDay = parseInt(dayOfWeek, 10);
-    const currentDay = next.getDay();
-    let daysToAdd = targetDay - currentDay;
-    if (daysToAdd < 0 || (daysToAdd === 0 && next <= now)) {
-      daysToAdd += 7;
-    }
-    next.setDate(next.getDate() + daysToAdd);
-  }
-
-  return next;
+  const next = getNextRunTime(cronExpression);
+  return next ?? undefined;
 }
 
 // Feature #2117: Map removed — all access now through async repository functions
