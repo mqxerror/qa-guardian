@@ -1,6 +1,7 @@
 /**
  * React Query hooks for Monitoring API
  * Feature #75: Migrate MonitoringPage to React Query with caching
+ * Feature #708: Full React Query migration for MonitoringPage settings
  *
  * Note: MonitoringPage has complex modular hooks (useUptimeCheckHandlers, etc.)
  * This file provides React Query wrappers for the core data fetching operations.
@@ -10,10 +11,24 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
 import { fetchWithAuth } from './fetchWithAuth'; // Feature #655: Shared auth fetch
 
-// Import the existing MonitoringSummary type from monitoring components
-import type { MonitoringSummary } from '../../components/monitoring';
+// Import types from monitoring components to ensure compatibility
+// Feature #708: Use canonical types from monitoring module
+import type {
+  MonitoringSummary,
+  MonitoringSettings,
+  RetentionStats,
+  StatusPage,
+  AvailableCheck,
+  OnCallSchedule,
+  EscalationPolicy,
+  AlertHistoryItem,
+  AlertHistoryStats,
+  AlertsOverTimeData,
+  AlertRoutingRule,
+  AlertRoutingLog,
+} from '../../components/monitoring';
 
-export type { MonitoringSummary };
+export type { MonitoringSummary, MonitoringSettings, RetentionStats };
 
 export interface UptimeCheck {
   id: string;
@@ -395,17 +410,7 @@ export function useStatusSubscribe() {
 
 // ============== Monitoring Settings Hooks ==============
 // Feature #708: React Query hooks for MonitoringPage settings
-
-export interface MonitoringSettings {
-  retention_days: 30 | 90 | 365;
-  auto_cleanup_enabled: boolean;
-}
-
-export interface RetentionStats {
-  total_results: number;
-  oldest_result: string;
-  results_by_type: Record<string, number>;
-}
+// Types imported from components/monitoring/types.ts for compatibility
 
 export interface CleanupResult {
   success: boolean;
@@ -502,24 +507,7 @@ export function useRunRetentionCleanup() {
 
 // ============== Status Pages Hooks ==============
 // Feature #708: React Query hooks for status pages
-
-export interface StatusPage {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  is_public: boolean;
-  logo_url?: string;
-  primary_color?: string;
-  custom_domain?: string;
-  check_ids: string[];
-}
-
-export interface AvailableCheck {
-  id: string;
-  name: string;
-  type: string;
-}
+// Types imported from components/monitoring/types.ts
 
 /**
  * Hook to fetch status pages
@@ -574,17 +562,7 @@ export function useDeleteStatusPage() {
 
 // ============== On-Call Schedule Hooks ==============
 // Feature #708: React Query hooks for on-call schedules
-
-export interface OnCallSchedule {
-  id: string;
-  name: string;
-  members: string[];
-  rotation_type: 'daily' | 'weekly' | 'custom';
-  rotation_interval?: number;
-  current_index: number;
-  timezone?: string;
-  start_date?: string;
-}
+// Types imported from components/monitoring/types.ts
 
 /**
  * Hook to fetch on-call schedules
@@ -642,17 +620,7 @@ export function useRotateOnCallSchedule() {
 
 // ============== Escalation Policy Hooks ==============
 // Feature #708: React Query hooks for escalation policies
-
-export interface EscalationPolicy {
-  id: string;
-  name: string;
-  description?: string;
-  steps: {
-    delay_minutes: number;
-    notify: string[];
-    on_call_schedule_id?: string;
-  }[];
-}
+// Types imported from components/monitoring/types.ts
 
 /**
  * Hook to fetch escalation policies
@@ -706,34 +674,11 @@ export function useTestEscalationPolicy() {
 
 // ============== Alert History Hooks ==============
 // Feature #708: React Query hooks for alert history
+// Types imported from components/monitoring/types.ts
 
 export interface AlertHistoryParams {
   severity?: string;
   source?: string;
-}
-
-export interface AlertHistoryItem {
-  id: string;
-  check_id: string;
-  check_name: string;
-  severity: string;
-  source: string;
-  message: string;
-  resolved: boolean;
-  created_at: string;
-  resolved_at?: string;
-}
-
-export interface AlertHistoryStats {
-  total_alerts: number;
-  by_severity: Record<string, number>;
-  by_source: Record<string, number>;
-  mttr_seconds?: number;
-}
-
-export interface AlertsOverTimeData {
-  date: string;
-  count: number;
 }
 
 export interface AlertHistoryResponse {
@@ -805,32 +750,7 @@ export function useExportAlertHistory() {
 
 // ============== Alert Routing Hooks ==============
 // Feature #708: React Query hooks for alert routing
-
-export interface AlertRoutingRule {
-  id: string;
-  name: string;
-  conditions: {
-    field: string;
-    operator: string;
-    value: string;
-  }[];
-  destinations: {
-    type: string;
-    target: string;
-  }[];
-  enabled: boolean;
-  priority: number;
-}
-
-export interface AlertRoutingLog {
-  id: string;
-  rule_id: string;
-  rule_name: string;
-  alert_id: string;
-  matched: boolean;
-  destinations_notified: string[];
-  created_at: string;
-}
+// Types imported from components/monitoring/types.ts
 
 /**
  * Hook to fetch alert routing rules

@@ -1,6 +1,7 @@
 // MonitoringPage - Extracted from App.tsx (Feature #1441)
 // Feature #75: Migrated summary to React Query with caching
 // Feature #336: Dark-first design system redesign
+// Feature #708: Full React Query migration + custom hooks refactor
 // Synthetic monitoring: uptime checks, transaction monitoring, performance testing
 import { useState, useEffect, useCallback } from "react";
 // import { useNavigate } from "react-router-dom"; // Unused
@@ -8,7 +9,29 @@ import { Layout } from "../components/Layout";
 import { useAuthStore } from "../stores/authStore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { toast } from "../stores/toastStore";
-import { useMonitoringSummary } from "../hooks/api/useMonitoring";
+import {
+  useMonitoringSummary,
+  // Feature #708: React Query hooks for settings operations
+  useMonitoringSettings as useMonitoringSettingsQuery,
+  useMonitoringRetentionStats,
+  useSaveMonitoringSettings,
+  useRunRetentionCleanup,
+  useStatusPages,
+  useAvailableChecksForStatus,
+  useDeleteStatusPage,
+  useOnCallSchedules,
+  useDeleteOnCallSchedule,
+  useRotateOnCallSchedule,
+  useEscalationPolicies,
+  useDeleteEscalationPolicy,
+  useTestEscalationPolicy,
+  useAlertHistory,
+  useExportAlertHistory,
+  useAlertRoutingRules,
+  useAlertRoutingLogs,
+  useDeleteAlertRoutingRule,
+  useInvalidateMonitoringSettings,
+} from "../hooks/api/useMonitoring";
 import { devLog, createLogger } from "../utils/logger";
 
 const logger = createLogger('monitoring');
@@ -181,56 +204,89 @@ function MonitoringPage() {
   // Tab state
   const [activeTab, setActiveTab] = useState<'checks' | 'transactions' | 'performance' | 'webhooks' | 'dns' | 'tcp' | 'settings'>('checks');
 
-  // Settings state (types imported from monitoring/types.ts)
-  const [monitoringSettings, setMonitoringSettings] = useState<MonitoringSettings | null>(null);
-  const [retentionStats, setRetentionStats] = useState<RetentionStats | null>(null);
-  const [isLoadingSettings, setIsLoadingSettings] = useState(false);
-  const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [isRunningCleanup, setIsRunningCleanup] = useState(false);
+  // Feature #708: React Query hooks for settings (replaces useState + fetch)
+  const { data: monitoringSettingsData, isLoading: isLoadingSettingsRQ } = useMonitoringSettingsQuery();
+  const { data: retentionStatsData, isLoading: isLoadingStatsRQ } = useMonitoringRetentionStats();
+  const saveSettingsMutation = useSaveMonitoringSettings();
+  const cleanupMutation = useRunRetentionCleanup();
+  const { invalidateSettings, invalidateStats } = useInvalidateMonitoringSettings();
+
+  // Feature #708: React Query hooks for status pages
+  const { data: statusPagesData, isLoading: isLoadingStatusPagesRQ, refetch: refetchStatusPages } = useStatusPages();
+  const { data: availableChecksData } = useAvailableChecksForStatus();
+  const deleteStatusPageMutation = useDeleteStatusPage();
+
+  // Feature #708: React Query hooks for on-call schedules
+  const { data: onCallSchedulesData, isLoading: isLoadingOnCallRQ, refetch: refetchOnCallSchedules } = useOnCallSchedules();
+  const deleteOnCallMutation = useDeleteOnCallSchedule();
+  const rotateOnCallMutation = useRotateOnCallSchedule();
+
+  // Feature #708: React Query hooks for escalation policies
+  const { data: escalationPoliciesData, isLoading: isLoadingEscalationRQ, refetch: refetchEscalationPolicies } = useEscalationPolicies();
+  const deleteEscalationMutation = useDeleteEscalationPolicy();
+  const testEscalationMutation = useTestEscalationPolicy();
+
+  // Feature #708: React Query hooks for alert history
+  const [alertHistorySeverityFilter, setAlertHistorySeverityFilter] = useState<string>('');
+  const [alertHistorySourceFilter, setAlertHistorySourceFilter] = useState<string>('');
+  const { data: alertHistoryData, isLoading: isLoadingAlertHistoryRQ } = useAlertHistory({
+    severity: alertHistorySeverityFilter || undefined,
+    source: alertHistorySourceFilter || undefined,
+  });
+  const exportAlertHistoryMutation = useExportAlertHistory();
+
+  // Feature #708: React Query hooks for alert routing
+  const { data: alertRoutingRulesData, isLoading: isLoadingRoutingRulesRQ, refetch: refetchAlertRoutingRules } = useAlertRoutingRules();
+  const { data: alertRoutingLogsData, refetch: refetchAlertRoutingLogs } = useAlertRoutingLogs();
+  const deleteRoutingRuleMutation = useDeleteAlertRoutingRule();
+
+  // Derive data from React Query responses
+  const monitoringSettings = monitoringSettingsData || null;
+  const retentionStats = retentionStatsData || null;
+  const isLoadingSettings = isLoadingSettingsRQ;
+  const isSavingSettings = saveSettingsMutation.isPending;
+  const isRunningCleanup = cleanupMutation.isPending;
+  const statusPages = statusPagesData?.status_pages || [];
+  const availableChecksForStatus = availableChecksData?.checks || [];
+  const isLoadingStatusPages = isLoadingStatusPagesRQ;
+  const onCallSchedules = onCallSchedulesData?.schedules || [];
+  const isLoadingOnCallSchedules = isLoadingOnCallRQ;
+  const escalationPolicies = escalationPoliciesData?.policies || [];
+  const isLoadingEscalationPolicies = isLoadingEscalationRQ;
+  const alertHistory = alertHistoryData?.alerts || [];
+  const alertHistoryStats = alertHistoryData?.stats || null;
+  const alertsOverTime = alertHistoryData?.alerts_over_time || [];
+  const isLoadingAlertHistory = isLoadingAlertHistoryRQ;
+  const alertRoutingRules = alertRoutingRulesData?.rules || [];
+  const alertRoutingLogs = alertRoutingLogsData?.logs || [];
+  const isLoadingAlertRouting = isLoadingRoutingRulesRQ;
+
+  // Settings form state (local edits before save)
   const [settingsRetentionDays, setSettingsRetentionDays] = useState<30 | 90 | 365>(90);
   const [settingsAutoCleanup, setSettingsAutoCleanup] = useState(true);
 
-  // Status page state - Feature #47: Form state moved to StatusPageModal component
-  const [statusPages, setStatusPages] = useState<StatusPage[]>([]);
-  const [availableChecksForStatus, setAvailableChecksForStatus] = useState<AvailableCheck[]>([]);
-  const [isLoadingStatusPages, setIsLoadingStatusPages] = useState(false);
+  // Sync form state with fetched settings
+  useEffect(() => {
+    if (monitoringSettings) {
+      setSettingsRetentionDays(monitoringSettings.retention_days);
+      setSettingsAutoCleanup(monitoringSettings.auto_cleanup_enabled);
+    }
+  }, [monitoringSettings]);
+
+  // Modal states (keeping minimal UI state)
   const [showStatusPageModal, setShowStatusPageModal] = useState(false);
   const [editingStatusPage, setEditingStatusPage] = useState<StatusPage | null>(null);
-
-  // Incident management state - Feature #47: Most state moved to IncidentManagementPanel
   const [selectedStatusPageForIncident, setSelectedStatusPageForIncident] = useState<StatusPage | null>(null);
-
-  // On-call schedule state - Feature #47: Form state moved to OnCallScheduleModal
-  const [onCallSchedules, setOnCallSchedules] = useState<OnCallSchedule[]>([]);
-  const [isLoadingOnCallSchedules, setIsLoadingOnCallSchedules] = useState(false);
   const [showOnCallModal, setShowOnCallModal] = useState(false);
   const [editingOnCallSchedule, setEditingOnCallSchedule] = useState<OnCallSchedule | null>(null);
-
-  // Escalation policy state - Feature #47: Form state moved to EscalationPolicyModal
-  const [escalationPolicies, setEscalationPolicies] = useState<EscalationPolicy[]>([]);
-  const [isLoadingEscalationPolicies, setIsLoadingEscalationPolicies] = useState(false);
   const [showEscalationPolicyModal, setShowEscalationPolicyModal] = useState(false);
   const [editingEscalationPolicy, setEditingEscalationPolicy] = useState<EscalationPolicy | null>(null);
-
-  // Alert history state (types imported from monitoring/types.ts)
-  const [alertHistory, setAlertHistory] = useState<AlertHistoryItem[]>([]);
-  const [alertHistoryStats, setAlertHistoryStats] = useState<AlertHistoryStats | null>(null);
-  const [alertsOverTime, setAlertsOverTime] = useState<AlertsOverTimeData[]>([]);
-  const [isLoadingAlertHistory, setIsLoadingAlertHistory] = useState(false);
-  const [alertHistorySeverityFilter, setAlertHistorySeverityFilter] = useState<string>('');
-  const [alertHistorySourceFilter, setAlertHistorySourceFilter] = useState<string>('');
   const [showAlertHistorySection, setShowAlertHistorySection] = useState(false);
-
-  // Alert routing state (types imported from monitoring/types.ts)
-  const [alertRoutingRules, setAlertRoutingRules] = useState<AlertRoutingRule[]>([]);
-  const [alertRoutingLogs, setAlertRoutingLogs] = useState<AlertRoutingLog[]>([]);
-  const [isLoadingAlertRouting, setIsLoadingAlertRouting] = useState(false);
-  // Alert routing state - Feature #47: Form state moved to AlertRoutingModal
   const [showAlertRoutingModal, setShowAlertRoutingModal] = useState(false);
   const [editingAlertRoutingRule, setEditingAlertRoutingRule] = useState<AlertRoutingRule | null>(null);
   const [showAlertRoutingTest, setShowAlertRoutingTest] = useState(false);
 
-  // Global Alert Severity Mapping state (types imported from monitoring/types.ts)
+  // Advanced alert config state (keeping as-is since no React Query hooks yet)
   const [globalSeverityMapping, setGlobalSeverityMapping] = useState<GlobalSeverityMapping>({
     critical: 'P1',
     high: 'P2',
@@ -239,8 +295,6 @@ function MonitoringPage() {
     info: 'P5',
   });
   const [isSavingSeverityMapping, setIsSavingSeverityMapping] = useState(false);
-
-  // Alert Rate Limiting state (types imported from monitoring/types.ts)
   const [alertRateLimitConfig, setAlertRateLimitConfig] = useState<AlertRateLimitConfig>({
     enabled: true,
     max_alerts_per_minute: 5,
@@ -251,8 +305,6 @@ function MonitoringPage() {
   const [isSavingRateLimit, setIsSavingRateLimit] = useState(false);
   const [rateLimitStats, setRateLimitStats] = useState<RateLimitStats | null>(null);
   const [isTestingRateLimit, setIsTestingRateLimit] = useState(false);
-
-  // Alert Correlation state (types imported from monitoring/types.ts)
   const [alertCorrelationConfig, setAlertCorrelationConfig] = useState<AlertCorrelationConfig>({
     enabled: true,
     correlate_by_check: true,
@@ -266,8 +318,6 @@ function MonitoringPage() {
   const [alertCorrelations, setAlertCorrelations] = useState<AlertCorrelation[]>([]);
   const [isTestingCorrelation, setIsTestingCorrelation] = useState(false);
   const [selectedCorrelation, setSelectedCorrelation] = useState<AlertCorrelation | null>(null);
-
-  // Alert Runbook state (types imported from monitoring/types.ts)
   const [alertRunbooks, setAlertRunbooks] = useState<AlertRunbook[]>([]);
   const [isLoadingRunbooks, setIsLoadingRunbooks] = useState(false);
   const [showRunbookModal, setShowRunbookModal] = useState(false);
@@ -392,142 +442,52 @@ function MonitoringPage() {
 
   // DNS/TCP monitoring removed - infrastructure monitoring, not QA testing
 
-  // Fetch monitoring settings
-  const fetchMonitoringSettings = useCallback(async () => {
-    if (!token) return;
-    setIsLoadingSettings(true);
-    try {
-      const [settingsRes, statsRes] = await Promise.all([
-        fetch('/api/v1/monitoring/settings', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch('/api/v1/monitoring/settings/stats', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
+  // Feature #708: Use React Query mutations instead of raw fetch
+  // fetchMonitoringSettings is now automatic via useMonitoringSettingsQuery hook
+  const fetchMonitoringSettings = useCallback(() => {
+    // No-op: React Query handles this automatically
+    // Keeping function signature for backwards compatibility
+    invalidateSettings();
+    invalidateStats();
+  }, [invalidateSettings, invalidateStats]);
 
-      if (settingsRes.ok) {
-        const settings = await settingsRes.json();
-        setMonitoringSettings(settings);
-        setSettingsRetentionDays(settings.retention_days);
-        setSettingsAutoCleanup(settings.auto_cleanup_enabled);
-      }
-
-      if (statsRes.ok) {
-        const stats = await statsRes.json();
-        setRetentionStats(stats);
-      }
-    } catch (error) {
-      logger.error('Failed to fetch monitoring settings:', error);
-    } finally {
-      setIsLoadingSettings(false);
-    }
-  }, [token]);
-
-  // Save monitoring settings
+  // Feature #708: Save monitoring settings using React Query mutation
   const saveMonitoringSettings = async () => {
-    if (!token) return;
-    setIsSavingSettings(true);
     try {
-      const response = await fetch('/api/v1/monitoring/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          retention_days: settingsRetentionDays,
-          auto_cleanup_enabled: settingsAutoCleanup,
-        }),
+      await saveSettingsMutation.mutateAsync({
+        retention_days: settingsRetentionDays,
+        auto_cleanup_enabled: settingsAutoCleanup,
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setMonitoringSettings(data.settings);
-        toast.success('Settings saved successfully');
-      } else {
-        toast.error('Failed to save settings');
-      }
+      toast.success('Settings saved successfully');
     } catch (error) {
       logger.error('Failed to save settings:', error);
       toast.error('Failed to save settings');
-    } finally {
-      setIsSavingSettings(false);
     }
   };
 
-  // Run retention cleanup
+  // Feature #708: Run retention cleanup using React Query mutation
   const runRetentionCleanup = async () => {
-    if (!token) return;
-    setIsRunningCleanup(true);
     try {
-      const response = await fetch('/api/v1/monitoring/settings/cleanup', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        toast.success(`Cleanup complete: ${data.cleaned_results.total} results removed`);
-        // Refresh stats
-        await fetchMonitoringSettings();
-      } else {
-        toast.error('Failed to run cleanup');
-      }
+      const result = await cleanupMutation.mutateAsync();
+      toast.success(`Cleanup complete: ${result.cleaned_results?.total || 0} results removed`);
     } catch (error) {
       logger.error('Failed to run cleanup:', error);
       toast.error('Failed to run cleanup');
-    } finally {
-      setIsRunningCleanup(false);
     }
   };
 
-  // Fetch status pages
-  const fetchStatusPages = useCallback(async () => {
-    if (!token) return;
-    setIsLoadingStatusPages(true);
-    try {
-      const [pagesRes, checksRes] = await Promise.all([
-        fetch('/api/v1/monitoring/status-pages', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch('/api/v1/monitoring/status-pages/available-checks', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
+  // Feature #708: fetchStatusPages is now automatic via useStatusPages hook
+  const fetchStatusPages = useCallback(() => {
+    refetchStatusPages();
+  }, [refetchStatusPages]);
 
-      if (pagesRes.ok) {
-        const data = await pagesRes.json();
-        setStatusPages(data.status_pages || []);
-      }
-
-      if (checksRes.ok) {
-        const data = await checksRes.json();
-        setAvailableChecksForStatus(data.checks || []);
-      }
-    } catch (error) {
-      logger.error('Failed to fetch status pages:', error);
-    } finally {
-      setIsLoadingStatusPages(false);
-    }
-  }, [token]);
-
-  // Delete status page
+  // Feature #708: Delete status page using React Query mutation
   const handleDeleteStatusPage = async (pageId: string) => {
-    if (!token || !confirm('Are you sure you want to delete this status page?')) return;
+    if (!confirm('Are you sure you want to delete this status page?')) return;
 
     try {
-      const response = await fetch(`/api/v1/monitoring/status-pages/${pageId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        toast.success('Status page deleted');
-        fetchStatusPages();
-      } else {
-        toast.error('Failed to delete status page');
-      }
+      await deleteStatusPageMutation.mutateAsync(pageId);
+      toast.success('Status page deleted');
     } catch (error) {
       logger.error('Failed to delete status page:', error);
       toast.error('Failed to delete status page');
@@ -545,24 +505,10 @@ function MonitoringPage() {
     setSelectedStatusPageForIncident(page);
   };
 
-  // Fetch on-call schedules
-  const fetchOnCallSchedules = useCallback(async () => {
-    if (!token) return;
-    setIsLoadingOnCallSchedules(true);
-    try {
-      const response = await fetch('/api/v1/monitoring/on-call', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setOnCallSchedules(data.schedules || []);
-      }
-    } catch (error) {
-      logger.error('Failed to fetch on-call schedules:', error);
-    } finally {
-      setIsLoadingOnCallSchedules(false);
-    }
-  }, [token]);
+  // Feature #708: fetchOnCallSchedules is now automatic via useOnCallSchedules hook
+  const fetchOnCallSchedules = useCallback(() => {
+    refetchOnCallSchedules();
+  }, [refetchOnCallSchedules]);
 
   // Open edit on-call schedule modal - Feature #47: Form state moved to component
   const openEditOnCallSchedule = (schedule: OnCallSchedule) => {
@@ -570,68 +516,34 @@ function MonitoringPage() {
     setShowOnCallModal(true);
   };
 
-  // Delete on-call schedule
+  // Feature #708: Delete on-call schedule using React Query mutation
   const handleDeleteOnCallSchedule = async (scheduleId: string) => {
-    if (!token || !confirm('Are you sure you want to delete this on-call schedule?')) return;
+    if (!confirm('Are you sure you want to delete this on-call schedule?')) return;
 
     try {
-      const response = await fetch(`/api/v1/monitoring/on-call/${scheduleId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        toast.success('On-call schedule deleted');
-        fetchOnCallSchedules();
-      } else {
-        toast.error('Failed to delete on-call schedule');
-      }
+      await deleteOnCallMutation.mutateAsync(scheduleId);
+      toast.success('On-call schedule deleted');
     } catch (error) {
       logger.error('Failed to delete on-call schedule:', error);
       toast.error('Failed to delete on-call schedule');
     }
   };
 
-  // Rotate on-call schedule manually
+  // Feature #708: Rotate on-call schedule using React Query mutation
   const handleRotateOnCallSchedule = async (scheduleId: string) => {
-    if (!token) return;
-
     try {
-      const response = await fetch(`/api/v1/monitoring/on-call/${scheduleId}/rotate`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        toast.success('On-call rotation advanced');
-        fetchOnCallSchedules();
-      } else {
-        toast.error('Failed to rotate on-call schedule');
-      }
+      await rotateOnCallMutation.mutateAsync(scheduleId);
+      toast.success('On-call rotation advanced');
     } catch (error) {
       logger.error('Failed to rotate on-call schedule:', error);
       toast.error('Failed to rotate on-call schedule');
     }
   };
 
-  // Fetch escalation policies
-  const fetchEscalationPolicies = useCallback(async () => {
-    if (!token) return;
-    setIsLoadingEscalationPolicies(true);
-    try {
-      const response = await fetch('/api/v1/monitoring/escalation-policies', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setEscalationPolicies(data.policies || []);
-      }
-    } catch (error) {
-      logger.error('Failed to fetch escalation policies:', error);
-    } finally {
-      setIsLoadingEscalationPolicies(false);
-    }
-  }, [token]);
+  // Feature #708: fetchEscalationPolicies is now automatic via useEscalationPolicies hook
+  const fetchEscalationPolicies = useCallback(() => {
+    refetchEscalationPolicies();
+  }, [refetchEscalationPolicies]);
 
   // Feature #47: Form state moved to EscalationPolicyModal - only need simple open/close
   const openEditEscalationPolicy = (policy: EscalationPolicy) => {
@@ -639,45 +551,25 @@ function MonitoringPage() {
     setShowEscalationPolicyModal(true);
   };
 
-  // Delete escalation policy
+  // Feature #708: Delete escalation policy using React Query mutation
   const handleDeleteEscalationPolicy = async (policyId: string) => {
-    if (!token || !confirm('Are you sure you want to delete this escalation policy?')) return;
+    if (!confirm('Are you sure you want to delete this escalation policy?')) return;
 
     try {
-      const response = await fetch(`/api/v1/monitoring/escalation-policies/${policyId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        toast.success('Escalation policy deleted');
-        fetchEscalationPolicies();
-      } else {
-        toast.error('Failed to delete escalation policy');
-      }
+      await deleteEscalationMutation.mutateAsync(policyId);
+      toast.success('Escalation policy deleted');
     } catch (error) {
       logger.error('Failed to delete escalation policy:', error);
       toast.error('Failed to delete escalation policy');
     }
   };
 
-  // Test escalation policy
+  // Feature #708: Test escalation policy using React Query mutation
   const handleTestEscalationPolicy = async (policyId: string) => {
-    if (!token) return;
-
     try {
-      const response = await fetch(`/api/v1/monitoring/escalation-policies/${policyId}/test`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        toast.success(`Escalation test completed: ${data.escalation_flow.length} levels`);
-        devLog('[Escalation Test]', data);
-      } else {
-        toast.error('Failed to test escalation policy');
-      }
+      const data = await testEscalationMutation.mutateAsync(policyId);
+      toast.success(`Escalation test completed: ${data?.escalation_flow?.length || 0} levels`);
+      devLog('[Escalation Test]', data);
     } catch (error) {
       logger.error('Failed to test escalation policy:', error);
       toast.error('Failed to test escalation policy');
@@ -686,58 +578,21 @@ function MonitoringPage() {
 
   // Feature #47: fetchAlertGroupingRules and fetchAlertGroups moved to useAlertGroupHandlers hook
 
-  // Fetch alert history with statistics
-  const fetchAlertHistory = useCallback(async () => {
-    if (!token) return;
-    setIsLoadingAlertHistory(true);
-    try {
-      const params = new URLSearchParams();
-      if (alertHistorySeverityFilter) params.append('severity', alertHistorySeverityFilter);
-      if (alertHistorySourceFilter) params.append('source', alertHistorySourceFilter);
+  // Feature #708: Alert history is now automatic via useAlertHistory hook (params trigger refetch)
+  // Keeping function for backwards compatibility with components that call it
+  const fetchAlertHistory = useCallback(() => {
+    // No-op: React Query handles this automatically with filter params
+  }, []);
 
-      const response = await fetch(`/api/v1/monitoring/alert-history?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAlertHistory(data.alerts || []);
-        setAlertHistoryStats(data.stats || null);
-        setAlertsOverTime(data.alerts_over_time || []);
-      }
-    } catch (error) {
-      logger.error('Failed to fetch alert history:', error);
-    } finally {
-      setIsLoadingAlertHistory(false);
-    }
-  }, [token, alertHistorySeverityFilter, alertHistorySourceFilter]);
-
-  // Export alert history
+  // Feature #708: Export alert history using React Query mutation
   const exportAlertHistory = async (format: 'csv' | 'json') => {
-    if (!token) return;
     try {
-      const params = new URLSearchParams();
-      if (alertHistorySeverityFilter) params.append('severity', alertHistorySeverityFilter);
-      if (alertHistorySourceFilter) params.append('source', alertHistorySourceFilter);
-      params.append('format', format);
-
-      const response = await fetch(`/api/v1/monitoring/alert-history/export?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      await exportAlertHistoryMutation.mutateAsync({
+        format,
+        severity: alertHistorySeverityFilter || undefined,
+        source: alertHistorySourceFilter || undefined,
       });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `alert-history.${format}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        toast.success(`Alert history exported as ${format.toUpperCase()}`);
-      } else {
-        toast.error('Failed to export alert history');
-      }
+      toast.success(`Alert history exported as ${format.toUpperCase()}`);
     } catch (error) {
       logger.error('Failed to export alert history:', error);
       toast.error('Failed to export alert history');
@@ -747,40 +602,15 @@ function MonitoringPage() {
   // Feature #47: openEditAlertGroupingRule, handleDeleteAlertGroupingRule, handleSimulateAlertGrouping
   // moved to useAlertGroupHandlers hook
 
-  // Fetch alert routing rules
-  const fetchAlertRoutingRules = useCallback(async () => {
-    if (!token) return;
-    setIsLoadingAlertRouting(true);
-    try {
-      const response = await fetch('/api/v1/monitoring/alert-routing/rules', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAlertRoutingRules(data.rules || []);
-      }
-    } catch (error) {
-      logger.error('Failed to fetch alert routing rules:', error);
-    } finally {
-      setIsLoadingAlertRouting(false);
-    }
-  }, [token]);
+  // Feature #708: fetchAlertRoutingRules is now automatic via useAlertRoutingRules hook
+  const fetchAlertRoutingRules = useCallback(() => {
+    refetchAlertRoutingRules();
+  }, [refetchAlertRoutingRules]);
 
-  // Fetch alert routing logs
-  const fetchAlertRoutingLogs = useCallback(async () => {
-    if (!token) return;
-    try {
-      const response = await fetch('/api/v1/monitoring/alert-routing/logs', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAlertRoutingLogs(data.logs || []);
-      }
-    } catch (error) {
-      logger.error('Failed to fetch alert routing logs:', error);
-    }
-  }, [token]);
+  // Feature #708: fetchAlertRoutingLogs is now automatic via useAlertRoutingLogs hook
+  const fetchAlertRoutingLogs = useCallback(() => {
+    refetchAlertRoutingLogs();
+  }, [refetchAlertRoutingLogs]);
 
   // Feature #47: Form state moved to AlertRoutingModal - only need simple open/close
   const openEditAlertRoutingRule = (rule: AlertRoutingRule) => {
@@ -788,22 +618,13 @@ function MonitoringPage() {
     setShowAlertRoutingModal(true);
   };
 
-  // Delete alert routing rule
+  // Feature #708: Delete alert routing rule using React Query mutation
   const handleDeleteAlertRoutingRule = async (ruleId: string) => {
-    if (!token || !confirm('Are you sure you want to delete this alert routing rule?')) return;
+    if (!confirm('Are you sure you want to delete this alert routing rule?')) return;
 
     try {
-      const response = await fetch(`/api/v1/monitoring/alert-routing/rules/${ruleId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        toast.success('Alert routing rule deleted');
-        fetchAlertRoutingRules();
-      } else {
-        toast.error('Failed to delete alert routing rule');
-      }
+      await deleteRoutingRuleMutation.mutateAsync(ruleId);
+      toast.success('Alert routing rule deleted');
     } catch (error) {
       logger.error('Failed to delete alert routing rule:', error);
       toast.error('Failed to delete alert routing rule');
