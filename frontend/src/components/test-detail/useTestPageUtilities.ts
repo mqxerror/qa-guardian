@@ -172,8 +172,7 @@ export function useTestPageUtilities({
       const scheduleData: Record<string, unknown> = {
         name: data.name || `${test.name} Schedule`,
         description: `Automated schedule for test: ${test.name}`,
-        test_suite_id: suite.id,
-        tests: [test.id],
+        suite_id: suite.id,
         browsers: [suite.default_browser || 'chromium'],
         enabled: true,
         timezone: data.timezone,
