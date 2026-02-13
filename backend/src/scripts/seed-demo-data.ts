@@ -9,18 +9,18 @@
  * Usage: npm run seed:demo
  */
 
-console.log('=================================================');
-console.log('  QA Guardian - Demo Data Seeder');
-console.log('=================================================\n');
+import { createLogger } from '../services/logger.js';
 
-console.log('This script seeds demo/sample data into the application.');
-console.log('It is intended for:');
-console.log('  - Screenshots and marketing materials');
-console.log('  - Demo environments');
-console.log('  - Development testing\n');
+const seedLogger = createLogger('seed-demo-data');
 
-console.log('NOTE: In normal operation, the application starts clean.');
-console.log('Users create their own real data through the UI.\n');
+seedLogger.info('=================================================');
+seedLogger.info('  QA Guardian - Demo Data Seeder');
+seedLogger.info('=================================================');
+
+seedLogger.info('This script seeds demo/sample data into the application.');
+seedLogger.info('It is intended for: Screenshots and marketing materials, Demo environments, Development testing');
+
+seedLogger.info('NOTE: In normal operation, the application starts clean. Users create their own real data through the UI.');
 
 // Demo data configuration
 const DEMO_CONFIG = {
@@ -48,7 +48,7 @@ const DEMO_CONFIG = {
 };
 
 async function seedDemoData() {
-  console.log('Seeding demo data...\n');
+  seedLogger.info('Seeding demo data...');
 
   // In a real implementation, this would:
   // 1. Connect to the database
@@ -57,17 +57,17 @@ async function seedDemoData() {
   // 4. Add demo monitors with status history
   // 5. Populate AI cost analytics
 
-  console.log('Demo data configuration:');
-  console.log(JSON.stringify(DEMO_CONFIG, null, 2));
+  seedLogger.info({ config: DEMO_CONFIG }, 'Demo data configuration');
 
-  console.log('\n[INFO] This is a placeholder script.');
-  console.log('[INFO] The actual implementation would insert demo data into the stores.');
-  console.log('[INFO] For now, the application starts clean and users create their own data.\n');
+  seedLogger.info('This is a placeholder script. The actual implementation would insert demo data into the stores.');
+  seedLogger.info('For now, the application starts clean and users create their own data.');
 
-  console.log('=================================================');
-  console.log('  Demo data seeding complete!');
-  console.log('=================================================');
+  seedLogger.info('=================================================');
+  seedLogger.info('  Demo data seeding complete!');
+  seedLogger.info('=================================================');
 }
 
 // Run if executed directly
-seedDemoData().catch(console.error);
+seedDemoData().catch((err) => {
+  seedLogger.error({ error: err instanceof Error ? err.message : String(err) }, 'Seed script failed');
+});

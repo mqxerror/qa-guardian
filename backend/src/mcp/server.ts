@@ -15,6 +15,7 @@ import * as readline from 'readline';
 import * as http from 'http';
 import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
+import { createLogger } from '../services/logger.js';
 
 // Feature #1356: Import types from extracted module
 import {
@@ -112,6 +113,8 @@ import {
   sendSSEEventWithId as sendSSEEventWithIdImpl,
   SSETransportContext,
 } from './mcp-transport-sse.js';
+
+const mcpLogger = createLogger('mcp-server');
 
 // Server info
 const SERVER_INFO = {
@@ -1464,9 +1467,9 @@ class MCPServer {
     console.log(JSON.stringify(response));
   }
 
-  // Log to stderr (so it doesn't interfere with JSON-RPC on stdout)
+  // Structured logging (writes to stderr via pino so it doesn't interfere with JSON-RPC on stdout)
   private log(message: string): void {
-    console.error(`[QA Guardian MCP] ${message}`);
+    mcpLogger.info(message);
   }
 }
 

@@ -14,6 +14,9 @@ import { generateAccessibilityTemplate } from './accessibility-template.js';
 import { generatePerformanceTemplate } from './performance-template.js';
 import { generateLoadTemplate } from './load-template.js';
 import { generateSecurityTemplate } from './security-template.js';
+import { createLogger } from '../../services/logger.js';
+
+const templateLogger = createLogger('test-suite-templates');
 
 export * from './types.js';
 export { generateE2ETemplate } from './e2e-template.js';
@@ -143,7 +146,7 @@ export function generateAllSuites(options: GenerateAllSuitesOptions): GeneratedS
         totalTests += testCount;
       }
     } catch (error) {
-      console.error(`Error generating ${suiteType} suite:`, error);
+      templateLogger.error({ suiteType, error: error instanceof Error ? error.message : String(error) }, `Error generating ${suiteType} suite`);
       suites[suiteType] = null;
     }
   }

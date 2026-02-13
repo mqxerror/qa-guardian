@@ -13,6 +13,9 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { MCPServer, ServerConfig, loadConfigFile } from './server.js';
+import { createLogger } from '../services/logger.js';
+
+const mcpEntryLogger = createLogger('mcp-entry');
 
 // Parse environment variables as base config
 const config: ServerConfig = {
@@ -67,7 +70,7 @@ for (let i = 0; i < args.length; i++) {
   } else if (arg === '--rate-limit-window' || arg === '-w') {
     config.rateLimitWindow = parseInt(args[++i], 10);
   } else if (arg === '--help' || arg === '-h') {
-    console.log(`
+    process.stdout.write(`
 QA Guardian MCP Server
 ======================
 
@@ -163,7 +166,7 @@ Available Tools:
   - list_recent_runs    List recent test runs
   - get_test_artifacts  Get test artifacts
   - create_test         Create a new test
-`);
+` + '\n');
     process.exit(0);
   }
 }
@@ -172,6 +175,6 @@ Available Tools:
 const server = new MCPServer(config);
 
 server.start().catch((error) => {
-  console.error('Failed to start QA Guardian MCP server:', error);
+  mcpEntryLogger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to start QA Guardian MCP server');
   process.exit(1);
 });

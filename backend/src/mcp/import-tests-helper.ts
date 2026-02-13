@@ -1,8 +1,12 @@
+import { createLogger } from '../services/logger.js';
+
+const importLogger = createLogger('import-tests-helper');
+
 // Use environment variable for API key - never hardcode secrets
 function getApiKey(): string {
   const key = process.env.QA_GUARDIAN_API_KEY || process.env.MCP_API_KEY;
   if (!key) {
-    console.error('Error: API key not set. Please set QA_GUARDIAN_API_KEY or MCP_API_KEY environment variable.');
+    importLogger.error('API key not set. Please set QA_GUARDIAN_API_KEY or MCP_API_KEY environment variable');
     process.exit(1);
   }
   return key;
@@ -24,7 +28,7 @@ async function importTests() {
     if (match) sessionId = match[1];
     reader.cancel();
   }
-  console.log('Session:', sessionId);
+  importLogger.info({ sessionId }, 'SSE session established');
 
   // Import tests
   const response = await fetch(`${MCP_URL}/message?sessionId=${sessionId}`, {
@@ -48,6 +52,8 @@ async function importTests() {
     }),
   });
   const result = await response.json();
-  console.log('Import result:', JSON.stringify(result, null, 2));
+  importLogger.info({ result }, 'Import completed');
 }
-importTests().catch(console.error);
+importTests().catch((error) => {
+  importLogger.error({ error: error instanceof Error ? error.message : String(error) }, 'Import failed');
+});

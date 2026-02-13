@@ -14,6 +14,9 @@
 
 import { query, isDatabaseConnected, initializeDatabase } from '../services/database.js';
 import { isV1Encrypted, migrateV1ToV2, isEncryptionEnabled } from '../services/encryption.js';
+import { createLogger } from '../services/logger.js';
+
+const migrationLogger = createLogger('migration-v1-to-v2');
 
 interface EncryptedColumn {
   table: string;
@@ -47,7 +50,7 @@ async function migrateTable(
   let errors = 0;
 
   const filterDesc = whereClause ? ` (where ${whereClause})` : '';
-  console.log(`\n[Migration] Checking ${table}.${column}${filterDesc}...`);
+  migrationLogger.info({ table, column, filter: filterDesc }, 'Checking table for v1 encrypted data');
 
   try {
     // Fetch all rows with the encrypted column
@@ -57,7 +60,7 @@ async function migrateTable(
     const result = await query<any>(fullQuery);
 
     if (!result || !result.rows) {
-      console.log(`  No rows found in ${table}`);
+      migrationLogger.info({ table }, 'No rows found in table');
       return { migrated, skipped, errors };
     }
 
@@ -70,10 +73,10 @@ async function migrateTable(
         continue;
       }
 
-      console.log(`  Found v1 encrypted value in ${table}.${idColumn}=${id}`);
+      migrationLogger.info({ table, idColumn, id }, 'Found v1 encrypted value');
 
       if (dryRun) {
-        console.log(`  [DRY-RUN] Would migrate ${table}.${idColumn}=${id}`);
+        migrationLogger.info({ table, idColumn, id }, 'DRY-RUN: Would migrate row');
         migrated++;
         continue;
       }
@@ -86,15 +89,15 @@ async function migrateTable(
           [newValue, id]
         );
 
-        console.log(`  Migrated ${table}.${idColumn}=${id} from v1 to v2`);
+        migrationLogger.info({ table, idColumn, id }, 'Migrated row from v1 to v2');
         migrated++;
       } catch (error) {
-        console.error(`  Error migrating ${table}.${idColumn}=${id}:`, error);
+        migrationLogger.error({ table, idColumn, id, error: error instanceof Error ? error.message : String(error) }, 'Error migrating row');
         errors++;
       }
     }
   } catch (error) {
-    console.error(`  Error reading ${table}:`, error);
+    migrationLogger.error({ table, error: error instanceof Error ? error.message : String(error) }, 'Error reading table');
     errors++;
   }
 
@@ -105,16 +108,15 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
 
-  console.log('===========================================');
-  console.log('  Encryption v1 to v2 Migration Utility');
-  console.log('  Feature #236');
-  console.log('===========================================');
-  console.log(`Mode: ${dryRun ? 'DRY-RUN (no changes will be made)' : 'LIVE (will update database)'}`);
+  migrationLogger.info('===========================================');
+  migrationLogger.info('  Encryption v1 to v2 Migration Utility');
+  migrationLogger.info('  Feature #236');
+  migrationLogger.info('===========================================');
+  migrationLogger.info({ mode: dryRun ? 'DRY-RUN' : 'LIVE' }, dryRun ? 'DRY-RUN: no changes will be made' : 'LIVE: will update database');
 
   // Check encryption is enabled
   if (!isEncryptionEnabled()) {
-    console.error('\n[Error] ENCRYPTION_KEY environment variable is not set.');
-    console.error('Cannot migrate encrypted data without the key.');
+    migrationLogger.error('ENCRYPTION_KEY environment variable is not set. Cannot migrate encrypted data without the key.');
     process.exit(1);
   }
 
@@ -122,13 +124,12 @@ async function main(): Promise<void> {
   await initializeDatabase();
 
   if (!isDatabaseConnected()) {
-    console.error('\n[Error] Database is not connected.');
-    console.error('Ensure DATABASE_URL is set and PostgreSQL is running.');
+    migrationLogger.error('Database is not connected. Ensure DATABASE_URL is set and PostgreSQL is running.');
     process.exit(1);
   }
 
-  console.log('\n[OK] Database connected');
-  console.log('[OK] Encryption key available');
+  migrationLogger.info('Database connected');
+  migrationLogger.info('Encryption key available');
 
   let totalMigrated = 0;
   let totalSkipped = 0;
@@ -142,22 +143,19 @@ async function main(): Promise<void> {
     totalErrors += result.errors;
   }
 
-  console.log('\n===========================================');
-  console.log('  Migration Summary');
-  console.log('===========================================');
-  console.log(`  Migrated: ${totalMigrated}`);
-  console.log(`  Skipped (already v2 or not encrypted): ${totalSkipped}`);
-  console.log(`  Errors: ${totalErrors}`);
-  console.log('');
+  migrationLogger.info('===========================================');
+  migrationLogger.info('  Migration Summary');
+  migrationLogger.info('===========================================');
+  migrationLogger.info({ migrated: totalMigrated, skipped: totalSkipped, errors: totalErrors }, 'Migration results');
 
   if (dryRun && totalMigrated > 0) {
-    console.log('To apply these changes, run without --dry-run');
+    migrationLogger.info('To apply these changes, run without --dry-run');
   }
 
   process.exit(totalErrors > 0 ? 1 : 0);
 }
 
 main().catch((error) => {
-  console.error('Migration failed:', error);
+  migrationLogger.error({ error: error instanceof Error ? error.message : String(error) }, 'Migration failed');
   process.exit(1);
 });

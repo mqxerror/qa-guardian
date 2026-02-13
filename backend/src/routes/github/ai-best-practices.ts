@@ -14,6 +14,9 @@ import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { aiService } from '../../services/ai-service.js';
 
 import { sendError } from '../../utils/errors.js';
+import { createLogger } from '../../services/logger.js';
+
+const bestPracticesLogger = createLogger('ai-best-practices');
 // ============================================================================
 // Type Definitions
 // ============================================================================
@@ -385,7 +388,7 @@ Provide a brief insight about what makes top projects successful.`;
       summary: aiResponse.content,
     };
   } catch (error) {
-    console.error('[AI Best Practices] AI call failed, using fallback:', error);
+    bestPracticesLogger.error({ error: error instanceof Error ? error.message : String(error) }, 'AI call failed, using fallback');
     return {
       recommendations: generateFallbackRecommendations(metrics, practices),
       summary: undefined as unknown as string,

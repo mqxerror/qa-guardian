@@ -3,6 +3,9 @@
  */
 
 import fetch from 'node-fetch';
+import { createLogger } from '../services/logger.js';
+
+const visualTestLogger = createLogger('visual-test-setup');
 
 const API_URL = 'http://localhost:3001';
 
@@ -52,10 +55,10 @@ async function apiRequest(
 }
 
 async function main() {
-  console.log('Setting up visual test for quota exceeded verification...\n');
+  visualTestLogger.info('Setting up visual test for quota exceeded verification...');
 
   const token = await login();
-  console.log('✓ Logged in');
+  visualTestLogger.info('Logged in');
 
   // Create project
   const projectResult = await apiRequest('/api/v1/projects', 'POST', {
@@ -64,7 +67,7 @@ async function main() {
     base_url: 'https://example.com',
   }, token);
   const projectId = projectResult.data.id;
-  console.log(`✓ Created project: ${projectId}`);
+  visualTestLogger.info({ projectId }, 'Created project');
 
   // Create test suite
   const suiteResult = await apiRequest(`/api/v1/projects/${projectId}/suites`, 'POST', {
@@ -75,7 +78,7 @@ async function main() {
     viewport_height: 720,
   }, token);
   const suiteId = suiteResult.data.id;
-  console.log(`✓ Created suite: ${suiteId}`);
+  visualTestLogger.info({ suiteId }, 'Created suite');
 
   // Create visual test
   const testResult = await apiRequest(`/api/v1/suites/${suiteId}/tests`, 'POST', {
@@ -92,17 +95,17 @@ async function main() {
     ],
   }, token);
   const testId = testResult.data.id;
-  console.log(`✓ Created test: ${testId}`);
+  visualTestLogger.info({ testId }, 'Created test');
 
   // Enable storage quota exceeded simulation
   await apiRequest('/api/v1/visual/test-storage-quota-exceeded', 'POST', {}, token);
-  console.log('✓ Storage quota exceeded simulation ENABLED');
+  visualTestLogger.info('Storage quota exceeded simulation ENABLED');
 
   // Run the suite
-  console.log('\nRunning test suite...');
+  visualTestLogger.info('Running test suite...');
   const runResult = await apiRequest(`/api/v1/suites/${suiteId}/runs`, 'POST', {}, token);
   const runId = runResult.data.id;
-  console.log(`✓ Run started: ${runId}`);
+  visualTestLogger.info({ runId }, 'Run started');
 
   // Poll for completion
   let runStatus = 'running';
@@ -117,7 +120,7 @@ async function main() {
     }
   }
 
-  console.log(`\nRun completed with status: ${runStatus}`);
+  visualTestLogger.info({ runStatus }, 'Run completed');
 
   // Check the results
   const results = runData.results as Array<{
@@ -130,25 +133,29 @@ async function main() {
 
   if (results && results.length > 0) {
     const result = results[0];
-    console.log(`\nTest result: ${result.test_name}`);
-    console.log(`  Status: ${result.status}`);
-    console.log(`  Error: ${result.error}`);
-    console.log(`  isQuotaExceeded: ${result.isQuotaExceeded}`);
-    console.log(`  suggestions: ${JSON.stringify(result.suggestions)}`);
+    visualTestLogger.info({
+      testName: result.test_name,
+      status: result.status,
+      error: result.error,
+      isQuotaExceeded: result.isQuotaExceeded,
+      suggestions: result.suggestions,
+    }, 'Test result');
 
     if (result.isQuotaExceeded === true && result.suggestions && result.suggestions.length > 0) {
-      console.log('\n✓ SUCCESS: Storage quota exceeded error properly propagated to results!');
-      console.log(`\nOpen this URL in browser to verify UI: http://localhost:5173/suites/${suiteId}`);
+      visualTestLogger.info({ suiteId }, 'SUCCESS: Storage quota exceeded error properly propagated to results!');
+      visualTestLogger.info({ url: `http://localhost:5173/suites/${suiteId}` }, 'Open this URL in browser to verify UI');
     } else {
-      console.log('\n✗ FAILED: isQuotaExceeded or suggestions not found in result');
+      visualTestLogger.warn('FAILED: isQuotaExceeded or suggestions not found in result');
     }
   }
 
   // Disable simulation
   await apiRequest('/api/v1/visual/test-storage-quota-exceeded', 'DELETE', undefined, token);
-  console.log('\n✓ Storage quota exceeded simulation DISABLED');
+  visualTestLogger.info('Storage quota exceeded simulation DISABLED');
 
-  console.log(`\nSuite URL: http://localhost:5173/suites/${suiteId}`);
+  visualTestLogger.info({ url: `http://localhost:5173/suites/${suiteId}` }, 'Suite URL');
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  visualTestLogger.error({ error: err instanceof Error ? err.message : String(err) }, 'Visual test setup failed');
+});

@@ -5,9 +5,11 @@ dotenv.config();
 
 // Feature #147: Require JWT_SECRET - security critical, fail fast if missing
 if (!process.env.JWT_SECRET) {
-  console.error('[FATAL] JWT_SECRET environment variable is required but not set.');
-  console.error('Please set JWT_SECRET in your .env file with a secure random string.');
-  console.error('Example: JWT_SECRET=your-256-bit-secret-key-here');
+  // Feature #721: Use process.stderr.write instead of console.error
+  // (logger not yet available at this early boot phase)
+  process.stderr.write('[FATAL] JWT_SECRET environment variable is required but not set.\n');
+  process.stderr.write('Please set JWT_SECRET in your .env file with a secure random string.\n');
+  process.stderr.write('Example: JWT_SECRET=your-256-bit-secret-key-here\n');
   process.exit(1);
 }
 

@@ -15,6 +15,9 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { MCPServer } from './server.js';
 import type { ServerConfig } from './mcp-types.js';
+import { createLogger } from '../services/logger.js';
+
+const cliLogger = createLogger('mcp-cli');
 
 /**
  * Load configuration from a JSON file
@@ -88,15 +91,15 @@ export function loadConfigFile(configPath: string): Partial<ServerConfig> {
             secret: webhook.secret as string,
           };
         } catch {
-          console.error('[QA Guardian MCP] Invalid webhook callback URL in config');
+          cliLogger.warn({ source: 'config' }, 'Invalid webhook callback URL in config');
         }
       }
     }
 
-    console.error(`[QA Guardian MCP] Loaded config from: ${absolutePath}`);
+    cliLogger.info({ configPath: absolutePath }, 'Loaded config file');
     return config;
   } catch (error) {
-    console.error(`[QA Guardian MCP] Error loading config file: ${error instanceof Error ? error.message : error}`);
+    cliLogger.error({ configPath, error: error instanceof Error ? error.message : String(error) }, 'Error loading config file');
     return {};
   }
 }
@@ -176,7 +179,7 @@ export function parseArgs(): ServerConfig {
         new URL(url);
         config.webhookCallback = { url };
       } catch {
-        console.error(`[QA Guardian MCP] Invalid webhook callback URL: ${url}`);
+        cliLogger.warn({ url }, 'Invalid webhook callback URL');
       }
     } else if (arg === '--enable-webhook-callbacks') {
       config.enableWebhookCallbacks = true;
@@ -195,7 +198,7 @@ export function parseArgs(): ServerConfig {
  * Print CLI help message
  */
 function printHelp(): void {
-  console.log(`
+  process.stdout.write(`
 QA Guardian MCP Server
 
 Usage: qa-guardian-mcp [options]
@@ -273,7 +276,7 @@ Examples:
 
   # Enable webhook callbacks for all operations
   qa-guardian-mcp --webhook-callback https://example.com/webhook
-  `);
+` + '\n');
 }
 
 /**
@@ -286,7 +289,7 @@ export async function main(): Promise<void> {
   try {
     await server.start();
   } catch (error) {
-    console.error('Failed to start MCP server:', error);
+    cliLogger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to start MCP server');
     process.exit(1);
   }
 }
