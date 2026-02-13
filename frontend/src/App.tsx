@@ -60,7 +60,7 @@ const TestDetailPage = lazy(() => import('./pages/TestDetailPage').then(m => ({ 
 const TestRunResultPage = lazy(() => import('./pages/TestRunResultPage'));
 const AITestGeneratorPage = lazy(() => import('./pages/AITestGeneratorPage').then(m => ({ default: m.AITestGeneratorPage })));
 const AITestReviewPage = lazy(() => import('./pages/AITestReviewPage').then(m => ({ default: m.AITestReviewPage })));
-const AIAgentWorkspacePage = lazy(() => import('./pages/AIAgentWorkspacePage').then(m => ({ default: m.AIAgentWorkspacePage })));
+// Feature #866: AIAgentWorkspacePage removed (duplicates MCP Chat)
 const ReportPage = lazy(() => import('./pages/ReportPage').then(m => ({ default: m.ReportPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const SuiteRunHistoryPage = lazy(() => import('./pages/SuiteRunHistoryPage').then(m => ({ default: m.SuiteRunHistoryPage })));
@@ -530,7 +530,7 @@ function App() {
           <Route path="tools" element={<MCPToolsPage />} />
           <Route path="playground" element={<MCPPlaygroundPage />} />
           <Route path="chat" element={<MCPChatPage />} />
-          <Route path="agent-workspace" element={<AIAgentWorkspacePage />} />
+          <Route path="agent-workspace" element={<Navigate to="/mcp/chat" replace />} /> {/* Feature #866: Redirect to MCP Chat */}
           <Route path="analytics" element={<MCPAnalyticsPage />} />
           <Route path="production-risk" element={<Navigate to="/mcp/tools" replace />} />
           <Route path="tech-debt" element={<Navigate to="/mcp/tools" replace />} />

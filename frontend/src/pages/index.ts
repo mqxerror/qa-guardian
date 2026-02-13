@@ -62,7 +62,7 @@ export { TestDetailPage } from './TestDetailPage';
 export { default as TestRunResultPage } from './TestRunResultPage'; // Feature #1823
 export { AITestGeneratorPage } from './AITestGeneratorPage';
 export { AITestReviewPage } from './AITestReviewPage';
-export { AIAgentWorkspacePage } from './AIAgentWorkspacePage';
+// Feature #866: AIAgentWorkspacePage removed (duplicates MCP Chat)
 export { ReportPage } from './ReportPage'; // Feature #1732
 export { SettingsPage } from './SettingsPage'; // Feature #1832: Unified Settings page
 export { SuiteRunHistoryPage } from './SuiteRunHistoryPage'; // Feature #1851: Suite run history

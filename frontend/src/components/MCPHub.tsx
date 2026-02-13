@@ -10,21 +10,20 @@
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import React from 'react';
 import { MCPReadyBadge } from './ui/AIBadges';
-import { Settings, Terminal, BarChart3, MessageCircle, Monitor } from 'lucide-react';
+import { Settings, Terminal, BarChart3, MessageCircle } from 'lucide-react';
 
 // Tab configuration
 // Feature #1408: team-insights removed - enterprise bloat
 // Feature #1442: production-risk removed
 // Feature #1443: tech-debt removed - enterprise feature
 // Feature #1444: test-discovery removed
-// Feature #1560: AI Agent Workspace added
+// Feature #866: agent-workspace removed (duplicates MCP Chat)
 // Feature #413: documentation and release-notes removed - broken tabs with no backing pages
 export type MCPHubTab =
  | 'tools'
  | 'playground'
  | 'analytics'
- | 'chat'
- | 'agent-workspace';
+ | 'chat';
  // Feature #1410: schedule-optimizer removed - keep simple cron scheduling
 
 interface TabConfig {
@@ -41,8 +40,7 @@ const ToolsIcon = () => <Settings className="h-5 w-5" />;
 const PlaygroundIcon = () => <Terminal className="h-5 w-5" />;
 const AnalyticsIcon = () => <BarChart3 className="h-5 w-5" />;
 const ChatIcon = () => <MessageCircle className="h-5 w-5" />;
-// Feature #1560: AI Agent Workspace icon
-const AgentWorkspaceIcon = () => <Monitor className="h-5 w-5" />;
+// Feature #866: AgentWorkspaceIcon removed
 
 // Feature #1442: ProductionRiskIcon removed
 // Feature #1443: TechDebtIcon removed
@@ -79,14 +77,7 @@ const TABS: TabConfig[] = [
  icon: <ChatIcon />,
  description: 'Natural language interface to QA Guardian',
  },
- {
- id: 'agent-workspace',
- path: '/mcp/agent-workspace',
- label: 'Agent Workspace',
- shortLabel: 'Agent',
- icon: <AgentWorkspaceIcon />,
- description: 'AI Agent with Kanban task board',
- },
+ // Feature #866: agent-workspace tab removed (duplicates MCP Chat)
  {
  id: 'analytics',
  path: '/mcp/analytics',
@@ -133,13 +124,6 @@ export function MCPHub() {
 
  {/* Quick Access Shortcuts */}
  <div className="flex flex-wrap gap-2 mb-4">
- <button
- onClick={() => navigate('/mcp/agent-workspace')}
- className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-success/10 text-success hover:bg-success/20 transition-colors"
- >
- <AgentWorkspaceIcon />
- <span>AI Agent</span>
- </button>
  <button
  onClick={() => navigate('/mcp/chat')}
  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
