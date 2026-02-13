@@ -54,13 +54,17 @@ export async function fetchWithAuth<T = any>(
 ): Promise<T> {
   if (!token) throw new Error('Not authenticated');
 
+  // Feature #780: Only set Content-Type for requests with a body to avoid
+  // Fastify FST_ERR_CTP_EMPTY_JSON_BODY error on DELETE requests
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${token}`,
+    ...(options?.body ? { 'Content-Type': 'application/json' } : {}),
+    ...options?.headers as Record<string, string>,
+  };
+
   const response = await fetch(url, {
     ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {
