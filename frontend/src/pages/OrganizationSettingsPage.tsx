@@ -1,6 +1,7 @@
 // OrganizationSettingsPage - Extracted from App.tsx
 // Feature #636: Adopt Modal component in page-level inline modals
 // Feature #1441: Split App.tsx into logical modules
+// Feature #709: Migrate to React Query and extract inline interfaces
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
@@ -14,172 +15,69 @@ import { useOrganizationBrandingStore } from '../stores/organizationBrandingStor
 import { toast } from '../stores/toastStore';
 import { createLogger } from '../utils/logger';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
-
-const logger = createLogger('org-settings');
 import { PageHeader } from '../components/ui';
 import { Loader2, AlertTriangle, Wifi, FileText, BarChart3, LayoutGrid, Search, CheckCircle2, Link2, X, ImageIcon, Check } from 'lucide-react';
 
-// Session Management Types
-interface SessionInfo {
- id: string;
- device: string;
- browser: string;
- ip_address: string;
- last_active: string;
- created_at: string;
- is_current: boolean;
-}
+// Feature #709: Import React Query hooks
+// Feature #712: Added useCleanupPreview to eliminate raw fetch()
+import {
+  useSessions,
+  useLogoutSession,
+  useLogoutAllSessions,
+  useArtifactRetention,
+  useSaveArtifactRetention,
+  useCleanupPreview,
+  useRunCleanup,
+  useStorageUsage,
+  useMcpConnections,
+  useMcpAuditLogs,
+  useMcpAnalytics,
+  useExportMcpAnalytics,
+  useSlackConnection,
+  useConnectSlack,
+  useDisconnectSlack,
+  useAdminMembers,
+  useTransferOwnership,
+  useDeleteOrganization,
+} from '../hooks/api';
 
-// Slack Integration Types
-interface SlackChannel {
- id: string;
- name: string;
- is_private: boolean;
-}
+// Feature #709: Import shared types from organization-settings
+import type {
+  SessionInfo,
+  MCPConnection,
+  McpAuditLogEntry,
+  MCPToolInfo,
+  SlackConnectionData,
+} from '../components/organization-settings';
 
-interface SlackConnectionData {
- connected: boolean;
- workspace_id?: string;
- workspace_name?: string;
- connected_at?: string;
- connected_by?: string;
- channels?: SlackChannel[];
-}
-
-// MCP Connection interface (Feature #594)
-interface MCPConnection {
- id: string;
- api_key_id: string;
- api_key_name: string;
- connected_at: string;
- last_activity_at: string;
- connected_duration_formatted: string;
- client_info?: {
- transport?: string;
- user_agent?: string;
- };
- ip_address?: string;
-}
-
-// Feature #846: MCP Audit Log interface
-interface McpAuditLogEntry {
- id: string;
- timestamp: string;
- api_key_id: string;
- api_key_name: string;
- connection_id?: string;
- client_name?: string;
- client_version?: string;
- method: string;
- tool_name?: string;
- resource_uri?: string;
- request_params?: Record<string, unknown>;
- response_type: 'success' | 'error';
- response_error_code?: number;
- response_error_message?: string;
- response_data_preview?: string;
- duration_ms?: number;
- ip_address?: string;
- user_agent?: string;
-}
-
-// Feature #848: MCP Analytics Dashboard interface
-interface McpAnalytics {
- total_calls: number;
- successful_calls: number;
- failed_calls: number;
- by_tool: Record<string, { count: number; avg_duration_ms?: number; success_rate: number }>;
- by_api_key: Record<string, { name: string; count: number }>;
- by_day: Array<{ date: string; total: number; success: number; failed: number }>;
- avg_response_time_ms: number;
-}
-
-// Feature #1232: MCP Tools Catalog interface
-interface MCPToolInfo {
- name: string;
- description: string;
- category: string;
- permission: 'read' | 'write' | 'execute' | 'admin';
- inputSchema?: {
- type: string;
- properties?: Record<string, {
- type: string;
- description?: string;
- enum?: string[];
- default?: unknown;
- }>;
- required?: string[];
- };
-}
+const logger = createLogger('org-settings');
 
 function SessionManagementSection() {
- const { token } = useAuthStore();
- const [sessions, setSessions] = useState<SessionInfo[]>([]);
- const [isLoading, setIsLoading] = useState(true);
- const [isLoggingOut, setIsLoggingOut] = useState<string | null>(null);
- const [isLoggingOutAll, setIsLoggingOutAll] = useState(false);
-
- useEffect(() => {
- const fetchSessions = async () => {
- if (!token) return;
- try {
- const response = await fetch('/api/v1/auth/sessions', {
- headers: { Authorization: `Bearer ${token}` },
- });
- if (response.ok) {
- const data = await response.json();
- setSessions(data.sessions || []);
- }
- } catch (err) {
- logger.error('Failed to fetch sessions:', err);
- } finally {
- setIsLoading(false);
- }
- };
- fetchSessions();
- }, [token]);
+ // Feature #709: Use React Query for session management
+ const { data: sessions = [], isLoading } = useSessions();
+ const logoutSessionMutation = useLogoutSession();
+ const logoutAllMutation = useLogoutAllSessions();
+ const [loggingOutSessionId, setLoggingOutSessionId] = useState<string | null>(null);
 
  const handleLogoutSession = async (sessionId: string) => {
- if (!token) return;
- setIsLoggingOut(sessionId);
- try {
- const response = await fetch(`/api/v1/auth/sessions/${sessionId}`, {
- method: 'DELETE',
- headers: { Authorization: `Bearer ${token}` },
- });
- if (response.ok) {
- setSessions(sessions.filter(s => s.id !== sessionId));
- toast.success('Session logged out successfully');
- } else {
- toast.error('Failed to logout session');
- }
- } catch (err) {
- toast.error('Failed to logout session');
- } finally {
- setIsLoggingOut(null);
- }
+   setLoggingOutSessionId(sessionId);
+   try {
+     await logoutSessionMutation.mutateAsync(sessionId);
+     toast.success('Session logged out successfully');
+   } catch {
+     toast.error('Failed to logout session');
+   } finally {
+     setLoggingOutSessionId(null);
+   }
  };
 
  const handleLogoutAllSessions = async () => {
- if (!token) return;
- setIsLoggingOutAll(true);
- try {
- const response = await fetch('/api/v1/auth/sessions/logout-all', {
- method: 'POST',
- headers: { Authorization: `Bearer ${token}` },
- });
- if (response.ok) {
- const data = await response.json();
- toast.success(data.message || 'All other sessions logged out');
- setSessions(sessions.filter(s => s.is_current));
- } else {
- toast.error('Failed to logout all sessions');
- }
- } catch (err) {
- toast.error('Failed to logout all sessions');
- } finally {
- setIsLoggingOutAll(false);
- }
+   try {
+     const result = await logoutAllMutation.mutateAsync();
+     toast.success(result.message || 'All other sessions logged out');
+   } catch {
+     toast.error('Failed to logout all sessions');
+   }
  };
 
  const formatDate = (dateStr: string) => {
@@ -261,10 +159,10 @@ function SessionManagementSection() {
  {!session.is_current && (
  <button
  onClick={() => handleLogoutSession(session.id)}
- disabled={isLoggingOut === session.id}
+ disabled={loggingOutSessionId === session.id}
  className="px-3 py-1 text-sm font-medium text-destructive border border-destructive/50 rounded-md hover:bg-destructive/10 disabled:opacity-50"
  >
- {isLoggingOut === session.id ? 'Logging out...' : 'Logout'}
+ {loggingOutSessionId === session.id ? 'Logging out...' : 'Logout'}
  </button>
  )}
  </div>
@@ -274,13 +172,13 @@ function SessionManagementSection() {
  <div className="pt-4 border-t border-border">
  <button
  onClick={handleLogoutAllSessions}
- disabled={isLoggingOutAll}
+ disabled={logoutAllMutation.isPending}
  className="w-full px-4 py-2 text-sm font-medium text-destructive border border-destructive/50 rounded-md hover:bg-destructive/10 disabled:opacity-50 flex items-center justify-center gap-2"
  >
- {isLoggingOutAll && (
+ {logoutAllMutation.isPending && (
  <Loader2 aria-hidden="true" className="animate-spin h-4 w-4" />
  )}
- {isLoggingOutAll ? 'Logging out all sessions...' : 'Logout All Other Sessions'}
+ {logoutAllMutation.isPending ? 'Logging out all sessions...' : 'Logout All Other Sessions'}
  </button>
  </div>
  )}
@@ -291,121 +189,85 @@ function SessionManagementSection() {
 }
 
 function ArtifactRetentionSection() {
- const { user, token } = useAuthStore();
+ const { user } = useAuthStore();
  const { settings, setRetentionDays } = useArtifactRetentionStore();
- const [isSaving, setIsSaving] = useState(false);
- const [isLoadingPreview, setIsLoadingPreview] = useState(false);
- const [isRunningCleanup, setIsRunningCleanup] = useState(false);
+
+ // Feature #709: Use React Query for artifact retention
+ // Feature #712: Added useCleanupPreview to eliminate raw fetch()
+ const { data: retentionData } = useArtifactRetention();
+ const saveRetentionMutation = useSaveArtifactRetention();
+ const runCleanupMutation = useRunCleanup();
+ const { data: cleanupPreviewData, isFetching: isLoadingPreview, refetch: refetchPreview } = useCleanupPreview();
+
  const [localRetentionDays, setLocalRetentionDays] = useState(settings.retentionDays);
  const [cleanupPreview, setCleanupPreview] = useState<{
- runs_to_delete: number;
- runs_preserved: number;
- trace_files_to_delete: number;
- estimated_space_freed_mb: number;
+   runs_to_delete: number;
+   runs_preserved: number;
+   trace_files_to_delete: number;
+   estimated_space_freed_mb: number;
  } | null>(null);
  const [lastCleanupResult, setLastCleanupResult] = useState<{
- runs_deleted: number;
- trace_files_deleted: number;
- mb_freed: number;
+   runs_deleted: number;
+   trace_files_deleted: number;
+   mb_freed: number;
  } | null>(null);
 
+ // Sync with fetched data
  useEffect(() => {
- setLocalRetentionDays(settings.retentionDays);
+   if (retentionData?.retention_days) {
+     setRetentionDays(retentionData.retention_days);
+     setLocalRetentionDays(retentionData.retention_days);
+   }
+ }, [retentionData, setRetentionDays]);
+
+ useEffect(() => {
+   setLocalRetentionDays(settings.retentionDays);
  }, [settings.retentionDays]);
 
- useEffect(() => {
- const fetchRetention = async () => {
- if (!user?.organization_id || !token) return;
- try {
- const response = await fetch(`/api/v1/organizations/${user.organization_id}/artifact-retention`, {
- headers: { Authorization: `Bearer ${token}` },
- });
- if (response.ok) {
- const data = await response.json();
- setRetentionDays(data.retention_days);
- setLocalRetentionDays(data.retention_days);
- }
- } catch (err) {
- logger.error('Failed to fetch retention policy:', err);
- }
- };
- fetchRetention();
- }, [user?.organization_id, token, setRetentionDays]);
-
  const handleSaveRetention = async () => {
- if (!user?.organization_id || !token) return;
- setIsSaving(true);
- try {
- const response = await fetch(`/api/v1/organizations/${user.organization_id}/artifact-retention`, {
- method: 'PUT',
- headers: {
- 'Content-Type': 'application/json',
- Authorization: `Bearer ${token}`,
- },
- body: JSON.stringify({ retention_days: localRetentionDays }),
- });
- if (response.ok) {
- setRetentionDays(localRetentionDays);
- toast.success('Artifact retention policy saved!');
- setCleanupPreview(null);
- } else {
- const data = await response.json();
- toast.error(data.message || 'Failed to save retention policy');
- }
- } catch (err) {
- toast.error('Failed to save retention policy');
- } finally {
- setIsSaving(false);
- }
+   try {
+     await saveRetentionMutation.mutateAsync(localRetentionDays);
+     setRetentionDays(localRetentionDays);
+     toast.success('Artifact retention policy saved!');
+     setCleanupPreview(null);
+   } catch (err) {
+     toast.error((err as Error).message || 'Failed to save retention policy');
+   }
  };
 
+ // Feature #712: Use React Query refetch instead of raw fetch
  const handlePreviewCleanup = async () => {
- if (!user?.organization_id || !token) return;
- setIsLoadingPreview(true);
- try {
- const response = await fetch(`/api/v1/organizations/${user.organization_id}/artifact-cleanup/preview`, {
- headers: { Authorization: `Bearer ${token}` },
- });
- if (response.ok) {
- const data = await response.json();
- setCleanupPreview(data);
- } else {
- const data = await response.json();
- toast.error(data.message || 'Failed to load cleanup preview');
- }
- } catch (err) {
- toast.error('Failed to load cleanup preview');
- } finally {
- setIsLoadingPreview(false);
- }
+   if (!user?.organization_id) return;
+   try {
+     const result = await refetchPreview();
+     if (result.data) {
+       setCleanupPreview(result.data);
+     }
+   } catch {
+     toast.error('Failed to load cleanup preview');
+   }
  };
+
+ // Sync preview data from React Query
+ useEffect(() => {
+   if (cleanupPreviewData) {
+     setCleanupPreview(cleanupPreviewData);
+   }
+ }, [cleanupPreviewData]);
 
  const handleRunCleanup = async () => {
- if (!user?.organization_id || !token) return;
- setIsRunningCleanup(true);
- try {
- const response = await fetch(`/api/v1/organizations/${user.organization_id}/artifact-cleanup`, {
- method: 'POST',
- headers: { Authorization: `Bearer ${token}` },
- });
- if (response.ok) {
- const data = await response.json();
- setLastCleanupResult({
- runs_deleted: data.runs_deleted,
- trace_files_deleted: data.trace_files_deleted,
- mb_freed: data.mb_freed,
- });
- setCleanupPreview(null);
- toast.success(`Cleanup complete: ${data.runs_deleted} runs, ${data.trace_files_deleted} trace files deleted`);
- } else {
- const data = await response.json();
- toast.error(data.message || 'Failed to run cleanup');
- }
- } catch (err) {
- toast.error('Failed to run cleanup');
- } finally {
- setIsRunningCleanup(false);
- }
+   try {
+     const result = await runCleanupMutation.mutateAsync();
+     setLastCleanupResult({
+       runs_deleted: result.runs_deleted,
+       trace_files_deleted: result.trace_files_deleted,
+       mb_freed: result.mb_freed,
+     });
+     setCleanupPreview(null);
+     toast.success(`Cleanup complete: ${result.runs_deleted} runs, ${result.trace_files_deleted} trace files deleted`);
+   } catch {
+     toast.error('Failed to run cleanup');
+   }
  };
 
  const canManageRetention = user?.role === 'owner' || user?.role === 'admin';
@@ -441,10 +303,10 @@ function ArtifactRetentionSection() {
  {canManageRetention && localRetentionDays !== settings.retentionDays && (
  <button
  onClick={handleSaveRetention}
- disabled={isSaving}
+ disabled={saveRetentionMutation.isPending}
  className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
  >
- {isSaving ? 'Saving...' : 'Save'}
+ {saveRetentionMutation.isPending ? 'Saving...' : 'Save'}
  </button>
  )}
  </div>
@@ -463,10 +325,10 @@ function ArtifactRetentionSection() {
  </button>
  <button
  onClick={handleRunCleanup}
- disabled={isRunningCleanup}
+ disabled={runCleanupMutation.isPending}
  className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-warning disabled:opacity-50"
  >
- {isRunningCleanup ? 'Running Cleanup...' : 'Run Cleanup Now'}
+ {runCleanupMutation.isPending ? 'Running Cleanup...' : 'Run Cleanup Now'}
  </button>
  </div>
 
@@ -517,45 +379,8 @@ function ArtifactRetentionSection() {
 }
 
 function StorageUsageSection() {
- const { user, token } = useAuthStore();
- const [isLoading, setIsLoading] = useState(true);
- const [storageData, setStorageData] = useState<{
- total_bytes: number;
- total_mb: number;
- total_trace_files: number;
- storage_limit_mb: number;
- usage_percent: number;
- is_warning: boolean;
- warning_threshold_percent: number;
- project_breakdown: Array<{
- project_id: string;
- project_name: string;
- bytes: number;
- mb: number;
- trace_count: number;
- }>;
- } | null>(null);
-
- useEffect(() => {
- const fetchStorageUsage = async () => {
- if (!user?.organization_id || !token) return;
- setIsLoading(true);
- try {
- const response = await fetch(`/api/v1/organizations/${user.organization_id}/storage`, {
- headers: { Authorization: `Bearer ${token}` },
- });
- if (response.ok) {
- const data = await response.json();
- setStorageData(data);
- }
- } catch (err) {
- logger.error('Failed to fetch storage usage:', err);
- } finally {
- setIsLoading(false);
- }
- };
- fetchStorageUsage();
- }, [user?.organization_id, token]);
+ // Feature #709: Use React Query for storage usage
+ const { data: storageData, isLoading } = useStorageUsage();
 
  if (isLoading) {
  return (
@@ -652,31 +477,8 @@ function StorageUsageSection() {
 }
 
 function MCPConnectionsSection() {
- const { user, token } = useAuthStore();
- const [connections, setConnections] = useState<MCPConnection[]>([]);
- const [isLoading, setIsLoading] = useState(true);
-
- useEffect(() => {
- const fetchConnections = async () => {
- if (!token || !user?.organization_id) return;
- try {
- const response = await fetch(`/api/v1/organizations/${user.organization_id}/mcp-connections`, {
- headers: { Authorization: `Bearer ${token}` },
- });
- if (response.ok) {
- const data = await response.json();
- setConnections(data.mcp_connections || []);
- }
- } catch (err) {
- logger.error('Failed to fetch MCP connections:', err);
- } finally {
- setIsLoading(false);
- }
- };
- fetchConnections();
- const interval = setInterval(fetchConnections, 30000);
- return () => clearInterval(interval);
- }, [token, user?.organization_id]);
+ // Feature #709: Use React Query for MCP connections
+ const { data: connections = [], isLoading } = useMcpConnections();
 
  const formatDateTime = (dateStr: string) => new Date(dateStr).toLocaleString();
 
@@ -741,44 +543,21 @@ function MCPConnectionsSection() {
 }
 
 function MCPAuditLogSection() {
- const { user, token } = useAuthStore();
- const [auditLogs, setAuditLogs] = useState<McpAuditLogEntry[]>([]);
- const [totalLogs, setTotalLogs] = useState(0);
- const [isLoading, setIsLoading] = useState(true);
  const [selectedLog, setSelectedLog] = useState<McpAuditLogEntry | null>(null);
  const [filterMethod, setFilterMethod] = useState<string>('');
  const [filterStatus, setFilterStatus] = useState<string>('');
  const [currentPage, setCurrentPage] = useState(1);
  const pageSize = 10;
 
- useEffect(() => {
- const fetchAuditLogs = async () => {
- if (!token || !user?.organization_id) return;
- try {
- const params = new URLSearchParams();
- params.set('limit', String(pageSize));
- params.set('offset', String((currentPage - 1) * pageSize));
- if (filterMethod) params.set('method', filterMethod);
- if (filterStatus) params.set('response_type', filterStatus);
-
- const response = await fetch(`/api/v1/organizations/${user.organization_id}/mcp-audit-logs?${params.toString()}`, {
- headers: { Authorization: `Bearer ${token}` },
+ // Feature #709: Use React Query for MCP audit logs
+ const { data: auditData, isLoading } = useMcpAuditLogs({
+   limit: pageSize,
+   offset: (currentPage - 1) * pageSize,
+   method: filterMethod || undefined,
+   response_type: filterStatus || undefined,
  });
- if (response.ok) {
- const data = await response.json();
- setAuditLogs(data.logs || []);
- setTotalLogs(data.total || 0);
- }
- } catch (err) {
- logger.error('Failed to fetch MCP audit logs:', err);
- } finally {
- setIsLoading(false);
- }
- };
- fetchAuditLogs();
- const interval = setInterval(fetchAuditLogs, 30000);
- return () => clearInterval(interval);
- }, [token, user?.organization_id, currentPage, filterMethod, filterStatus]);
+ const auditLogs = auditData?.logs || [];
+ const totalLogs = auditData?.total || 0;
 
  const formatDateTime = (dateStr: string) => new Date(dateStr).toLocaleString();
  const getMethodIcon = (method: string) => {
@@ -888,69 +667,18 @@ function MCPAuditLogSection() {
 }
 
 function MCPAnalyticsDashboard() {
- const { user, token } = useAuthStore();
- const [analytics, setAnalytics] = useState<McpAnalytics | null>(null);
- const [isLoading, setIsLoading] = useState(true);
  const [timePeriod, setTimePeriod] = useState<string>('7d');
- const [isExporting, setIsExporting] = useState(false);
 
- const getSinceDate = () => {
- const now = new Date();
- switch (timePeriod) {
- case '24h': return new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
- case '7d': return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
- case '30d': return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
- case '90d': return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
- default: return undefined;
- }
- };
-
- useEffect(() => {
- const fetchAnalytics = async () => {
- if (!token || !user?.organization_id) return;
- try {
- const since = getSinceDate();
- const url = since ? `/api/v1/organizations/${user.organization_id}/mcp-analytics?since=${since}` : `/api/v1/organizations/${user.organization_id}/mcp-analytics`;
- const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
- if (response.ok) {
- const data = await response.json();
- setAnalytics(data.analytics || null);
- }
- } catch (err) {
- logger.error('Failed to fetch MCP analytics:', err);
- } finally {
- setIsLoading(false);
- }
- };
- fetchAnalytics();
- const interval = setInterval(fetchAnalytics, 60000);
- return () => clearInterval(interval);
- }, [token, user?.organization_id, timePeriod]);
+ // Feature #709: Use React Query for MCP analytics
+ const { data: analytics, isLoading } = useMcpAnalytics(timePeriod);
+ const exportMutation = useExportMcpAnalytics();
 
  const handleExport = async (format: 'csv' | 'json') => {
- if (!token || !user?.organization_id) return;
- setIsExporting(true);
- try {
- const since = getSinceDate();
- let url = `/api/v1/organizations/${user.organization_id}/mcp-analytics/export?format=${format}`;
- if (since) url += `&since=${since}`;
- const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
- if (response.ok) {
- const blob = await response.blob();
- const downloadUrl = window.URL.createObjectURL(blob);
- const a = document.createElement('a');
- a.href = downloadUrl;
- a.download = `mcp-analytics.${format}`;
- document.body.appendChild(a);
- a.click();
- window.URL.revokeObjectURL(downloadUrl);
- document.body.removeChild(a);
- }
- } catch (err) {
- logger.error('Failed to export analytics:', err);
- } finally {
- setIsExporting(false);
- }
+   try {
+     await exportMutation.mutateAsync({ format, timePeriod });
+   } catch (err) {
+     logger.error('Failed to export analytics:', err);
+   }
  };
 
  const sortedTools = analytics ? Object.entries(analytics.by_tool).map(([name, stats]) => ({ name, ...stats })).sort((a, b) => b.count - a.count) : [];
@@ -975,15 +703,15 @@ function MCPAnalyticsDashboard() {
  <h3 className="text-lg font-semibold text-foreground">MCP Analytics Dashboard</h3>
  </div>
  <div className="flex items-center gap-2">
- <select value={timePeriod} onChange={(e) => { setTimePeriod(e.target.value); setIsLoading(true); }} className="px-3 py-1.5 text-sm border border-input rounded-md bg-background text-foreground">
+ <select value={timePeriod} onChange={(e) => setTimePeriod(e.target.value)} className="px-3 py-1.5 text-sm border border-input rounded-md bg-background text-foreground">
  <option value="24h">Last 24 Hours</option>
  <option value="7d">Last 7 Days</option>
  <option value="30d">Last 30 Days</option>
  <option value="90d">Last 90 Days</option>
  <option value="all">All Time</option>
  </select>
- <button onClick={() => handleExport('csv')} disabled={isExporting} className="px-3 py-1.5 text-sm border border-input rounded-md bg-background text-foreground hover:bg-muted disabled:opacity-50">
- {isExporting ? 'Exporting...' : '📥 Export CSV'}
+ <button onClick={() => handleExport('csv')} disabled={exportMutation.isPending} className="px-3 py-1.5 text-sm border border-input rounded-md bg-background text-foreground hover:bg-muted disabled:opacity-50">
+ {exportMutation.isPending ? 'Exporting...' : '📥 Export CSV'}
  </button>
  </div>
  </div>
@@ -1188,47 +916,31 @@ function MCPToolsCatalogSection() {
 }
 
 function SlackIntegrationSection() {
- const { user, token } = useAuthStore();
- const [slackData, setSlackData] = useState<SlackConnectionData>({ connected: false });
- const [isLoading, setIsLoading] = useState(true);
- const [isConnecting, setIsConnecting] = useState(false);
- const [isDisconnecting, setIsDisconnecting] = useState(false);
  const [workspaceName, setWorkspaceName] = useState('');
 
- useEffect(() => {
- const fetchSlackStatus = async () => {
- if (!token || !user?.organization_id) return;
- try {
- const response = await fetch(`/api/v1/organizations/${user.organization_id}/slack`, { headers: { Authorization: `Bearer ${token}` } });
- if (response.ok) { const data = await response.json(); setSlackData(data); }
- } catch (err) { logger.error('Failed to fetch Slack status:', err); }
- finally { setIsLoading(false); }
- };
- fetchSlackStatus();
- }, [token, user?.organization_id]);
+ // Feature #709: Use React Query for Slack connection
+ const { data: slackData = { connected: false }, isLoading } = useSlackConnection();
+ const connectMutation = useConnectSlack();
+ const disconnectMutation = useDisconnectSlack();
 
  const handleConnect = async () => {
- if (!token || !user?.organization_id) return;
- setIsConnecting(true);
- try {
- const response = await fetch(`/api/v1/organizations/${user.organization_id}/slack/connect`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ workspace_name: workspaceName || 'Dev Workspace' }) });
- const data = await response.json();
- if (response.ok) { setSlackData(data); toast.success('Slack workspace connected successfully!'); setWorkspaceName(''); }
- else { toast.error(data.message || 'Failed to connect Slack'); }
- } catch (err) { toast.error('Failed to connect Slack'); }
- finally { setIsConnecting(false); }
+   try {
+     await connectMutation.mutateAsync(workspaceName || 'Dev Workspace');
+     toast.success('Slack workspace connected successfully!');
+     setWorkspaceName('');
+   } catch {
+     toast.error('Failed to connect Slack');
+   }
  };
 
  const handleDisconnect = async () => {
- if (!token || !user?.organization_id) return;
- if (!confirm('Are you sure you want to disconnect Slack?')) return;
- setIsDisconnecting(true);
- try {
- const response = await fetch(`/api/v1/organizations/${user.organization_id}/slack`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
- if (response.ok) { setSlackData({ connected: false }); toast.success('Slack workspace disconnected'); }
- else { toast.error('Failed to disconnect Slack'); }
- } catch (err) { toast.error('Failed to disconnect Slack'); }
- finally { setIsDisconnecting(false); }
+   if (!confirm('Are you sure you want to disconnect Slack?')) return;
+   try {
+     await disconnectMutation.mutateAsync();
+     toast.success('Slack workspace disconnected');
+   } catch {
+     toast.error('Failed to disconnect Slack');
+   }
  };
 
  const formatDate = (dateStr: string) => new Date(dateStr).toLocaleString();
@@ -1264,8 +976,8 @@ function SlackIntegrationSection() {
  </div>
  )}
  <div className="pt-2 border-t border-border">
- <button onClick={handleDisconnect} disabled={isDisconnecting} className="rounded-md border border-destructive px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50">
- {isDisconnecting ? 'Disconnecting...' : 'Disconnect Slack'}
+ <button onClick={handleDisconnect} disabled={disconnectMutation.isPending} className="rounded-md border border-destructive px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50">
+ {disconnectMutation.isPending ? 'Disconnecting...' : 'Disconnect Slack'}
  </button>
  </div>
  </div>
@@ -1282,8 +994,8 @@ function SlackIntegrationSection() {
  <label htmlFor="workspace-name" className="block text-sm font-medium text-foreground mb-1">Workspace Name</label>
  <input id="workspace-name" type="text" value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} placeholder="Dev Workspace" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
  </div>
- <button onClick={handleConnect} disabled={isConnecting} className="flex items-center gap-2 rounded-md bg-[#4A154B] px-4 py-2 text-sm font-medium text-white hover:bg-[#611f64] disabled:opacity-50">
- {isConnecting ? 'Connecting...' : 'Connect to Slack'}
+ <button onClick={handleConnect} disabled={connectMutation.isPending} className="flex items-center gap-2 rounded-md bg-[#4A154B] px-4 py-2 text-sm font-medium text-white hover:bg-[#611f64] disabled:opacity-50">
+ {connectMutation.isPending ? 'Connecting...' : 'Connect to Slack'}
  </button>
  </div>
  </div>
@@ -1294,7 +1006,7 @@ function SlackIntegrationSection() {
 }
 
 function OrganizationSettingsPage() {
- const { user, token, logout } = useAuthStore();
+ const { user, logout } = useAuthStore();
  const { theme, setTheme } = useThemeStore();
  const { timezone, setTimezone } = useTimezoneStore();
  const { preferences, setPreference } = useNotificationStore();
@@ -1302,54 +1014,43 @@ function OrganizationSettingsPage() {
  // Feature #1995: Use organization branding store for logo persistence
  const { logoBase64, organizationName, setLogo, setOrganizationName } = useOrganizationBrandingStore();
  const navigate = useNavigate();
+
+ // Feature #709: Use React Query for admin members and mutations
+ const { data: adminMembers = [] } = useAdminMembers();
+ const transferOwnershipMutation = useTransferOwnership();
+ const deleteOrgMutation = useDeleteOrganization();
+
+ // Modal state
  const [showDeleteModal, setShowDeleteModal] = useState(false);
  const [deletePassword, setDeletePassword] = useState('');
  const [deleteError, setDeleteError] = useState('');
- const [isDeleting, setIsDeleting] = useState(false);
  const [deleteSuccess, setDeleteSuccess] = useState(false);
+ const [showTransferModal, setShowTransferModal] = useState(false);
+ const [transferPassword, setTransferPassword] = useState('');
+ const [transferError, setTransferError] = useState('');
+ const [transferSuccess, setTransferSuccess] = useState(false);
+ const [selectedNewOwner, setSelectedNewOwner] = useState('');
+
+ // Form state
  const [orgName, setOrgName] = useState(organizationName);
  const [isSaving, setIsSaving] = useState(false);
  const [logoUrl, setLogoUrl] = useState<string | null>(logoBase64);
  const [logoFile, setLogoFile] = useState<File | null>(null);
- const [showTransferModal, setShowTransferModal] = useState(false);
- const [transferPassword, setTransferPassword] = useState('');
- const [transferError, setTransferError] = useState('');
- const [isTransferring, setIsTransferring] = useState(false);
- const [transferSuccess, setTransferSuccess] = useState(false);
- const [selectedNewOwner, setSelectedNewOwner] = useState('');
- const [adminMembers, setAdminMembers] = useState<Array<{ user_id: string; name: string; email: string }>>([]);
-
- useEffect(() => {
- const fetchAdmins = async () => {
- if (user?.role !== 'owner') return;
- try {
- const response = await fetch(`/api/v1/organizations/${user.organization_id}/members`, { headers: { Authorization: `Bearer ${token}` } });
- if (response.ok) {
- const data = await response.json();
- const admins = (data.members || []).filter((m: { user_id: string; role: string }) => m.role === 'admin' && m.user_id !== user.id);
- setAdminMembers(admins);
- }
- } catch (err) { logger.error('Failed to fetch admin members:', err); }
- };
- fetchAdmins();
- }, [user, token]);
 
  const handleTransferOwnership = async (e: React.FormEvent) => {
- e.preventDefault();
- setTransferError('');
- setIsTransferring(true);
- try {
- const response = await fetch(`/api/v1/organizations/${user?.organization_id}/transfer-ownership`, {
- method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
- body: JSON.stringify({ new_owner_id: selectedNewOwner, password: transferPassword }),
- });
- const data = await response.json();
- if (!response.ok) throw new Error(data.message || 'Failed to transfer ownership');
- setTransferSuccess(true);
- toast.success('Ownership transferred successfully!');
- setTimeout(() => { logout(); navigate('/login'); }, 2000);
- } catch (err) { setTransferError(err instanceof Error ? err.message : 'Failed to transfer ownership'); }
- finally { setIsTransferring(false); }
+   e.preventDefault();
+   setTransferError('');
+   try {
+     await transferOwnershipMutation.mutateAsync({
+       newOwnerId: selectedNewOwner,
+       password: transferPassword,
+     });
+     setTransferSuccess(true);
+     toast.success('Ownership transferred successfully!');
+     setTimeout(() => { logout(); navigate('/login'); }, 2000);
+   } catch (err) {
+     setTransferError(err instanceof Error ? err.message : 'Failed to transfer ownership');
+   }
  };
 
  // Feature #1995: Convert logo to base64 and store in branding store
@@ -1399,20 +1100,15 @@ function OrganizationSettingsPage() {
  };
 
  const handleDeleteOrganization = async (e: React.FormEvent) => {
- e.preventDefault();
- setDeleteError('');
- setIsDeleting(true);
- try {
- const response = await fetch(`/api/v1/organizations/${user?.organization_id}`, {
- method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
- body: JSON.stringify({ password: deletePassword }),
- });
- const data = await response.json();
- if (!response.ok) throw new Error(data.message || 'Failed to delete organization');
- setDeleteSuccess(true);
- setTimeout(() => { logout(); navigate('/login'); }, 2000);
- } catch (err) { setDeleteError(err instanceof Error ? err.message : 'Failed to delete organization'); }
- finally { setIsDeleting(false); }
+   e.preventDefault();
+   setDeleteError('');
+   try {
+     await deleteOrgMutation.mutateAsync(deletePassword);
+     setDeleteSuccess(true);
+     setTimeout(() => { logout(); navigate('/login'); }, 2000);
+   } catch (err) {
+     setDeleteError(err instanceof Error ? err.message : 'Failed to delete organization');
+   }
  };
 
  return (
@@ -1589,7 +1285,7 @@ function OrganizationSettingsPage() {
  {!transferSuccess && (
  <ModalFooter>
  <button type="button" onClick={() => setShowTransferModal(false)} className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted">Cancel</button>
- <button type="submit" form="transfer-ownership-form" disabled={isTransferring || !selectedNewOwner || !transferPassword} className="rounded-md bg-warning px-4 py-2 font-medium text-primary-foreground hover:bg-warning disabled:opacity-50">{isTransferring ? 'Transferring...' : 'Transfer Ownership'}</button>
+ <button type="submit" form="transfer-ownership-form" disabled={transferOwnershipMutation.isPending || !selectedNewOwner || !transferPassword} className="rounded-md bg-warning px-4 py-2 font-medium text-primary-foreground hover:bg-warning disabled:opacity-50">{transferOwnershipMutation.isPending ? 'Transferring...' : 'Transfer Ownership'}</button>
  </ModalFooter>
  )}
  </Modal>
@@ -1623,7 +1319,7 @@ function OrganizationSettingsPage() {
  {!deleteSuccess && (
  <ModalFooter>
  <button type="button" onClick={() => { setShowDeleteModal(false); setDeletePassword(''); setDeleteError(''); }} className="rounded-md border border-border px-4 py-2 font-medium text-foreground hover:bg-muted">Cancel</button>
- <button type="submit" form="delete-organization-form" disabled={isDeleting || !deletePassword} className="rounded-md bg-destructive px-4 py-2 font-medium text-primary-foreground hover:bg-destructive/90 disabled:opacity-50">{isDeleting ? 'Deleting...' : 'Delete Organization'}</button>
+ <button type="submit" form="delete-organization-form" disabled={deleteOrgMutation.isPending || !deletePassword} className="rounded-md bg-destructive px-4 py-2 font-medium text-primary-foreground hover:bg-destructive/90 disabled:opacity-50">{deleteOrgMutation.isPending ? 'Deleting...' : 'Delete Organization'}</button>
  </ModalFooter>
  )}
  </Modal>
