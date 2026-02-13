@@ -48,19 +48,19 @@ export const SEVERITY_COLORS: Record<SeverityLevel, ColorScheme> = {
  border: 'border-destructive/20',
  hoverBg: 'hover:bg-destructive/20',
  badge: 'bg-destructive/10 text-destructive',
- cardBorder: 'border-l-4 border-l-red-600',
+ cardBorder: 'border-l-4 border-l-destructive',
  hex: '#dc2626', // red-600
  hexDark: '#f87171', // red-400
  },
  high: {
- bg: 'bg-orange-100',
- text: 'text-orange-700',
- border: 'border-orange-200',
- hoverBg: 'hover:bg-orange-200',
- badge: 'bg-orange-100 text-orange-700',
- cardBorder: 'border-l-4 border-l-orange-500',
- hex: '#f97316', // orange-500
- hexDark: '#fb923c', // orange-400
+ bg: 'bg-warning/15',
+ text: 'text-warning',
+ border: 'border-warning/25',
+ hoverBg: 'hover:bg-warning/25',
+ badge: 'bg-warning/15 text-warning',
+ cardBorder: 'border-l-4 border-l-warning',
+ hex: '#f59e0b', // amber-500
+ hexDark: '#fbbf24', // amber-400
  },
  medium: {
  bg: 'bg-warning/10',
@@ -68,7 +68,7 @@ export const SEVERITY_COLORS: Record<SeverityLevel, ColorScheme> = {
  border: 'border-warning/20',
  hoverBg: 'hover:bg-warning/20',
  badge: 'bg-warning/10 text-warning',
- cardBorder: 'border-l-4 border-l-yellow-500',
+ cardBorder: 'border-l-4 border-l-warning',
  hex: '#eab308', // yellow-500
  hexDark: '#facc15', // yellow-400
  },
@@ -78,7 +78,7 @@ export const SEVERITY_COLORS: Record<SeverityLevel, ColorScheme> = {
  border: 'border-primary/20',
  hoverBg: 'hover:bg-primary/20',
  badge: 'bg-primary/10 text-primary',
- cardBorder: 'border-l-4 border-l-blue-500',
+ cardBorder: 'border-l-4 border-l-primary',
  hex: '#3b82f6', // blue-500
  hexDark: '#60a5fa', // blue-400
  },
@@ -88,7 +88,7 @@ export const SEVERITY_COLORS: Record<SeverityLevel, ColorScheme> = {
  border: 'border-border',
  hoverBg: 'hover:bg-secondary',
  badge: 'bg-muted text-foreground',
- cardBorder: 'border-l-4 border-l-gray-500',
+ cardBorder: 'border-l-4 border-l-muted-foreground',
  hex: '#6b7280', // gray-500
  hexDark: '#9ca3af', // gray-400
  },
@@ -122,7 +122,7 @@ export const STATUS_COLORS: Record<StatusType, ColorScheme> = {
  border: 'border-success/20',
  hoverBg: 'hover:bg-success/20',
  badge: 'bg-success/10 text-success',
- cardBorder: 'border-l-4 border-l-green-500',
+ cardBorder: 'border-l-4 border-l-success',
  hex: '#22c55e', // green-500
  hexDark: '#4ade80', // green-400
  },
@@ -132,7 +132,7 @@ export const STATUS_COLORS: Record<StatusType, ColorScheme> = {
  border: 'border-destructive/20',
  hoverBg: 'hover:bg-destructive/20',
  badge: 'bg-destructive/10 text-destructive',
- cardBorder: 'border-l-4 border-l-red-500',
+ cardBorder: 'border-l-4 border-l-destructive',
  hex: '#ef4444', // red-500
  hexDark: '#f87171', // red-400
  },
@@ -142,7 +142,7 @@ export const STATUS_COLORS: Record<StatusType, ColorScheme> = {
  border: 'border-primary/20',
  hoverBg: 'hover:bg-primary/20',
  badge: 'bg-primary/10 text-primary',
- cardBorder: 'border-l-4 border-l-blue-500',
+ cardBorder: 'border-l-4 border-l-primary',
  hex: '#3b82f6', // blue-500
  hexDark: '#60a5fa', // blue-400
  },
@@ -152,7 +152,7 @@ export const STATUS_COLORS: Record<StatusType, ColorScheme> = {
  border: 'border-warning/20',
  hoverBg: 'hover:bg-warning/20',
  badge: 'bg-warning/10 text-warning',
- cardBorder: 'border-l-4 border-l-yellow-500',
+ cardBorder: 'border-l-4 border-l-warning',
  hex: '#eab308', // yellow-500
  hexDark: '#facc15', // yellow-400
  },
@@ -162,7 +162,7 @@ export const STATUS_COLORS: Record<StatusType, ColorScheme> = {
  border: 'border-border',
  hoverBg: 'hover:bg-secondary',
  badge: 'bg-muted text-foreground',
- cardBorder: 'border-l-4 border-l-gray-400',
+ cardBorder: 'border-l-4 border-l-muted-foreground',
  hex: '#9ca3af', // gray-400
  hexDark: '#d1d5db', // gray-300
  },
@@ -172,19 +172,19 @@ export const STATUS_COLORS: Record<StatusType, ColorScheme> = {
  border: 'border-border',
  hoverBg: 'hover:bg-secondary',
  badge: 'bg-muted text-muted-foreground',
- cardBorder: 'border-l-4 border-l-gray-300',
+ cardBorder: 'border-l-4 border-l-muted',
  hex: '#6b7280', // gray-500
  hexDark: '#9ca3af', // gray-400
  },
  error: {
- bg: 'bg-orange-100',
- text: 'text-orange-700',
- border: 'border-orange-200',
- hoverBg: 'hover:bg-orange-200',
- badge: 'bg-orange-100 text-orange-700',
- cardBorder: 'border-l-4 border-l-orange-500',
- hex: '#f97316', // orange-500
- hexDark: '#fb923c', // orange-400
+ bg: 'bg-warning/15',
+ text: 'text-warning',
+ border: 'border-warning/25',
+ hoverBg: 'hover:bg-warning/25',
+ badge: 'bg-warning/15 text-warning',
+ cardBorder: 'border-l-4 border-l-warning',
+ hex: '#f59e0b', // amber-500
+ hexDark: '#fbbf24', // amber-400
  },
 };
 
