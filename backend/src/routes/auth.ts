@@ -8,6 +8,18 @@ import { createSigner, createVerifier } from 'fast-jwt';
 // Feature #439: Use structured logger instead of console.*
 import { logger } from '../services/logger.js';
 import { getUserOrganization, DEFAULT_ORG_ID } from './organizations.js';
+// Feature #713: Zod validation middleware
+import {
+  validateBody,
+  validateParams,
+  loginSchema,
+  registerSchema,
+  logoutSchema,
+  refreshTokenSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  sessionIdParamsSchema,
+} from '../validation/index.js';
 import {
   seedDefaultOrganizations,
   createOrganization as repoCreateOrganization,
@@ -265,7 +277,10 @@ interface RegisterBody {
 
 export async function authRoutes(app: FastifyInstance) {
   // Login endpoint
-  app.post<{ Body: LoginBody }>('/api/v1/auth/login', async (request, reply) => {
+  // Feature #713: Add Zod validation
+  app.post<{ Body: LoginBody }>('/api/v1/auth/login', {
+    preValidation: [validateBody(loginSchema)],
+  }, async (request, reply) => {
     // Feature #2099: Guard against race conditions during server initialization
     if (!seedingComplete) {
       return reply.status(503).send({
@@ -274,14 +289,8 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
+    // Feature #713: Zod validation now handles required field checks
     const { email, password } = request.body;
-
-    if (!email || !password) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Email and password are required',
-      });
-    }
 
     // Feature #2116: Use async DB call instead of Map
     const user = await dbGetUserByEmail(email);
@@ -350,7 +359,10 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // Register endpoint
-  app.post<{ Body: RegisterBody }>('/api/v1/auth/register', async (request, reply) => {
+  // Feature #713: Add Zod validation
+  app.post<{ Body: RegisterBody }>('/api/v1/auth/register', {
+    preValidation: [validateBody(registerSchema)],
+  }, async (request, reply) => {
     // Feature #2099: Guard against race conditions during server initialization
     if (!seedingComplete) {
       return reply.status(503).send({
@@ -359,43 +371,8 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
+    // Feature #713: Zod validation now handles required fields and password complexity
     const { email, password, name } = request.body;
-
-    if (!email || !password || !name) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Email, password, and name are required',
-      });
-    }
-
-    // Password validation
-    if (password.length < 8) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Password must be at least 8 characters long',
-      });
-    }
-
-    if (!/[A-Z]/.test(password)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Password must contain at least one uppercase letter',
-      });
-    }
-
-    if (!/[a-z]/.test(password)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Password must contain at least one lowercase letter',
-      });
-    }
-
-    if (!/[0-9]/.test(password)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Password must contain at least one number',
-      });
-    }
 
     // Feature #2116: Check if user already exists using async DB call
     const existingUser = await dbUserExists(email);
@@ -531,7 +508,9 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // Logout endpoint - invalidates the token by adding to blacklist
+  // Feature #713: Add Zod validation for optional refresh_token
   app.post<{ Body: { refresh_token?: string } }>('/api/v1/auth/logout', {
+    preValidation: [validateBody(logoutSchema)],
     preHandler: [
       async (request: FastifyRequest, _reply: FastifyReply) => {
         try {
@@ -562,15 +541,12 @@ export async function authRoutes(app: FastifyInstance) {
 
   // Feature #213: Refresh token endpoint - exchange refresh token for new access token
   // Feature #233: Uses atomic revocation to prevent race condition with concurrent requests
-  app.post<{ Body: { refresh_token: string } }>('/api/v1/auth/refresh', async (request, reply) => {
+  // Feature #713: Add Zod validation
+  app.post<{ Body: { refresh_token: string } }>('/api/v1/auth/refresh', {
+    preValidation: [validateBody(refreshTokenSchema)],
+  }, async (request, reply) => {
+    // Feature #713: Zod validation now handles required field check
     const { refresh_token } = request.body;
-
-    if (!refresh_token) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Refresh token is required',
-      });
-    }
 
     // Step 1: Verify and decode the JWT signature first (fast, no DB)
     // Feature #438: Use typed payload instead of 'any' for type safety
@@ -658,15 +634,12 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // Test endpoint to generate a short-lived token (for testing session expiration)
-  app.post<{ Body: LoginBody }>('/api/v1/auth/login-short', async (request, reply) => {
+  // Feature #713: Add Zod validation
+  app.post<{ Body: LoginBody }>('/api/v1/auth/login-short', {
+    preValidation: [validateBody(loginSchema)],
+  }, async (request, reply) => {
+    // Feature #713: Zod validation now handles required field checks
     const { email, password } = request.body;
-
-    if (!email || !password) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Email and password are required',
-      });
-    }
 
     // Feature #2116: Use async DB call instead of Map
     const user = await dbGetUserByEmail(email);
@@ -715,15 +688,12 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // Forgot password endpoint - request a password reset link
-  app.post<{ Body: { email: string } }>('/api/v1/auth/forgot-password', async (request, reply) => {
+  // Feature #713: Add Zod validation
+  app.post<{ Body: { email: string } }>('/api/v1/auth/forgot-password', {
+    preValidation: [validateBody(forgotPasswordSchema)],
+  }, async (request, reply) => {
+    // Feature #713: Zod validation now handles required field check
     const { email } = request.body;
-
-    if (!email) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Email is required',
-      });
-    }
 
     // Generate a reset token regardless of whether the user exists
     // This prevents email enumeration attacks
@@ -752,44 +722,12 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // Reset password endpoint - reset password using token
-  app.post<{ Body: { token: string; password: string } }>('/api/v1/auth/reset-password', async (request, reply) => {
+  // Feature #713: Add Zod validation with password complexity rules
+  app.post<{ Body: { token: string; password: string } }>('/api/v1/auth/reset-password', {
+    preValidation: [validateBody(resetPasswordSchema)],
+  }, async (request, reply) => {
+    // Feature #713: Zod validation now handles required fields and password complexity
     const { token, password } = request.body;
-
-    if (!token || !password) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Token and new password are required',
-      });
-    }
-
-    // Validate password
-    if (password.length < 8) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Password must be at least 8 characters long',
-      });
-    }
-
-    if (!/[A-Z]/.test(password)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Password must contain at least one uppercase letter',
-      });
-    }
-
-    if (!/[a-z]/.test(password)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Password must contain at least one lowercase letter',
-      });
-    }
-
-    if (!/[0-9]/.test(password)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Password must contain at least one number',
-      });
-    }
 
     // Feature #2116: Find the reset token using async DB call
     const resetToken = await dbGetResetToken(token);
@@ -897,7 +835,9 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // Invalidate a specific session
+  // Feature #713: Add Zod validation for sessionId param
   app.delete<{ Params: { sessionId: string } }>('/api/v1/auth/sessions/:sessionId', {
+    preValidation: [validateParams(sessionIdParamsSchema)],
     preHandler: [
       async (request: FastifyRequest, reply: FastifyReply) => {
         try {

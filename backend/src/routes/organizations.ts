@@ -3,6 +3,27 @@ import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
 import { authenticate, requireRoles, JwtPayload, getOrganizationId } from '../middleware/auth.js';
 import { createLogger } from '../services/logger.js';
+// Feature #713: Zod validation middleware
+import {
+  validateBody,
+  validateParams,
+  validateQuery,
+  orgIdParamsSchema,
+  switchOrganizationSchema,
+  createOrganizationSchema,
+  updateOrganizationSchema,
+  deleteOrganizationSchema,
+  createInvitationSchema,
+  inviteIdParamsSchema,
+  orgInviteParamsSchema,
+  orgMemberParamsSchema,
+  updateMemberRoleSchema,
+  transferOwnershipSchema,
+  teamMetricsQuerySchema,
+  retryStrategyTestIdParamsSchema,
+  autoQuarantineSettingsSchema,
+  retryStrategySettingsSchema,
+} from '../validation/index.js';
 
 // Create logger for this module
 const log = createLogger('route:organizations');
@@ -138,18 +159,14 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Switch to a different organization - issues a new token
+  // Feature #713: Add Zod validation
   app.post<{ Body: { organization_id: string } }>('/api/v1/organizations/switch', {
+    preValidation: [validateBody(switchOrganizationSchema)],
     preHandler: [authenticate],
   }, async (request, reply) => {
     const user = request.user as JwtPayload;
+    // Feature #713: Zod validation now handles required field check
     const { organization_id } = request.body;
-
-    if (!organization_id) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'organization_id is required',
-      });
-    }
 
     // Check if user belongs to the target organization
     const userOrgs = await getUserOrganizations(user.id);
@@ -186,25 +203,14 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Create organization
+  // Feature #713: Add Zod validation
   app.post<{ Body: CreateOrganizationBody }>('/api/v1/organizations', {
+    preValidation: [validateBody(createOrganizationSchema)],
     preHandler: [authenticate],
   }, async (request, reply) => {
+    // Feature #713: Zod validation now handles required fields and constraints
     const { name, slug: providedSlug, timezone = 'UTC' } = request.body;
     const user = request.user as JwtPayload;
-
-    if (!name || name.trim().length === 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Organization name is required',
-      });
-    }
-
-    if (name.length > 100) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Organization name must be 100 characters or less',
-      });
-    }
 
     // Generate or validate slug
     const slug = providedSlug || generateSlug(name);
@@ -251,7 +257,9 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Get organization
+  // Feature #713: Add Zod param validation
   app.get<{ Params: OrgParams }>('/api/v1/organizations/:id', {
+    preValidation: [validateParams(orgIdParamsSchema)],
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { id } = request.params;
@@ -268,7 +276,9 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Get organization members (with user details)
+  // Feature #713: Add Zod param validation
   app.get<{ Params: OrgParams }>('/api/v1/organizations/:id/members', {
+    preValidation: [validateParams(orgIdParamsSchema)],
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { id } = request.params;
@@ -292,26 +302,15 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Create invitation (requires owner or admin role)
+  // Feature #713: Add Zod validation
   app.post<{ Params: OrgParams; Body: InvitationBody }>('/api/v1/organizations/:id/invitations', {
+    preValidation: [validateParams(orgIdParamsSchema), validateBody(createInvitationSchema)],
     preHandler: [authenticate, requireRoles(['owner', 'admin'])],
   }, async (request, reply) => {
+    // Feature #713: Zod validation now handles required fields and role enum
     const { id } = request.params;
     const { email, role } = request.body;
     const user = request.user as JwtPayload;
-
-    if (!email || !role) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Email and role are required',
-      });
-    }
-
-    if (!['admin', 'developer', 'viewer'].includes(role)) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Invalid role. Must be admin, developer, or viewer',
-      });
-    }
 
     // Check if organization exists
     const orgExists = await repoGetOrganizationById(id);
@@ -355,7 +354,9 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Get invitations for organization (requires owner or admin role)
+  // Feature #713: Add Zod param validation
   app.get<{ Params: OrgParams }>('/api/v1/organizations/:id/invitations', {
+    preValidation: [validateParams(orgIdParamsSchema)],
     preHandler: [authenticate, requireRoles(['owner', 'admin'])],
   }, async (request, reply) => {
     const { id } = request.params;
@@ -366,7 +367,9 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Delete invitation (requires owner or admin role)
+  // Feature #713: Add Zod param validation
   app.delete<{ Params: { id: string; inviteId: string } }>('/api/v1/organizations/:id/invitations/:inviteId', {
+    preValidation: [validateParams(orgInviteParamsSchema)],
     preHandler: [authenticate, requireRoles(['owner', 'admin'])],
   }, async (request, reply) => {
     const { inviteId } = request.params;
@@ -385,7 +388,10 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Get invitation details (public - for accepting)
-  app.get<{ Params: { inviteId: string } }>('/api/v1/invitations/:inviteId', async (request, reply) => {
+  // Feature #713: Add Zod param validation
+  app.get<{ Params: { inviteId: string } }>('/api/v1/invitations/:inviteId', {
+    preValidation: [validateParams(inviteIdParamsSchema)],
+  }, async (request, reply) => {
     const { inviteId } = request.params;
 
     const invitation = await repoGetInvitationById(inviteId);
@@ -424,7 +430,9 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Accept invitation (requires authentication - user must be logged in)
+  // Feature #713: Add Zod param validation
   app.post<{ Params: { inviteId: string } }>('/api/v1/invitations/:inviteId/accept', {
+    preValidation: [validateParams(inviteIdParamsSchema)],
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { inviteId } = request.params;
@@ -518,7 +526,9 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Update organization (requires owner or admin role)
+  // Feature #713: Add Zod validation
   app.patch<{ Params: OrgParams; Body: Partial<Organization> }>('/api/v1/organizations/:id', {
+    preValidation: [validateParams(orgIdParamsSchema), validateBody(updateOrganizationSchema)],
     preHandler: [authenticate, requireRoles(['owner', 'admin'])],
   }, async (request, reply) => {
     const { id } = request.params;
@@ -543,20 +553,15 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Delete organization (requires owner role only AND password confirmation)
+  // Feature #713: Add Zod validation
   app.delete<{ Params: OrgParams; Body: { password: string } }>('/api/v1/organizations/:id', {
+    preValidation: [validateParams(orgIdParamsSchema), validateBody(deleteOrganizationSchema)],
     preHandler: [authenticate, requireRoles(['owner'])],
   }, async (request, reply) => {
+    // Feature #713: Zod validation now handles password requirement check
     const { id } = request.params;
-    const { password } = request.body || {};
+    const { password } = request.body;
     const jwtUser = request.user as JwtPayload;
-
-    // Require password confirmation
-    if (!password) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Password confirmation is required to delete an organization',
-      });
-    }
 
     // Feature #2116: Get user using async DB call
     const user = await dbGetUserByEmail(jwtUser.email);
@@ -644,7 +649,9 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Remove member from organization (requires owner or admin role)
+  // Feature #713: Add Zod param validation
   app.delete<{ Params: { id: string; memberId: string } }>('/api/v1/organizations/:id/members/:memberId', {
+    preValidation: [validateParams(orgMemberParamsSchema)],
     preHandler: [authenticate, requireRoles(['owner', 'admin'])],
   }, async (request, reply) => {
     const { id, memberId } = request.params;
@@ -696,23 +703,18 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Update member role (requires owner or admin role)
+  // Feature #713: Add Zod validation
   app.patch<{ Params: { id: string; memberId: string }; Body: { role: 'admin' | 'developer' | 'viewer' } }>(
     '/api/v1/organizations/:id/members/:memberId',
     {
+      preValidation: [validateParams(orgMemberParamsSchema), validateBody(updateMemberRoleSchema)],
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
     },
     async (request, reply) => {
+      // Feature #713: Zod validation now handles role enum validation
       const { id, memberId } = request.params;
       const { role } = request.body;
       const jwtUser = request.user as JwtPayload;
-
-      // Validate role
-      if (!role || !['admin', 'developer', 'viewer'].includes(role)) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Valid role is required (admin, developer, or viewer)',
-        });
-      }
 
       // Check if organization exists
       const orgForUpdate = await repoGetOrganizationById(id);
@@ -768,23 +770,18 @@ export async function organizationRoutes(app: FastifyInstance) {
   );
 
   // Transfer ownership (requires owner role and password confirmation)
+  // Feature #713: Add Zod validation
   app.post<{ Params: OrgParams; Body: { new_owner_id: string; password: string } }>(
     '/api/v1/organizations/:id/transfer-ownership',
     {
+      preValidation: [validateParams(orgIdParamsSchema), validateBody(transferOwnershipSchema)],
       preHandler: [authenticate, requireRoles(['owner'])],
     },
     async (request, reply) => {
+      // Feature #713: Zod validation now handles required field checks
       const { id } = request.params;
       const { new_owner_id, password } = request.body;
       const jwtUser = request.user as JwtPayload;
-
-      // Validate inputs
-      if (!new_owner_id || !password) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'New owner ID and password are required',
-        });
-      }
 
       // Check if organization exists
       const orgForTransfer = await repoGetOrganizationById(id);
@@ -872,14 +869,17 @@ export async function organizationRoutes(app: FastifyInstance) {
   );
 
   // Feature #1002: Get team metrics - productivity metrics for organization members
+  // Feature #713: Add Zod validation for params and query
   app.get<{ Params: OrgParams; Querystring: { period?: string; include_trends?: string; include_activity?: string } }>(
     '/api/v1/organizations/:id/team-metrics',
     {
+      preValidation: [validateParams(orgIdParamsSchema), validateQuery(teamMetricsQuerySchema)],
       preHandler: [authenticate, requireRoles(['owner', 'admin'])],
     },
     async (request, reply) => {
       const { id: orgId } = request.params;
       const userOrgId = getOrganizationId(request);
+      // Feature #713: Zod validation provides defaults and transforms
       const period = request.query.period || '30d';
       const includeTrends = request.query.include_trends !== 'false';
       const includeActivity = request.query.include_activity !== 'false';
@@ -892,15 +892,8 @@ export async function organizationRoutes(app: FastifyInstance) {
         });
       }
 
-      // Parse period
-      const periodMatch = period.match(/^(\d+)([dhw])$/);
-      if (!periodMatch) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Invalid period format. Use formats like 7d, 14d, 30d, or 4w',
-        });
-      }
-
+      // Parse period (already validated by Zod regex)
+      const periodMatch = period.match(/^(\d+)([dhw])$/)!;
       const periodValue = parseInt(periodMatch[1], 10);
       const periodUnit = periodMatch[2];
       let periodMs: number;
@@ -1127,9 +1120,11 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Update auto-quarantine settings for the organization (requires owner or admin role)
+  // Feature #713: Add Zod validation
   app.patch<{
     Body: Partial<AutoQuarantineSettings>;
   }>('/api/v1/organization/auto-quarantine-settings', {
+    preValidation: [validateBody(autoQuarantineSettingsSchema)],
     preHandler: [authenticate, requireRoles(['owner', 'admin'])],
   }, async (request) => {
     const orgId = getOrganizationId(request);
@@ -1202,9 +1197,11 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Update retry strategy settings for the organization (requires owner or admin role)
+  // Feature #713: Add Zod validation
   app.patch<{
     Body: Partial<RetryStrategySettings>;
   }>('/api/v1/organization/retry-strategy-settings', {
+    preValidation: [validateBody(retryStrategySettingsSchema)],
     preHandler: [authenticate, requireRoles(['owner', 'admin'])],
   }, async (request) => {
     const orgId = getOrganizationId(request);
@@ -1220,9 +1217,11 @@ export async function organizationRoutes(app: FastifyInstance) {
   });
 
   // Get retry count for a specific test based on its flakiness score
+  // Feature #713: Add Zod param validation
   app.get<{
     Params: { testId: string };
   }>('/api/v1/organization/retry-strategy/:testId', {
+    preValidation: [validateParams(retryStrategyTestIdParamsSchema)],
     preHandler: [authenticate],
   }, async (request, reply) => {
     const { testId } = request.params;

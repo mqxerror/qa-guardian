@@ -268,6 +268,206 @@ export const registerSchema = z.object({
 });
 
 // ============================================================================
+// Auth Extended Schemas (Feature #713)
+// ============================================================================
+
+/**
+ * Logout request body
+ */
+export const logoutSchema = z.object({
+  refresh_token: z.string().optional(),
+});
+
+/**
+ * Refresh token request body
+ */
+export const refreshTokenSchema = z.object({
+  refresh_token: z.string().min(1, 'Refresh token is required'),
+});
+
+/**
+ * Forgot password request body
+ */
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Invalid email format'),
+});
+
+/**
+ * Reset password request body
+ */
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
+});
+
+/**
+ * Session ID parameter
+ */
+export const sessionIdParamsSchema = z.object({
+  sessionId: uuidSchema,
+});
+
+// ============================================================================
+// Organization Schemas (Feature #713)
+// ============================================================================
+
+/**
+ * Organization member role enum
+ */
+export const memberRoleSchema = z.enum(['owner', 'admin', 'developer', 'viewer']);
+
+/**
+ * Invitation role enum (excludes 'owner')
+ */
+export const invitationRoleSchema = z.enum(['admin', 'developer', 'viewer']);
+
+/**
+ * Organization ID parameter
+ */
+export const orgIdParamsSchema = z.object({
+  id: uuidSchema,
+});
+
+/**
+ * Organization switch request body
+ */
+export const switchOrganizationSchema = z.object({
+  organization_id: uuidSchema,
+});
+
+/**
+ * Create organization request body
+ */
+export const createOrganizationSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Organization name is required')
+    .max(100, 'Organization name must be 100 characters or less')
+    .transform(s => s.trim()),
+  slug: z
+    .string()
+    .regex(/^[a-z0-9-]+$/, 'Slug can only contain lowercase letters, numbers, and hyphens')
+    .max(100)
+    .optional(),
+  timezone: z.string().default('UTC'),
+});
+
+/**
+ * Update organization request body
+ */
+export const updateOrganizationSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  timezone: z.string().optional(),
+});
+
+/**
+ * Delete organization request body (requires password confirmation)
+ */
+export const deleteOrganizationSchema = z.object({
+  password: z.string().min(1, 'Password confirmation is required'),
+});
+
+/**
+ * Create invitation request body
+ */
+export const createInvitationSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  role: invitationRoleSchema,
+});
+
+/**
+ * Invitation ID parameter
+ */
+export const inviteIdParamsSchema = z.object({
+  inviteId: uuidSchema,
+});
+
+/**
+ * Organization invitation delete params
+ */
+export const orgInviteParamsSchema = z.object({
+  id: uuidSchema,
+  inviteId: uuidSchema,
+});
+
+/**
+ * Organization member params
+ */
+export const orgMemberParamsSchema = z.object({
+  id: uuidSchema,
+  memberId: uuidSchema,
+});
+
+/**
+ * Update member role request body
+ */
+export const updateMemberRoleSchema = z.object({
+  role: invitationRoleSchema,
+});
+
+/**
+ * Transfer ownership request body
+ */
+export const transferOwnershipSchema = z.object({
+  new_owner_id: uuidSchema,
+  password: z.string().min(1, 'Password confirmation is required'),
+});
+
+/**
+ * Team metrics query parameters
+ */
+export const teamMetricsQuerySchema = z.object({
+  period: z
+    .string()
+    .regex(/^\d+[dhw]$/, 'Invalid period format. Use formats like 7d, 14d, 30d, or 4w')
+    .optional()
+    .default('30d'),
+  include_trends: z
+    .string()
+    .optional()
+    .default('true'),
+  include_activity: z
+    .string()
+    .optional()
+    .default('true'),
+});
+
+/**
+ * Retry strategy test ID parameter
+ */
+export const retryStrategyTestIdParamsSchema = z.object({
+  testId: uuidSchema,
+});
+
+/**
+ * Auto-quarantine settings update body
+ */
+export const autoQuarantineSettingsSchema = z.object({
+  enabled: z.boolean().optional(),
+  flakiness_threshold: z.number().min(0).max(1).optional(),
+  quarantine_reason_prefix: z.string().max(100).optional(),
+  notify_on_quarantine: z.boolean().optional(),
+});
+
+/**
+ * Retry strategy settings update body
+ */
+export const retryStrategySettingsSchema = z.object({
+  enabled: z.boolean().optional(),
+  default_retries: z.number().int().min(0).max(10).optional(),
+  rules: z.array(z.object({
+    min_score: z.number().min(0).max(1),
+    max_score: z.number().min(0).max(1.01), // Allow 1.01 to include 1.0
+    retries: z.number().int().min(0).max(10),
+  })).optional(),
+});
+
+// ============================================================================
 // Validation Helper
 // ============================================================================
 
@@ -324,3 +524,27 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type PaginationParams = z.infer<typeof paginationSchema>;
 export type RunFiltersQuery = z.infer<typeof runFiltersQuerySchema>;
+
+// Feature #713: Auth Extended Types
+export type LogoutInput = z.infer<typeof logoutSchema>;
+export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type SessionIdParams = z.infer<typeof sessionIdParamsSchema>;
+
+// Feature #713: Organization Types
+export type OrgIdParams = z.infer<typeof orgIdParamsSchema>;
+export type SwitchOrganizationInput = z.infer<typeof switchOrganizationSchema>;
+export type CreateOrganizationInput = z.infer<typeof createOrganizationSchema>;
+export type UpdateOrganizationInput = z.infer<typeof updateOrganizationSchema>;
+export type DeleteOrganizationInput = z.infer<typeof deleteOrganizationSchema>;
+export type CreateInvitationInput = z.infer<typeof createInvitationSchema>;
+export type InviteIdParams = z.infer<typeof inviteIdParamsSchema>;
+export type OrgInviteParams = z.infer<typeof orgInviteParamsSchema>;
+export type OrgMemberParams = z.infer<typeof orgMemberParamsSchema>;
+export type UpdateMemberRoleInput = z.infer<typeof updateMemberRoleSchema>;
+export type TransferOwnershipInput = z.infer<typeof transferOwnershipSchema>;
+export type TeamMetricsQuery = z.infer<typeof teamMetricsQuerySchema>;
+export type RetryStrategyTestIdParams = z.infer<typeof retryStrategyTestIdParamsSchema>;
+export type AutoQuarantineSettingsInput = z.infer<typeof autoQuarantineSettingsSchema>;
+export type RetryStrategySettingsInput = z.infer<typeof retryStrategySettingsSchema>;
