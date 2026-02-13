@@ -39,7 +39,7 @@ export {
   MCPChatIcon,
   MCPAutopilotIcon,
   MCPDocumentationIcon,
-  MCPReleaseNotesIcon,
+  // Feature #884: MCPReleaseNotesIcon removed
   MCPScheduleOptimizerIcon,
   MCPTeamInsightsIcon,
   TechnicalDebtIcon,
@@ -50,7 +50,7 @@ export {
   TestSuitesIcon,
   TestResultsIcon,
   RunHistoryIcon,
-  ReleaseNotesIcon,
+  // Feature #884: ReleaseNotesIcon removed
   // Feature #453: PersonalizedInsightsIcon, TeamSkillsIcon, AILearningIcon removed (orphaned)
 } from './SidebarIcons';
 

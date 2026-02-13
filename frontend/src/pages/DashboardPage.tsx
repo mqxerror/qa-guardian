@@ -33,7 +33,6 @@ import {
   Lightbulb,
   Zap,
   FileText,
-  ClipboardList,
   ChevronRight,
   Code,
   Terminal,
@@ -535,7 +534,7 @@ export function DashboardPage() {
                   </div>
                 </div>
                 <p className="mt-4 text-sm text-muted-foreground">
-                  Analyze flaky tests, improve test quality, generate documentation, and track release notes.
+                  Analyze flaky tests, improve test quality, and generate documentation.
                 </p>
                 <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
@@ -546,10 +545,7 @@ export function DashboardPage() {
                     <FileText className="h-4 w-4" />
                     Documentation
                   </span>
-                  <span className="flex items-center gap-1">
-                    <ClipboardList className="h-4 w-4" />
-                    Release Notes
-                  </span>
+                  {/* Feature #884: Release Notes removed */}
                 </div>
                 <div className="mt-4 flex items-center text-sm font-medium text-accent group-hover:translate-x-1 transition-transform">
                   Explore Insights

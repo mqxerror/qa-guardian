@@ -39,7 +39,7 @@ export { SecurityDashboardPage } from './SecurityDashboardPage';
 // Feature #411: BestPracticesPage removed - dead demo page
 export { TestImprovementAnalyzerPage } from './TestImprovementAnalyzerPage';
 // Feature #411: IndustryBenchmarkPage removed - dead demo page
-export { ReleaseNotesPage } from './ReleaseNotesPage';
+// Feature #884: ReleaseNotesPage removed - not core QA functionality
 // Feature #411: PersonalizedInsightsPage removed - dead demo page
 // Feature #411: TeamSkillGapsPage removed - dead demo page
 // Feature #411: AILearningPage removed - dead demo page

@@ -33,7 +33,6 @@ import {
   MessageCircle,
   Monitor,
   BookOpen,
-  Tag,
   Clock,
   UsersRound,
   Scale,
@@ -191,10 +190,7 @@ export const MCPDocumentationIcon = () => (
   <BookOpen className="h-5 w-5" aria-hidden="true" />
 );
 
-// Feature #1272: MCP Release Notes icon (tag with version)
-export const MCPReleaseNotesIcon = () => (
-  <Tag className="h-5 w-5" aria-hidden="true" />
-);
+// Feature #884: MCPReleaseNotesIcon removed - release notes page removed
 
 // Feature #1273: MCP Schedule Optimizer icon (clock with gear)
 export const MCPScheduleOptimizerIcon = () => (
@@ -243,9 +239,6 @@ export const RunHistoryIcon = () => (
   <History className="h-5 w-5" aria-hidden="true" />
 );
 
-// Release Notes icon (tag with document)
-export const ReleaseNotesIcon = () => (
-  <Tag className="h-5 w-5" aria-hidden="true" />
-);
+// Feature #884: ReleaseNotesIcon removed - release notes page removed
 
 // Feature #453: PersonalizedInsightsIcon, TeamSkillsIcon, AILearningIcon removed (orphaned - pages deleted)

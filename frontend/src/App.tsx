@@ -45,7 +45,7 @@ const MCPAnalyticsPage = lazy(() => import('./pages/MCPAnalyticsPage').then(m =>
 const MCPPlaygroundPage = lazy(() => import('./pages/MCPPlaygroundPage').then(m => ({ default: m.MCPPlaygroundPage })));
 const SecurityDashboardPage = lazy(() => import('./pages/SecurityDashboardPage').then(m => ({ default: m.SecurityDashboardPage })));
 const TestImprovementAnalyzerPage = lazy(() => import('./pages/TestImprovementAnalyzerPage').then(m => ({ default: m.TestImprovementAnalyzerPage })));
-const ReleaseNotesPage = lazy(() => import('./pages/ReleaseNotesPage').then(m => ({ default: m.ReleaseNotesPage })));
+// Feature #884: ReleaseNotesPage removed - not core QA functionality
 const TestDocumentationPage = lazy(() => import('./pages/TestDocumentationPage').then(m => ({ default: m.TestDocumentationPage })));
 const ProviderHealthPage = lazy(() => import('./pages/ProviderHealthPage').then(m => ({ default: m.ProviderHealthPage })));
 const AIAnalyticsPage = lazy(() => import('./pages/AIAnalyticsPage').then(m => ({ default: m.AIAnalyticsPage })));
@@ -452,7 +452,7 @@ function App() {
         <Route path="/ai-insights/flaky-tests" element={<Navigate to="/ai/flaky-tests" replace />} />
         <Route path="/ai-insights/test-analyzer" element={<Navigate to="/ai/test-analyzer" replace />} />
         <Route path="/ai-insights/test-documentation" element={<Navigate to="/ai/test-documentation" replace />} />
-        <Route path="/ai-insights/release-notes" element={<Navigate to="/ai/release-notes" replace />} />
+        {/* Feature #884: release-notes redirect removed */}
         <Route
           path="/ai/flaky-tests"
           element={
@@ -483,16 +483,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/ai/release-notes"
-          element={
-            <ProtectedRoute>
-              <PageErrorBoundary>
-                <ReleaseNotesPage />
-              </PageErrorBoundary>
-            </ProtectedRoute>
-          }
-        />
+        {/* Feature #884: /ai/release-notes route removed - not core QA functionality */}
 
         {/* Settings */}
         <Route
