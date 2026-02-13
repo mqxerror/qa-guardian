@@ -970,16 +970,25 @@ function TestSuitePage() {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center p-8 min-h-[60vh]">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-foreground">Test Suite Not Found</h2>
-            <p className="mt-2 text-muted-foreground">{error}</p>
-            <Button
-              onClick={() => navigate('/projects')}
-              className="mt-6"
-            >
-              Go to Projects
-            </Button>
-          </div>
+          {suiteError && (
+            <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+              <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+              <h3 className="text-lg font-semibold text-destructive">Failed to load test suite</h3>
+              <p className="text-sm text-muted-foreground mt-1">{suiteError instanceof Error ? suiteError.message : 'An unexpected error occurred'}</p>
+            </div>
+          )}
+          {!suiteError && (
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-foreground">Test Suite Not Found</h2>
+              <p className="mt-2 text-muted-foreground">{error}</p>
+            </div>
+          )}
+          <Button
+            onClick={() => navigate('/projects')}
+            className="mt-6"
+          >
+            Go to Projects
+          </Button>
         </div>
       </Layout>
     );

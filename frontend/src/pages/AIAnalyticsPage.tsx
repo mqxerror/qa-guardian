@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
-import { RefreshCw, DollarSign, Zap, FileInput, FileOutput, Building2, Brain, TrendingUp, Settings } from 'lucide-react';
+import { RefreshCw, DollarSign, Zap, FileInput, FileOutput, Building2, Brain, TrendingUp, Settings, AlertTriangle } from 'lucide-react';
 import { PageHeader } from '../components/ui';
 import { Button } from '@/components/ui/button';
 // Feature #691: Migrated budget modal to shared Modal component
@@ -52,7 +52,7 @@ export function AIAnalyticsPage() {
   const [newBudget, setNewBudget] = useState(500);
 
   // React Query: Fetch analytics
-  const { data: analytics, isLoading: isAnalyticsLoading } = useQuery({
+  const { data: analytics, isLoading: isAnalyticsLoading, isError, error } = useQuery({
     queryKey: analyticsKeys.analytics(period),
     queryFn: () => fetchWithAuth(`${API_BASE}/api/v1/ai/analytics?period=${period}`, token) as Promise<UsageAnalytics>,
     enabled: !!token,
@@ -267,6 +267,14 @@ export function AIAnalyticsPage() {
             ))}
           </nav>
         </div>
+
+        {isError && (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+            <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+            <h3 className="text-lg font-semibold text-destructive">Failed to load AI analytics</h3>
+            <p className="text-sm text-muted-foreground mt-1">{error instanceof Error ? error.message : 'An unexpected error occurred'}</p>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">

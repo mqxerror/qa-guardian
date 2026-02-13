@@ -17,7 +17,7 @@ import {
   ScoreCard,
   EmptyStates, // Feature #559: Enhanced empty state
 } from "../components/ui";
-import { Flame, Settings, Loader2, FolderKanban, MoreHorizontal, Github, Shield, ChevronDown, Globe, FileCheck, CheckCircle2, XCircle, Search, X, Clock, Zap, GitBranch } from "lucide-react";
+import { Flame, Settings, Loader2, FolderKanban, MoreHorizontal, Github, Shield, ChevronDown, Globe, FileCheck, CheckCircle2, XCircle, Search, X, Clock, Zap, GitBranch, AlertTriangle } from "lucide-react";
 // Feature #550: Real-time wave visualization for smoke test
 import { WaveProgressCard, type WaveProgressStatus } from "../components/ui/wave-progress-card";
 // useSuiteRunSocket moved to useSmokeTest hook (Feature #718)
@@ -125,7 +125,7 @@ function ProjectDetailPage() {
 
   // Feature #58: React Query hooks for parallel data loading
   // Project and suites load in parallel automatically via React Query
-  const { data: projectData, isLoading: projectLoading, error: projectError } = useProject(id);
+  const { data: projectData, isLoading: projectLoading, isError, error: projectError } = useProject(id);
   const { data: suitesData, isLoading: suitesLoading } = useSuites(id);
 
   // Extract data from React Query responses
@@ -424,9 +424,23 @@ function ProjectDetailPage() {
     );
   }
 
+  if (isError) {
+    return (
+      <Layout>
+        <div className="p-8">
+          <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+            <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+            <h3 className="text-lg font-semibold text-destructive">Failed to load project</h3>
+            <p className="text-sm text-muted-foreground mt-1">{projectError instanceof Error ? projectError.message : 'An unexpected error occurred'}</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   if (error) {
     // Distinguish rate-limit errors from actual 404s
-    const statusCode = (projectError as Error & { status?: number })?.status;
+    const statusCode = projectError ? (projectError as unknown as Error & { status?: number })?.status : undefined;
     const isRateLimited = statusCode === 429 || error.includes('429');
 
     return (

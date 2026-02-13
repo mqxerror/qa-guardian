@@ -28,7 +28,7 @@ export default function VisualReviewPage() {
  const { decrementCount } = useVisualReviewStore();
 
  // Feature #77: React Query hooks for data fetching
- const { data: pendingChanges = [], isLoading, refetch: refetchPending } = usePendingVisualChanges();
+ const { data: pendingChanges = [], isLoading, isError, error, refetch: refetchPending } = usePendingVisualChanges();
  const batchApproveMutation = useBatchApproveChanges();
  const batchRejectMutation = useBatchRejectChanges();
 
@@ -496,6 +496,14 @@ Respond in this JSON format:
  )}
  </div>
  </div>
+
+ {isError && (
+ <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+ <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+ <h3 className="text-lg font-semibold text-destructive">Failed to load visual review</h3>
+ <p className="text-sm text-muted-foreground mt-1">{error instanceof Error ? error.message : 'An unexpected error occurred'}</p>
+ </div>
+ )}
 
  {isLoading ? (
  <div className="flex items-center justify-center py-12">

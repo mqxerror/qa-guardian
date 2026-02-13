@@ -10,7 +10,7 @@ import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { PageHeader } from '../components/ui';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, AlertTriangle } from 'lucide-react';
 import { EmptyStates } from '../components/ui/EmptyState';
 
 // Feature #72: Import React Query hooks for caching
@@ -72,7 +72,7 @@ export function AnalyticsPage() {
   const [branchB, setBranchB] = useState<string | undefined>(undefined);
 
   // Feature #72: React Query hooks for caching
-  const { data: failingTestsData, isLoading } = useFailingTests();
+  const { data: failingTestsData, isLoading, isError, error } = useFailingTests();
   const { data: browserStatsData, isLoading: isBrowserStatsLoading } = useBrowserStats();
   const { data: projectStatsData, isLoading: isProjectStatsLoading } = useProjectComparison();
   const { data: flakyTestsData, isLoading: isFlakyTestsLoading } = useFlakyTests();
@@ -206,6 +206,14 @@ export function AnalyticsPage() {
             </Button>
           }
         />
+
+        {isError && (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+            <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+            <h3 className="text-lg font-semibold text-destructive">Failed to load analytics</h3>
+            <p className="text-sm text-muted-foreground mt-1">{error instanceof Error ? error.message : 'An unexpected error occurred'}</p>
+          </div>
+        )}
 
         {/* Empty state when no analytics data is available */}
         {hasNoData ? (

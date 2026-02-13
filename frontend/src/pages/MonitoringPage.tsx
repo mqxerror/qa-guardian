@@ -37,7 +37,7 @@ const logger = createLogger('monitoring');
 import {
   PageHeader,
 } from "../components/ui";
-import { Plus } from "lucide-react";
+import { Plus, AlertTriangle } from "lucide-react";
 import { Button } from '@/components/ui/button';
 
 // Feature #47: Import modular components and types for performance optimization
@@ -146,7 +146,7 @@ function MonitoringPage() {
 
   // Feature #75: Use React Query for summary with caching
   // This provides instant load on page revisit while keeping existing hook structure
-  const { data: cachedSummary, isLoading: isSummaryLoading } = useMonitoringSummary();
+  const { data: cachedSummary, isLoading: isSummaryLoading, isError, error } = useMonitoringSummary();
   // Use cached summary if available, otherwise fall back to hook's summary
   const displaySummary = cachedSummary || summary;
   const summaryLoading = isSummaryLoading && isLoading;
@@ -644,6 +644,14 @@ function MonitoringPage() {
         {/* Summary Cards - Using modular component (Feature #47) */}
         {/* Feature #75: Using React Query cached summary for instant load */}
         <MonitoringSummaryCards summary={displaySummary} isLoading={summaryLoading} />
+
+        {isError && (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+            <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+            <h3 className="text-lg font-semibold text-destructive">Failed to load monitoring data</h3>
+            <p className="text-sm text-muted-foreground mt-1">{error instanceof Error ? error.message : 'An unexpected error occurred'}</p>
+          </div>
+        )}
 
         {/* Feature #877: EmptyState when no monitors configured */}
         {!isLoading && checks.length === 0 && transactions.length === 0 && performanceChecks.length === 0 && webhookChecks.length === 0 ? (

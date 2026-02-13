@@ -49,7 +49,7 @@ export function DashboardPage() {
   const { user } = useAuthStore();
 
   // Feature #70: Use React Query for caching - dashboard loads instantly on revisit
-  const { data: stats, isLoading } = useDashboardStats();
+  const { data: stats, isLoading, isError, error } = useDashboardStats();
 
   // Feature #871: Fetch pass rate trends (last 30 days) and recent failed runs
   const { data: trendsData, isLoading: trendsLoading } = usePassRateTrends(30);
@@ -109,6 +109,14 @@ export function DashboardPage() {
           description={`Welcome to your QA Guardian dashboard, ${user?.name || 'User'}!`}
           breadcrumbs={[{ label: 'Home' }, { label: 'Dashboard' }]}
         />
+
+        {isError && (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+            <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+            <h3 className="text-lg font-semibold text-destructive">Failed to load dashboard</h3>
+            <p className="text-sm text-muted-foreground mt-1">{error instanceof Error ? error.message : 'An unexpected error occurred'}</p>
+          </div>
+        )}
 
         {/* Feature #468: Quality Health summary card - prominent first card */}
         <div className="grid gap-4 lg:grid-cols-3">

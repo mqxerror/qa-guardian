@@ -7,7 +7,7 @@ import { useState as useReactState, useEffect, useCallback, useMemo, useRef } fr
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 // Feature #571: Lucide icons for page-level tab navigation (replaces emoji)
 import { Button } from '../components/ui/button';
-import { LayoutDashboard, Play, Settings, History } from 'lucide-react';
+import { LayoutDashboard, Play, Settings, History, AlertTriangle } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
@@ -96,7 +96,7 @@ function TestDetailPage() {
 
   // Feature #68: React Query hooks for caching - data loads instantly on second visit
   // Feature #513: Removed unused refetchTest, runsLoading
-  const { data: testData, isLoading: testLoading, error: testError } = useTest(testId);
+  const { data: testData, isLoading: testLoading, isError: isTestError, error: testError } = useTest(testId);
   const { data: runsData, refetch: refetchRuns } = useRunsByTest(testId);
 
   // Feature #137: Eliminated 3-level waterfall by using enriched test data
@@ -945,6 +945,20 @@ function TestDetailPage() {
       <Layout>
         <div className="p-8">
           <SkeletonTestDetailPage />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (isTestError) {
+    return (
+      <Layout>
+        <div className="p-8">
+          <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
+            <AlertTriangle className="h-8 w-8 mx-auto text-destructive mb-2" />
+            <h3 className="text-lg font-semibold text-destructive">Failed to load test details</h3>
+            <p className="text-sm text-muted-foreground mt-1">{testError instanceof Error ? testError.message : 'An unexpected error occurred'}</p>
+          </div>
         </div>
       </Layout>
     );
