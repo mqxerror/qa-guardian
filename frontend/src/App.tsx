@@ -40,7 +40,6 @@ const LicenseCompliancePage = lazy(() => import('./pages/LicenseCompliancePage')
 const SbomPage = lazy(() => import('./pages/SbomPage').then(m => ({ default: m.SbomPage })));
 const ContainerScanPage = lazy(() => import('./pages/ContainerScanPage').then(m => ({ default: m.ContainerScanPage })));
 const DependencyTreePage = lazy(() => import('./pages/DependencyTreePage').then(m => ({ default: m.DependencyTreePage })));
-const DependencyPolicyPage = lazy(() => import('./pages/DependencyPolicyPage').then(m => ({ default: m.DependencyPolicyPage })));
 const MCPChatPage = lazy(() => import('./pages/MCPChatPage').then(m => ({ default: m.MCPChatPage })));
 const MCPAnalyticsPage = lazy(() => import('./pages/MCPAnalyticsPage').then(m => ({ default: m.MCPAnalyticsPage })));
 const MCPPlaygroundPage = lazy(() => import('./pages/MCPPlaygroundPage').then(m => ({ default: m.MCPPlaygroundPage })));
@@ -368,16 +367,6 @@ function App() {
             <ProtectedRoute>
               <PageErrorBoundary>
                 <DependencyTreePage />
-              </PageErrorBoundary>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/security/dependency-policies"
-          element={
-            <ProtectedRoute>
-              <PageErrorBoundary>
-                <DependencyPolicyPage />
               </PageErrorBoundary>
             </ProtectedRoute>
           }
