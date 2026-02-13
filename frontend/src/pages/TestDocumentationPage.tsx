@@ -2,13 +2,15 @@
 // Feature #1357: Frontend file size limit enforcement
 // Feature #1253: Test Documentation Page - AI generates documentation from test code
 // Feature #1254: Living documentation - Version history for documentation updates
+// Feature #712: Migrated to React Query
 
 import { useState, useEffect } from 'react';
 import { Loader2, FileText, CheckCircle, AlertTriangle, X } from 'lucide-react';
 import { Modal, ModalHeader, ModalBody } from '../components/ui/Modal';
-import { useAuthStore } from '../stores/authStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
+// Feature #712: React Query hook for suites
+import { useAllSuites } from '../hooks/api/useSuites';
 
 // Feature #1253: Test Documentation Page interfaces
 interface TestSuiteForDocs {
@@ -84,13 +86,12 @@ interface TestModification {
 }
 
 export function TestDocumentationPage() {
- const { token } = useAuthStore();
- const [testSuites, setTestSuites] = useState<TestSuiteForDocs[]>([]);
+ // Feature #712: Use React Query hook for suites
+ const { data: suitesData, isLoading } = useAllSuites();
  const [selectedSuite, setSelectedSuite] = useState<TestSuiteForDocs | null>(null);
  const [isGenerating, setIsGenerating] = useState(false);
  const [generatedDocs, setGeneratedDocs] = useState<GeneratedDocumentation | null>(null);
  const [activeTab, setActiveTab] = useState<'features' | 'flows' | 'coverage' | 'history'>('features');
- const [isLoading, setIsLoading] = useState(true);
 
  // Feature #1254: Living Documentation state
  const [versionHistory, setVersionHistory] = useState<DocumentVersion[]>([]);
@@ -101,43 +102,23 @@ export function TestDocumentationPage() {
  const [editingTest, setEditingTest] = useState<TestModification | null>(null);
  const [isRegenerating, setIsRegenerating] = useState(false);
 
- // Load test suites
- useEffect(() => {
- const loadTestSuites = async () => {
- setIsLoading(true);
- try {
- const response = await fetch('/api/v1/suites', {
- headers: { Authorization: `Bearer ${token}` }
- });
- if (response.ok) {
- const data = await response.json();
- setTestSuites(data.map((suite: SuiteApiResponse) => ({
- id: suite.id,
- name: suite.name,
- testCount: suite.test_count || Math.floor(Math.random() * 20) + 5,
- description: suite.description || 'Test suite for application testing',
- projectId: suite.project_id,
- projectName: suite.project_name || 'Default Project'
- })));
- }
- } catch (error) {
- console.error('Failed to load test suites:', error);
- }
+ // Feature #712: Transform React Query data to component format
+ const testSuites: TestSuiteForDocs[] = suitesData?.map((suite: SuiteApiResponse) => ({
+   id: suite.id,
+   name: suite.name,
+   testCount: suite.test_count || Math.floor(Math.random() * 20) + 5,
+   description: suite.description || 'Test suite for application testing',
+   projectId: suite.project_id,
+   projectName: suite.project_name || 'Default Project'
+ })) || [];
 
- // Add demo suites if none exist
- if (testSuites.length === 0) {
- setTestSuites([
- { id: 'demo-1', name: 'Authentication Suite', testCount: 15, description: 'Tests for user authentication flows', projectId: 'proj-1', projectName: 'Main Application' },
- { id: 'demo-2', name: 'Checkout Flow Suite', testCount: 22, description: 'E2E tests for checkout process', projectId: 'proj-1', projectName: 'Main Application' },
- { id: 'demo-3', name: 'Dashboard Tests', testCount: 18, description: 'Tests for dashboard functionality', projectId: 'proj-1', projectName: 'Main Application' },
- { id: 'demo-4', name: 'API Integration Suite', testCount: 30, description: 'API endpoint integration tests', projectId: 'proj-2', projectName: 'API Service' }
- ]);
- }
- setIsLoading(false);
- };
-
- loadTestSuites();
- }, [token]);
+ // Add demo suites if none exist (after data loads)
+ const displaySuites = testSuites.length > 0 ? testSuites : [
+   { id: 'demo-1', name: 'Authentication Suite', testCount: 15, description: 'Tests for user authentication flows', projectId: 'proj-1', projectName: 'Main Application' },
+   { id: 'demo-2', name: 'Checkout Flow Suite', testCount: 22, description: 'E2E tests for checkout process', projectId: 'proj-1', projectName: 'Main Application' },
+   { id: 'demo-3', name: 'Dashboard Tests', testCount: 18, description: 'Tests for dashboard functionality', projectId: 'proj-1', projectName: 'Main Application' },
+   { id: 'demo-4', name: 'API Integration Suite', testCount: 30, description: 'API endpoint integration tests', projectId: 'proj-2', projectName: 'API Service' }
+ ];
 
  // Step 2 & 3: Generate documentation from selected suite
  const generateDocumentation = async () => {
@@ -341,7 +322,7 @@ export function TestDocumentationPage() {
  </div>
  ) : (
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
- {testSuites.map((suite) => (
+ {displaySuites.map((suite) => (
  <button
  key={suite.id}
  onClick={() => setSelectedSuite(suite)}

@@ -24,7 +24,8 @@ import { computeTestHealthScore } from '../components/suite-detail/utils';
 // AnimatedCard, StatusPill, MetadataRow, SectionHeader, CardContent, Tabs, TabsList, TabsTrigger, TabsContent, useReducedMotion - moved to test-detail components
 // lucide-react icons: Play, Clock, Calendar, Tag - moved to test-detail components
 // Feature #68: Import React Query hooks for caching
-import { useTest, useInvalidateTests } from '../hooks/api/useTests';
+// Feature #712: Added useVisualRejectionStatus for visual rejection check
+import { useTest, useInvalidateTests, useVisualRejectionStatus } from '../hooks/api/useTests';
 import { useRunsByTest, useInvalidateRuns } from '../hooks/api/useRuns';
 import { useSuite } from '../hooks/api/useSuites';
 import { useProject } from '../hooks/api/useProjects';
@@ -810,27 +811,15 @@ function TestDetailPage() {
     await handleEditFromHook(editName, editDescription);
   };
 
-  // Check rejection status when test result changes
+  // Feature #712: Use React Query hook for visual rejection status check
+  const { data: rejectionData } = useVisualRejectionStatus(testId, currentRun?.id);
+
+  // Update rejection status when React Query data changes
   useEffect(() => {
-    const checkRejectionStatus = async () => {
-      if (!currentRun?.id || !testId || !token) return;
-
-      try {
-        const response = await fetch(`/api/v1/tests/${testId}/visual/rejection?runId=${currentRun.id}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setRejectionStatus(data);
-        }
-      } catch (error) {
-        pageLogger.error('Failed to check rejection status:', error);
-      }
-    };
-
-    checkRejectionStatus();
-  }, [currentRun?.id, testId, token]);
+    if (rejectionData) {
+      setRejectionStatus(rejectionData);
+    }
+  }, [rejectionData]);
 
   // Fetch flakiness trend when test ID changes
   useEffect(() => {

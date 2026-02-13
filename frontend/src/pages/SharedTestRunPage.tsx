@@ -11,8 +11,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Lock, Loader2, Clock, Calendar, Mail, ExternalLink, LogIn, Image, X, ChevronLeft, ChevronRight, Info } from 'lucide-react';
+// Feature #712: React Query hook for shared runs
+import { useSharedRun, type SharedTestRun, type ExpiredLinkInfo } from '../hooks/api/useSharedRuns';
 
-// Types from the main test run page
+// Types from the main test run page - using hook types where applicable
 interface StepResult {
  id: string;
  action: string;
@@ -34,26 +36,8 @@ interface TestRunResult {
  screenshot_base64?: string;
 }
 
-interface TestRun {
- id: string;
- suite_id: string;
- suite_name?: string;
- browser: string;
- status: string;
- started_at?: string;
- completed_at?: string;
- duration_ms?: number;
- results?: TestRunResult[];
- error?: string;
-}
-
-// Feature #2005: Expired link info interface
-interface ExpiredLinkInfo {
- expired: true;
- expirationDate: string;
- createdBy?: string;
- ownerEmail?: string;
-}
+// Re-export TestRun type from hook for consistency
+type TestRun = SharedTestRun;
 
 // Feature #2006: Screenshot gallery item interface
 interface GalleryScreenshot {
@@ -69,222 +53,34 @@ interface GalleryScreenshot {
 
 export default function SharedTestRunPage() {
  const { token } = useParams<{ token: string }>();
- const [run, setRun] = useState<TestRun | null>(null);
- const [loading, setLoading] = useState(true);
- const [error, setError] = useState<string | null>(null);
- // Feature #2004: Password protection
- const [requiresPassword, setRequiresPassword] = useState(false);
+ // Feature #712: Use React Query hook instead of raw fetch
  const [password, setPassword] = useState('');
- const [passwordError, setPasswordError] = useState<string | null>(null);
- const [authenticating, setAuthenticating] = useState(false);
- // Feature #2005: Expired link state
- const [expiredInfo, setExpiredInfo] = useState<ExpiredLinkInfo | null>(null);
+ const [submittedPassword, setSubmittedPassword] = useState<string | undefined>(undefined);
+
+ // Feature #712: React Query hook handles all fetching logic
+ const { data: sharedRunData, isLoading: loading, refetch } = useSharedRun(token, submittedPassword);
+
+ // Derived state from React Query response
+ const run = sharedRunData?.run || null;
+ const requiresPassword = sharedRunData?.requiresPassword || false;
+ const passwordError = sharedRunData?.passwordError || null;
+ const expiredInfo = sharedRunData?.expiredInfo || null;
+ const error = !loading && !run && !requiresPassword && !expiredInfo ? 'Failed to load shared results' : null;
+
  // Feature #2006: Screenshots gallery state
  const [lightboxOpen, setLightboxOpen] = useState(false);
  const [lightboxIndex, setLightboxIndex] = useState(0);
-
- // Feature #2004: Check if token indicates password-protected share (tokens starting with 'pwd-')
- const isPasswordProtected = token?.startsWith('pwd-');
- // Feature #2005: Check if token indicates expired share (tokens starting with 'exp-')
- const isExpiredLink = token?.startsWith('exp-');
-
- const fetchSharedRun = async (submittedPassword?: string) => {
- if (!token) {
- setError('Invalid share link');
- setLoading(false);
- return;
- }
-
- // Feature #2005: Handle expired links immediately (tokens starting with 'exp-')
- if (isExpiredLink) {
- // Simulate expired link with mock data
- const expiredDaysAgo = Math.floor(Math.random() * 7) + 1; // 1-7 days ago
- const expirationDate = new Date(Date.now() - expiredDaysAgo * 24 * 60 * 60 * 1000);
- setExpiredInfo({
- expired: true,
- expirationDate: expirationDate.toISOString(),
- createdBy: 'Test Manager',
- ownerEmail: 'testmanager@example.com',
- });
- setLoading(false);
- return;
- }
-
- setLoading(true);
- setPasswordError(null);
-
- try {
- // Try to fetch the shared run from the API
- const headers: Record<string, string> = {};
- if (submittedPassword) {
- headers['X-Share-Password'] = submittedPassword;
- }
- const response = await fetch(`/api/shared/runs/${token}`, { headers });
-
- if (response.ok) {
- const data = await response.json();
- setRun(data);
- setRequiresPassword(false);
- } else if (response.status === 410) {
- // Feature #2005: Link expired (410 Gone)
- const data = await response.json().catch(() => ({}));
- setExpiredInfo({
- expired: true,
- expirationDate: data.expired_at || new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
- createdBy: data.created_by || 'Unknown',
- ownerEmail: data.owner_email,
- });
- } else if (response.status === 401) {
- // Password required
- setRequiresPassword(true);
- setPasswordError(submittedPassword ? 'Incorrect password. Please try again.' : null);
- } else if (response.status === 404) {
- // Feature #2004: For demo purposes, handle password-protected mock shares
- if (isPasswordProtected) {
- // Password-protected share demo
- const demoPassword = 'demo123';
- if (!submittedPassword) {
- setRequiresPassword(true);
- } else if (submittedPassword !== demoPassword) {
- setRequiresPassword(true);
- setPasswordError('Incorrect password. Please try again. (Hint: demo123)');
- } else {
- // Correct password - show results
- setRequiresPassword(false);
- setRun({
- id: token,
- suite_id: 'shared-suite',
- suite_name: 'Password Protected Test Suite',
- browser: 'chromium',
- status: 'passed',
- started_at: new Date(Date.now() - 60000).toISOString(),
- completed_at: new Date().toISOString(),
- duration_ms: 5000,
- results: [
- {
- test_id: 'test-1',
- test_name: 'Secure Test Example',
- test_type: 'e2e',
- status: 'passed',
- duration_ms: 2500,
- steps: [
- { id: 'step-1', action: 'Navigate to secure page', status: 'passed', duration_ms: 1000 },
- { id: 'step-2', action: 'Verify authentication', status: 'passed', duration_ms: 500 },
- { id: 'step-3', action: 'Check secure content', status: 'passed', duration_ms: 1000 },
- ],
- },
- ],
- });
- }
- } else {
- // Regular non-password share
- setRun({
- id: token,
- suite_id: 'shared-suite',
- suite_name: 'Shared Test Suite',
- browser: 'chromium',
- status: 'passed',
- started_at: new Date(Date.now() - 60000).toISOString(),
- completed_at: new Date().toISOString(),
- duration_ms: 5000,
- results: [
- {
- test_id: 'test-1',
- test_name: 'Shared Test Example',
- test_type: 'e2e',
- status: 'passed',
- duration_ms: 2500,
- steps: [
- { id: 'step-1', action: 'Navigate to page', status: 'passed', duration_ms: 1000 },
- { id: 'step-2', action: 'Click button', status: 'passed', duration_ms: 500 },
- { id: 'step-3', action: 'Verify result', status: 'passed', duration_ms: 1000 },
- ],
- },
- ],
- });
- }
- } else {
- setError('Failed to load shared results');
- }
- } catch (err) {
- // Feature #2004: For demo purposes, handle password-protected mock shares on error
- if (isPasswordProtected) {
- const demoPassword = 'demo123';
- if (!submittedPassword) {
- setRequiresPassword(true);
- } else if (submittedPassword !== demoPassword) {
- setRequiresPassword(true);
- setPasswordError('Incorrect password. Please try again. (Hint: demo123)');
- } else {
- setRequiresPassword(false);
- setRun({
- id: token,
- suite_id: 'shared-suite',
- suite_name: 'Password Protected Test Suite',
- browser: 'chromium',
- status: 'passed',
- started_at: new Date(Date.now() - 60000).toISOString(),
- completed_at: new Date().toISOString(),
- duration_ms: 5000,
- results: [
- {
- test_id: 'test-1',
- test_name: 'Secure Test Example',
- test_type: 'e2e',
- status: 'passed',
- duration_ms: 2500,
- steps: [
- { id: 'step-1', action: 'Navigate to secure page', status: 'passed', duration_ms: 1000 },
- { id: 'step-2', action: 'Verify authentication', status: 'passed', duration_ms: 500 },
- { id: 'step-3', action: 'Check secure content', status: 'passed', duration_ms: 1000 },
- ],
- },
- ],
- });
- }
- } else {
- // Non-password protected mock
- setRun({
- id: token,
- suite_id: 'shared-suite',
- suite_name: 'Shared Test Suite',
- browser: 'chromium',
- status: 'passed',
- started_at: new Date(Date.now() - 60000).toISOString(),
- completed_at: new Date().toISOString(),
- duration_ms: 5000,
- results: [
- {
- test_id: 'test-1',
- test_name: 'Shared Test Example',
- test_type: 'e2e',
- status: 'passed',
- duration_ms: 2500,
- steps: [
- { id: 'step-1', action: 'Navigate to page', status: 'passed', duration_ms: 1000 },
- { id: 'step-2', action: 'Click button', status: 'passed', duration_ms: 500 },
- { id: 'step-3', action: 'Verify result', status: 'passed', duration_ms: 1000 },
- ],
- },
- ],
- });
- }
- } finally {
- setLoading(false);
- setAuthenticating(false);
- }
- };
-
- useEffect(() => {
- fetchSharedRun();
- }, [token]);
-
+ const [authenticating, setAuthenticating] = useState(false);
 
  // Feature #2004: Handle password submission
  const handlePasswordSubmit = (e: React.FormEvent) => {
  e.preventDefault();
  setAuthenticating(true);
- fetchSharedRun(password);
+ setSubmittedPassword(password);
+ // Trigger refetch with new password
+ setTimeout(() => {
+   refetch().finally(() => setAuthenticating(false));
+ }, 100);
  };
 
  // Calculate summary stats

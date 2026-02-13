@@ -609,3 +609,31 @@ export function useDeleteStepTemplate() {
     },
   });
 }
+
+// ============================================================
+// Feature #712: Visual Rejection Status Hook
+// ============================================================
+
+export interface RejectionStatus {
+  hasRejection: boolean;
+  rejectedAt?: string;
+  rejectedBy?: string;
+  reason?: string;
+}
+
+/**
+ * Hook to check visual test rejection status
+ * Feature #712: Migrated from raw fetch in TestDetailPage
+ */
+export function useVisualRejectionStatus(testId: string | undefined, runId: string | undefined) {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: [...testKeys.detail(testId || ''), 'visual-rejection', runId] as const,
+    queryFn: () =>
+      fetchWithAuth(`/api/v1/tests/${testId}/visual/rejection?runId=${runId}`, token) as Promise<RejectionStatus>,
+    enabled: !!token && !!testId && !!runId,
+    staleTime: 30 * 1000,
+    gcTime: 60 * 1000,
+  });
+}

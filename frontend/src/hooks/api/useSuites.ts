@@ -405,6 +405,22 @@ export function useInvalidateSuites() {
   };
 }
 
+/**
+ * Hook to fetch all suites across all projects
+ * Feature #712: Used by TestDocumentationPage for documentation generation
+ */
+export function useAllSuites() {
+  const token = useAuthStore(state => state.token);
+
+  return useQuery({
+    queryKey: [...suiteKeys.lists(), 'all'] as const,
+    queryFn: () => fetchWithAuth('/api/v1/suites', token) as Promise<TestSuite[]>,
+    enabled: !!token,
+    staleTime: 60 * 1000, // 1 minute
+    gcTime: 2 * 60 * 1000,
+  });
+}
+
 // ============================================================
 // Feature #701: Review Settings Hooks
 // ============================================================
