@@ -945,6 +945,35 @@ export const dastProfileUpdateBodySchema = z.object({
 });
 
 /**
+ * Feature #715: DAST config update body (Partial<DASTConfig>)
+ */
+export const dastConfigUpdateBodySchema = z.object({
+  enabled: z.boolean().optional(),
+  targetUrl: z.string().url().optional(),
+  scanProfile: z.enum(['baseline', 'full', 'api']).optional(),
+  authConfig: z.object({
+    enabled: z.boolean(),
+    loginUrl: z.string().url().optional(),
+    usernameField: z.string().optional(),
+    passwordField: z.string().optional(),
+    submitSelector: z.string().optional(),
+    loggedInIndicator: z.string().optional(),
+    credentials: z.object({
+      username: z.string(),
+      password: z.string(),
+    }).optional(),
+  }).optional(),
+  contextConfig: z.object({
+    includeUrls: z.array(z.string()).optional(),
+    excludeUrls: z.array(z.string()).optional(),
+    maxCrawlDepth: z.number().int().min(1).max(10).optional(),
+  }).optional(),
+  alertThreshold: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+  autoScan: z.boolean().optional(),
+  openApiSpecId: z.string().optional(),
+});
+
+/**
  * DAST OpenAPI upload body
  */
 export const dastOpenApiBodySchema = z.object({
@@ -1106,4 +1135,5 @@ export type McpChatBodyInput = z.infer<typeof mcpChatBodySchema>;
 export type McpChatVisionBodyInput = z.infer<typeof mcpChatVisionBodySchema>;
 export type SastConfigUpdateBodyInput = z.infer<typeof sastConfigUpdateBodySchema>;
 export type DastProfileUpdateBodyInput = z.infer<typeof dastProfileUpdateBodySchema>;
+export type DastConfigUpdateBodyInput = z.infer<typeof dastConfigUpdateBodySchema>;
 export type DastScheduleBodyInput = z.infer<typeof dastScheduleBodySchema>;

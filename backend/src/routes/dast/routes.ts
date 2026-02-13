@@ -57,6 +57,7 @@ import {
   dastReportQuerySchema,
   dastStatsQuerySchema,
   dastOpenApiUploadBodySchema,
+  dastConfigUpdateBodySchema,
   dastGraphqlScanBodySchema,
   dastGraphqlIntrospectBodySchema,
   dastGraphqlScanIdParamsSchema,
@@ -101,13 +102,13 @@ export async function dastRoutes(app: FastifyInstance) {
   });
 
   // Update DAST config for a project
-  // Feature #715: Zod validation for projectId param
+  // Feature #715: Zod validation for projectId param and config body
   app.put<{
     Params: { projectId: string };
     Body: Partial<DASTConfig>;
   }>('/api/v1/projects/:projectId/dast/config', {
     preHandler: [authenticate, requireScopes(['write'])],
-    preValidation: [validateParams(dastProjectIdParamsSchema)],
+    preValidation: [validateParams(dastProjectIdParamsSchema), validateBody(dastConfigUpdateBodySchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const orgId = getOrganizationId(request);

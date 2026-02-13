@@ -80,6 +80,7 @@ import {
   sastDashboardQuerySchema,
   sastTrendsQuerySchema,
   sastScansQuerySchema,
+  sastConfigUpdateBodySchema,
 } from '../../validation/index.js';
 
 /**
@@ -536,10 +537,10 @@ export async function coreRoutes(app: FastifyInstance) {
   });
 
   // Update SAST configuration for a project
-  // Feature #715: Zod validation for projectId param
+  // Feature #715: Zod validation for projectId param and config body
   app.put<{ Params: { projectId: string }; Body: Partial<SASTConfig> }>('/api/v1/projects/:projectId/sast/config', {
     preHandler: [authenticate],
-    preValidation: [validateParams(sastProjectIdParamsSchema)],
+    preValidation: [validateParams(sastProjectIdParamsSchema), validateBody(sastConfigUpdateBodySchema)],
   }, async (request, reply) => {
     const { projectId } = request.params;
     const user = request.user as JwtPayload;
