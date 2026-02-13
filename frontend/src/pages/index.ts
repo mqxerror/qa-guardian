@@ -33,7 +33,6 @@ export { ContainerScanPage } from './ContainerScanPage';
 export { DependencyPolicyPage } from './DependencyPolicyPage';
 export { MultiLanguageDependencyPage } from './MultiLanguageDependencyPage';
 export { VulnerabilityHistoryPage } from './VulnerabilityHistoryPage';
-export { ScanCachingPage } from './ScanCachingPage';
 // Feature #412: KieAIProviderPage content moved to SettingsPage AI tab
 // Feature #412: AnthropicProviderPage content moved to SettingsPage AI tab
 export { DependencyAlertsPage } from './DependencyAlertsPage';

@@ -140,42 +140,6 @@ export interface ScanVulnerability {
   affected_versions?: string;
 }
 
-export interface ScanCacheEntry {
-  id: string;
-  scan_type: string;
-  cache_key: string;
-  status: 'valid' | 'stale' | 'invalidated';
-  hit_count: number;
-  scan_duration_ms: number;
-  dependencies: number;
-  vulnerabilities: number;
-  created_at: string;
-  expires_at: string;
-  last_accessed: string;
-}
-
-export interface CacheConfig {
-  enabled: boolean;
-  ttl_hours: number;
-  max_entries: number;
-  invalidation_triggers: string[];
-  compression_enabled: boolean;
-}
-
-export interface CacheStats {
-  project_id: string;
-  total_entries: number;
-  valid_entries: number;
-  stale_entries: number;
-  invalidated_entries: number;
-  total_cache_hits: number;
-  total_time_saved_ms: number;
-  cache_hit_rate: number;
-  storage_used_bytes: number;
-  oldest_entry: string | null;
-  newest_entry: string | null;
-}
-
 export interface ScanResult {
   scan_id: string;
   project_id: string;

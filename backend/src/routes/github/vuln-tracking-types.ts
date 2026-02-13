@@ -156,39 +156,6 @@ export interface ExploitabilityAnalysis {
   analysis_version: string;
 }
 
-export interface ScanCacheEntry {
-  id: string;
-  project_id: string;
-  scan_type: 'dependencies' | 'vulnerabilities' | 'licenses' | 'full';
-  cache_key: string;
-  package_lock_hash: string;
-  results: {
-    dependencies: number;
-    vulnerabilities: number;
-    scan_duration_ms: number;
-    timestamp: string;
-  };
-  metadata: {
-    node_version?: string;
-    package_manager: string;
-    dependency_count: number;
-    dev_dependency_count: number;
-  };
-  created_at: string;
-  expires_at: string;
-  hit_count: number;
-  last_accessed: string;
-  status: 'valid' | 'stale' | 'invalidated';
-}
-
-export interface CacheConfig {
-  enabled: boolean;
-  ttl_hours: number;
-  max_entries: number;
-  invalidation_triggers: string[];
-  compression_enabled: boolean;
-}
-
 // =====================================================
 // In-memory Storage
 // =====================================================
@@ -198,8 +165,6 @@ export const languageDependencies = new Map<string, LanguageDependency[]>();
 export const scanResults = new Map<string, LanguageScanResult[]>();
 export const vulnerabilityHistories = new Map<string, VulnerabilityHistory[]>();
 export const exploitabilityCache = new Map<string, ExploitabilityAnalysis>();
-export const scanCacheStore = new Map<string, ScanCacheEntry>();
-export const projectCacheConfigs = new Map<string, CacheConfig>();
 
 // =====================================================
 // NPM Command Output Interfaces
@@ -560,25 +525,4 @@ export function generateMockExploitabilityAnalysis(
     analyzed_at: new Date().toISOString(),
     analysis_version: '1.0.0',
   };
-}
-
-/**
- * Generate cache key for scan caching
- */
-export function generateCacheKey(projectId: string, scanType: string, packageHash: string): string {
-  return `${projectId}:${scanType}:${packageHash}`;
-}
-
-/**
- * Return empty cached dependencies - real caching not yet integrated.
- */
-export function generateMockCacheDependencies(_count: number): LanguageDependency[] {
-  return [];
-}
-
-/**
- * Return empty vulnerabilities list - real scanning not yet integrated.
- */
-export function generateMockVulnerabilities(_count: number): VulnerabilityHistory[] {
-  return [];
 }
