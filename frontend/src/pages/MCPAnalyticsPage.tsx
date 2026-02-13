@@ -8,21 +8,7 @@ import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { Zap, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 
-// Types for MCP Analytics
-interface MCPUsageStats {
- tool_name: string;
- call_count: number;
- success_count: number;
- error_count: number;
- avg_duration_ms: number;
- last_used: string;
-}
-
-interface MCPTimeSeriesData {
- date: string;
- calls: number;
- errors: number;
-}
+import type { MCPUsageStats, MCPTimeSeriesData } from '@/types/mcp';
 
 export function MCPAnalyticsPage() {
  const { token } = useAuthStore();

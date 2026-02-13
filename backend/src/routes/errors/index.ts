@@ -53,6 +53,26 @@ interface BrowserCountRow {
   count: string;
 }
 
+// Feature #731: Row interfaces for INSERT/UPDATE RETURNING queries
+interface ErrorInsertRow {
+  id: string;
+  created_at: string | Date;
+}
+
+interface CountRow {
+  count: string;
+}
+
+interface ErrorResolveRow {
+  id: string;
+  resolved: boolean;
+  resolved_at: string | Date;
+}
+
+interface RecentCountRow {
+  count: string;
+}
+
 /**
  * Parse user agent string to extract browser and OS
  */
@@ -158,7 +178,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
     const { browser, os } = parseUserAgent(userAgent);
 
     try {
-      const result = await pool.query(
+      const result = await pool.query<ErrorInsertRow>(
         `INSERT INTO frontend_errors (
           organization_id,
           user_id,
@@ -258,14 +278,14 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
         }
 
         // Get total count
-        const countResult = await pool.query(
-          `SELECT COUNT(*) FROM frontend_errors ${whereClause}`,
+        const countResult = await pool.query<CountRow>(
+          `SELECT COUNT(*) as count FROM frontend_errors ${whereClause}`,
           params
         );
         const total = parseInt(countResult.rows[0].count, 10);
 
         // Get errors
-        const result = await pool.query(
+        const result = await pool.query<ErrorRow>(
           `SELECT
             id, organization_id, user_id, error_message, error_stack,
             component_stack, url, user_agent, browser, os, screen_resolution,
@@ -278,7 +298,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
         );
 
         return reply.send({
-          errors: result.rows.map((row: ErrorRow) => ({
+          errors: result.rows.map((row) => ({
             id: row.id,
             organizationId: row.organization_id,
             userId: row.user_id,
@@ -332,7 +352,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
       }
 
       try {
-        const result = await pool.query(
+        const result = await pool.query<ErrorResolveRow>(
           `UPDATE frontend_errors
           SET resolved = true, resolved_at = NOW(), resolved_by = $1
           WHERE id = $2 AND organization_id = $3
@@ -415,7 +435,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
 
       try {
         // Get counts by status
-        const countResult = await pool.query(
+        const countResult = await pool.query<ResolvedCountRow>(
           `SELECT resolved, COUNT(*) as count
           FROM frontend_errors
           WHERE organization_id = $1
@@ -424,7 +444,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
         );
 
         // Get counts by URL (top 10)
-        const urlResult = await pool.query(
+        const urlResult = await pool.query<UrlCountRow>(
           `SELECT url, COUNT(*) as count
           FROM frontend_errors
           WHERE organization_id = $1
@@ -435,7 +455,7 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
         );
 
         // Get counts by browser
-        const browserResult = await pool.query(
+        const browserResult = await pool.query<BrowserCountRow>(
           `SELECT browser, COUNT(*) as count
           FROM frontend_errors
           WHERE organization_id = $1 AND browser IS NOT NULL
@@ -445,15 +465,15 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
         );
 
         // Get recent error count (last 24h)
-        const recentResult = await pool.query(
+        const recentResult = await pool.query<RecentCountRow>(
           `SELECT COUNT(*) as count
           FROM frontend_errors
           WHERE organization_id = $1 AND created_at > NOW() - INTERVAL '24 hours'`,
           [organizationId]
         );
 
-        const resolvedRow = (countResult.rows as ResolvedCountRow[]).find((r) => r.resolved);
-        const unresolvedRow = (countResult.rows as ResolvedCountRow[]).find((r) => !r.resolved);
+        const resolvedRow = countResult.rows.find((r) => r.resolved);
+        const unresolvedRow = countResult.rows.find((r) => !r.resolved);
         const resolved = resolvedRow?.count || '0';
         const unresolved = unresolvedRow?.count || '0';
 
@@ -462,11 +482,11 @@ export async function errorsRoutes(app: FastifyInstance): Promise<void> {
           resolved: parseInt(resolved, 10),
           unresolved: parseInt(unresolved, 10),
           last24Hours: parseInt(recentResult.rows[0].count, 10),
-          topUrls: (urlResult.rows as UrlCountRow[]).map((r) => ({
+          topUrls: urlResult.rows.map((r) => ({
             url: r.url,
             count: parseInt(r.count, 10),
           })),
-          byBrowser: (browserResult.rows as BrowserCountRow[]).map((r) => ({
+          byBrowser: browserResult.rows.map((r) => ({
             browser: r.browser,
             count: parseInt(r.count, 10),
           })),

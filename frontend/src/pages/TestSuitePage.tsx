@@ -53,27 +53,7 @@ import {
   useAIHealthState, useReviewState, useSelectorEditState,
 } from '../components/suite-detail';
 
-// Suite run result for test status tracking (compatible with both SuiteRunResults and TestListSection)
-interface SuiteRunResultLocal {
-  test_id: string;
-  test_name: string;
-  test_type?: string;
-  status: 'passed' | 'failed' | 'error' | 'running' | 'skipped';
-  duration_ms: number;
-  error?: string;
-  diff_percentage?: number;
-}
-
-// Suite run state - matches component expectations
-// Feature #555: Added completed_at for export functionality
-interface SuiteRunLocal {
-  id: string;
-  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled';
-  started_at?: string;
-  completed_at?: string;
-  duration_ms?: number;
-  results?: SuiteRunResultLocal[];
-}
+import type { SuiteRunLocal } from '@/types/tests';
 
 function TestSuitePage() {
   const { suiteId } = useParams<{ suiteId: string }>();

@@ -134,12 +134,12 @@ export async function registerMcpRoutes(app: FastifyInstance) {
     let orgConnections: McpConnection[] = [];
     if (isDatabaseConnected()) {
       try {
-        const result = await query(
+        const result = await query<McpConnectionRow>(
           'SELECT * FROM mcp_connections WHERE organization_id = $1 ORDER BY connected_at DESC',
           [orgId]
         );
         if (result && result.rows) {
-          orgConnections = (result.rows as McpConnectionRow[]).map((row) => ({
+          orgConnections = result.rows.map((row) => ({
             id: row.id,
             api_key_id: row.api_key_id,
             api_key_name: row.api_key_name,

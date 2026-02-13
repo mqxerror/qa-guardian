@@ -9,61 +9,12 @@ import { ChevronRight, AlertCircle, Package, Shield, AlertTriangle, Search, Load
 // Feature #728: EmptyState adoption
 import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
-// Types for dependency data
-interface Vulnerability {
-  id: string;
-  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-  title: string;
-  fixed_version?: string;
-}
-
-interface Dependency {
-  id: string;
-  project_id: string;
-  language: 'javascript' | 'python' | 'java' | 'go' | 'rust';
-  name: string;
-  current_version: string;
-  latest_version: string;
-  license?: string;
-  is_dev: boolean;
-  is_transitive: boolean;
-  depth: number;
-  parent_package?: string;
-  registry: string;
-  vulnerabilities: Vulnerability[];
-  last_scanned_at: string;
-}
-
-// Tree node structure for visualization
-interface TreeNode {
-  id: string;
-  name: string;
-  version: string;
-  license?: string;
-  vulnerabilities: Vulnerability[];
-  isVulnerable: boolean;
-  isExpanded: boolean;
-  depth: number;
-  children: TreeNode[];
-  language: string;
-  isDev: boolean;
-}
-
-interface AllDependenciesResponse {
-  project_id: string;
-  dependencies_by_language: Record<string, Dependency[]>;
-  summary: Record<string, {
-    total: number;
-    direct: number;
-    transitive: number;
-    vulnerabilities: number;
-  }>;
-  totals: {
-    total_dependencies: number;
-    total_vulnerabilities: number;
-    languages_scanned: number;
-  };
-}
+import type {
+  DependencyVulnerability as Vulnerability,
+  Dependency,
+  TreeNode,
+  AllDependenciesResponse,
+} from '@/types/dependencies';
 
 // Build tree structure from flat dependencies
 function buildDependencyTree(

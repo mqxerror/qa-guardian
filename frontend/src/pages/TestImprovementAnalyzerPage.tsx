@@ -13,40 +13,7 @@ import { Button } from '@/components/ui/button';
 // Feature #728: EmptyState adoption
 import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
-// Types for test improvement analysis
-interface TestImprovementAnalysis {
- overall_score: number;
- summary: string;
- best_practices: Array<{
- category: string;
- issue: string;
- severity: 'low' | 'medium' | 'high';
- suggestion: string;
- code_example?: string;
- line_number?: number;
- }>;
- selector_improvements: Array<{
- original_selector: string;
- issue: string;
- suggested_selector: string;
- reason: string;
- confidence: number;
- }>;
- assertion_suggestions: Array<{
- location: string;
- current_assertion?: string;
- suggested_assertion: string;
- reason: string;
- priority: 'low' | 'medium' | 'high';
- }>;
- flakiness_risks: Array<{
- risk: string;
- severity: 'low' | 'medium' | 'high';
- location?: string;
- mitigation: string;
- code_example?: string;
- }>;
-}
+import type { TestImprovementAnalysis } from '@/types/tests';
 
 export function TestImprovementAnalyzerPage() {
  const token = useAuthStore(state => state.token);

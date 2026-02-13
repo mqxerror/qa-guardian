@@ -14,46 +14,12 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { useAuthStore } from '../stores/authStore';
 import { fetchWithAuth } from '../hooks/api/fetchWithAuth';
 
-interface ApprovalInfo {
-  status: 'pending' | 'approved' | 'rejected';
-  reviewed_by?: string;
-  reviewed_by_name?: string;
-  reviewed_at?: string;
-  review_comment?: string;
-  added_to_suite_id?: string;
-}
-
-interface PendingTest {
-  id: string;
-  description: string;
-  test_name: string;
-  generated_code: string;
-  language: string;
-  confidence_score: number;
-  confidence_level: 'high' | 'medium' | 'low';
-  version: number;
-  ai_metadata?: {
-    provider: string;
-    model: string;
-    used_real_ai: boolean;
-  };
-  approval: ApprovalInfo;
-  created_at: string;
-}
-
-interface ReviewQueueData {
-  pending: PendingTest[];
-  total_pending: number;
-  recently_reviewed: PendingTest[];
-}
-
-interface ApprovalStats {
-  pending: number;
-  approved: number;
-  rejected: number;
-  total: number;
-  approval_rate: string;
-}
+import type {
+  ApprovalInfo,
+  PendingTest,
+  ReviewQueueData,
+  ApprovalStats,
+} from '@/types/ai';
 
 // Query keys for cache management
 const reviewKeys = {

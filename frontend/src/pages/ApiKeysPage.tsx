@@ -15,15 +15,7 @@ import { Check, Clock, ChevronDown, Loader2 } from 'lucide-react';
 // Feature #728: EmptyState adoption
 import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
-interface ApiKey {
-  id: string;
-  name: string;
-  key?: string;  // Only present at creation time
-  key_prefix: string;
-  scopes: string[];
-  expires_at: string | null;
-  created_at: string;
-}
+import type { ApiKey } from '@/types/organization';
 
 export function ApiKeysPage() {
   const { user } = useAuthStore();

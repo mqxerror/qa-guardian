@@ -29,85 +29,12 @@ const analyticsKeys = {
   models: () => [...analyticsKeys.all, 'models'] as const,
 };
 
-// ============================================================================
-// Types
-// ============================================================================
-
-interface UsageAnalytics {
-  period: string;
-  start_date: string;
-  end_date: string;
-  total_requests: number;
-  total_cost: number;
-  total_tokens: number;
-  requests_by_provider: {
-    kie: { requests: number; cost: number; tokens: number; avg_latency_ms: number };
-    anthropic: { requests: number; cost: number; tokens: number; avg_latency_ms: number };
-  };
-  savings: {
-    total_saved: number;
-    percentage: number;
-    if_all_anthropic_cost: number;
-    actual_cost: number;
-  };
-  usage_by_day: Array<{
-    date: string;
-    kie_requests: number;
-    anthropic_requests: number;
-    kie_cost: number;
-    anthropic_cost: number;
-  }>;
-  usage_by_model: Record<string, { requests: number; cost: number; tokens: number; percentage: number }>;
-  usage_by_feature: Record<string, { requests: number; cost: number }>;
-  peak_usage: { hour: number; requests: number; day_of_week: string };
-}
-
-interface ProviderComparison {
-  period: string;
-  comparison: {
-    kie: {
-      total_requests: number;
-      total_cost: number;
-      total_tokens: number;
-      avg_tokens_per_request: number;
-      avg_cost_per_request: number;
-      avg_latency_ms: number;
-      cost_per_1k_tokens: number;
-    };
-    anthropic: {
-      total_requests: number;
-      total_cost: number;
-      total_tokens: number;
-      avg_tokens_per_request: number;
-      avg_cost_per_request: number;
-      avg_latency_ms: number;
-      cost_per_1k_tokens: number;
-    };
-  };
-  recommendation: string;
-  cost_difference_percent: number;
-}
-
-interface UsageTrends {
-  period: string;
-  trends: {
-    cost: { current: number; previous: number; change_percent: number; trend: string };
-    requests: { current: number; previous: number; change_percent: number; trend: string };
-    tokens: { current: number; previous: number; change_percent: number; trend: string };
-  };
-}
-
-interface CostBudget {
-  org_id: string;
-  monthly_budget: number;
-  warning_threshold_percent: number;
-  critical_threshold_percent: number;
-  auto_disable_on_limit: boolean;
-  current_month_spend: number;
-  budget_remaining: number;
-  percentage_used: number;
-  projected_month_end: number;
-}
+import type {
+  UsageAnalytics,
+  ProviderComparison,
+  UsageTrends,
+  CostBudget,
+} from '@/types/ai';
 
 // ============================================================================
 // Component

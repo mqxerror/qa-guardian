@@ -23,57 +23,11 @@ import {
   // XCircle, // Unused
 } from 'lucide-react';
 
-interface Vulnerability {
-  id: string;
-  package: string;
-  version: string;
-  fixed_version?: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  cvss_score: number;
-  in_base_image: boolean;
-}
-
-interface Layer {
-  id: string;
-  command: string;
-  size_mb: number;
-  vulnerability_count: number;
-  is_base_layer: boolean;
-}
-
-interface ScanResult {
-  scan_id: string;
-  image: {
-    reference: string;
-    name: string;
-    tag: string;
-    registry: string;
-  };
-  scan: {
-    status: string;
-    scanned_at: string;
-    scanner: string;
-    scanner_version: string;
-  };
-  summary: {
-    total_vulnerabilities: number;
-    by_severity: {
-      critical: number;
-      high: number;
-      medium: number;
-      low: number;
-    };
-    fixable: number;
-    from_base_image: number;
-  };
-  vulnerabilities: Vulnerability[];
-  layers?: Layer[];
-  base_image?: {
-    reference: string;
-    vulnerabilities: number;
-    recommendation: string;
-  };
-}
+import type {
+  ContainerVulnerability as Vulnerability,
+  ContainerLayer as Layer,
+  ContainerScanResult as ScanResult,
+} from '@/types/security';
 
 const severityColors = {
   critical: 'bg-destructive text-primary-foreground',

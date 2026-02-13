@@ -407,20 +407,23 @@ export async function checkBudgetAndAlert(
 /**
  * Get recent alerts for an organization
  */
-export async function getRecentAlerts(organizationId: string, limit: number = 10): Promise<Array<{
+// Feature #731: Row interface for AI usage alert queries
+interface AIUsageAlertRow {
   id: string;
   alert_type: string;
   threshold_percent: number;
   current_usage_usd: number;
   limit_usd: number;
   created_at: Date;
-}>> {
+}
+
+export async function getRecentAlerts(organizationId: string, limit: number = 10): Promise<AIUsageAlertRow[]> {
   if (!isDatabaseConnected()) {
     return [];
   }
 
   try {
-    const result = await query(
+    const result = await query<AIUsageAlertRow>(
       `SELECT id, alert_type, threshold_percent, current_usage_usd, limit_usd, created_at
        FROM ai_usage_alerts
        WHERE organization_id = $1
@@ -428,14 +431,7 @@ export async function getRecentAlerts(organizationId: string, limit: number = 10
        LIMIT $2`,
       [organizationId, limit]
     );
-    return (result?.rows || []) as Array<{
-      id: string;
-      alert_type: string;
-      threshold_percent: number;
-      current_usage_usd: number;
-      limit_usd: number;
-      created_at: Date;
-    }>;
+    return result?.rows || [];
   } catch (error) {
     logger.error({ error }, '[AI Usage] Failed to get recent alerts');
     return [];

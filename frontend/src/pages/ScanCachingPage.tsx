@@ -14,78 +14,12 @@ import { formatDuration } from '../utils/formatDuration';
 // Feature #317: API base URL from environment
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
-// Type definitions
-interface ScanDependency {
-  name: string;
-  version: string;
-  type?: 'production' | 'development' | 'optional' | 'peer';
-  license?: string;
-}
-
-interface ScanVulnerability {
-  id: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  title: string;
-  package_name: string;
-  affected_versions?: string;
-}
-
-interface ScanCacheEntry {
-  id: string;
-  scan_type: string;
-  cache_key: string;
-  status: 'valid' | 'stale' | 'invalidated';
-  hit_count: number;
-  scan_duration_ms: number;
-  dependencies: number;
-  vulnerabilities: number;
-  created_at: string;
-  expires_at: string;
-  last_accessed: string;
-}
-
-interface CacheConfig {
-  enabled: boolean;
-  ttl_hours: number;
-  max_entries: number;
-  invalidation_triggers: string[];
-  compression_enabled: boolean;
-}
-
-interface CacheStats {
-  project_id: string;
-  total_entries: number;
-  valid_entries: number;
-  stale_entries: number;
-  invalidated_entries: number;
-  total_cache_hits: number;
-  total_time_saved_ms: number;
-  cache_hit_rate: number;
-  storage_used_bytes: number;
-  oldest_entry: string | null;
-  newest_entry: string | null;
-}
-
-interface ScanResult {
-  scan_id: string;
-  project_id: string;
-  cache_hit: boolean;
-  cache_entry_id?: string;
-  scan_duration_ms: number;
-  saved_time_ms?: number;
-  results: {
-    dependencies: ScanDependency[];
-    vulnerabilities: ScanVulnerability[];
-    total_dependencies: number;
-    total_vulnerabilities: number;
-  };
-  cache_info: {
-    key: string;
-    created_at?: string;
-    expires_at?: string;
-    hit_count?: number;
-  };
-}
+import type {
+  ScanCacheEntry,
+  CacheConfig,
+  CacheStats,
+  ScanResult,
+} from '@/types/dependencies';
 
 export function ScanCachingPage() {
   const navigate = useNavigate();

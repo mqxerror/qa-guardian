@@ -11,70 +11,7 @@ import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { Button } from '../components/ui/button';
 
-// CVE vulnerability interface with NVD details
-interface CVEVulnerability {
- id: string;
- cveId: string;
- source: string;
- pkgName: string;
- installedVersion: string;
- fixedVersion?: string;
- severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
- title: string;
- description: string;
- cvss: {
- version: string;
- score: number;
- vector: string;
- attackVector: string;
- attackComplexity: string;
- privilegesRequired: string;
- userInteraction: string;
- scope: string;
- confidentiality: string;
- integrity: string;
- availability: string;
- };
- publishedDate: string;
- lastModifiedDate: string;
- nvdUrl: string;
- references: {
- url: string;
- source: string;
- tags: string[];
- }[];
- cwe: { id: string; name: string }[];
- affectedVersions: string;
- exploitabilityScore?: number;
- impactScore?: number;
-}
-
-// CVE scan result interface
-interface CVEScanResult {
- scanId: string;
- scanDate: string;
- projectName: string;
- totalDependencies: number;
- vulnerabilities: CVEVulnerability[];
- summary: {
- total: number;
- bySeverity: {
- critical: number;
- high: number;
- medium: number;
- low: number;
- };
- bySource: {
- nvd: number;
- ghsa: number;
- osv: number;
- };
- };
- progress?: {
- phase: string;
- percent: number;
- };
-}
+import type { CVEVulnerability, CVEScanResult } from '@/types/security';
 
 export function CVEDatabasePage() {
  const navigate = useNavigate();

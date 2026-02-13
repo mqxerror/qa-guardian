@@ -10,68 +10,12 @@ import { PageHeader } from '../components/ui';
 import { Button } from '../components/ui/button';
 import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
-// License types and their characteristics
-interface LicenseInfo {
- id: string;
- spdxId: string;
- name: string;
- category: 'permissive' | 'copyleft' | 'copyleft-weak' | 'proprietary' | 'public-domain' | 'unknown';
- copyleft: boolean;
- commercial: boolean;
- attribution: boolean;
- patentGrant: boolean;
- description: string;
- riskLevel: 'low' | 'medium' | 'high';
-}
-
-// Dependency with license information
-interface DependencyLicense {
- id: string;
- pkgName: string;
- version: string;
- license: LicenseInfo;
- isCompliant: boolean;
- warnings: string[];
- repository?: string;
- author?: string;
- dependencies?: number;
- source: 'direct' | 'transitive';
-}
-
-// License policy configuration
-interface LicensePolicy {
- id: string;
- name: string;
- allowedLicenses: string[]; // SPDX IDs
- deniedLicenses: string[]; // SPDX IDs
- requireApproval: string[]; // Licenses that need manual approval
- warnOnCopyleft: boolean;
- warnOnUnknown: boolean;
- failOnDenied: boolean;
- enabled: boolean;
-}
-
-// License scan result
-interface LicenseScanResult {
- id: string;
- status: 'pending' | 'scanning' | 'completed' | 'failed';
- startedAt: string;
- completedAt?: string;
- projectName: string;
- dependencies: DependencyLicense[];
- summary: {
- total: number;
- compliant: number;
- nonCompliant: number;
- warnings: number;
- byCategory: Record<string, number>;
- byRisk: { low: number; medium: number; high: number };
- };
- progress?: {
- phase: string;
- percentage: number;
- };
-}
+import type {
+  LicenseInfo,
+  DependencyLicense,
+  LicensePolicy,
+  LicenseScanResult,
+} from '@/types/security';
 
 // Common license definitions
 const LICENSE_DATABASE: Record<string, LicenseInfo> = {

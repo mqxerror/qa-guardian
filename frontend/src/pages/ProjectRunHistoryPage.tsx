@@ -17,25 +17,7 @@ import { getStatusColor, getStatusIcon } from '../constants/colors';
 import { useProject } from '../hooks/api/useProjects';
 import { useRunsByProject } from '../hooks/api/useRuns';
 
-interface TestRun {
- id: string;
- suite_id: string;
- suite_name: string;
- project_id?: string;
- test_id?: string;
- test_name?: string;
- status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled';
- browser?: string;
- branch?: string;
- created_at: string;
- started_at?: string;
- completed_at?: string;
- duration_ms?: number;
- results_count: number;
- passed_count: number;
- failed_count: number;
- skipped_count?: number;
-}
+import type { TestRun } from '@/types/tests';
 
 function ProjectRunHistoryPage() {
  const { projectId } = useParams<{ projectId: string }>();

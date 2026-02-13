@@ -44,60 +44,13 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 
-// ============================================================
-// Types
-// ============================================================
-
-interface WaveStep {
-  name: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  duration?: number;
-}
-
-interface WaveState {
-  wave: number;
-  name: string;
-  status: 'waiting' | 'running' | 'completed' | 'failed';
-  steps: WaveStep[];
-  startedAt?: Date;
-  completedAt?: Date;
-  duration?: number;
-  data?: Record<string, unknown>;
-  error?: string;
-}
-
-interface QuickTestSummary {
-  healthScore: number;
-  performanceScore: number;
-  securityScore: number;
-  accessibilityScore?: number;
-  apiScore?: number;
-  overallScore: number;
-}
-
-interface CompareState {
-  compareId: string | null;
-  runIdA: string | null;
-  runIdB: string | null;
-  urlA: string;
-  urlB: string;
-  statusA: 'idle' | 'running' | 'completed' | 'failed';
-  statusB: 'idle' | 'running' | 'completed' | 'failed';
-  wavesA: WaveState[];
-  wavesB: WaveState[];
-  summaryA: QuickTestSummary | null;
-  summaryB: QuickTestSummary | null;
-  startedAt: Date | null;
-}
-
-interface ScoreDelta {
-  health: number;
-  performance: number;
-  security: number;
-  accessibility: number;
-  api: number;
-  overall: number;
-}
+import type {
+  WaveStep,
+  WaveState,
+  QuickTestSummary,
+  CompareState,
+  ScoreDelta,
+} from '@/types/tests';
 
 // ============================================================
 // Constants - Feature #612: Centralized to constants/waves.ts

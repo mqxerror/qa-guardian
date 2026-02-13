@@ -54,6 +54,111 @@ function ensureResult<T extends QueryResultRow>(result: QueryResult<T> | null): 
   return result;
 }
 
+// ============================================
+// Feature #731: Row interfaces for typed DB queries
+// ============================================
+
+/** Database row type for license_policies table */
+interface LicensePolicyRow {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  allowed_licenses: string[];
+  blocked_licenses: string[];
+  policy_mode: string;
+  fail_on_unknown: boolean;
+  is_active: boolean;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+/** Database row type for license_scan_results table */
+interface LicenseScanResultRow {
+  id: string;
+  project_id: string;
+  organization_id: string;
+  scanned_at: string | Date;
+  scan_duration_ms: number | null;
+  policy_id: string | null;
+  total_packages: number;
+  compliant_packages: number;
+  violation_count: number;
+  unknown_license_count: number;
+  compliance_percentage: string | number;
+  license_summary: Record<string, number>;
+  violations: unknown[];
+  packages: unknown[] | null;
+  status: string;
+  error_message: string | null;
+  created_at: string | Date;
+}
+
+/** Database row type for sbom_entries table */
+interface SbomEntryRow {
+  id: string;
+  project_id: string;
+  organization_id: string;
+  format: string;
+  spec_version: string;
+  serial_number: string;
+  generated_at: string | Date;
+  generated_by: string;
+  total_components: number;
+  production_components: number;
+  dev_components: number;
+  unique_licenses: number;
+  license_distribution: Record<string, number>;
+  storage_location: string;
+  storage_bucket: string | null;
+  storage_key: string | null;
+  storage_path: string | null;
+  filename: string;
+  content_type: string;
+  size_bytes: number | null;
+  sbom_content: object | null;
+  eo_14028_compliant: boolean;
+  ntia_compliant: boolean;
+  missing_elements: string[];
+  created_at: string | Date;
+}
+
+/** Database row type for dependency_analysis table */
+interface DependencyAnalysisRow {
+  id: string;
+  project_id: string;
+  organization_id: string;
+  analyzed_at: string | Date;
+  analysis_duration_ms: number | null;
+  total_dependencies: number;
+  direct_dependencies: number;
+  transitive_dependencies: number;
+  production_dependencies: number;
+  dev_dependencies: number;
+  outdated_count: number;
+  major_updates_available: number;
+  minor_updates_available: number;
+  patch_updates_available: number;
+  vulnerable_count: number;
+  critical_vulnerabilities: number;
+  high_vulnerabilities: number;
+  medium_vulnerabilities: number;
+  low_vulnerabilities: number;
+  health_score: number | null;
+  outdated_packages: unknown[];
+  vulnerable_packages: unknown[];
+  ecosystem: string;
+  lockfile_path: string | null;
+  status: string;
+  error_message: string | null;
+  created_at: string | Date;
+}
+
+/** Database row type for COUNT(*) queries */
+interface CountRow {
+  total: string;
+}
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -187,7 +292,7 @@ export async function createLicensePolicy(
     throw new Error('Database not connected');
   }
 
-  const result = ensureResult(await query(
+  const result = ensureResult(await query<LicensePolicyRow>(
     `INSERT INTO license_policies (
       organization_id, name, description, allowed_licenses, blocked_licenses,
       policy_mode, fail_on_unknown, is_active
@@ -214,14 +319,14 @@ export async function createLicensePolicy(
 export async function getLicensePolicy(id: string): Promise<LicensePolicy | null> {
   if (!isDatabaseConnected()) return null;
 
-  const result = ensureResult(await query(`SELECT ${LICENSE_POLICY_COLUMNS} FROM license_policies WHERE id = $1`, [id]));
+  const result = ensureResult(await query<LicensePolicyRow>(`SELECT ${LICENSE_POLICY_COLUMNS} FROM license_policies WHERE id = $1`, [id]));
   return result.rows.length > 0 ? mapRowToLicensePolicy(result.rows[0]) : null;
 }
 
 export async function getLicensePolicyByOrg(organizationId: string): Promise<LicensePolicy | null> {
   if (!isDatabaseConnected()) return null;
 
-  const result = ensureResult(await query(
+  const result = ensureResult(await query<LicensePolicyRow>(
     `SELECT ${LICENSE_POLICY_COLUMNS} FROM license_policies WHERE organization_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1`,
     [organizationId]
   ));
@@ -270,7 +375,7 @@ export async function updateLicensePolicy(
   if (fields.length === 0) return getLicensePolicy(id);
 
   values.push(id);
-  const result = ensureResult(await query(
+  const result = ensureResult(await query<LicensePolicyRow>(
     `UPDATE license_policies SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
     values
   ));
@@ -285,17 +390,17 @@ export async function deleteLicensePolicy(id: string): Promise<boolean> {
   return (result.rowCount ?? 0) > 0;
 }
 
-function mapRowToLicensePolicy(row: Record<string, unknown>): LicensePolicy {
+function mapRowToLicensePolicy(row: LicensePolicyRow): LicensePolicy {
   return {
-    id: row.id as string,
-    organization_id: row.organization_id as string,
-    name: row.name as string,
-    description: row.description as string | null,
-    allowed_licenses: row.allowed_licenses as string[],
-    blocked_licenses: row.blocked_licenses as string[],
+    id: row.id,
+    organization_id: row.organization_id,
+    name: row.name,
+    description: row.description,
+    allowed_licenses: row.allowed_licenses,
+    blocked_licenses: row.blocked_licenses,
     policy_mode: row.policy_mode as 'strict' | 'warn' | 'disabled',
-    fail_on_unknown: row.fail_on_unknown as boolean,
-    is_active: row.is_active as boolean,
+    fail_on_unknown: row.fail_on_unknown,
+    is_active: row.is_active,
     created_at: new Date(row.created_at as string),
     updated_at: new Date(row.updated_at as string),
   };
@@ -312,7 +417,7 @@ export async function createLicenseScanResult(
     throw new Error('Database not connected');
   }
 
-  const dbResult = ensureResult(await query(
+  const dbResult = ensureResult(await query<LicenseScanResultRow>(
     `INSERT INTO license_scan_results (
       project_id, organization_id, scanned_at, scan_duration_ms, policy_id,
       total_packages, compliant_packages, violation_count, unknown_license_count,
@@ -350,14 +455,14 @@ export async function getLicenseScanResults(
   const { limit = 20, offset = 0 } = options;
 
   const [resultsRaw, countResultRaw] = await Promise.all([
-    query(
+    query<LicenseScanResultRow>(
       `SELECT ${LICENSE_SCAN_RESULT_COLUMNS} FROM license_scan_results
        WHERE project_id = $1
        ORDER BY scanned_at DESC
        LIMIT $2 OFFSET $3`,
       [projectId, limit, offset]
     ),
-    query(
+    query<CountRow>(
       'SELECT COUNT(*) as total FROM license_scan_results WHERE project_id = $1',
       [projectId]
     ),
@@ -374,7 +479,7 @@ export async function getLicenseScanResults(
 export async function getLatestLicenseScan(projectId: string): Promise<LicenseScanResult | null> {
   if (!isDatabaseConnected()) return null;
 
-  const result = ensureResult(await query(
+  const result = ensureResult(await query<LicenseScanResultRow>(
     `SELECT ${LICENSE_SCAN_RESULT_COLUMNS} FROM license_scan_results
      WHERE project_id = $1
      ORDER BY scanned_at DESC
@@ -397,24 +502,24 @@ export async function deleteOldLicenseScans(daysToKeep: number = 90): Promise<nu
   return result.rowCount ?? 0;
 }
 
-function mapRowToLicenseScanResult(row: Record<string, unknown>): LicenseScanResult {
+function mapRowToLicenseScanResult(row: LicenseScanResultRow): LicenseScanResult {
   return {
-    id: row.id as string,
-    project_id: row.project_id as string,
-    organization_id: row.organization_id as string,
+    id: row.id,
+    project_id: row.project_id,
+    organization_id: row.organization_id,
     scanned_at: new Date(row.scanned_at as string),
-    scan_duration_ms: row.scan_duration_ms as number | null,
-    policy_id: row.policy_id as string | null,
-    total_packages: row.total_packages as number,
-    compliant_packages: row.compliant_packages as number,
-    violation_count: row.violation_count as number,
-    unknown_license_count: row.unknown_license_count as number,
-    compliance_percentage: parseFloat(row.compliance_percentage as string),
-    license_summary: row.license_summary as Record<string, number>,
+    scan_duration_ms: row.scan_duration_ms,
+    policy_id: row.policy_id,
+    total_packages: row.total_packages,
+    compliant_packages: row.compliant_packages,
+    violation_count: row.violation_count,
+    unknown_license_count: row.unknown_license_count,
+    compliance_percentage: typeof row.compliance_percentage === 'string' ? parseFloat(row.compliance_percentage) : row.compliance_percentage,
+    license_summary: row.license_summary,
     violations: row.violations as LicenseScanResult['violations'],
     packages: row.packages as LicenseScanResult['packages'],
     status: row.status as 'completed' | 'failed' | 'partial',
-    error_message: row.error_message as string | null,
+    error_message: row.error_message,
     created_at: new Date(row.created_at as string),
   };
 }
@@ -430,7 +535,7 @@ export async function createSbomEntry(
     throw new Error('Database not connected');
   }
 
-  const result = ensureResult(await query(
+  const result = ensureResult(await query<SbomEntryRow>(
     `INSERT INTO sbom_entries (
       project_id, organization_id, format, spec_version, serial_number,
       generated_at, generated_by, total_components, production_components,
@@ -485,14 +590,14 @@ export async function getSbomEntries(
   }
 
   const [resultsRaw, countResultRaw] = await Promise.all([
-    query(
+    query<SbomEntryRow>(
       `SELECT ${SBOM_ENTRY_COLUMNS} FROM sbom_entries
        ${whereClause}
        ORDER BY generated_at DESC
        LIMIT $2 OFFSET $3`,
       params
     ),
-    query(
+    query<CountRow>(
       `SELECT COUNT(*) as total FROM sbom_entries ${whereClause}`,
       format ? [projectId, format] : [projectId]
     ),
@@ -509,7 +614,7 @@ export async function getSbomEntries(
 export async function getSbomEntry(id: string): Promise<SbomEntry | null> {
   if (!isDatabaseConnected()) return null;
 
-  const result = ensureResult(await query(`SELECT ${SBOM_ENTRY_COLUMNS} FROM sbom_entries WHERE id = $1`, [id]));
+  const result = ensureResult(await query<SbomEntryRow>(`SELECT ${SBOM_ENTRY_COLUMNS} FROM sbom_entries WHERE id = $1`, [id]));
   return result.rows.length > 0 ? mapRowToSbomEntry(result.rows[0]) : null;
 }
 
@@ -527,7 +632,7 @@ export async function getLatestSbom(
     params.push(format);
   }
 
-  const result = ensureResult(await query(
+  const result = ensureResult(await query<SbomEntryRow>(
     `SELECT ${SBOM_ENTRY_COLUMNS} FROM sbom_entries
      ${whereClause}
      ORDER BY generated_at DESC
@@ -550,32 +655,32 @@ export async function deleteOldSboms(daysToKeep: number = 180): Promise<number> 
   return result.rowCount ?? 0;
 }
 
-function mapRowToSbomEntry(row: Record<string, unknown>): SbomEntry {
+function mapRowToSbomEntry(row: SbomEntryRow): SbomEntry {
   return {
-    id: row.id as string,
-    project_id: row.project_id as string,
-    organization_id: row.organization_id as string,
+    id: row.id,
+    project_id: row.project_id,
+    organization_id: row.organization_id,
     format: row.format as 'cyclonedx' | 'spdx',
-    spec_version: row.spec_version as string,
-    serial_number: row.serial_number as string,
+    spec_version: row.spec_version,
+    serial_number: row.serial_number,
     generated_at: new Date(row.generated_at as string),
-    generated_by: row.generated_by as string,
-    total_components: row.total_components as number,
-    production_components: row.production_components as number,
-    dev_components: row.dev_components as number,
-    unique_licenses: row.unique_licenses as number,
-    license_distribution: row.license_distribution as Record<string, number>,
+    generated_by: row.generated_by,
+    total_components: row.total_components,
+    production_components: row.production_components,
+    dev_components: row.dev_components,
+    unique_licenses: row.unique_licenses,
+    license_distribution: row.license_distribution,
     storage_location: row.storage_location as 'database' | 'minio' | 'local',
-    storage_bucket: row.storage_bucket as string | null,
-    storage_key: row.storage_key as string | null,
-    storage_path: row.storage_path as string | null,
-    filename: row.filename as string,
-    content_type: row.content_type as string,
-    size_bytes: row.size_bytes as number | null,
-    sbom_content: row.sbom_content as object | null,
-    eo_14028_compliant: row.eo_14028_compliant as boolean,
-    ntia_compliant: row.ntia_compliant as boolean,
-    missing_elements: row.missing_elements as string[],
+    storage_bucket: row.storage_bucket,
+    storage_key: row.storage_key,
+    storage_path: row.storage_path,
+    filename: row.filename,
+    content_type: row.content_type,
+    size_bytes: row.size_bytes,
+    sbom_content: row.sbom_content,
+    eo_14028_compliant: row.eo_14028_compliant,
+    ntia_compliant: row.ntia_compliant,
+    missing_elements: row.missing_elements,
     created_at: new Date(row.created_at as string),
   };
 }
@@ -591,7 +696,7 @@ export async function createDependencyAnalysis(
     throw new Error('Database not connected');
   }
 
-  const result = ensureResult(await query(
+  const result = ensureResult(await query<DependencyAnalysisRow>(
     `INSERT INTO dependency_analysis (
       project_id, organization_id, analyzed_at, analysis_duration_ms,
       total_dependencies, direct_dependencies, transitive_dependencies,
@@ -644,14 +749,14 @@ export async function getDependencyAnalyses(
   const { limit = 20, offset = 0 } = options;
 
   const [resultsRaw, countResultRaw] = await Promise.all([
-    query(
+    query<DependencyAnalysisRow>(
       `SELECT ${DEPENDENCY_ANALYSIS_COLUMNS} FROM dependency_analysis
        WHERE project_id = $1
        ORDER BY analyzed_at DESC
        LIMIT $2 OFFSET $3`,
       [projectId, limit, offset]
     ),
-    query(
+    query<CountRow>(
       'SELECT COUNT(*) as total FROM dependency_analysis WHERE project_id = $1',
       [projectId]
     ),
@@ -668,7 +773,7 @@ export async function getDependencyAnalyses(
 export async function getLatestDependencyAnalysis(projectId: string): Promise<DependencyAnalysis | null> {
   if (!isDatabaseConnected()) return null;
 
-  const result = ensureResult(await query(
+  const result = ensureResult(await query<DependencyAnalysisRow>(
     `SELECT ${DEPENDENCY_ANALYSIS_COLUMNS} FROM dependency_analysis
      WHERE project_id = $1
      ORDER BY analyzed_at DESC
@@ -691,34 +796,34 @@ export async function deleteOldDependencyAnalyses(daysToKeep: number = 90): Prom
   return result.rowCount ?? 0;
 }
 
-function mapRowToDependencyAnalysis(row: Record<string, unknown>): DependencyAnalysis {
+function mapRowToDependencyAnalysis(row: DependencyAnalysisRow): DependencyAnalysis {
   return {
-    id: row.id as string,
-    project_id: row.project_id as string,
-    organization_id: row.organization_id as string,
+    id: row.id,
+    project_id: row.project_id,
+    organization_id: row.organization_id,
     analyzed_at: new Date(row.analyzed_at as string),
-    analysis_duration_ms: row.analysis_duration_ms as number | null,
-    total_dependencies: row.total_dependencies as number,
-    direct_dependencies: row.direct_dependencies as number,
-    transitive_dependencies: row.transitive_dependencies as number,
-    production_dependencies: row.production_dependencies as number,
-    dev_dependencies: row.dev_dependencies as number,
-    outdated_count: row.outdated_count as number,
-    major_updates_available: row.major_updates_available as number,
-    minor_updates_available: row.minor_updates_available as number,
-    patch_updates_available: row.patch_updates_available as number,
-    vulnerable_count: row.vulnerable_count as number,
-    critical_vulnerabilities: row.critical_vulnerabilities as number,
-    high_vulnerabilities: row.high_vulnerabilities as number,
-    medium_vulnerabilities: row.medium_vulnerabilities as number,
-    low_vulnerabilities: row.low_vulnerabilities as number,
-    health_score: row.health_score as number | null,
+    analysis_duration_ms: row.analysis_duration_ms,
+    total_dependencies: row.total_dependencies,
+    direct_dependencies: row.direct_dependencies,
+    transitive_dependencies: row.transitive_dependencies,
+    production_dependencies: row.production_dependencies,
+    dev_dependencies: row.dev_dependencies,
+    outdated_count: row.outdated_count,
+    major_updates_available: row.major_updates_available,
+    minor_updates_available: row.minor_updates_available,
+    patch_updates_available: row.patch_updates_available,
+    vulnerable_count: row.vulnerable_count,
+    critical_vulnerabilities: row.critical_vulnerabilities,
+    high_vulnerabilities: row.high_vulnerabilities,
+    medium_vulnerabilities: row.medium_vulnerabilities,
+    low_vulnerabilities: row.low_vulnerabilities,
+    health_score: row.health_score,
     outdated_packages: row.outdated_packages as DependencyAnalysis['outdated_packages'],
     vulnerable_packages: row.vulnerable_packages as DependencyAnalysis['vulnerable_packages'],
-    ecosystem: row.ecosystem as string,
-    lockfile_path: row.lockfile_path as string | null,
+    ecosystem: row.ecosystem,
+    lockfile_path: row.lockfile_path,
     status: row.status as 'completed' | 'failed' | 'partial',
-    error_message: row.error_message as string | null,
+    error_message: row.error_message,
     created_at: new Date(row.created_at as string),
   };
 }

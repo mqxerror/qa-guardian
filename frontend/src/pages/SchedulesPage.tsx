@@ -24,27 +24,7 @@ import { PageHeader } from '../components/ui';
 import { Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-// Feature #1256: AI Schedule Recommendation interfaces
-interface AIScheduleRecommendation {
- id: string;
- type: 'heavy' | 'quick' | 'balanced' | 'resource_optimal';
- suiteName: string;
- suiteId: string;
- currentSchedule?: string;
- recommendedSchedule: string;
- recommendedTime: string;
- reasoning: string;
- metrics: {
- avgDuration: number;
- resourceUsage: 'high' | 'medium' | 'low';
- teamActivity: 'peak' | 'off-peak' | 'quiet';
- };
- impact: {
- ciTimeSaved: number;
- costReduction: number;
- failureReduction: number;
- };
-}
+import type { AIScheduleRecommendation } from '@/types/tests';
 
 export function SchedulesPage() {
  const { user } = useAuthStore();

@@ -18,49 +18,7 @@ import {
 import { Button } from '../components/ui/button';
 import { Check, X, Loader2, CheckCircle2, FolderOpen, Server, Monitor, Clock, AlertTriangle } from 'lucide-react';
 
-// Types for Visual Review
-interface PendingVisualChange {
- runId: string;
- testId: string;
- testName: string;
- projectId?: string;
- projectName?: string;
- suiteId: string;
- suiteName?: string;
- diffPercentage?: number;
- screenshot?: string;
- baselineScreenshot?: string;
- diffImage?: string;
- startedAt?: string;
- viewport?: string;
-}
-
-// Feature #1251: Visual Change Impact Analysis
-interface VisualChangeImpactAnalysis {
- severity: 'minor' | 'moderate' | 'major' | 'critical';
- confidence: number;
- change_type: {
- category: string;
- description: string;
- };
- affected_areas: Array<{
- element: string;
- change_description: string;
- location: string;
- }>;
- user_impact: {
- severity: 'low' | 'medium' | 'high';
- description: string;
- affected_users: string;
- accessibility_impact: string;
- };
- recommendation: {
- action: 'approve' | 'investigate' | 'reject';
- reasoning: string;
- suggested_tests?: string[];
- };
- ai_summary: string;
-}
+import type { PendingVisualChange, VisualChangeImpactAnalysis } from '@/types/tests';
 
 export default function VisualReviewPage() {
  const { token } = useAuthStore();

@@ -12,74 +12,12 @@ import { Loader2, FileText, CheckCircle, Download, Check, AlertTriangle } from '
 // Feature #728: EmptyState adoption
 import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
-// Types
-interface SbomSummary {
-  total_components: number;
-  production_components: number;
-  dev_components: number;
-  unique_licenses: number;
-  license_distribution: Record<string, number>;
-}
-
-interface SbomDownload {
-  url: string;
-  filename: string;
-  content_type: string;
-  size_bytes: number;
-}
-
-interface SbomCompliance {
-  executive_order_14028: boolean;
-  ntia_minimum_elements: boolean;
-  missing_elements: string[];
-}
-
-interface SbomStorage {
-  location: 'minio' | 'local' | 'memory';
-  bucket?: string;
-  key?: string;
-  path?: string;
-}
-
-interface GeneratedSbom {
-  sbom_id: string;
-  project_id: string;
-  project_name: string;
-  format: 'cyclonedx' | 'spdx';
-  spec_version: string;
-  generated_at: string;
-  generated_by: string;
-  summary: SbomSummary;
-  download: SbomDownload;
-  sbom: Record<string, unknown>;
-  storage: SbomStorage;
-  compliance: SbomCompliance;
-}
-
-interface StoredSbom {
-  id: string;
-  format: 'cyclonedx' | 'spdx';
-  spec_version: string;
-  generated_at: string;
-  generated_by: string;
-  filename: string;
-  size_bytes: number;
-  component_count: number;
-  download_url: string;
-}
-
-interface SbomListResponse {
-  project_id: string;
-  project_name: string;
-  sboms: StoredSbom[];
-  total: number;
-}
-
-interface Project {
-  id: string;
-  name: string;
-  description?: string;
-}
+import type {
+  GeneratedSbom,
+  StoredSbom,
+  SbomListResponse,
+} from '@/types/dependencies';
+import type { Project } from '@/types/organization';
 
 // API functions
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';

@@ -6,23 +6,7 @@ import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 import { toast } from '../stores/toastStore';
 
-// Feature #1232: MCP Tools Catalog interface
-interface MCPToolInfo {
- name: string;
- description: string;
- category: string;
- permission: 'read' | 'write' | 'execute' | 'admin';
- inputSchema?: {
- type: string;
- properties?: Record<string, {
- type: string;
- description?: string;
- enum?: string[];
- default?: unknown;
- }>;
- required?: string[];
- };
-}
+import type { MCPToolInfo } from '@/types/mcp';
 
 export function MCPToolsPage() {
  const { token } = useAuthStore();

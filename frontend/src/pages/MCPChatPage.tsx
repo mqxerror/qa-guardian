@@ -41,13 +41,7 @@ function getSlashCommandSuggestions(input: string): SlashCommandSuggestion[] {
  return slashCommandRegistry.getSuggestions(input);
 }
 
-// Feature #1729: Quick action button interface
-interface QuickAction {
- label: string;
- command: string;
- icon?: string;
- variant?: 'default' | 'primary' | 'secondary';
-}
+import type { QuickAction, MCPChatMessage } from '@/types/mcp';
 
 // Feature #1729: Generate quick action buttons based on context
 function generateQuickActions(toolUsed?: string, result?: Record<string, unknown>, content?: string): QuickAction[] {
@@ -129,24 +123,7 @@ function generateQuickActions(toolUsed?: string, result?: Record<string, unknown
  return actions.filter(a => a.command.length > 0);
 }
 
-// Types for MCP Chat
-interface MCPChatMessage {
- id: string;
- role: 'user' | 'assistant' | 'system';
- content: string;
- timestamp: Date;
- toolCalled?: string;
- toolResult?: string;
- isCommand?: boolean;
- aiMetadata?: {
- used_real_ai: boolean;
- provider?: string;
- model?: string;
- execution_time_ms?: number;
- };
- // Feature #1729: Quick action buttons
- actions?: QuickAction[];
-}
+// Types for MCP Chat imported from @/types/mcp
 
 // Note: AIStatusResponse is imported from UnifiedAIService
 

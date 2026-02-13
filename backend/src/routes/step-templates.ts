@@ -47,6 +47,65 @@ function ensureResult<T extends QueryResultRow>(result: QueryResult<T> | null): 
   return result;
 }
 
+// ============================================
+// Feature #731: Row interfaces for typed DB queries
+// ============================================
+
+/** Database row type for step_templates table */
+interface StepTemplateRow {
+  id: string;
+  organization_id: string;
+  suite_id: string | null;
+  name: string;
+  description: string | null;
+  steps: string | TestStep[];  // JSON string or already-parsed array
+  tags: string[] | null;
+  created_by: string;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+/** Database row type for DELETE RETURNING id, name */
+interface DeletedTemplateRow {
+  id: string;
+  name: string;
+}
+
+/** Database row type for tests JOIN test_suites (append-steps, duplicate) */
+interface TestWithOrgRow {
+  id: string;
+  suite_id: string;
+  project_id: string;
+  name: string;
+  description: string | null;
+  type: string;
+  config: string | Record<string, unknown>;
+  code: string | null;
+  enabled: boolean;
+  priority: number;
+  tags: string[] | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+  organization_id: string;
+}
+
+/** Database row type for INSERT ... SELECT RETURNING * (duplicate test) */
+interface DuplicatedTestRow {
+  id: string;
+  suite_id: string;
+  project_id: string;
+  name: string;
+  description: string | null;
+  type: string;
+  config: string | Record<string, unknown>;
+  code: string | null;
+  enabled: boolean;
+  priority: number;
+  tags: string[] | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
 // Types
 interface StepTemplate {
   id: string;
@@ -111,7 +170,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     sql += ` ORDER BY created_at DESC`;
 
     try {
-      const result = ensureResult(await query(sql, params));
+      const result = ensureResult(await query<StepTemplateRow>(sql, params));
       return reply.send({
         templates: result.rows.map(row => ({
           ...row,
@@ -136,7 +195,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
 
     try {
-      const result = ensureResult(await query(
+      const result = ensureResult(await query<StepTemplateRow>(
         `SELECT ${STEP_TEMPLATE_COLUMNS} FROM step_templates WHERE id = $1 AND organization_id = $2`,
         [templateId, orgId]
       ));
@@ -185,7 +244,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     const id = crypto.randomUUID();
 
     try {
-      const result = ensureResult(await query(
+      const result = ensureResult(await query<StepTemplateRow>(
         `INSERT INTO step_templates (id, organization_id, suite_id, name, description, steps, tags, created_by)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
@@ -223,7 +282,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
 
     try {
       // Check exists
-      const existing = ensureResult(await query(
+      const existing = ensureResult(await query<StepTemplateRow>(
         `SELECT ${STEP_TEMPLATE_COLUMNS} FROM step_templates WHERE id = $1 AND organization_id = $2`,
         [templateId, orgId]
       ));
@@ -248,7 +307,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       updates.push(`updated_at = NOW()`);
       params.push(templateId, orgId);
 
-      const result = ensureResult(await query(
+      const result = ensureResult(await query<StepTemplateRow>(
         `UPDATE step_templates SET ${updates.join(', ')} WHERE id = $${idx++} AND organization_id = $${idx} RETURNING *`,
         params
       ));
@@ -282,7 +341,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
     }
 
     try {
-      const result = ensureResult(await query(
+      const result = ensureResult(await query<DeletedTemplateRow>(
         `DELETE FROM step_templates WHERE id = $1 AND organization_id = $2 RETURNING id, name`,
         [templateId, orgId]
       ));
@@ -320,7 +379,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
 
     try {
       // Get existing test
-      const testResult = ensureResult(await query(
+      const testResult = ensureResult(await query<TestWithOrgRow>(
         `SELECT t.*, ts.organization_id FROM tests t JOIN test_suites ts ON t.suite_id = ts.id WHERE t.id = $1`,
         [testId]
       ));
@@ -335,8 +394,8 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       }
 
       // Parse existing config and append steps
-      const config = safeJsonParseOrPassthrough(test.config, {} as Record<string, unknown>);
-      const existingSteps = config.steps || [];
+      const config = safeJsonParseOrPassthrough(test.config, {} as Record<string, unknown>) as Record<string, unknown>;
+      const existingSteps = (config.steps || []) as TestStep[];
       const startOrder = existingSteps.length;
 
       const appendedSteps = newSteps.map((s: TestStep, i: number) => ({
@@ -345,7 +404,8 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
         order: startOrder + i,
       }));
 
-      config.steps = [...existingSteps, ...appendedSteps];
+      const allSteps = [...existingSteps, ...appendedSteps];
+      config.steps = allSteps;
 
       // Update the test
       await query(
@@ -356,7 +416,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       return reply.send({
         message: `${appendedSteps.length} steps appended to test`,
         test_id: testId,
-        total_steps: config.steps.length,
+        total_steps: allSteps.length,
       });
     } catch (error) {
       log.error({ err: error, testId, orgId, code: 'STEPS_APPEND_FAILED' }, 'Failed to append steps to test');
@@ -378,7 +438,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
 
     try {
       // Get existing test
-      const testResult = ensureResult(await query(
+      const testResult = ensureResult(await query<TestWithOrgRow>(
         `SELECT t.*, ts.organization_id FROM tests t JOIN test_suites ts ON t.suite_id = ts.id WHERE t.id = $1`,
         [testId]
       ));
@@ -395,7 +455,7 @@ export async function stepTemplateRoutes(app: FastifyInstance) {
       const newId = crypto.randomUUID();
       const newName = `${test.name} (Copy)`;
 
-      const result = ensureResult(await query(
+      const result = ensureResult(await query<DuplicatedTestRow>(
         `INSERT INTO tests (id, suite_id, project_id, name, description, type, config, code, enabled, priority, tags)
          SELECT $1, suite_id, project_id, $2, description, type, config, code, enabled, priority, tags
          FROM tests WHERE id = $3

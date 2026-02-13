@@ -10,23 +10,7 @@ import { toast } from '../stores/toastStore';
 import { Layout } from '../components/Layout';
 import { PageHeader } from '../components/ui';
 
-// Types for MCP Tools
-interface MCPToolInfo {
- name: string;
- description: string;
- category: string;
- permission: 'read' | 'write' | 'execute' | 'admin';
- inputSchema?: {
- type: string;
- properties?: Record<string, {
- type: string;
- description?: string;
- enum?: string[];
- default?: unknown;
- }>;
- required?: string[];
- };
-}
+import type { MCPToolInfo } from '@/types/mcp';
 
 export function MCPPlaygroundPage() {
  const { token } = useAuthStore();

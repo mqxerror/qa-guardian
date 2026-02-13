@@ -8,90 +8,15 @@ import { PageHeader } from '../components/ui';
 import { Button } from '../components/ui/button';
 import { Loader2, Download, Copy } from 'lucide-react';
 
-// Types for release notes generation
-interface Release {
- id: string;
- version: string;
- name: string;
- date: Date;
- testsAdded: number;
- testsModified: number;
- testsRemoved: number;
-}
-
-interface TestDelta {
- type: 'added' | 'modified' | 'removed';
- testName: string;
- suiteName: string;
- category: 'feature' | 'bugfix' | 'improvement' | 'refactor';
- description: string;
-}
-
-interface GeneratedReleaseNotes {
- version: string;
- releaseDate: string;
- summary: string;
- newFeatures: Array<{
- title: string;
- description: string;
- category?: string;
- relatedTests: string[];
- impact?: 'high' | 'medium' | 'low';
- }>;
- bugFixes: Array<{
- title: string;
- description: string;
- severity: 'critical' | 'major' | 'minor';
- relatedTests: string[];
- }>;
- improvements: Array<{
- title: string;
- description: string;
- }>;
- breakingChanges: string[];
- testingHighlights?: {
- testsAdded: number;
- testsModified: number;
- testsRemoved: number;
- coverageImpact: string;
- };
- markdownContent: string;
- htmlContent?: string;
- jsonContent?: object;
-}
-
-// API response types for release data
-interface APIRelease {
-  id: string;
-  version: string;
-  name: string;
-  date: string;
-  testsAdded: number;
-  testsModified: number;
-  testsRemoved: number;
-}
-
-interface APINewFeature {
-  title: string;
-  description: string;
-  category?: string;
-  relatedTests?: string[];
-  related_tests?: string[];
-  impact?: 'high' | 'medium' | 'low';
-}
-
-interface APIBugFix {
-  title: string;
-  description: string;
-  severity: 'critical' | 'major' | 'minor';
-  relatedTests?: string[];
-  related_tests?: string[];
-}
-
-interface APIImprovement {
-  title: string;
-  description: string;
-}
+import type {
+  Release,
+  TestDelta,
+  GeneratedReleaseNotes,
+  APIRelease,
+  APINewFeature,
+  APIBugFix,
+  APIImprovement,
+} from '@/types/ai';
 
 export function ReleaseNotesPage() {
  const { token } = useAuthStore();

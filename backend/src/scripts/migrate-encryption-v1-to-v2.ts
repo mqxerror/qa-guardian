@@ -25,6 +25,12 @@ interface EncryptedColumn {
   whereClause?: string;  // Optional additional WHERE clause filter (e.g., for is_secret=true)
 }
 
+// Feature #731: Row interface for dynamically-selected encrypted columns
+// Each row contains an ID column and an encrypted value column, both strings
+interface EncryptedValueRow {
+  [key: string]: string;
+}
+
 // List of tables/columns that may contain v1 encrypted data
 // Feature #239: Corrected targets - api_keys.key_hash was WRONG (it's a SHA-256 hash, not AES-encrypted)
 // Actual encrypted columns are:
@@ -57,7 +63,7 @@ async function migrateTable(
     // Feature #239: Support additional WHERE clause for tables like project_env_vars
     const baseQuery = `SELECT ${idColumn}, ${column} FROM ${table} WHERE ${column} IS NOT NULL`;
     const fullQuery = whereClause ? `${baseQuery} AND ${whereClause}` : baseQuery;
-    const result = await query<any>(fullQuery);
+    const result = await query<EncryptedValueRow>(fullQuery);
 
     if (!result || !result.rows) {
       migrationLogger.info({ table }, 'No rows found in table');

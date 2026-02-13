@@ -13,78 +13,13 @@ import { PageHeader } from '../components/ui';
 // Feature #712: React Query hook for suites
 import { useAllSuites } from '../hooks/api/useSuites';
 
-// Feature #1253: Test Documentation Page interfaces
-interface TestSuiteForDocs {
- id: string;
- name: string;
- testCount: number;
- description: string;
- projectId: string;
- projectName: string;
-}
-
-// API response type for suite data
-interface SuiteApiResponse {
- id: string;
- name: string;
- test_count?: number;
- description?: string;
- project_id: string;
- project_name?: string;
-}
-
-interface GeneratedDocumentation {
- featureDocumentation: {
- title: string;
- description: string;
- features: Array<{
- name: string;
- description: string;
- relatedTests: string[];
- coverage: string;
- }>;
- };
- userFlowDiagrams: Array<{
- flowName: string;
- steps: Array<{
- stepNumber: number;
- action: string;
- expectedResult: string;
- testCoverage: string;
- }>;
- mermaidDiagram: string;
- }>;
- coverageSummary: {
- totalTests: number;
- coveredFeatures: number;
- uncoveredFeatures: number;
- coveragePercentage: number;
- byCategory: Array<{
- category: string;
- tests: number;
- coverage: number;
- }>;
- recommendations: string[];
- };
-}
-
-// Feature #1254: Living documentation - Version history interfaces
-interface DocumentVersion {
- id: string;
- version: number;
- timestamp: Date;
- changeType: 'initial' | 'test_modified' | 'test_added' | 'test_removed' | 'auto_update';
- changedTests: string[];
- summary: string;
-}
-
-interface TestModification {
- testId: string;
- testName: string;
- originalCode: string;
- currentCode: string;
- lastModified: Date;
-}
+import type {
+  TestSuiteForDocs,
+  SuiteApiResponse,
+  GeneratedDocumentation,
+  DocumentVersion,
+  TestModification,
+} from '@/types/tests';
 
 export function TestDocumentationPage() {
  // Feature #712: Use React Query hook for suites

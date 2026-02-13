@@ -17,6 +17,18 @@ import { createLogger } from './logger.js';
 // Create a child logger for migrations
 const log = createLogger('migrations');
 
+// Feature #731: Row interfaces for migration status queries
+/** Row type for information_schema EXISTS check */
+interface TableExistsRow {
+  exists: boolean;
+}
+
+/** Row type for pgmigrations table */
+interface PgMigrationRow {
+  name: string;
+  run_on: string | Date;
+}
+
 /**
  * Detect if running from compiled JavaScript (dist/) or TypeScript source (src/)
  *
@@ -153,7 +165,7 @@ async function getMigrationStatusFromDb(databaseUrl: string): Promise<MigrationS
 
   try {
     // Check if pgmigrations table exists
-    const tableCheck = await pool.query(`
+    const tableCheck = await pool.query<TableExistsRow>(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables
         WHERE table_name = 'pgmigrations'
@@ -171,7 +183,7 @@ async function getMigrationStatusFromDb(databaseUrl: string): Promise<MigrationS
     }
 
     // Get applied migrations
-    const result = await pool.query(`
+    const result = await pool.query<PgMigrationRow>(`
       SELECT name, run_on
       FROM pgmigrations
       ORDER BY run_on DESC

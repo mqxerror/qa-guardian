@@ -15,73 +15,14 @@ import { EmptyState, EmptyStates, EmptyStateIcons } from '../components/ui/Empty
 import { CodeDiffView } from '../components/diff';
 import { ConfidenceBreakdown, MonacoTestEditor } from '../components/ai';
 
-interface ConfidenceDetails {
- level: 'high' | 'medium' | 'low';
- score: number;
- reasons?: string[];
- suggestions?: string[];
-}
-
-interface GeneratedTest {
- test_name: string;
- test_code: string;
- language: string;
- confidence_score?: number;
- confidence_details?: ConfidenceDetails;
- suggested_variations?: string[];
- improvement_suggestions?: string[];
- ai_metadata?: {
- provider: string;
- model: string;
- used_real_ai: boolean;
- };
- data_source: string;
- version?: number;
-}
-
-interface VersionHistory {
- version: number;
- code: string;
- feedback?: string;
- timestamp: Date;
-}
-
-interface GenerationOptions {
- language: 'typescript' | 'javascript';
- includeComments: boolean;
- includeAssertions: boolean;
- targetUrl: string;
- testFramework: string;
-}
-
-// Feature #1499: Saved generation from history API
-// Feature #1500: Approval workflow
-interface ApprovalInfo {
- status: 'pending' | 'approved' | 'rejected';
- reviewed_by?: string;
- reviewed_by_name?: string;
- reviewed_at?: string;
- review_comment?: string;
-}
-
-interface SavedGeneration {
- id: string;
- description: string;
- test_name: string;
- generated_code: string;
- language: string;
- confidence_score: number;
- confidence_level: 'high' | 'medium' | 'low';
- version: number;
- feedback?: string;
- ai_metadata?: {
- provider: string;
- model: string;
- used_real_ai: boolean;
- };
- approval?: ApprovalInfo;
- created_at: string;
-}
+import type {
+  ConfidenceDetails,
+  GeneratedTest,
+  VersionHistory,
+  GenerationOptions,
+  ApprovalInfo,
+  SavedGeneration,
+} from '@/types/ai';
 
 export function AITestGeneratorPage() {
  const [description, setDescription] = useState('');

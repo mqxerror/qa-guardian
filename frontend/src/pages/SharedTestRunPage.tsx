@@ -15,42 +15,10 @@ import { Lock, Loader2, Clock, Calendar, Mail, ExternalLink, LogIn, Image, X, Ch
 import { useSharedRun, type SharedTestRun, type ExpiredLinkInfo } from '../hooks/api/useSharedRuns';
 import { Button } from '@/components/ui/button';
 
-// Types from the main test run page - using hook types where applicable
-interface StepResult {
- id: string;
- action: string;
- selector?: string;
- value?: string;
- status: 'passed' | 'failed' | 'skipped' | 'warning';
- duration_ms: number;
- error?: string;
-}
-
-interface TestRunResult {
- test_id: string;
- test_name: string;
- test_type?: string;
- status: 'passed' | 'failed' | 'error' | 'skipped';
- duration_ms: number;
- steps: StepResult[];
- error?: string;
- screenshot_base64?: string;
-}
+import type { StepResult, TestRunResult, GalleryScreenshot } from '@/types/tests';
 
 // Re-export TestRun type from hook for consistency
 type TestRun = SharedTestRun;
-
-// Feature #2006: Screenshot gallery item interface
-interface GalleryScreenshot {
- id: string;
- url: string;
- title: string;
- testName: string;
- testType: 'E2E' | 'Visual' | 'Accessibility' | 'Performance' | 'Load';
- status: 'passed' | 'failed';
- type: 'final' | 'baseline' | 'diff' | 'step';
- timestamp?: number;
-}
 
 export default function SharedTestRunPage() {
  const { token } = useParams<{ token: string }>();

@@ -26,15 +26,7 @@ import { Plus, Archive, RotateCcw, Loader2 } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Button } from '@/components/ui/button';
 
-interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  slug: string;
-  created_at: string;
-  archived?: boolean;
-  archived_at?: string;
-}
+import type { Project } from '@/types/organization';
 
 export function ProjectsPage() {
   const { token, user } = useAuthStore();

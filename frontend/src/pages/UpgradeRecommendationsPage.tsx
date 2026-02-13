@@ -22,57 +22,8 @@ import {
   Info
 } from 'lucide-react';
 
-interface Recommendation {
-  package: string;
-  current_version: string;
-  recommended_version: string;
-  latest_version: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  vulnerabilities: string[];
-  upgrade_type: 'patch' | 'minor' | 'major';
-  risk_level: 'safe' | 'caution' | 'breaking';
-  breaking_changes: boolean;
-  changelog_url: string;
-  description: string;
-  migration_notes?: string[];
-  alternative?: {
-    package: string;
-    reason: string;
-  };
-}
-
-interface UpgradeData {
-  project_id: string;
-  project_name: string;
-  recommendations: Recommendation[];
-  summary: {
-    total_recommendations: number;
-    by_risk_level: {
-      safe: number;
-      caution: number;
-      breaking: number;
-    };
-    by_severity: {
-      critical: number;
-      high: number;
-      medium: number;
-      low: number;
-    };
-    total_vulnerabilities: number;
-    actionable_now: number;
-  };
-  metadata: {
-    generated_at: string;
-    npm_registry_checked: boolean;
-    include_dev: boolean;
-    min_severity: string;
-  };
-}
-
-interface Project {
-  id: string;
-  name: string;
-}
+import type { Recommendation, UpgradeData } from '@/types/dependencies';
+import type { Project } from '@/types/organization';
 
 const riskColors = {
   safe: 'bg-success text-primary-foreground',

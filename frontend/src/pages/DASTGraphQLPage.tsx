@@ -10,72 +10,15 @@ import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/button';
 import { useAuthStore } from '../stores/authStore';
 
+import type {
+  GraphQLOperation,
+  GraphQLSchema,
+  GraphQLScanConfig,
+  GraphQLFinding,
+  GraphQLScanResult,
+} from '@/types/security';
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-
-// GraphQL scanning interfaces
-interface GraphQLOperation {
- name: string;
- type: 'query' | 'mutation' | 'subscription';
- args: { name: string; type: string; required: boolean }[];
- returnType: string;
- description?: string;
- deprecated?: boolean;
- deprecationReason?: string;
-}
-
-interface GraphQLSchema {
- queryType: string | null;
- mutationType: string | null;
- subscriptionType: string | null;
- operations: GraphQLOperation[];
- types: { name: string; kind: string; fields: number }[];
-}
-
-interface GraphQLScanConfig {
- endpoint: string;
- introspectionEnabled: boolean;
- authHeader?: string;
- customHeaders?: Record<string, string>;
- maxDepth: number;
- includeMutations: boolean;
- includeSubscriptions: boolean;
- rateLimit: number;
-}
-
-interface GraphQLFinding {
- id: string;
- operationName: string;
- operationType: 'query' | 'mutation';
- severity: 'High' | 'Medium' | 'Low' | 'Informational';
- vulnerability: string;
- description: string;
- evidence?: string;
- cweId?: number;
- solution: string;
- testedPayload?: string;
-}
-
-interface GraphQLScanResult {
- id: string;
- status: 'pending' | 'introspecting' | 'scanning' | 'completed' | 'failed';
- startedAt: string;
- completedAt?: string;
- schema?: GraphQLSchema;
- operationsTested: { name: string; type: string; status: 'tested' | 'skipped' | 'failed' }[];
- findings: GraphQLFinding[];
- summary: {
- totalOperations: number;
- queriesTested: number;
- mutationsTested: number;
- totalFindings: number;
- bySeverity: { high: number; medium: number; low: number; informational: number };
- };
- progress?: {
- phase: string;
- percentage: number;
- currentOperation?: string;
- };
-}
 
 export function DASTGraphQLPage() {
  const navigate = useNavigate();

@@ -12,59 +12,12 @@ import { Button } from '@/components/ui/button';
 const logger = createLogger('multi-language-dep');
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 
-// Type definitions for multi-language dependency scanning
-interface LanguageScanConfig {
-  language: 'javascript' | 'python' | 'java' | 'go' | 'rust';
-  enabled: boolean;
-  manifest_files: string[];
-  lock_files: string[];
-  registries: string[];
-}
-
-interface MultiLanguageScanConfig {
-  organization_id: string;
-  enabled_languages: LanguageScanConfig[];
-  scan_dev_dependencies: boolean;
-  scan_transitive: boolean;
-  auto_detect_languages: boolean;
-  parallel_scanning: boolean;
-  cache_duration_hours: number;
-}
-
-interface LanguageDependency {
-  id: string;
-  project_id: string;
-  language: 'javascript' | 'python' | 'java' | 'go' | 'rust';
-  name: string;
-  current_version: string;
-  latest_version: string;
-  license?: string;
-  is_dev: boolean;
-  is_transitive: boolean;
-  depth: number;
-  parent_package?: string;
-  registry: string;
-  vulnerabilities: Array<{
-    id: string;
-    severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-    title: string;
-    fixed_version?: string;
-  }>;
-  last_scanned_at: string;
-}
-
-interface LanguageScanResult {
-  project_id: string;
-  language: string;
-  status: 'pending' | 'scanning' | 'completed' | 'failed';
-  total_dependencies: number;
-  direct_dependencies: number;
-  transitive_dependencies: number;
-  vulnerabilities_found: number;
-  started_at?: string;
-  completed_at?: string;
-  error_message?: string;
-}
+import type {
+  LanguageScanConfig,
+  MultiLanguageScanConfig,
+  LanguageDependency,
+  LanguageScanResult,
+} from '@/types/dependencies';
 
 export function MultiLanguageDependencyPage() {
   const navigate = useNavigate();

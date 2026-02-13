@@ -9,73 +9,16 @@ import { Button } from '../components/ui/button';
 import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 import { useAuthStore } from '../stores/authStore';
 
+import type {
+  DASTCompareRisk,
+  DASTCompareConfidence,
+  DASTCompareAlert,
+  DASTCompareScan,
+  DASTComparisonResult,
+} from '@/types/security';
+import type { ProjectOption } from '@/types/organization';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
-
-// Types
-type DASTCompareRisk = 'High' | 'Medium' | 'Low' | 'Informational';
-type DASTCompareConfidence = 'High' | 'Medium' | 'Low' | 'User Confirmed' | 'False Positive';
-
-interface DASTCompareAlert {
- id: string;
- pluginId: string;
- name: string;
- risk: DASTCompareRisk;
- confidence: DASTCompareConfidence;
- description: string;
- url: string;
- method: string;
- param?: string;
- attack?: string;
- evidence?: string;
- solution: string;
- cweId?: number;
-}
-
-interface DASTCompareScan {
- id: string;
- targetUrl: string;
- scanProfile: 'baseline' | 'full' | 'api';
- status: string;
- startedAt: string;
- completedAt?: string;
- alerts: DASTCompareAlert[];
- summary: {
- total: number;
- byRisk: { high: number; medium: number; low: number; informational: number; };
- };
- statistics?: {
- urlsScanned: number;
- requestsSent: number;
- duration: number;
- };
- progress?: {
- phase: string;
- percentage: number;
- alertsFound: number;
- urlsScanned: number;
- phaseDescription: string;
- };
-}
-
-interface DASTComparisonResult {
- scan1: DASTCompareScan;
- scan2: DASTCompareScan;
- newFindings: DASTCompareAlert[];
- fixedFindings: DASTCompareAlert[];
- unchangedFindings: DASTCompareAlert[];
- summary: {
- totalNew: number;
- totalFixed: number;
- totalUnchanged: number;
- riskDelta: { high: number; medium: number; low: number; informational: number; };
- overallImprovement: boolean;
- };
-}
-
-interface ProjectOption {
- id: string;
- name: string;
-}
 
 export function DASTComparisonPage() {
  const navigate = useNavigate();

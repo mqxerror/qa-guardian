@@ -16,36 +16,11 @@ import { PageHeader } from '../components/ui';
 import { Button } from '../components/ui/button';
 import { useAuthStore } from '../stores/authStore';
 
-interface GeneratedTest {
- path: string;
- method: string;
- operationId: string;
- summary: string;
- tags: string[];
- testName: string;
- testCode: string;
-}
-
-interface ParseResult {
- title: string;
- version: string;
- baseUrl: string;
- endpointCount: number;
- tags: Array<{ name: string; description?: string }>;
- paths: Array<{ path: string; methods: string[] }>;
-}
-
-interface GenerationResult {
- apiTitle: string;
- baseUrl: string;
- specVersion: string;
- summary: {
- total: number;
- byMethod: Record<string, number>;
- byTag: Record<string, number>;
- };
- tests: GeneratedTest[];
-}
+import type {
+  OpenAPIGeneratedTest as GeneratedTest,
+  ParseResult,
+  GenerationResult,
+} from '@/types/ai';
 
 type TabType = 'upload' | 'url';
 
