@@ -683,7 +683,7 @@ function TestDetailPage() {
     setLoadingBaseline,
     setBaselineHistory,
     setLoadingBaselineHistory,
-    addNotification,
+    addNotification: addNotification as (notification: { type: string; title: string; message: string; duration?: number }) => void,
   });
 
   // Wrapper for handleRejectChanges to pass state values
@@ -743,7 +743,7 @@ function TestDetailPage() {
     setIsCreatingSchedule,
     setQuickScheduleError,
     setShowQuickScheduleModal,
-    addNotification,
+    addNotification: addNotification as (notification: { type: string; title: string; message: string }) => void,
   });
 
   const handleOpenEditModal = () => {

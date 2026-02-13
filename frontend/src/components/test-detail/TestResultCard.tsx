@@ -268,7 +268,7 @@ function TestResultCardInner({
  diffOverlayOpacity={diffOverlayOpacity}
  setDiffOverlayOpacity={setDiffOverlayOpacity}
  imageZoomLevel={imageZoomLevel}
- setImageZoomLevel={setImageZoomLevel}
+ setImageZoomLevel={setImageZoomLevel as (level: string) => void}
  baselineContainerRef={baselineContainerRef}
  currentContainerRef={currentContainerRef}
  diffContainerRef={diffContainerRef}

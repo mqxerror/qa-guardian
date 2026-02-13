@@ -16,7 +16,6 @@ import { useAllSuites } from '../hooks/api/useSuites';
 
 import type {
   TestSuiteForDocs,
-  SuiteApiResponse,
   GeneratedDocumentation,
   DocumentVersion,
   TestModification,
@@ -40,13 +39,13 @@ export function TestDocumentationPage() {
  const [isRegenerating, setIsRegenerating] = useState(false);
 
  // Feature #712: Transform React Query data to component format
- const testSuites: TestSuiteForDocs[] = suitesData?.map((suite: SuiteApiResponse) => ({
+ const testSuites: TestSuiteForDocs[] = suitesData?.map((suite) => ({
    id: suite.id,
    name: suite.name,
    testCount: suite.test_count || Math.floor(Math.random() * 20) + 5,
    description: suite.description || 'Test suite for application testing',
-   projectId: suite.project_id,
-   projectName: suite.project_name || 'Default Project'
+   projectId: suite.project_id || '',
+   projectName: (suite as unknown as { project_name?: string }).project_name || 'Default Project'
  })) || [];
 
  // Feature #877: Use real data only, no demo fallback

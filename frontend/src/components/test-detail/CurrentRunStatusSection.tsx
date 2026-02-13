@@ -334,9 +334,9 @@ function CurrentRunStatusSectionInner({
                 onApproveBaseline={onApproveBaseline}
                 onRejectChanges={onRejectChanges}
                 a11ySeverityFilter={a11ySeverityFilter as Record<string, string>}
-                setA11ySeverityFilter={setA11ySeverityFilter}
+                setA11ySeverityFilter={setA11ySeverityFilter as React.Dispatch<React.SetStateAction<Record<string, string>>>}
                 a11yCategoryFilter={a11yCategoryFilter as Record<string, string>}
-                setA11yCategoryFilter={setA11yCategoryFilter}
+                setA11yCategoryFilter={setA11yCategoryFilter as React.Dispatch<React.SetStateAction<Record<string, string>>>}
                 a11ySearchQuery={a11ySearchQuery}
                 setA11ySearchQuery={setA11ySearchQuery}
                 formatDateTime={formatDateTime}

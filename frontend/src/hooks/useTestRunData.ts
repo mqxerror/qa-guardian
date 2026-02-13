@@ -86,9 +86,9 @@ export function useTestRunData(): UseTestRunDataReturn {
   const resultSummary = useMemo<ResultSummary>(() => {
     if (!run?.results) return { passed: 0, failed: 0, skipped: 0, total: 0 };
     return {
-      passed: run.results.filter(r => r.status === 'passed').length,
-      failed: run.results.filter(r => r.status === 'failed' || r.status === 'error').length,
-      skipped: run.results.filter(r => r.status === 'skipped').length,
+      passed: run.results.filter((r: { status: string }) => r.status === 'passed').length,
+      failed: run.results.filter((r: { status: string }) => r.status === 'failed' || r.status === 'error').length,
+      skipped: run.results.filter((r: { status: string }) => r.status === 'skipped').length,
       total: run.results.length,
     };
   }, [run]);

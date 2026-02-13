@@ -362,7 +362,8 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
       }),
       // Feature #2098: Migrate function to clear stale state with non-UUID organization_id
-      migrate: (persistedState: PersistedAuthState, _version: number) => {
+      migrate: (persistedState: unknown, _version: number) => {
+        const state = persistedState as PersistedAuthState | null;
         // Helper to validate UUID format
         const isValidUUID = (str: string | undefined): boolean => {
           if (!str) return false;
@@ -373,24 +374,24 @@ export const useAuthStore = create<AuthState>()(
         };
 
         // Check if persisted state has valid organization_id
-        if (persistedState?.user?.organization_id && !isValidUUID(persistedState.user.organization_id)) {
-          logger.auth.debug('Clearing stale auth state with invalid organization_id:', persistedState.user.organization_id);
+        if (state?.user?.organization_id && !isValidUUID(state.user.organization_id)) {
+          logger.auth.debug('Clearing stale auth state with invalid organization_id:', state.user.organization_id);
           return { token: null, refreshToken: null, user: null };
         }
 
         // Also validate user.id if present
-        if (persistedState?.user?.id && !isValidUUID(persistedState.user.id)) {
-          logger.auth.debug('Clearing stale auth state with invalid user.id:', persistedState.user.id);
+        if (state?.user?.id && !isValidUUID(state.user.id)) {
+          logger.auth.debug('Clearing stale auth state with invalid user.id:', state.user.id);
           return { token: null, refreshToken: null, user: null };
         }
 
-        return persistedState;
+        return state as PersistedAuthState;
       },
-      merge: (persistedState: PersistedAuthState, currentState: AuthState) => ({
+      merge: (persistedState: unknown, currentState: AuthState) => ({
         ...currentState,
-        ...persistedState,
-        user: persistedState?.user || null,
-        refreshToken: persistedState?.refreshToken || null, // Feature #213
+        ...(persistedState as PersistedAuthState),
+        user: (persistedState as PersistedAuthState)?.user || null,
+        refreshToken: (persistedState as PersistedAuthState)?.refreshToken || null, // Feature #213
       }),
     }
   )

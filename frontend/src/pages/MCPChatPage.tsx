@@ -230,7 +230,7 @@ Just type naturally and I'll help you manage your QA workflows!`,
  };
 
  // Legacy local responses for non-AI queries (status checks, help, etc.)
- const getLocalResponse = (userMessage: string): { content: string; toolCalled?: string; toolResult?: string; isCommand?: boolean } | null => {
+ const getLocalResponse = (userMessage: string): { content: string; toolCalled?: string; toolResult?: string; isCommand?: boolean; aiMetadata?: MCPChatMessage['aiMetadata']; actions?: QuickAction[] } | null => {
  const lowerMessage = userMessage.toLowerCase();
 
  // Feature #1692: Handle /help slash command locally

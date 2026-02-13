@@ -368,7 +368,8 @@ function QAChatWidget() {
       const isDashboard = lowerMessage.includes('dashboard') || lowerMessage.includes('home');
       const isError = lowerMessage.includes('error') || lowerMessage.includes('failure');
 
-      let pageAnalysis;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let pageAnalysis: any;
       if (isLogin || isError) {
         // Login page with error scenario
         pageAnalysis = {

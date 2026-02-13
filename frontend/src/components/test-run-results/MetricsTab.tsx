@@ -262,7 +262,7 @@ const MetricsTab: React.FC<MetricsTabProps> = ({
                 setPerfAIResult={setPerfAIResult}
                 perfAIError={perfAIError}
                 perfAIAnalysisOpen={perfAIAnalysisOpen}
-                analyzePerformanceResults={analyzePerformanceResults}
+                analyzePerformanceResults={analyzePerformanceResults as (testName: string, lighthouse: LighthouseResult, loadTest?: unknown) => void}
                 exportLighthousePDF={exportLighthousePDF}
               />
             );
@@ -302,7 +302,7 @@ const MetricsTab: React.FC<MetricsTabProps> = ({
                 k6ActiveTab={k6ActiveTab}
                 setK6ActiveTab={setK6ActiveTab}
                 k6ActiveChart={k6ActiveChart}
-                setK6ActiveChart={setK6ActiveChart}
+                setK6ActiveChart={setK6ActiveChart as (chart: string) => void}
                 k6ShowThresholds={k6ShowThresholds}
                 k6ExportFormat={k6ExportFormat}
                 setK6ExportFormat={setK6ExportFormat}

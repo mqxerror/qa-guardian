@@ -397,7 +397,7 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  const handleAIFormChange = useCallback((config: {
  testType: 'e2e' | 'visual' | 'accessibility' | 'performance' | 'load' | null;
  url: string | null;
- viewport: { preset: 'desktop' | 'tablet' | 'mobile' | 'custom'; width: number; height: number };
+ viewport: { preset: 'desktop' | 'tablet' | 'laptop' | 'mobile' | 'custom'; width: number; height: number };
  description: string;
  } | null, isValid: boolean) => {
  setIsStep2Valid(isValid);
