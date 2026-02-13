@@ -4,7 +4,7 @@ import { lazy, Suspense } from 'react';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RoleProtectedRoute } from './components/RoleProtectedRoute';
 import { RouteErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary';
-import { MCPHub, MCPHubIndex } from './components/MCPHub';
+import { MCPHub } from './components/MCPHub';
 import { useToastStore } from './stores/toastStore';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
@@ -526,7 +526,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<MCPHubIndex />} />
+          <Route index element={<Navigate to="/mcp/tools" replace />} />
           <Route path="tools" element={<MCPToolsPage />} />
           <Route path="playground" element={<MCPPlaygroundPage />} />
           <Route path="chat" element={<MCPChatPage />} />

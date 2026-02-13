@@ -173,16 +173,6 @@ export function MCPHub() {
  );
 }
 
-// Redirect component for index route
-export function MCPHubIndex() {
- const navigate = useNavigate();
-
- // Redirect to first tab (tools) if at /mcp
- React.useEffect(() => {
- navigate('/mcp/tools', { replace: true });
- }, [navigate]);
-
- return null;
-}
+// Feature #867: MCPHubIndex removed — /mcp now uses <Navigate to="/mcp/tools" replace /> in App.tsx
 
 export default MCPHub;
