@@ -41,7 +41,6 @@ const SbomPage = lazy(() => import('./pages/SbomPage').then(m => ({ default: m.S
 const ContainerScanPage = lazy(() => import('./pages/ContainerScanPage').then(m => ({ default: m.ContainerScanPage })));
 const DependencyTreePage = lazy(() => import('./pages/DependencyTreePage').then(m => ({ default: m.DependencyTreePage })));
 const DependencyPolicyPage = lazy(() => import('./pages/DependencyPolicyPage').then(m => ({ default: m.DependencyPolicyPage })));
-const MultiLanguageDependencyPage = lazy(() => import('./pages/MultiLanguageDependencyPage').then(m => ({ default: m.MultiLanguageDependencyPage })));
 const VulnerabilityHistoryPage = lazy(() => import('./pages/VulnerabilityHistoryPage').then(m => ({ default: m.VulnerabilityHistoryPage })));
 const DependencyAlertsPage = lazy(() => import('./pages/DependencyAlertsPage').then(m => ({ default: m.DependencyAlertsPage })));
 const MCPChatPage = lazy(() => import('./pages/MCPChatPage').then(m => ({ default: m.MCPChatPage })));
@@ -391,16 +390,6 @@ function App() {
             <ProtectedRoute>
               <PageErrorBoundary>
                 <DependencyPolicyPage />
-              </PageErrorBoundary>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/security/multi-language"
-          element={
-            <ProtectedRoute>
-              <PageErrorBoundary>
-                <MultiLanguageDependencyPage />
               </PageErrorBoundary>
             </ProtectedRoute>
           }
