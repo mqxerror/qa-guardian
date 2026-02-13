@@ -1,7 +1,7 @@
 # QA-Dam3oun (QA Guardian) - Claude Progress Tracker
 
 ## Current Status
-- **Progress: 712/732 features passing (97.3%)**
+- **Progress: 733/735 features passing (99.7%)**
 - **Last Updated**: 2026-02-13
 - **Pending**: 20 features
 - **In Progress**: None
@@ -46711,4 +46711,40 @@ ffbf96e3 - Feature #713: Zod validation rollout for Auth + Organization routes
 
 ### Conclusion
 714/732 features passing (97.5%). Feature 713 completed. App fully functional.
+
+
+---
+
+## Session 2026-02-13 (Session 279) - Feature #734: Fix Project Not Found Error
+
+### Summary
+Fixed critical bug where hardcoded orgId=1 in frontend hooks caused 400 Bad Request errors after Zod UUID validation was added in Feature #713.
+
+### Feature Status
+- 733/735 features passing (99.7%)
+- Completed: Feature #734
+
+### Root Cause Analysis
+Feature #713 added Zod validation to organization routes requiring UUID format for the `:id` parameter. However, 6 React Query hooks in `useSettings.ts` defaulted `orgId` to numeric `1` instead of the user's actual UUID. This caused `/api/v1/organizations/1/members` to fail with 400 Bad Request on every page load.
+
+### Files Changed
+1. **frontend/src/hooks/api/useSettings.ts** - Updated 6 hooks (useMembers, useInvitations, useSendInvitation, useCancelInvitation, useRemoveMember, useUpdateMemberRole) to:
+   - Remove default `= 1` parameter
+   - Auto-resolve orgId from auth store via `useAuthStore`
+   - Add `enabled` guard to prevent queries when orgId unavailable
+2. **frontend/src/pages/OrganizationMembersPage.tsx** - Pass `user?.organization_id` instead of `1`
+3. **frontend/src/components/settings/TeamTab.tsx** - Pass `user?.organization_id` instead of `1`
+
+### Verification
+- Frontend build: PASSED (0 errors)
+- Full navigation flow: Login → Dashboard → Projects → Suite → Test Detail - 0 console errors
+- Network: `/organizations/00000000-0000-0000-0000-000000000002/members` returns 200 OK (was 400)
+- Settings Team tab: Members load correctly with real data
+- Screenshots: feature-734-test-detail-no-errors.png, feature-734-settings-team-tab.png
+
+### Commit
+89cad14a - Fix hardcoded orgId=1 causing 400 errors after Zod validation rollout
+
+### Conclusion
+733/735 features passing (99.7%). Feature #734 completed. App fully functional with zero console errors.
 
