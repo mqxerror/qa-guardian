@@ -76,6 +76,8 @@ services:
     restart: unless-stopped
     ports:
       - "3006:3001"
+    # Feature #169: Safety net for any residual Chromium usage
+    shm_size: '2gb'
     env_file:
       - .env
     environment:
@@ -84,6 +86,8 @@ services:
       - NODE_OPTIONS=--max-old-space-size=1536
       # Feature #209: ZAP API key for DAST scanning
       - ZAP_API_KEY=${ZAP_API_KEY:-dev-zap-key-change-in-prod}
+      # Feature #169: API server only enqueues jobs, worker container executes them
+      - EXECUTION_MAX_CONCURRENCY=0
     volumes:
       - backend_data:/app/data
     depends_on:
@@ -105,6 +109,57 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
+
+  # ===========================================================================
+  # Test Execution Worker (Feature #169)
+  # ===========================================================================
+  # Separate worker for test execution to prevent Chromium OOM from killing API.
+  # Uses the same image as backend but runs the BullMQ worker entry point.
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: qa-guardian-worker
+    restart: unless-stopped
+    # Feature #169: Chromium needs larger /dev/shm for rendering
+    shm_size: '2gb'
+    command: ["node", "dist/worker.js"]
+    env_file:
+      - .env
+    environment:
+      - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
+      # Feature #156: Limit Node.js heap to leave room for Chromium
+      - NODE_OPTIONS=--max-old-space-size=1536
+      # Feature #169: Worker processes up to 2 test executions concurrently
+      - EXECUTION_MAX_CONCURRENCY=2
+      - EXECUTION_JOB_TIMEOUT=600000
+      - WORKER_HEALTH_PORT=3002
+      # Feature #209: ZAP API key for DAST scanning
+      - ZAP_API_KEY=${ZAP_API_KEY:-dev-zap-key-change-in-prod}
+    volumes:
+      - backend_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - qa-network
+    # Feature #169: Extra memory headroom for Chromium browser instances
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 3G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
 
   zap:
     image: ghcr.io/zaproxy/zaproxy:stable

@@ -121,8 +121,10 @@ services:
         max-file: "3"
 
   # ===========================================================================
-  # Backend API Server (with Playwright support for test execution)
+  # Backend API Server
   # ===========================================================================
+  # Feature #169: API server only enqueues jobs, worker container executes them.
+  # EXECUTION_MAX_CONCURRENCY=0 disables Chromium in the API container.
   backend:
     build:
       context: ../backend
@@ -130,11 +132,15 @@ services:
     image: qa-guardian-backend:${VERSION:-latest}
     container_name: qa-guardian-backend
     restart: unless-stopped
+    # Feature #169: Safety net for any residual Chromium usage
+    shm_size: '2gb'
     environment:
       NODE_ENV: production
       PORT: 3001
       # Playwright browsers location (for test execution)
       PLAYWRIGHT_BROWSERS_PATH: /home/nodejs/.cache/ms-playwright
+      # Feature #169: API server only enqueues jobs, worker container executes them
+      EXECUTION_MAX_CONCURRENCY: '0'
       # Database
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/qa_guardian
       # Redis
@@ -150,6 +156,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+      # Feature #220: Encryption key for sensitive data (GitHub tokens, env vars)
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
       # Frontend URL for CORS
       FRONTEND_URL: https://qa.pixelcraftedmedia.com
       # AI Configuration (optional)
@@ -199,6 +207,76 @@ services:
           memory: 2G
         reservations:
           memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ===========================================================================
+  # Test Execution Worker (Feature #169)
+  # ===========================================================================
+  # Separate worker for test execution to prevent Chromium OOM from killing API.
+  # Uses the same image as backend but runs the BullMQ worker entry point.
+  worker:
+    build:
+      context: ../backend
+      dockerfile: ../dokploy/Dockerfile.backend
+    image: qa-guardian-backend:${VERSION:-latest}  # Same image as backend
+    container_name: qa-guardian-worker
+    restart: unless-stopped
+    # Feature #169: Chromium needs larger /dev/shm for rendering
+    shm_size: '2gb'
+    command: ["node", "dist/worker.js"]
+    environment:
+      NODE_ENV: production
+      # Playwright browsers location (for test execution)
+      PLAYWRIGHT_BROWSERS_PATH: /home/nodejs/.cache/ms-playwright
+      # Feature #169: Worker processes up to 2 test executions concurrently
+      EXECUTION_MAX_CONCURRENCY: '2'
+      EXECUTION_JOB_TIMEOUT: '600000'
+      WORKER_HEALTH_PORT: '3002'
+      # Database
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/qa_guardian
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      # Storage (MinIO) - needed for artifact storage
+      STORAGE_ENDPOINT: minio
+      STORAGE_PORT: 9000
+      STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
+      STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-qa-guardian-artifacts}
+      STORAGE_USE_SSL: 'false'
+      # Feature #220: Encryption key for sensitive data (GitHub tokens, env vars)
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      # AI Configuration (optional - for AI-assisted test healing)
+      AI_PROVIDER_PRIMARY: ${AI_PROVIDER_PRIMARY:-kie}
+      AI_PROVIDER_FALLBACK: ${AI_PROVIDER_FALLBACK:-anthropic}
+      KIE_API_KEY: ${KIE_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    # Feature #169: Extra memory headroom for Chromium browser instances
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 3G
+        reservations:
+          memory: 1G
     logging:
       driver: "json-file"
       options:

@@ -95,6 +95,7 @@ services:
   # ===========================================================================
   # Backend API Server (Staging)
   # ===========================================================================
+  # Feature #169: API server only enqueues jobs, worker container executes them.
   backend-staging:
     build:
       context: ../backend
@@ -102,10 +103,14 @@ services:
     image: qa-guardian-backend:staging
     container_name: qa-guardian-backend-staging
     restart: unless-stopped
+    # Feature #169: Safety net for any residual Chromium usage
+    shm_size: '2gb'
     environment:
       NODE_ENV: production
       PORT: 3001
       PLAYWRIGHT_BROWSERS_PATH: /home/nodejs/.cache/ms-playwright
+      # Feature #169: API server only enqueues jobs, worker container executes them
+      EXECUTION_MAX_CONCURRENCY: '0'
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres-staging:5432/qa_guardian_staging
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis-staging:6379
       STORAGE_ENDPOINT: minio-staging
@@ -117,6 +122,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
       FRONTEND_URL: https://staging.qa.pixelcraftedmedia.com
       AI_PROVIDER_PRIMARY: ${AI_PROVIDER_PRIMARY:-kie}
       AI_PROVIDER_FALLBACK: ${AI_PROVIDER_FALLBACK:-anthropic}
@@ -160,6 +166,62 @@ services:
         limits:
           cpus: '1.0'
           memory: 1G
+
+  # ===========================================================================
+  # Test Execution Worker (Staging) (Feature #169)
+  # ===========================================================================
+  # Separate worker for test execution to prevent Chromium OOM from killing API.
+  worker-staging:
+    build:
+      context: ../backend
+      dockerfile: ../dokploy/Dockerfile.backend
+    image: qa-guardian-backend:staging  # Same image as backend
+    container_name: qa-guardian-worker-staging
+    restart: unless-stopped
+    # Feature #169: Chromium needs larger /dev/shm for rendering
+    shm_size: '2gb'
+    command: ["node", "dist/worker.js"]
+    environment:
+      NODE_ENV: production
+      PLAYWRIGHT_BROWSERS_PATH: /home/nodejs/.cache/ms-playwright
+      # Feature #169: Worker processes up to 2 test executions concurrently
+      EXECUTION_MAX_CONCURRENCY: '2'
+      EXECUTION_JOB_TIMEOUT: '600000'
+      WORKER_HEALTH_PORT: '3002'
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres-staging:5432/qa_guardian_staging
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis-staging:6379
+      STORAGE_ENDPOINT: minio-staging
+      STORAGE_PORT: 9000
+      STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
+      STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-qa-guardian-staging-artifacts}
+      STORAGE_USE_SSL: 'false'
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      AI_PROVIDER_PRIMARY: ${AI_PROVIDER_PRIMARY:-kie}
+      AI_PROVIDER_FALLBACK: ${AI_PROVIDER_FALLBACK:-anthropic}
+      KIE_API_KEY: ${KIE_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      postgres-staging:
+        condition: service_healthy
+      redis-staging:
+        condition: service_healthy
+      minio-staging:
+        condition: service_healthy
+    networks:
+      - internal-staging
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    # Feature #169: Smaller resource limits for staging
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
 
   # ===========================================================================
   # Frontend (Staging)

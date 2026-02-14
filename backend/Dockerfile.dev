@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
-RUN npx playwright install chromium
+# Install all Playwright browsers (Chromium, Firefox, WebKit) with system dependencies
+RUN npx playwright install --with-deps
 COPY . .
 RUN mkdir -p /app/data
 

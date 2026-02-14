@@ -31,6 +31,12 @@ services:
       - "traefik.http.services.qa-guardian-ws.loadbalancer.server.port=3001"
       - "traefik.http.routers.qa-guardian-ws.priority=10"
 
+  # Worker does NOT need Traefik labels - it is not HTTP-facing.
+  # It only needs the internal qa-network for Redis and PostgreSQL access.
+  worker:
+    networks:
+      qa-network: {}
+
   frontend:
     # Override networks: keep qa-network + add dokploy-network (for Traefik)
     networks:

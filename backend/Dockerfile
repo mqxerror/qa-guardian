@@ -107,8 +107,9 @@ COPY --from=builder /usr/local/bin/gitleaks /usr/local/bin/gitleaks
 COPY --from=builder /usr/local/lib/python3.11/dist-packages /usr/local/lib/python3.11/dist-packages
 COPY --from=builder /usr/local/bin/semgrep /usr/local/bin/semgrep
 
-# Install Playwright browsers (chromium only for minimal size)
-RUN npx playwright install chromium
+# Install all Playwright browsers (Chromium, Firefox, WebKit) with system dependencies
+# All three browsers are required for cross-browser testing functionality
+RUN npx playwright install --with-deps
 
 # Create directories for runtime data
 RUN mkdir -p /app/uploads /app/logs /app/data /app/screenshots /app/traces /app/videos /app/baselines

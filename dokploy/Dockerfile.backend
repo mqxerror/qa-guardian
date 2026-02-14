@@ -30,9 +30,9 @@ COPY package*.json ./
 # Install ALL dependencies (including devDependencies for building)
 RUN npm ci
 
-# Install Playwright browsers with dependencies
-# This downloads Chromium, Firefox, and WebKit
-RUN npx playwright install --with-deps chromium
+# Install all Playwright browsers (Chromium, Firefox, WebKit) with system dependencies
+# All three browsers are required for cross-browser testing functionality
+RUN npx playwright install --with-deps
 
 
 # ==============================================================================
@@ -67,34 +67,11 @@ RUN npx tsc migrations/*.ts --outDir migrations --module CommonJS --moduleResolu
 # Minimal image with only production runtime
 FROM node:20-slim AS production
 
-# Install runtime dependencies for Playwright and health checks
-# These are the libraries Playwright/Chromium needs to run
+# Install runtime utilities (health checks, signal handling)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Health check utility
     curl \
-    # Process signal handling
     dumb-init \
-    # Playwright/Chromium dependencies
-    libnss3 \
-    libnspr4 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libdrm2 \
-    libdbus-1-3 \
-    libxkbcommon0 \
-    libatspi2.0-0 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxrandr2 \
-    libgbm1 \
-    libasound2 \
-    libpango-1.0-0 \
-    libcairo2 \
-    # Clean up
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
 RUN groupadd --gid 1001 nodejs && \
@@ -106,9 +83,14 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
-# Copy Playwright browsers from deps stage
+# Copy Playwright browsers from deps stage (Chromium, Firefox, WebKit)
 # Browsers are installed to /root/.cache/ms-playwright by default
 COPY --from=deps /root/.cache/ms-playwright /home/nodejs/.cache/ms-playwright
+
+# Install system dependencies for all Playwright browsers (Chromium, Firefox, WebKit)
+# This uses apt-get to install the shared libraries each browser needs to launch
+RUN npx playwright install-deps
+
 RUN chown -R nodejs:nodejs /home/nodejs/.cache
 
 # Copy built application from builder stage
