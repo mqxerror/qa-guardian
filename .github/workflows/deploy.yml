@@ -139,6 +139,20 @@ jobs:
             # Run migrations
             docker exec qa-guardian-backend npm run migrate || true
 
+            # Verify worker container is running
+            echo "Checking worker container..."
+            sleep 5
+            worker_state=$(docker inspect --format='{{.State.Status}}' qa-guardian-worker 2>/dev/null || echo "missing")
+            worker_restarts=$(docker inspect --format='{{.RestartCount}}' qa-guardian-worker 2>/dev/null || echo "unknown")
+            echo "  Worker state: $worker_state (restarts: $worker_restarts)"
+            if [ "$worker_state" != "running" ] || [ "$worker_restarts" -gt 2 ] 2>/dev/null; then
+              echo "WARNING: Worker container unhealthy - dumping logs:"
+              docker logs --tail 30 qa-guardian-worker 2>&1 || true
+            else
+              echo "  Worker health check:"
+              docker exec qa-guardian-worker curl -sf http://localhost:3002/health 2>&1 || echo "  Worker health endpoint not ready yet"
+            fi
+
             echo "Backend deployment complete"
 
       - name: Verify production deployment

@@ -58,7 +58,8 @@ RUN npm run build
 # Compile migrations separately (they're outside src/)
 # node-pg-migrate needs CommonJS files (.cjs) when running compiled backend
 RUN npx tsc migrations/*.ts --outDir migrations --module CommonJS --moduleResolution Node --esModuleInterop --skipLibCheck \
-    && for f in migrations/*.js; do mv "$f" "${f%.js}.cjs"; done
+    && for f in migrations/*.js; do mv "$f" "${f%.js}.cjs"; done \
+    && rm -f migrations/*.ts
 
 
 # ==============================================================================
