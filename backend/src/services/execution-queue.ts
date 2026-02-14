@@ -206,6 +206,21 @@ export async function initializeExecutionQueue(): Promise<boolean> {
     const modeStr = API_ONLY_MODE ? 'API-only (enqueue only)' : `max concurrency: ${MAX_CONCURRENCY}`;
     logger.info({ mode: modeStr }, 'Initialized');
 
+    // Clean up stale active jobs from previous container instances
+    // When containers restart, jobs that were "active" become orphaned
+    try {
+      const activeJobs = await queue.getActive();
+      if (activeJobs.length > 0) {
+        logger.warn({ activeCount: activeJobs.length }, 'Found stale active jobs from previous instance - moving to failed');
+        for (const job of activeJobs) {
+          await job.moveToFailed(new Error('Stale job from previous container instance'), 'stale-cleanup');
+          logger.info({ jobId: job.id, runId: job.data?.runId }, 'Moved stale active job to failed');
+        }
+      }
+    } catch (cleanupErr) {
+      logger.warn({ error: cleanupErr }, 'Failed to clean up stale jobs (non-fatal)');
+    }
+
     return true;
   } catch (error) {
     logger.error({ error }, 'Failed to initialize');

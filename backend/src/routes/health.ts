@@ -53,6 +53,15 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
     return { status, timestamp: new Date().toISOString() };
   });
 
+  // Queue diagnostic endpoint (temporary - for debugging stuck test runs)
+  app.get('/health/queue', async (_request: FastifyRequest, _reply: FastifyReply) => {
+    const queueHealth = await getQueueHealth();
+    return {
+      queue: queueHealth,
+      timestamp: new Date().toISOString(),
+    };
+  });
+
   // Feature #205: Detailed health check with full diagnostics - requires authentication
   // Feature #152: Enhanced with disk space, memory usage, version info, and 503 on critical failures
   app.get('/health/detailed', { preHandler: [authenticate] }, async (_request: FastifyRequest, reply: FastifyReply) => {
