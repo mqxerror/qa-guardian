@@ -133,7 +133,10 @@ async function checkAndSendAlerts(run: TestRun, results: TestRunResult[]): Promi
 export async function runTestsForRun(runId: string) {
   // Try in-memory first (for in-flight runs), then fall back to DB
   const run = testRuns.get(runId) || await getTestRun(runId);
-  if (!run) return;
+  if (!run) {
+    logger.error({ runId }, '[RunOrchestrator] Run not found in memory or database - job will retry');
+    throw new Error(`Run ${runId} not found in memory or database`);
+  }
 
   const orgId = run.organization_id;
 

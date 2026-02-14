@@ -114,10 +114,8 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
 
       testRuns.set(id, run);
 
-      // Persist to database so the run appears in history and survives server restarts
-      dbCreateTestRun(run).catch(err =>
-        logger.error('[RunTrigger] Failed to persist test run to database:', err)
-      );
+      // Persist to database BEFORE enqueuing - the worker needs the run in DB
+      await dbCreateTestRun(run);
 
       // Feature #61: Invalidate runs cache for this suite
       const cache = getCache();
@@ -190,10 +188,8 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
 
       testRuns.set(id, run);
 
-      // Persist to database so the run appears in history and survives server restarts
-      dbCreateTestRun(run).catch(err =>
-        logger.error('[RunTrigger] Failed to persist test run to database:', err)
-      );
+      // Persist to database BEFORE enqueuing - the worker needs the run in DB
+      await dbCreateTestRun(run);
 
       // Feature #61: Invalidate runs cache for this test and suite
       const cache = getCache();
