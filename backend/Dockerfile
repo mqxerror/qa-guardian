@@ -90,7 +90,8 @@ RUN curl -fsSL https://dl.k6.io/key.gpg | gpg --dearmor -o /usr/share/keyrings/k
     && echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" > /etc/apt/sources.list.d/k6.list \
     && apt-get update && apt-get install -y --no-install-recommends k6 \
     && rm -rf /var/lib/apt/lists/* \
-    && rm /usr/share/keyrings/k6-archive-keyring.gpg
+    && rm /usr/share/keyrings/k6-archive-keyring.gpg \
+    && rm /etc/apt/sources.list.d/k6.list
 
 WORKDIR /app
 
