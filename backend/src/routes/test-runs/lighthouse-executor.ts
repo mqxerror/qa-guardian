@@ -11,7 +11,12 @@ import { Page } from 'playwright';
 import { execFile } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
+import { fileURLToPath } from 'url';
 import { createLogger } from '../../services/logger.js';
+
+// ESM compatibility: __dirname is not available in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const logger = createLogger('route:test-runs:lighthouse-executor');
 
