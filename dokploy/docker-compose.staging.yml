@@ -109,8 +109,8 @@ services:
       NODE_ENV: production
       PORT: 3001
       PLAYWRIGHT_BROWSERS_PATH: /home/nodejs/.cache/ms-playwright
-      # Feature #169: API server only enqueues jobs, worker container executes them
-      EXECUTION_MAX_CONCURRENCY: '0'
+      # Feature #169: Backend runs local worker as fallback (default: 2)
+      # Worker container provides additional capacity via BullMQ
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres-staging:5432/qa_guardian_staging
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis-staging:6379
       STORAGE_ENDPOINT: minio-staging

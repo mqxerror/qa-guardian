@@ -105,12 +105,13 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
-            # Rebuild and deploy backend + frontend
+            # Rebuild and deploy backend, worker, and frontend
             # Uses deploy overlay to add Traefik labels + dokploy-network
             # --no-cache ensures source changes are always picked up (BuildKit layer cache
             # can serve stale builds when only source files change but Dockerfile doesn't)
-            docker compose -f docker-compose.yml -f docker-compose.deploy.yml build --no-cache backend frontend
-            docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate backend frontend
+            # Worker uses same Dockerfile as backend but runs node dist/worker.js
+            docker compose -f docker-compose.yml -f docker-compose.deploy.yml build --no-cache backend worker frontend
+            docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate backend worker frontend
 
             # Wait for backend to be ready (start_period is 60s in Dockerfile HEALTHCHECK)
             echo "Waiting for backend to start..."

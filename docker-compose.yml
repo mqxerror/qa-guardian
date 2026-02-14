@@ -86,8 +86,9 @@ services:
       - NODE_OPTIONS=--max-old-space-size=1536
       # Feature #209: ZAP API key for DAST scanning
       - ZAP_API_KEY=${ZAP_API_KEY:-dev-zap-key-change-in-prod}
-      # Feature #169: API server only enqueues jobs, worker container executes them
-      - EXECUTION_MAX_CONCURRENCY=0
+      # Feature #169: Backend also runs local worker as fallback (default: 2)
+      # When the worker container is running, both process jobs via BullMQ
+      # Set to 0 to disable local execution and rely solely on worker container
     volumes:
       - backend_data:/app/data
     depends_on:

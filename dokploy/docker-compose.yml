@@ -123,8 +123,8 @@ services:
   # ===========================================================================
   # Backend API Server
   # ===========================================================================
-  # Feature #169: API server only enqueues jobs, worker container executes them.
-  # EXECUTION_MAX_CONCURRENCY=0 disables Chromium in the API container.
+  # Feature #169: Backend also runs local worker as fallback.
+  # Worker container provides additional capacity via BullMQ.
   backend:
     build:
       context: ../backend
@@ -139,8 +139,8 @@ services:
       PORT: 3001
       # Playwright browsers location (for test execution)
       PLAYWRIGHT_BROWSERS_PATH: /home/nodejs/.cache/ms-playwright
-      # Feature #169: API server only enqueues jobs, worker container executes them
-      EXECUTION_MAX_CONCURRENCY: '0'
+      # Feature #169: Backend runs local worker as fallback (default: 2)
+      # Worker container provides additional capacity via BullMQ
       # Database
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/qa_guardian
       # Redis
