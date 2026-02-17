@@ -21,9 +21,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install semgrep for SAST scanning (in builder, copy binary to runtime)
 RUN pip3 install --break-system-packages semgrep
 
-# Install gitleaks for secret detection
-RUN curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz \
-    -o /tmp/gitleaks.tar.gz \
+# Install gitleaks for secret detection (architecture-aware for arm64/amd64)
+RUN ARCH=$(dpkg --print-architecture) \
+    && GITLEAKS_ARCH=$(if [ "$ARCH" = "amd64" ]; then echo "x64"; else echo "$ARCH"; fi) \
+    && curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION#v}_linux_${GITLEAKS_ARCH}.tar.gz" \
+       -o /tmp/gitleaks.tar.gz \
     && tar xzf /tmp/gitleaks.tar.gz -C /usr/local/bin/ gitleaks \
     && chmod +x /usr/local/bin/gitleaks \
     && rm /tmp/gitleaks.tar.gz
@@ -82,17 +84,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dumb-init \
     # Python runtime for semgrep (no pip/build tools)
     python3 \
-    # gnupg needed for k6 GPG key import below
-    gnupg \
     && rm -rf /var/lib/apt/lists/*
 
-# Install k6 for load testing (binary only)
-RUN curl -fsSL https://dl.k6.io/key.gpg | gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" > /etc/apt/sources.list.d/k6.list \
-    && apt-get update && apt-get install -y --no-install-recommends k6 \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm /usr/share/keyrings/k6-archive-keyring.gpg \
-    && rm /etc/apt/sources.list.d/k6.list
+# Install k6 for load testing (binary download, architecture-aware for arm64/amd64)
+ARG K6_VERSION=v0.54.0
+RUN ARCH=$(dpkg --print-architecture) \
+    && curl -fsSL "https://github.com/grafana/k6/releases/download/${K6_VERSION}/k6-${K6_VERSION}-linux-${ARCH}.tar.gz" \
+       | tar xz -C /usr/local/bin --strip-components=1 \
+    && chmod +x /usr/local/bin/k6
 
 WORKDIR /app
 

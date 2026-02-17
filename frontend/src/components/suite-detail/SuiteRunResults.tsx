@@ -96,6 +96,9 @@ interface SuiteRunResultsProps {
  // Feature #547: Per-test status from useSuiteRunSocket
  perTestStatus?: Map<string, TestRunStatus>;
  currentStep?: CurrentStepProgress | null;
+ // WebSocket-driven progress counters (real-time updates during execution)
+ wsCompletedTests?: number;
+ wsTotalTests?: number;
  onCancelSuiteRun: () => void;
  onExpandScreenshot: (base64: string) => void;
  onEditSelector: (state: EditSelectorModalState) => void;
@@ -111,6 +114,8 @@ export function SuiteRunResults({
  screenshotHistory,
  perTestStatus,
  currentStep,
+ wsCompletedTests,
+ wsTotalTests,
  onCancelSuiteRun,
  onExpandScreenshot,
  onEditSelector,
@@ -123,8 +128,10 @@ export function SuiteRunResults({
 
  if (!suiteRun) return null;
 
- const completedCount = suiteRun.results?.length || 0;
- const totalCount = tests.length;
+ // Use WebSocket-driven progress during execution, fall back to results count when complete
+ const isRunning = suiteRun.status === 'running' || suiteRun.status === 'pending';
+ const completedCount = isRunning && wsCompletedTests !== undefined ? wsCompletedTests : (suiteRun.results?.length || 0);
+ const totalCount = isRunning && wsTotalTests ? wsTotalTests : tests.length;
  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
  // Feature #547: Convert TestRunStatus to WaveProgressStatus

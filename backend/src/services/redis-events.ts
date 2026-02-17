@@ -273,11 +273,15 @@ export async function initializeEventSubscriber(io: SocketIOServer): Promise<boo
         // Forward to Socket.IO clients
         const socketPayload = { runId, orgId, ...data };
 
-        // Emit to run-specific room
+        // Always emit to run-specific room
         io.to(`run:${runId}`).emit(event, socketPayload);
 
-        // Also emit to organization room for cross-tab sync
-        io.to(`org:${orgId}`).emit(event, socketPayload);
+        // Only emit lifecycle events to org room to prevent double delivery
+        // (clients in both run and org rooms would receive every event twice)
+        const orgRoomEvents = ['run-start', 'run-complete', 'run-cancelled'];
+        if (orgRoomEvents.includes(event)) {
+          io.to(`org:${orgId}`).emit(event, socketPayload);
+        }
 
         logger.debug({ event, runId }, 'Forwarded event to Socket.IO clients');
       } catch (err) {

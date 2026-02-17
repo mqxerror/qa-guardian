@@ -925,11 +925,14 @@ export async function recordingRoutes(app: FastifyInstance) {
       };
 
       // Apply device emulation settings if configured
+      // Feature #fix: Skip isMobile for Firefox — Playwright's Firefox doesn't support it
       if (resolvedDevice) {
         contextOptions.deviceScaleFactor = resolvedDevice.deviceScaleFactor;
-        contextOptions.isMobile = resolvedDevice.isMobile;
+        if (browser.browserType().name() !== 'firefox') {
+          contextOptions.isMobile = resolvedDevice.isMobile;
+        }
         contextOptions.hasTouch = resolvedDevice.hasTouch;
-        logger.info(`[RECORDER] Device emulation enabled: ${resolvedDevice.displayName} (${resolvedDevice.viewport.width}x${resolvedDevice.viewport.height}, mobile=${resolvedDevice.isMobile}, touch=${resolvedDevice.hasTouch})`);
+        logger.info(`[RECORDER] Device emulation enabled: ${resolvedDevice.displayName} (${resolvedDevice.viewport.width}x${resolvedDevice.viewport.height}, mobile=${resolvedDevice.isMobile}, touch=${resolvedDevice.hasTouch}, firefox-safe=${browser.browserType().name() === 'firefox'})`);
       }
 
       const context = await browser.newContext(contextOptions);

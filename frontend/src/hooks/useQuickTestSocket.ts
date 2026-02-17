@@ -250,6 +250,51 @@ export function useQuickTestSocket() {
     });
   }, [isConnected, socket, fetchState]);
 
+  // Feature #fix: Fallback polling when WebSocket is disconnected during a running test
+  // Fetches wave states every 5s so the UI stays updated even without WS
+  useEffect(() => {
+    if (isConnected || !currentRunIdRef.current) return;
+    if (state.status !== 'running') return;
+
+    const runId = currentRunIdRef.current;
+    const fallbackPoll = setInterval(async () => {
+      const data = await fetchState(runId);
+      if (data) {
+        // Update wave states from API
+        const initialWaves = getInitialWaveStates();
+        const apiWaves: WaveState[] = initialWaves.map((initialWave, idx) => {
+          const apiWave = data.waves?.[idx];
+          if (!apiWave) return { ...initialWave, steps: initialWave.steps.map((s: BaseWaveStep) => ({ ...s })) } as WaveState;
+          return {
+            ...initialWave,
+            status: apiWave.status || initialWave.status,
+            startedAt: apiWave.startedAt ? new Date(apiWave.startedAt) : undefined,
+            completedAt: apiWave.completedAt ? new Date(apiWave.completedAt) : undefined,
+            duration: apiWave.duration,
+            data: apiWave.data,
+            error: apiWave.error,
+            steps: apiWave.steps || initialWave.steps.map((s: BaseWaveStep) => ({
+              ...s,
+              status: apiWave.status === 'completed' ? 'completed' as const :
+                      apiWave.status === 'failed' ? 'failed' as const :
+                      apiWave.status === 'skipped' ? 'skipped' as const : s.status,
+            })),
+          } as WaveState;
+        });
+
+        setState(prev => ({
+          ...prev,
+          status: data.status || prev.status,
+          waves: apiWaves,
+          summary: data.summary || prev.summary,
+          completedAt: data.completedAt ? new Date(data.completedAt) : prev.completedAt,
+        }));
+      }
+    }, 5000);
+
+    return () => clearInterval(fallbackPoll);
+  }, [isConnected, state.status, fetchState]);
+
   // Socket event handlers
   useEffect(() => {
     if (!socket) return;

@@ -276,7 +276,7 @@ function TestSuitePage() {
 
   // Feature #546: Use WebSocket for live suite run updates (replaces polling + separate socket)
   // Feature #547: Capture perTestStatus and currentStep for WaveProgressCard grid
-  const { perTestStatus, currentStep } = useSuiteRunSocket({
+  const { perTestStatus, currentStep, completedTests, totalTests } = useSuiteRunSocket({
     runId: suiteRun?.id,
     token,
     onRunUpdate: handleSuiteRunUpdate,
@@ -1252,6 +1252,8 @@ function TestSuitePage() {
           screenshotHistory={screenshotHistory}
           perTestStatus={perTestStatus}
           currentStep={currentStep}
+          wsCompletedTests={completedTests}
+          wsTotalTests={totalTests}
           onCancelSuiteRun={handleCancelSuiteRun}
           onExpandScreenshot={(base64) => setExpandedScreenshot(base64)}
           onEditSelector={(state) => selectorEdit.openSelectorModal(state)}

@@ -252,7 +252,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
 
     try {
       const wave2Start = Date.now();
-      visualResult = await runVisualPerformance(url, browser);
+      visualResult = await runVisualPerformance(url, browser, browserType);
       testResult.waves[1].status = 'completed';
       testResult.waves[1].completedAt = new Date();
       testResult.waves[1].duration = Date.now() - wave2Start;
@@ -326,29 +326,44 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
 
     try {
       const wave4Start = Date.now();
-      const aiResult = await runAIAnalysis(
+
+      // Feature #fix: Wrap AI analysis in 30s timeout to prevent frozen quick tests
+      const AI_TIMEOUT_MS = 30000;
+      const aiPromise = runAIAnalysis(
         url,
         healthResult || { dns: { resolved: false, durationMs: 0 }, http: { status: 0, statusText: '', headers: {}, durationMs: 0 }, redirects: [], totalDurationMs: 0 },
         visualResult || { screenshots: {}, loadTime: 0 },
         securityResult || { headers: { score: 0, missing: [], present: {}, recommendations: [] }, cookies: [], mixedContent: { detected: false, resources: [] }, exposedPaths: [], overallScore: 0 }
       );
+      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), AI_TIMEOUT_MS));
+      const aiResult = await Promise.race([aiPromise, timeoutPromise]);
 
-      // Feature #520: Show "skipped" status when AI provider not configured
-      const aiResultData = aiResult as unknown as Record<string, unknown>;
-      if (aiResultData.skipped) {
-        testResult.waves[3].status = 'skipped';
+      if (aiResult === null) {
+        // AI analysis timed out
+        testResult.waves[3].status = 'failed';
         testResult.waves[3].completedAt = new Date();
         testResult.waves[3].duration = Date.now() - wave4Start;
-        testResult.waves[3].data = aiResultData;
-        testResult.waves[3].error = aiResult.summary;
-        emitWaveComplete(orgId, runId, 4, aiResultData);
-        log.info({ reason: aiResultData.skipReason }, 'AI Analysis wave skipped');
+        testResult.waves[3].error = `AI analysis timed out after ${AI_TIMEOUT_MS / 1000}s`;
+        emitWaveError(orgId, runId, 4, testResult.waves[3].error);
+        log.warn({ runId, duration: Date.now() - wave4Start }, testResult.waves[3].error);
       } else {
-        testResult.waves[3].status = 'completed';
-        testResult.waves[3].completedAt = new Date();
-        testResult.waves[3].duration = Date.now() - wave4Start;
-        testResult.waves[3].data = aiResultData;
-        emitWaveComplete(orgId, runId, 4, aiResultData);
+        // Feature #520: Show "skipped" status when AI provider not configured
+        const aiResultData = aiResult as unknown as Record<string, unknown>;
+        if (aiResultData.skipped) {
+          testResult.waves[3].status = 'skipped';
+          testResult.waves[3].completedAt = new Date();
+          testResult.waves[3].duration = Date.now() - wave4Start;
+          testResult.waves[3].data = aiResultData;
+          testResult.waves[3].error = aiResult.summary;
+          emitWaveComplete(orgId, runId, 4, aiResultData);
+          log.info({ reason: aiResultData.skipReason }, 'AI Analysis wave skipped');
+        } else {
+          testResult.waves[3].status = 'completed';
+          testResult.waves[3].completedAt = new Date();
+          testResult.waves[3].duration = Date.now() - wave4Start;
+          testResult.waves[3].data = aiResultData;
+          emitWaveComplete(orgId, runId, 4, aiResultData);
+        }
       }
     } catch (err) {
       testResult.waves[3].status = 'failed';

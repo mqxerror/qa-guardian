@@ -15,7 +15,7 @@ const log = createLogger('quick-test-visual');
  * Run visual and performance wave
  * Takes screenshots, measures Core Web Vitals, calculates performance scores
  */
-export async function runVisualPerformance(url: string, browser: Browser): Promise<VisualPerformanceResult> {
+export async function runVisualPerformance(url: string, browser: Browser, browserType?: string): Promise<VisualPerformanceResult> {
   const result: VisualPerformanceResult = {
     screenshots: {},
     loadTime: 0,
@@ -167,10 +167,14 @@ export async function runVisualPerformance(url: string, browser: Browser): Promi
     page = null;
 
     // Mobile screenshot
-    context = await browser.newContext({
+    // Feature #fix: Skip isMobile for Firefox — Playwright's Firefox doesn't support it
+    const mobileContextOptions: Record<string, unknown> = {
       viewport: { width: 375, height: 812 },
-      isMobile: true,
-    });
+    };
+    if (browserType !== 'firefox') {
+      mobileContextOptions.isMobile = true;
+    }
+    context = await browser.newContext(mobileContextOptions as Parameters<typeof browser.newContext>[0]);
     page = await context.newPage();
     await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
     const mobileScreenshot = await page.screenshot({ type: 'png', fullPage: false });

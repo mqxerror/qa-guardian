@@ -22,11 +22,12 @@ import {
 } from '../../validation/index.js';
 const logger = createLogger('route:test-runs:run-control');
 
-// Helper: get test run from Map first, then fall back to DB
+// Helper: get test run from DB first (worker may have updated it), fall back to Map
+// Feature #169: DB-first lookup to support separate worker container architecture
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
-  const fromMap = testRuns.get(runId);
-  if (fromMap) return fromMap;
-  return await dbGetTestRun(runId) as TestRun | undefined;
+  const fromDb = await dbGetTestRun(runId) as TestRun | undefined;
+  if (fromDb) return fromDb;
+  return testRuns.get(runId);
 }
 
 // Type definitions

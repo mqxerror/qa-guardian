@@ -239,6 +239,17 @@ function App() {
             </ProtectedRoute>
           }
         />
+        {/* Feature #fix: Catch /suites/:suiteId/runs/:runId — prevents 404 from bookmarks or shared URLs */}
+        <Route
+          path="/suites/:suiteId/runs/:runId"
+          element={
+            <ProtectedRoute>
+              <PageErrorBoundary>
+                <TestRunResultPage />
+              </PageErrorBoundary>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/tests/:testId"
           element={

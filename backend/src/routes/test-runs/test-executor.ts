@@ -383,10 +383,14 @@ async function executeTest(
     };
 
     // Apply device emulation settings if configured
+    // Feature #fix: Skip isMobile for Firefox — Playwright's Firefox doesn't support it
     if (test.device_config) {
       contextOptions.userAgent = deviceConfig.userAgent;
       contextOptions.deviceScaleFactor = deviceConfig.deviceScaleFactor;
-      contextOptions.isMobile = deviceConfig.isMobile;
+      const isFirefox = browser.browserType().name() === 'firefox';
+      if (!isFirefox) {
+        contextOptions.isMobile = deviceConfig.isMobile;
+      }
       contextOptions.hasTouch = deviceConfig.hasTouch;
     }
 

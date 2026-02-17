@@ -77,14 +77,21 @@ export function getSocketIO(): SocketIOServer | null {
  * Helper to emit test run events to both run room and org room
  * Feature #200: Falls back to Redis Pub/Sub when Socket.IO is not available (worker mode)
  */
+// Events that should be broadcast to the org room (for cross-tab/dashboard awareness)
+// Granular events (test-start, step-start, step-complete, run-progress, test-complete)
+// are only sent to the run room to prevent double delivery to clients in both rooms.
+const ORG_ROOM_EVENTS = new Set(['run-start', 'run-complete', 'run-cancelled']);
+
 export function emitRunEvent(runId: string, orgId: string, event: string, data: Record<string, unknown>) {
   if (io) {
     // Direct Socket.IO emit (API server mode)
     const payload = { runId, orgId, ...data };
-    // Emit to run-specific room
+    // Always emit to run-specific room
     io.to(`run:${runId}`).emit(event, payload);
-    // Also emit to organization room for cross-tab sync
-    io.to(`org:${orgId}`).emit(event, payload);
+    // Only emit lifecycle events to org room to prevent double delivery
+    if (ORG_ROOM_EVENTS.has(event)) {
+      io.to(`org:${orgId}`).emit(event, payload);
+    }
     logger.info(`[Socket.IO] Emitted ${event} for run ${runId} (org: ${orgId})`);
   } else if (isPublisherAvailable()) {
     // Feature #200: Redis Pub/Sub fallback (worker mode)
@@ -96,6 +103,12 @@ export function emitRunEvent(runId: string, orgId: string, event: string, data: 
     logger.warn(`[Events] No event transport available for ${event} (run: ${runId})`);
   }
 }
+
+// Feature #169: Eagerly initialize test executor emitter at module load time.
+// In API server mode, setSocketIO() will re-set this (idempotent).
+// In worker mode, setSocketIO() is never called, so this ensures
+// the test executor can emit events via Redis Pub/Sub fallback.
+setTestExecutorEmitter(emitRunEvent);
 
 /**
  * Wrapper for checkAndSendAlerts that provides testSuites and projects access

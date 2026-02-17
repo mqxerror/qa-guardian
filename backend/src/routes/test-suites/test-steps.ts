@@ -325,9 +325,9 @@ export async function testStepsRoutes(app: FastifyInstance) {
       }
     }
 
-    // Feature #61: Invalidate test list cache for this suite
+    // Feature #61: Invalidate test list cache for this suite (pattern match for paginated keys)
     const cache = getCache();
-    await cache.delete(CacheKeys.tests.list(suiteId));
+    await cache.invalidate(`${CacheKeys.tests.list(suiteId)}*`);
     // Also invalidate individual test caches
     for (const testId of test_ids) {
       await cache.delete(CacheKeys.tests.detail(testId));

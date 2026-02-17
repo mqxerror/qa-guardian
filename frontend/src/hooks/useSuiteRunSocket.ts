@@ -13,7 +13,7 @@
  * - run-complete: Suite run finished
  */
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { useSocketStore } from '../stores/socketStore';
 import { logger } from '../utils/logger';
 
@@ -130,6 +130,11 @@ export function useSuiteRunSocket({
   const completedTestsRef = useRef(0);
   const totalTestsRef = useRef(0);
 
+  // State-based render trigger: refs store the data, this counter forces re-renders
+  // when WebSocket events arrive (refs alone don't trigger re-renders)
+  const [, setRenderTrigger] = useState(0);
+  const triggerRender = useCallback(() => setRenderTrigger(v => v + 1), []);
+
   // Ensure socket is connected when we have a run to track
   useEffect(() => {
     if (enabled && runId && token && !isConnected) {
@@ -138,6 +143,7 @@ export function useSuiteRunSocket({
   }, [enabled, runId, token, isConnected, connect]);
 
   // Fallback: poll every 10s when WebSocket is disconnected to prevent stuck UI
+  // Feature #fix: Enhanced to also update per-test progress, not just completion status
   useEffect(() => {
     if (!enabled || !runId || !token || isConnected) return;
 
@@ -150,6 +156,28 @@ export function useSuiteRunSocket({
         if (response.ok) {
           const data = await response.json();
           const run = data.run;
+
+          // Update per-test progress from results (keeps UI alive during WS outage)
+          if (run.results && Array.isArray(run.results)) {
+            let completed = 0;
+            for (const result of run.results) {
+              const status = result.status as TestRunStatus;
+              perTestStatusRef.current.set(result.test_id, status);
+              if (status !== 'running' && status !== 'waiting') {
+                completed++;
+              }
+            }
+            completedTestsRef.current = completed;
+            totalTestsRef.current = run.results.length;
+            triggerRender();
+
+            // Notify parent of progress update
+            onRunUpdate({
+              status: run.status,
+              results: run.results,
+            });
+          }
+
           if (run.status !== 'pending' && run.status !== 'running') {
             // Run completed while WebSocket was down
             onRunComplete({
@@ -166,7 +194,7 @@ export function useSuiteRunSocket({
     }, 10000);
 
     return () => clearInterval(fallbackPoll);
-  }, [enabled, runId, token, isConnected, onRunComplete]);
+  }, [enabled, runId, token, isConnected, onRunComplete, onRunUpdate, triggerRender]);
 
   // Join/leave run room when runId changes
   useEffect(() => {
@@ -211,7 +239,8 @@ export function useSuiteRunSocket({
     if (data.currentTest) {
       perTestStatusRef.current.set(data.currentTest, 'running');
     }
-  }, [runId]);
+    triggerRender();
+  }, [runId, triggerRender]);
 
   // Handle test-start event
   const handleTestStart = useCallback((data: {
@@ -230,7 +259,8 @@ export function useSuiteRunSocket({
       totalSteps: 0,
       action: 'Starting...',
     };
-  }, [runId]);
+    triggerRender();
+  }, [runId, triggerRender]);
 
   // Handle step-start event
   const handleStepStart = useCallback((data: {
@@ -250,8 +280,9 @@ export function useSuiteRunSocket({
         action: data.action,
         totalSteps: data.totalSteps || currentStepRef.current.totalSteps,
       };
+      triggerRender();
     }
-  }, [runId]);
+  }, [runId, triggerRender]);
 
   // Handle step-complete event
   const handleStepComplete = useCallback((data: {
@@ -267,12 +298,14 @@ export function useSuiteRunSocket({
     if (currentStepRef.current) {
       currentStepRef.current = {
         ...currentStepRef.current,
-        stepIndex: data.stepIndex + 1,
+        // Keep the raw stepIndex — the display template already adds +1 for 1-based display
+        stepIndex: data.stepIndex,
         totalSteps: data.totalSteps,
         action: '',
       };
+      triggerRender();
     }
-  }, [runId]);
+  }, [runId, triggerRender]);
 
   // Handle step:screenshot event
   const handleStepScreenshot = useCallback((data: {
@@ -319,7 +352,8 @@ export function useSuiteRunSocket({
 
     perTestStatusRef.current.set(data.testId, data.status);
     completedTestsRef.current += 1;
-  }, [runId]);
+    triggerRender();
+  }, [runId, triggerRender]);
 
   // Handle run-complete event
   const handleRunComplete = useCallback((data: {

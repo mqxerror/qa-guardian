@@ -186,8 +186,8 @@ export async function suiteCrudRoutes(app: FastifyInstance) {
     // Feature #2081: Use async database function for persistence
     const savedSuite = await dbCreateTestSuite(suite);
 
-    // Feature #61: Invalidate suites list cache
-    await getCache().delete(CacheKeys.suites.list(projectId));
+    // Feature #61: Invalidate all paginated suites list cache entries for this project
+    await getCache().invalidate(`${CacheKeys.suites.list(projectId)}*`);
 
     // Log audit entry
     logAuditEntry(request, 'create', 'test_suite', id, savedSuite.name, { projectId, type, base_url, browser: defaultBrowser, browsers, viewport_width, viewport_height });
@@ -241,10 +241,10 @@ export async function suiteCrudRoutes(app: FastifyInstance) {
     // Use async database function
     const updatedSuite = await dbUpdateTestSuite(suiteId, suiteUpdates);
 
-    // Feature #61: Invalidate suite cache
+    // Feature #61: Invalidate suite cache (pattern match for paginated keys)
     const cache = getCache();
     await cache.delete(CacheKeys.suites.detail(suiteId));
-    await cache.delete(CacheKeys.suites.list(existingSuite.project_id));
+    await cache.invalidate(`${CacheKeys.suites.list(existingSuite.project_id)}*`);
 
     // Log audit entry
     logAuditEntry(request, 'update', 'test_suite', suiteId, updatedSuite?.name || existingSuite.name, { updates: Object.keys(updates) });
@@ -283,10 +283,10 @@ export async function suiteCrudRoutes(app: FastifyInstance) {
     // Use async database function - it will cascade delete tests
     await dbDeleteTestSuite(suiteId);
 
-    // Feature #61: Invalidate suite cache
+    // Feature #61: Invalidate suite cache (pattern match for paginated keys)
     const cache = getCache();
     await cache.delete(CacheKeys.suites.detail(suiteId));
-    await cache.delete(CacheKeys.suites.list(projectId));
+    await cache.invalidate(`${CacheKeys.suites.list(projectId)}*`);
     // Also invalidate tests list for this suite since they're deleted
     await cache.delete(CacheKeys.tests.list(suiteId));
 

@@ -18,11 +18,12 @@ import { getTestRun as dbGetTestRun, listTestRunsBySuite as dbListTestRunsBySuit
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
 
 import { sendError } from '../../utils/errors.js';
-// Helper: get test run from Map first, then fall back to DB
+// Helper: get test run from DB first (worker may have updated it), fall back to Map
+// Feature #169: DB-first lookup to support separate worker container architecture
 async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
-  const fromMap = testRuns.get(runId);
-  if (fromMap) return fromMap;
-  return await dbGetTestRun(runId) as TestRun | undefined;
+  const fromDb = await dbGetTestRun(runId) as TestRun | undefined;
+  if (fromDb) return fromDb;
+  return testRuns.get(runId);
 }
 
 // Type definitions for route params

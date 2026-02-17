@@ -276,8 +276,8 @@ export async function testCrudRoutes(app: FastifyInstance) {
     // Feature #2081: Use async database function for persistence
     const savedTest = await dbCreateTest(test);
 
-    // Feature #61: Invalidate tests list cache
-    await getCache().delete(CacheKeys.tests.list(suiteId));
+    // Feature #61: Invalidate tests list cache (pattern match for paginated keys)
+    await getCache().invalidate(`${CacheKeys.tests.list(suiteId)}*`);
 
     // Log audit entry
     logAuditEntry(request, 'create', 'test', id, savedTest.name, { suiteId, stepCount: steps.length });
@@ -371,10 +371,10 @@ export async function testCrudRoutes(app: FastifyInstance) {
     // Use async database function
     const updatedTest = await dbUpdateTest(testId, testUpdates);
 
-    // Feature #61: Invalidate test cache
+    // Feature #61: Invalidate test cache (pattern match for paginated keys)
     const cache = getCache();
     await cache.delete(CacheKeys.tests.detail(testId));
-    await cache.delete(CacheKeys.tests.list(existingTest.suite_id));
+    await cache.invalidate(`${CacheKeys.tests.list(existingTest.suite_id)}*`);
 
     // Log audit entry
     logAuditEntry(request, 'update', 'test', testId, updatedTest?.name || existingTest.name, { updates: Object.keys(updates) });
@@ -413,10 +413,10 @@ export async function testCrudRoutes(app: FastifyInstance) {
     // Use async database function
     await dbDeleteTest(testId);
 
-    // Feature #61: Invalidate test cache
+    // Feature #61: Invalidate test cache (pattern match for paginated keys)
     const cache = getCache();
     await cache.delete(CacheKeys.tests.detail(testId));
-    await cache.delete(CacheKeys.tests.list(suiteId));
+    await cache.invalidate(`${CacheKeys.tests.list(suiteId)}*`);
 
     // Log audit entry
     logAuditEntry(request, 'delete', 'test', testId, testName);

@@ -76,6 +76,7 @@ tmp/
 
 # Docker
 .docker/
+docker-compose.override.yml
 
 # Playwright
 /test-results/

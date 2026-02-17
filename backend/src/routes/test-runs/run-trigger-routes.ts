@@ -275,10 +275,8 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
 
       testRuns.set(id, rerunRun);
 
-      // Persist to database
-      dbCreateTestRun(rerunRun).catch(err =>
-        logger.error('[RunTrigger] Failed to persist rerun to database:', err)
-      );
+      // Persist to database (must await before enqueuing to avoid race condition)
+      await dbCreateTestRun(rerunRun);
 
       // Feature #61: Invalidate runs cache for the suite and all rerun tests
       const cache = getCache();

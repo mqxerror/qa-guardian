@@ -27,6 +27,7 @@ import { Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
 import { createServer } from 'http';
 import { initializeEventPublisher, closePublisher, isPublisherAvailable } from './services/redis-events.js'; // Feature #200: Redis Pub/Sub for real-time events
+import { initializeDatabase, closeDatabase } from './services/database.js'; // Feature #169: Worker needs DB access for run lookup
 import { createLogger } from './services/logger.js'; // Feature #447: Structured logging
 
 // Feature #447: Worker logger for execution and lifecycle logging
@@ -108,6 +109,16 @@ let worker: Worker | null = null;
 let isShuttingDown = false;
 
 async function startWorker(): Promise<void> {
+  // Feature #169: Initialize PostgreSQL connection - worker needs DB access
+  // to look up test runs, tests, suites, and persist results
+  const dbConnected = await initializeDatabase();
+  if (dbConnected) {
+    log.info('PostgreSQL database connected');
+  } else {
+    log.error('PostgreSQL database NOT connected - worker cannot look up runs');
+    process.exit(1);
+  }
+
   // Feature #200: Initialize Redis event publisher BEFORE loading execution module
   // This allows emitRunEvent() to publish events via Redis Pub/Sub
   const publisherInitialized = await initializeEventPublisher();
@@ -207,6 +218,9 @@ async function shutdown(signal: string): Promise<void> {
 
   // Feature #200: Close Redis event publisher
   await closePublisher();
+
+  // Feature #169: Close database connection
+  await closeDatabase();
 
   log.info('Shutdown complete');
   process.exit(0);

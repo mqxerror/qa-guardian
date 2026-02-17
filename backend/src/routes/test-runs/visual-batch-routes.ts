@@ -206,74 +206,94 @@ export async function visualBatchRoutes(app: FastifyInstance) {
       return cached;
     }
 
-    let count = 0;
+    // Feature #fix: Wrap in try-catch with 10s timeout to prevent 502 cascade
+    // Returning {count: 0} on timeout/error is better than crashing the UI
+    const fallbackResponse = { count: 0, has_pending: false };
 
-    // Feature #88: Optimized approach - batch load data to avoid N+1 queries
-    // Feature #183: Limit to last 30 days to prevent timeout on orgs with many runs
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    // 1. Get all failed runs with visual comparison data
-    const allRunsForCount = await getMergedTestRuns(orgId, { since: thirtyDaysAgo });
-    const failedRunsWithVisual = allRunsForCount.filter(run =>
-      run.organization_id === orgId &&
-      run.status === 'failed' &&
-      run.results?.some(r =>
-        r.visual_comparison?.diffPercentage !== undefined &&
-        r.visual_comparison.diffPercentage > 0 &&
-        r.status === 'failed'
-      )
-    );
+    try {
+      const countPromise = (async () => {
+        let count = 0;
 
-    // 2. Batch load all tests and suites we'll need (avoid per-result async calls)
-    const testIds = new Set<string>();
-    const suiteIds = new Set<string>();
-    for (const run of failedRunsWithVisual) {
-      suiteIds.add(run.suite_id);
-      for (const result of run.results || []) {
-        if (result.visual_comparison?.diffPercentage && result.visual_comparison.diffPercentage > 0) {
-          testIds.add(result.test_id);
+        // Feature #88: Optimized approach - batch load data to avoid N+1 queries
+        // Feature #183: Limit to last 30 days to prevent timeout on orgs with many runs
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        // 1. Get all failed runs with visual comparison data
+        const allRunsForCount = await getMergedTestRuns(orgId, { since: thirtyDaysAgo });
+        const failedRunsWithVisual = allRunsForCount.filter(run =>
+          run.organization_id === orgId &&
+          run.status === 'failed' &&
+          run.results?.some(r =>
+            r.visual_comparison?.diffPercentage !== undefined &&
+            r.visual_comparison.diffPercentage > 0 &&
+            r.status === 'failed'
+          )
+        );
+
+        // 2. Batch load all tests and suites we'll need (avoid per-result async calls)
+        const testIds = new Set<string>();
+        const suiteIds = new Set<string>();
+        for (const run of failedRunsWithVisual) {
+          suiteIds.add(run.suite_id);
+          for (const result of run.results || []) {
+            if (result.visual_comparison?.diffPercentage && result.visual_comparison.diffPercentage > 0) {
+              testIds.add(result.test_id);
+            }
+          }
         }
-      }
-    }
 
-    // Feature #707: Batch fetch only needed tests and suites using collected IDs
-    const testsMap = await batchGetTests([...testIds]);
-    const suitesMap = await batchGetTestSuites([...suiteIds]);
+        // Feature #707: Batch fetch only needed tests and suites using collected IDs
+        const testsMap = await batchGetTests([...testIds]);
+        const suitesMap = await batchGetTestSuites([...suiteIds]);
 
-    // 3. Count pending changes efficiently
-    for (const run of failedRunsWithVisual) {
-      const suite = suitesMap.get(run.suite_id);
-      // Filter by project if specified
-      if (project_id && suite?.project_id !== project_id) continue;
+        // 3. Count pending changes efficiently
+        for (const run of failedRunsWithVisual) {
+          const suite = suitesMap.get(run.suite_id);
+          // Filter by project if specified
+          if (project_id && suite?.project_id !== project_id) continue;
 
-      for (const result of run.results || []) {
-        if (result.visual_comparison &&
-            result.visual_comparison.diffPercentage !== undefined &&
-            result.visual_comparison.diffPercentage > 0 &&
-            result.status === 'failed') {
+          for (const result of run.results || []) {
+            if (result.visual_comparison &&
+                result.visual_comparison.diffPercentage !== undefined &&
+                result.visual_comparison.diffPercentage > 0 &&
+                result.status === 'failed') {
 
-          const test = testsMap.get(result.test_id);
-          if (!test || test.test_type !== 'visual_regression') continue;
+              const test = testsMap.get(result.test_id);
+              if (!test || test.test_type !== 'visual_regression') continue;
 
-          // Check if already rejected (this is sync so it's fast)
-          const rejection = getRejectionMetadata(run.id, result.test_id, 'single');
-          if (rejection) continue;
+              // Check if already rejected (this is sync so it's fast)
+              const rejection = getRejectionMetadata(run.id, result.test_id, 'single');
+              if (rejection) continue;
 
-          count++;
+              count++;
+            }
+          }
         }
+
+        return { count, has_pending: count > 0 };
+      })();
+
+      // Race against a 10-second timeout
+      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000));
+      const response = await Promise.race([countPromise, timeoutPromise]);
+
+      if (response === null) {
+        // Timed out — log warning and return safe fallback
+        logger.warn({ orgId, project_id }, 'visual/pending/count timed out after 10s, returning fallback');
+        if (reply.sent) return;
+        return fallbackResponse;
       }
+
+      // Feature #88: Cache the result for 60 seconds
+      await cache.set(cacheKey, response, CacheTTL.SHORT);
+
+      // Feature #193: Guard against timeout middleware having already sent a 504
+      if (reply.sent) return;
+      return response;
+    } catch (err) {
+      logger.error({ orgId, project_id, error: err }, 'visual/pending/count error, returning fallback');
+      if (reply.sent) return;
+      return fallbackResponse;
     }
-
-    const response = {
-      count,
-      has_pending: count > 0,
-    };
-
-    // Feature #88: Cache the result for 60 seconds
-    await cache.set(cacheKey, response, CacheTTL.SHORT);
-
-    // Feature #193: Guard against timeout middleware having already sent a 504
-    if (reply.sent) return;
-    return response;
   });
 
   // DEV ONLY: Create mock pending visual changes for testing the badge

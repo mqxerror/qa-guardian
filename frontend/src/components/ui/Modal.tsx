@@ -110,7 +110,21 @@ export function Modal({
     }
   }, [isOpen, isVisible, isClosing]);
 
-  // Focus trap and escape handler
+  // Focus the modal only when it first becomes visible (not on every re-render)
+  // Separating this from the keydown effect prevents focus-stealing from inputs
+  // when parent re-renders cause handleKeyDown to get a new reference.
+  const hasFocused = useRef(false);
+  useEffect(() => {
+    if (isVisible && !hasFocused.current && modalRef.current) {
+      modalRef.current.focus();
+      hasFocused.current = true;
+    }
+    if (!isVisible) {
+      hasFocused.current = false;
+    }
+  }, [isVisible]);
+
+  // Escape handler and body scroll lock
   useEffect(() => {
     if (!isVisible) return;
 
@@ -119,11 +133,6 @@ export function Modal({
     // Prevent body scroll when modal is open
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-
-    // Focus the modal
-    if (modalRef.current) {
-      modalRef.current.focus();
-    }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
