@@ -16,7 +16,7 @@ import {
 } from '../../validation/index.js';
 import { runQuickTest, getQuickTestResultAsync } from '../../services/quick-test-runner.js';
 import { logAuditEntry } from '../audit-logs.js';
-import { validateURLForSSRF } from '../../utils/index.js';
+import { validateWebhookURLWithDNS } from '../../utils/index.js';
 import { sendError } from '../../utils/errors.js';
 import type { QuickTestBody, QuickTestParams } from './helpers.js';
 import { log, refreshScreenshotUrls } from './helpers.js';
@@ -91,11 +91,10 @@ export async function coreRoutes(app: FastifyInstance) {
       }
 
       // Feature #433: SSRF protection - validate URL before any HTTP request
-      // This prevents scanning of internal infrastructure via private IPs
+      // Feature #BMAD: Async DNS resolution to prevent DNS rebinding attacks
       const isProduction = process.env.NODE_ENV === 'production';
-      const ssrfValidation = validateURLForSSRF(url, {
-        requireHttps: false,  // Allow HTTP for testing purposes
-        allowLocalhost: !isProduction,  // Block localhost in production
+      const ssrfValidation = await validateWebhookURLWithDNS(url, {
+        allowLocalhost: !isProduction,
       });
 
       if (!ssrfValidation.safe) {

@@ -50,7 +50,7 @@ import {
   deleteProjectEnvVar as dbDeleteProjectEnvVar,
 } from './stores.js';
 import { hasProjectAccess } from './utils.js';
-import { testRuns, BrowserType, TestRun, TestRunResult } from '../test-runs/execution.js';
+import { testRuns, BrowserType, TestRun, TestRunResult, setTestRun } from '../test-runs/execution.js';
 // Feature #61: Redis caching
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
 // Feature #108: WebSocket events for real-time cache invalidation
@@ -655,7 +655,7 @@ export async function coreRoutes(app: FastifyInstance) {
     };
     // Persist to DB and populate in-memory Map (execution engine reads from Map)
     await dbCreateTestRunAsync(testRunData);
-    testRuns.set(runId, testRunData);
+    setTestRun(runId, testRunData);
 
     // Import and run tests (this will start executing in the background)
     // We need to dynamically import to avoid circular dependency

@@ -184,8 +184,52 @@ export async function initializeExecutionQueue(): Promise<boolean> {
         logger.info({ jobId: job.id }, 'Job completed successfully');
       });
 
-      worker.on('failed', (job, err) => {
-        logger.error({ jobId: job?.id, error: err.message }, 'Job failed');
+      // Feature #BMAD: Dead-letter detection for permanently failed jobs
+      // Defense-in-depth: runTestsForRun handles most errors internally, but this catches
+      // edge cases (run not found, import failures, stalled job removal)
+      worker.on('failed', async (job, err) => {
+        try {
+          // BullMQ can pass job=undefined for stalled jobs removed by removeOnFail
+          if (!job) {
+            logger.fatal({ error: err.message }, 'JOB PERMANENTLY FAILED - stalled job removed (no job reference)');
+            return;
+          }
+
+          const maxAttempts = job.opts?.attempts ?? JOB_RETRY_ATTEMPTS;
+          const isExhausted = job.attemptsMade >= maxAttempts;
+
+          if (isExhausted) {
+            logger.fatal({
+              jobId: job.id,
+              runId: job.data?.runId,
+              attempts: job.attemptsMade,
+              maxAttempts,
+              error: err.message,
+            }, 'JOB PERMANENTLY FAILED - all retries exhausted');
+
+            if (job.data?.runId) {
+              try {
+                const { updateTestRun } = await import('./repositories/test-runs.js');
+                await updateTestRun(job.data.runId, {
+                  status: 'error',
+                  error: `Job permanently failed after ${job.attemptsMade} attempts: ${err.message}`,
+                });
+              } catch (dbErr) {
+                logger.error({ error: dbErr, runId: job.data.runId }, 'Failed to update run status after exhausted retries');
+              }
+            }
+          } else {
+            logger.warn({
+              jobId: job.id,
+              runId: job.data?.runId,
+              attempt: job.attemptsMade,
+              maxAttempts,
+              error: err.message,
+            }, 'Job failed - will retry');
+          }
+        } catch (handlerErr) {
+          logger.error({ error: handlerErr instanceof Error ? handlerErr.message : String(handlerErr) }, 'Error in failed-job handler');
+        }
       });
 
       worker.on('error', (err) => {

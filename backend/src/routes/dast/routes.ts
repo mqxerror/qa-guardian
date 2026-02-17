@@ -2,7 +2,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireScopes, JwtPayload, getOrganizationId } from '../../middleware/auth.js';
-import { validateURLForSSRF } from '../../utils/index.js';
+import { validateWebhookURLWithDNS } from '../../utils/index.js';
 import { getProject, listProjects } from '../../services/repositories/projects.js';
 import { logAuditEntry } from '../audit-logs.js';
 
@@ -196,9 +196,9 @@ export async function dastRoutes(app: FastifyInstance) {
     }
 
     // SSRF protection: prevent scans against internal/private networks
-    const ssrfValidation = validateURLForSSRF(targetUrl, {
+    // Feature #BMAD: Async DNS resolution to prevent DNS rebinding attacks
+    const ssrfValidation = await validateWebhookURLWithDNS(targetUrl, {
       allowLocalhost: false,
-      requireHttps: false,
     });
     if (!ssrfValidation.safe) {
       return sendError(reply, 400, 'BAD_REQUEST', ssrfValidation.error || 'Internal or private network URLs are not allowed for DAST scans.');
@@ -796,9 +796,9 @@ export async function dastRoutes(app: FastifyInstance) {
     }
 
     // SSRF protection: prevent scans against internal/private networks
-    const ssrfCheck = validateURLForSSRF(config.endpoint, {
+    // Feature #BMAD: Async DNS resolution to prevent DNS rebinding attacks
+    const ssrfCheck = await validateWebhookURLWithDNS(config.endpoint, {
       allowLocalhost: false,
-      requireHttps: false,
     });
     if (!ssrfCheck.safe) {
       return sendError(reply, 400, 'BAD_REQUEST', ssrfCheck.error || 'Internal or private network URLs are not allowed for GraphQL scans.');
@@ -874,9 +874,9 @@ export async function dastRoutes(app: FastifyInstance) {
     }
 
     // SSRF protection: prevent introspection against internal/private networks
-    const ssrfCheck = validateURLForSSRF(endpoint, {
+    // Feature #BMAD: Async DNS resolution to prevent DNS rebinding attacks
+    const ssrfCheck = await validateWebhookURLWithDNS(endpoint, {
       allowLocalhost: false,
-      requireHttps: false,
     });
     if (!ssrfCheck.safe) {
       return sendError(reply, 400, 'BAD_REQUEST', ssrfCheck.error || 'Internal or private network URLs are not allowed for GraphQL introspection.');

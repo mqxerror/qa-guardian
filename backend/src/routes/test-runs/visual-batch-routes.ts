@@ -23,7 +23,7 @@ import {
 } from './visual-regression.js';
 
 // Import testRuns store from execution module
-import { testRuns, TestRun, TestRunResult } from './execution.js';
+import { testRuns, TestRun, TestRunResult, setTestRun } from './execution.js';
 import { getTestRun, listTestRunsByOrg as dbListTestRunsByOrg, ListTestRunsByOrgOptions } from '../../services/repositories/test-runs.js';
 // Feature #88: Redis caching for pending count
 import { getCache, CacheKeys, CacheTTL } from '../../services/cache.js';
@@ -366,7 +366,7 @@ export async function visualBatchRoutes(app: FastifyInstance) {
           }],
         }],
       };
-      testRuns.set(runId, testRun);
+      setTestRun(runId, testRun);
       createdRuns.push(runId);
     }
 
@@ -490,7 +490,7 @@ export async function visualBatchRoutes(app: FastifyInstance) {
 
         // Update the run status to reflect approval
         targetRun.status = 'visual_approved';
-        testRuns.set(runId, targetRun);
+        setTestRun(runId, targetRun);
 
         logger.info({ testId, userEmail: user?.email || 'unknown', runId }, 'Batch: Visual changes approved');
         results.push({ runId, testId, success: true });
@@ -567,7 +567,7 @@ export async function visualBatchRoutes(app: FastifyInstance) {
 
         // Mark the run as visually rejected (remove from pending queue)
         targetRun.status = 'visual_rejected';
-        testRuns.set(runId, targetRun);
+        setTestRun(runId, targetRun);
 
         logger.info({ testId, userEmail: user?.email || 'unknown', runId, reason: reason || undefined }, 'Batch: Visual changes rejected');
         results.push({ runId, testId, success: true });

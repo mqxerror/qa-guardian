@@ -19,7 +19,7 @@ import {
   quickTestSchedulesQuerySchema,
 } from '../../validation/index.js';
 import { logAuditEntry } from '../audit-logs.js';
-import { validateURLForSSRF } from '../../utils/index.js';
+import { validateWebhookURLWithDNS } from '../../utils/index.js';
 import {
   createQuickTestSchedule,
   listQuickTestSchedules,
@@ -112,9 +112,9 @@ export async function scheduleRoutes(app: FastifyInstance) {
       }
 
       // SSRF protection
+      // Feature #BMAD: Async DNS resolution to prevent DNS rebinding attacks
       const isProduction = process.env.NODE_ENV === 'production';
-      const ssrfValidation = validateURLForSSRF(url, {
-        requireHttps: false,
+      const ssrfValidation = await validateWebhookURLWithDNS(url, {
         allowLocalhost: !isProduction,
       });
 

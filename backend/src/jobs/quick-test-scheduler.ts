@@ -14,6 +14,7 @@ import {
   type QuickTestSchedule,
 } from '../services/repositories/quick-test.js';
 import { runQuickTest } from '../services/quick-test-runner.js';
+import { validateWebhookURLWithDNS } from '../utils/index.js';
 import { createLogger } from '../services/logger.js';
 
 const log = createLogger('quick-test-scheduler');
@@ -141,6 +142,19 @@ async function runScheduledTest(schedule: QuickTestSchedule): Promise<void> {
   }, 'Running scheduled quick test');
 
   try {
+    // Feature #BMAD: Re-validate URL at execution time to prevent DNS rebinding attacks.
+    // The URL was validated at schedule creation, but DNS records can change between runs.
+    const ssrfCheck = await validateWebhookURLWithDNS(schedule.url, { allowLocalhost: false });
+    if (!ssrfCheck.safe) {
+      log.warn({
+        scheduleId: schedule.id,
+        url: schedule.url,
+        error: ssrfCheck.error,
+      }, 'Scheduled quick test blocked by SSRF validation - URL may have changed DNS records');
+      schedulerStats.errors++;
+      return;
+    }
+
     // Trigger the quick test (fire-and-forget)
     // The runQuickTest function handles its own state management
     runQuickTest({

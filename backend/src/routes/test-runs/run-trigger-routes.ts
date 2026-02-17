@@ -13,7 +13,7 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import { authenticate, requireScopes, getOrganizationId, JwtPayload, ApiKeyPayload, InternalServicePayload } from '../../middleware/auth.js';
 import { getTestSuite, getTest, listTests } from '../test-suites.js';
-import { testRuns, BrowserType, TestRun, TestType, createTestRun as dbCreateTestRun } from './execution.js';
+import { testRuns, BrowserType, TestRun, TestType, setTestRun, createTestRun as dbCreateTestRun } from './execution.js';
 // Feature #61: Redis caching
 import { getCache, CacheKeys } from '../../services/cache.js';
 // Feature #155: Execution queue for concurrency limits
@@ -112,7 +112,7 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
         created_at: new Date(),
       };
 
-      testRuns.set(id, run);
+      setTestRun(id, run);
 
       // Persist to database BEFORE enqueuing - the worker needs the run in DB
       await dbCreateTestRun(run);
@@ -130,7 +130,7 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
       // Update status to 'queued' if the run was queued (not executed directly)
       if (queueResult.queued) {
         run.status = 'pending'; // pending = waiting in queue
-        testRuns.set(id, run);
+        setTestRun(id, run);
         logger.info(`[RunTrigger] Run ${id} queued at position ${queueResult.position || 'unknown'}`);
       }
 
@@ -186,7 +186,7 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
         created_at: new Date(),
       };
 
-      testRuns.set(id, run);
+      setTestRun(id, run);
 
       // Persist to database BEFORE enqueuing - the worker needs the run in DB
       await dbCreateTestRun(run);
@@ -206,7 +206,7 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
       // Update status if queued
       if (queueResult.queued) {
         run.status = 'pending';
-        testRuns.set(id, run);
+        setTestRun(id, run);
         logger.info(`[RunTrigger] Run ${id} queued at position ${queueResult.position || 'unknown'}`);
       }
 
@@ -273,7 +273,7 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
       const rerunRun = run as RerunTestRun;
       rerunRun.test_ids = validTestIds;
 
-      testRuns.set(id, rerunRun);
+      setTestRun(id, rerunRun);
 
       // Persist to database (must await before enqueuing to avoid race condition)
       await dbCreateTestRun(rerunRun);

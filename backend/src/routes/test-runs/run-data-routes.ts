@@ -9,7 +9,7 @@ import { authenticate, getOrganizationId } from '../../middleware/auth.js';
 import { getTest, getTestSuite, getTestsMap, batchGetTests } from '../test-suites.js';
 import { getProjectEnvVars } from '../projects.js';
 import { EnvironmentVariable } from '../projects/types.js';
-import { testRuns, TestRun, ConsoleLog, NetworkRequest } from './execution.js';
+import { testRuns, TestRun, ConsoleLog, NetworkRequest, setTestRun } from './execution.js';
 // StepResult available from execution.js if needed
 import { getTestRun as dbGetTestRun } from '../../services/repositories/test-runs.js';
 import { TestSuite, Test } from '../test-suites/types.js';
@@ -594,7 +594,7 @@ export async function runDataRoutes(app: FastifyInstance) {
       run.run_env_vars = { ...env_vars };
     }
 
-    testRuns.set(runId, run);
+    setTestRun(runId, run);
     log.info({ runId, count: Object.keys(env_vars).length, merge, code: 'ENV_VARS_SET' }, 'Environment variables set for run');
 
     // Get the suite and project env vars for the response
@@ -734,7 +734,7 @@ export async function runDataRoutes(app: FastifyInstance) {
       run.run_env_vars = {};
     }
 
-    testRuns.set(runId, run);
+    setTestRun(runId, run);
     log.info({ runId, deletedCount, code: 'ENV_VARS_DELETED' }, 'Environment variables deleted from run');
 
     return {

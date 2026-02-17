@@ -24,6 +24,7 @@ import {
   TestRunResult,
   testRuns,
   runningBrowsers,
+  setTestRun,
 } from './execution.js';
 
 // Import test executor
@@ -156,7 +157,7 @@ export async function runTestsForRun(runId: string) {
   // Update status to running
   run.status = 'running';
   run.started_at = new Date();
-  testRuns.set(runId, run);
+  setTestRun(runId, run);
 
   // Persist running status to database
   dbUpdateTestRun(runId, { status: 'running', started_at: run.started_at }).catch(err =>
@@ -416,7 +417,7 @@ export async function runTestsForRun(runId: string) {
     if (browser) {
       await browser.close().catch(() => {});
     }
-    testRuns.set(runId, run);
+    setTestRun(runId, run);
 
     // Persist completed run to database
     dbUpdateTestRun(runId, {

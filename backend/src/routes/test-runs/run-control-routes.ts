@@ -6,7 +6,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
-import { testRuns, runningBrowsers, TestRun } from './execution.js';
+import { testRuns, runningBrowsers, TestRun, setTestRun } from './execution.js';
 import { getTestRun as dbGetTestRun, updateTestRun as dbUpdateTestRun } from '../../services/repositories/test-runs.js';
 // listTestRunsByOrg available from test-runs repository if needed
 import { createLogger } from '../../services/logger.js';
@@ -107,7 +107,7 @@ export async function runControlRoutes(app: FastifyInstance) {
     // First transition to 'cancelling' status (if not already)
     if (run.status !== 'cancelling') {
       run.status = 'cancelling';
-      testRuns.set(runId, run);
+      setTestRun(runId, run);
       logger.info(`[CANCEL] Test run ${runId} status changed to 'cancelling' (force=${force}, reason=${reason || 'none'})`);
     }
 
@@ -153,7 +153,7 @@ export async function runControlRoutes(app: FastifyInstance) {
         updatedRun.results = [];
       }
 
-      testRuns.set(runId, updatedRun);
+      setTestRun(runId, updatedRun);
 
       // Persist cancelled status to database
       dbUpdateTestRun(runId, {
@@ -223,7 +223,7 @@ export async function runControlRoutes(app: FastifyInstance) {
 
     // Mark the run as paused
     run.status = 'paused';
-    testRuns.set(runId, run);
+    setTestRun(runId, run);
     logger.info(`[PAUSE] Test run ${runId} paused`);
 
     // Mark the browser state as paused
@@ -272,7 +272,7 @@ export async function runControlRoutes(app: FastifyInstance) {
 
     // Mark the run as running again
     run.status = 'running';
-    testRuns.set(runId, run);
+    setTestRun(runId, run);
     logger.info(`[RESUME] Test run ${runId} resumed`);
 
     // Mark the browser state as not paused
@@ -420,7 +420,7 @@ export async function runControlRoutes(app: FastifyInstance) {
 
     const oldPriority = run.priority ?? 100;
     run.priority = priority;
-    testRuns.set(runId, run);
+    setTestRun(runId, run);
 
     logger.info(`[PRIORITY] Test run ${runId} priority changed from ${oldPriority} to ${priority}`);
 

@@ -555,6 +555,9 @@ const CLEANUP_INTERVAL_MS = 60 * 1000;
 /** Feature #211: Max age for stale runs before forced eviction (10 minutes) */
 const MAX_RUN_AGE_MS = 10 * 60 * 1000;
 
+/** Feature #BMAD: Hard size limit on in-memory runs to prevent unbounded growth between cleanups */
+const MAX_CONCURRENT_RUNS = 200;
+
 /**
  * Feature #211: Mark a run as completed for TTL tracking
  * Call this when a run transitions to a terminal state (passed, failed, error, cancelled)
@@ -566,13 +569,33 @@ export function markRunCompleted(runId: string): void {
 /**
  * Feature #211: Terminal states that trigger TTL eviction
  */
-const TERMINAL_STATES: TestRunStatus[] = ['passed', 'failed', 'error', 'cancelled', 'visual_approved', 'visual_rejected'];
+const TERMINAL_STATES: TestRunStatus[] = ['passed', 'failed', 'error', 'cancelled', 'visual_approved', 'visual_rejected', 'warning'];
 
 /**
  * Feature #211: Set a test run in memory and track completion for TTL eviction
+ * Feature #BMAD: Hard size limit — evict oldest completed run if at capacity
  * Use this instead of testRuns.set() directly to enable automatic cleanup
  */
 export function setTestRun(runId: string, run: TestRun): void {
+  // Feature #BMAD: Enforce hard size limit before inserting new entries
+  if (testRuns.size >= MAX_CONCURRENT_RUNS && !testRuns.has(runId)) {
+    // First try to evict a completed run (prefer evicting terminal-state runs)
+    let evicted = false;
+    for (const [id, r] of testRuns) {
+      if (TERMINAL_STATES.includes(r.status)) {
+        testRuns.delete(id);
+        runCompletionTimes.delete(id);
+        log.warn({ evictedRunId: id, mapSize: testRuns.size }, 'Evicted completed run due to max concurrent limit');
+        evicted = true;
+        break;
+      }
+    }
+    // If no completed runs to evict, log warning but allow the insert
+    if (!evicted) {
+      log.warn({ mapSize: testRuns.size, maxSize: MAX_CONCURRENT_RUNS }, 'testRuns Map at capacity with all active runs');
+    }
+  }
+
   testRuns.set(runId, run);
 
   // Track completion time if run is in a terminal state

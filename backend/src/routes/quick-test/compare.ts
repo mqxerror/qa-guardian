@@ -17,7 +17,7 @@ import {
 } from '../../validation/index.js';
 import { runQuickTest, getQuickTestResultAsync } from '../../services/quick-test-runner.js';
 import { logAuditEntry } from '../audit-logs.js';
-import { validateURLForSSRF } from '../../utils/index.js';
+import { validateWebhookURLWithDNS } from '../../utils/index.js';
 import { createQuickTestComparison, getQuickTestComparison } from '../../services/repositories/quick-test.js';
 import { sendError } from '../../utils/errors.js';
 import type { QuickTestCompareBody, QuickTestCompareParams } from './helpers.js';
@@ -92,18 +92,17 @@ export async function compareRoutes(app: FastifyInstance) {
       }
 
       // Feature #433: SSRF protection for both URLs
+      // Feature #BMAD: Async DNS resolution to prevent DNS rebinding attacks
       const isProduction = process.env.NODE_ENV === 'production';
 
-      const ssrfA = validateURLForSSRF(urlA, {
-        requireHttps: false,
+      const ssrfA = await validateWebhookURLWithDNS(urlA, {
         allowLocalhost: !isProduction,
       });
       if (!ssrfA.safe) {
         return sendError(reply, 400, 'BAD_REQUEST', `URL A is not allowed: ${ssrfA.error}`);
       }
 
-      const ssrfB = validateURLForSSRF(urlB, {
-        requireHttps: false,
+      const ssrfB = await validateWebhookURLWithDNS(urlB, {
         allowLocalhost: !isProduction,
       });
       if (!ssrfB.safe) {

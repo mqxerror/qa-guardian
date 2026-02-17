@@ -40,6 +40,7 @@ const log = createLogger('worker');
 const QUEUE_NAME = 'test-execution';
 const MAX_CONCURRENCY = parseInt(process.env.EXECUTION_MAX_CONCURRENCY || '2', 10);
 const JOB_TIMEOUT = parseInt(process.env.EXECUTION_JOB_TIMEOUT || '600000', 10); // 10 minutes
+const JOB_RETRY_ATTEMPTS = parseInt(process.env.EXECUTION_RETRY_ATTEMPTS || '3', 10);
 
 log.info({ maxConcurrency: MAX_CONCURRENCY, jobTimeoutMs: JOB_TIMEOUT }, 'Starting QA Guardian Test Execution Worker');
 
@@ -167,8 +168,50 @@ async function startWorker(): Promise<void> {
     log.debug({ jobId: job.id }, 'Job completed');
   });
 
-  worker.on('failed', (job, err) => {
-    log.error({ jobId: job?.id, error: err.message }, 'Job failed');
+  // Feature #BMAD: Dead-letter detection for permanently failed jobs
+  // Defense-in-depth: runTestsForRun handles most errors internally, but this catches
+  // edge cases (run not found, import failures, stalled job removal)
+  worker.on('failed', async (job, err) => {
+    try {
+      // BullMQ can pass job=undefined for stalled jobs removed by removeOnFail
+      if (!job) {
+        log.fatal({ error: err.message }, 'JOB PERMANENTLY FAILED - stalled job removed (no job reference)');
+        return;
+      }
+
+      const maxAttempts = job.opts?.attempts ?? JOB_RETRY_ATTEMPTS;
+      const isExhausted = job.attemptsMade >= maxAttempts;
+
+      if (isExhausted) {
+        log.fatal({
+          jobId: job.id,
+          runId: job.data?.runId,
+          attempts: job.attemptsMade,
+          maxAttempts,
+          error: err.message,
+        }, 'JOB PERMANENTLY FAILED - all retries exhausted');
+
+        // Update run status in DB to 'error' so UI doesn't show "running" forever
+        if (job.data?.runId) {
+          try {
+            const { updateTestRun } = await import('./services/repositories/test-runs.js');
+            await updateTestRun(job.data.runId, { status: 'error', error: `Job permanently failed after ${job.attemptsMade} attempts: ${err.message}` });
+          } catch (dbErr) {
+            log.error({ runId: job.data.runId, error: dbErr instanceof Error ? dbErr.message : String(dbErr) }, 'Failed to update run status after exhausted retries');
+          }
+        }
+      } else {
+        log.warn({
+          jobId: job.id,
+          runId: job.data?.runId,
+          attempt: job.attemptsMade,
+          maxAttempts,
+          error: err.message,
+        }, 'Job failed - will retry');
+      }
+    } catch (handlerErr) {
+      log.error({ error: handlerErr instanceof Error ? handlerErr.message : String(handlerErr) }, 'Error in failed-job handler');
+    }
   });
 
   worker.on('error', (err) => {

@@ -60,6 +60,37 @@ import {
 const log = createLogger('quick-test-runner');
 
 // ============================================================
+// Feature #BMAD: Per-wave timeout helper to prevent hung waves
+// ============================================================
+
+/**
+ * Wraps a wave promise in a timeout. If the wave doesn't resolve
+ * within timeoutMs, throws an error instead of blocking indefinitely.
+ *
+ * BMAD fix: clears timer on success to prevent event loop leak,
+ * and suppresses unhandled rejection from the orphaned promise.
+ */
+async function runWaveWithTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  waveName: string,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${waveName} timed out after ${timeoutMs / 1000}s`)), timeoutMs);
+  });
+
+  // Suppress unhandled rejection from the losing promise (whichever loses the race)
+  promise.catch(() => {});
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    clearTimeout(timer!);
+  }
+}
+
+// ============================================================
 // Types - Most types imported from quick-test-waves/types.ts
 // Only keep types needed for external consumers
 // ============================================================
@@ -307,7 +338,8 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
 
     try {
       const wave3Start = Date.now();
-      securityResult = await runSecurityScan(url, browser);
+      // Feature #BMAD: 45s timeout — 30s page.goto + multiple 5s path probes + buffer
+      securityResult = await runWaveWithTimeout(runSecurityScan(url, browser), 45000, 'Security Scan');
       testResult.waves[2].status = 'completed';
       testResult.waves[2].completedAt = new Date();
       testResult.waves[2].duration = Date.now() - wave3Start;
@@ -396,7 +428,8 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
         emitWaveProgress(orgId, runId, 5, 30, 'Running axe-core WCAG 2.1 AA scan...');
 
         // Feature #680: Call extracted module
-        accessibilityResult = await runAccessibilityScan(url, a11yBrowser);
+        // Feature #BMAD: 45s timeout — 30s page.goto + axe-core scan + buffer
+        accessibilityResult = await runWaveWithTimeout(runAccessibilityScan(url, a11yBrowser), 45000, 'Accessibility Scan');
 
         emitWaveProgress(orgId, runId, 5, 80, 'Processing accessibility results...');
 
@@ -429,7 +462,8 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       const wave6Start = Date.now();
       emitWaveProgress(orgId, runId, 6, 10, 'Probing for OpenAPI specs...');
 
-      apiDiscoveryResult = await runAPIDiscovery(url);
+      // Feature #BMAD: 20s timeout — HTTP probes only, no browser
+      apiDiscoveryResult = await runWaveWithTimeout(runAPIDiscovery(url), 20000, 'API Discovery');
 
       emitWaveProgress(orgId, runId, 6, 90, 'Finalizing API discovery results...');
 
@@ -469,7 +503,8 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
         emitWaveProgress(orgId, runId, 7, 30, 'Detecting schema markup...');
         emitWaveProgress(orgId, runId, 7, 45, 'Checking navigation elements...');
         emitWaveProgress(orgId, runId, 7, 60, 'Detecting tracking scripts...');
-        seoResult = await runSeoAnalysis(url, seoBrowser);
+        // Feature #BMAD: 45s timeout — 30s page.goto + multiple checks + buffer
+        seoResult = await runWaveWithTimeout(runSeoAnalysis(url, seoBrowser), 45000, 'SEO Analysis');
         emitWaveProgress(orgId, runId, 7, 85, 'Checking crawlability (robots.txt, sitemap)...');
 
         testResult.waves[6].status = 'completed';
