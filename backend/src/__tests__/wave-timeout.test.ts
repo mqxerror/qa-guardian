@@ -1,36 +1,16 @@
 /**
  * Feature #BMAD: Tests for the runWaveWithTimeout helper
  *
- * Verifies that the Promise.race timeout pattern correctly:
+ * Tests the REAL production function from utils/timeout.ts:
  * - Returns results when promise resolves before timeout
  * - Throws descriptive error when promise exceeds timeout
  * - Handles edge cases (instant resolve, exact timeout boundary)
+ * - Cleans up timers (clearTimeout in finally block)
+ * - Suppresses orphaned promise rejections
  */
 
 import { describe, it, expect } from 'vitest';
-
-/**
- * Replicate the runWaveWithTimeout helper from quick-test-runner.ts
- * We test the pattern directly rather than importing (avoids Playwright dependency chain)
- * NOTE: This must match the production implementation including clearTimeout + orphaned promise suppression
- */
-async function runWaveWithTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  waveName: string,
-): Promise<T> {
-  let timer: ReturnType<typeof setTimeout>;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`${waveName} timed out after ${timeoutMs / 1000}s`)), timeoutMs);
-  });
-  // Suppress unhandled rejection from orphaned promise when timeout wins the race
-  promise.catch(() => {});
-  try {
-    return await Promise.race([promise, timeoutPromise]);
-  } finally {
-    clearTimeout(timer!);
-  }
-}
+import { runWaveWithTimeout } from '../utils/timeout.js';
 
 describe('runWaveWithTimeout', () => {
   it('returns result when promise resolves before timeout', async () => {
@@ -91,5 +71,20 @@ describe('runWaveWithTimeout', () => {
     );
     expect(result).toEqual(complexResult);
     expect(result.headers.missing).toContain('X-Frame-Options');
+  });
+
+  it('does not produce unhandled rejections from orphaned promises', async () => {
+    // The losing promise (slowPromise) would normally produce an unhandled rejection
+    // when the timeout fires and it eventually resolves. The function should suppress this.
+    const slowPromise = new Promise<string>((_, reject) =>
+      setTimeout(() => reject(new Error('late rejection')), 100)
+    );
+
+    await expect(
+      runWaveWithTimeout(slowPromise, 10, 'Orphan Test')
+    ).rejects.toThrow('Orphan Test timed out after 0.01s');
+
+    // Wait for the orphaned promise to settle — no unhandledRejection should occur
+    await new Promise(resolve => setTimeout(resolve, 150));
   });
 });

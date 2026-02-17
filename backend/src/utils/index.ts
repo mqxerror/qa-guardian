@@ -670,6 +670,8 @@ const PRIVATE_IPV4_RANGES: Array<{ start: number; end: number; name: string }> =
   { start: ipToNumber('169.254.0.0'), end: ipToNumber('169.254.255.255'), name: '169.254.0.0/16 (link-local)' },
   // 0.0.0.0/8 - Current network
   { start: ipToNumber('0.0.0.0'), end: ipToNumber('0.255.255.255'), name: '0.0.0.0/8 (current network)' },
+  // Feature #BMAD: 100.64.0.0/10 - CGNAT (RFC 6598), used internally in cloud environments
+  { start: ipToNumber('100.64.0.0'), end: ipToNumber('100.127.255.255'), name: '100.64.0.0/10 (CGNAT)' },
 ];
 
 /**

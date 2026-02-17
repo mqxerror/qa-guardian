@@ -59,36 +59,8 @@ import {
 // Feature #449: Use structured logger instead of console.*
 const log = createLogger('quick-test-runner');
 
-// ============================================================
-// Feature #BMAD: Per-wave timeout helper to prevent hung waves
-// ============================================================
-
-/**
- * Wraps a wave promise in a timeout. If the wave doesn't resolve
- * within timeoutMs, throws an error instead of blocking indefinitely.
- *
- * BMAD fix: clears timer on success to prevent event loop leak,
- * and suppresses unhandled rejection from the orphaned promise.
- */
-async function runWaveWithTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  waveName: string,
-): Promise<T> {
-  let timer: ReturnType<typeof setTimeout>;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`${waveName} timed out after ${timeoutMs / 1000}s`)), timeoutMs);
-  });
-
-  // Suppress unhandled rejection from the losing promise (whichever loses the race)
-  promise.catch(() => {});
-
-  try {
-    return await Promise.race([promise, timeoutPromise]);
-  } finally {
-    clearTimeout(timer!);
-  }
-}
+// Feature #BMAD: Per-wave timeout helper extracted to shared utility for testability
+import { runWaveWithTimeout } from '../utils/timeout.js';
 
 // ============================================================
 // Types - Most types imported from quick-test-waves/types.ts
@@ -283,7 +255,12 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
 
     try {
       const wave2Start = Date.now();
-      visualResult = await runVisualPerformance(url, browser, browserType);
+      // Feature #BMAD: 60s timeout — heaviest wave: 2x page.goto (30s each) + CWV measurements
+      visualResult = await runWaveWithTimeout(
+        runVisualPerformance(url, browser, browserType),
+        60000,
+        'Visual + Performance',
+      );
       testResult.waves[1].status = 'completed';
       testResult.waves[1].completedAt = new Date();
       testResult.waves[1].duration = Date.now() - wave2Start;
