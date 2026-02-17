@@ -66,7 +66,7 @@ export interface QueueHealth {
 const QUEUE_NAME = 'test-execution';
 const MAX_CONCURRENCY = parseInt(process.env.EXECUTION_MAX_CONCURRENCY || '2', 10);
 const JOB_TIMEOUT = parseInt(process.env.EXECUTION_JOB_TIMEOUT || '600000', 10); // 10 minutes default
-const JOB_RETRY_ATTEMPTS = parseInt(process.env.EXECUTION_RETRY_ATTEMPTS || '1', 10);
+const JOB_RETRY_ATTEMPTS = parseInt(process.env.EXECUTION_RETRY_ATTEMPTS || '3', 10);
 
 // Feature #169: When EXECUTION_MAX_CONCURRENCY=0, the API server only enqueues jobs
 // and does NOT start a worker. A separate worker container handles execution.
@@ -208,17 +208,24 @@ export async function initializeExecutionQueue(): Promise<boolean> {
 
     // Clean up stale active jobs from previous container instances
     // When containers restart, jobs that were "active" become orphaned
-    try {
-      const activeJobs = await queue.getActive();
-      if (activeJobs.length > 0) {
-        logger.warn({ activeCount: activeJobs.length }, 'Found stale active jobs from previous instance - moving to failed');
-        for (const job of activeJobs) {
-          await job.moveToFailed(new Error('Stale job from previous container instance'), 'stale-cleanup');
-          logger.info({ jobId: job.id, runId: job.data?.runId }, 'Moved stale active job to failed');
+    // IMPORTANT: Only do this when we're running a local worker (not API_ONLY_MODE).
+    // In API_ONLY_MODE, a separate worker container is processing jobs — cleaning
+    // "active" jobs here would kill the worker's in-flight executions.
+    if (!API_ONLY_MODE) {
+      try {
+        const activeJobs = await queue.getActive();
+        if (activeJobs.length > 0) {
+          logger.warn({ activeCount: activeJobs.length }, 'Found stale active jobs from previous instance - moving to failed');
+          for (const job of activeJobs) {
+            await job.moveToFailed(new Error('Stale job from previous container instance'), 'stale-cleanup');
+            logger.info({ jobId: job.id, runId: job.data?.runId }, 'Moved stale active job to failed');
+          }
         }
+      } catch (cleanupErr) {
+        logger.warn({ error: cleanupErr }, 'Failed to clean up stale jobs (non-fatal)');
       }
-    } catch (cleanupErr) {
-      logger.warn({ error: cleanupErr }, 'Failed to clean up stale jobs (non-fatal)');
+    } else {
+      logger.info('API_ONLY_MODE: Skipping stale job cleanup (separate worker handles execution)');
     }
 
     return true;

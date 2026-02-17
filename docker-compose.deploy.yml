@@ -13,6 +13,10 @@
 services:
   backend:
     # Override networks: keep qa-network (for inter-service comms) + add dokploy-network (for Traefik)
+    environment:
+      # Production: Backend is API-only — separate worker container handles test execution.
+      # Prevents dual-worker race condition and stale-job-cleanup killing worker's active jobs.
+      - EXECUTION_MAX_CONCURRENCY=0
     networks:
       qa-network: {}
       dokploy-network: {}
