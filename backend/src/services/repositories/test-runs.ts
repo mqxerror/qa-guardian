@@ -444,6 +444,48 @@ export async function updateTestRun(id: string, updates: Partial<TestRun>): Prom
 }
 
 /**
+ * Feature #BMAD: Clean up zombie runs stuck in 'running' or 'cancelling' state.
+ * Called on worker/backend startup to recover from container restarts that
+ * killed in-flight test executions without updating the DB.
+ *
+ * @returns Number of zombie runs cleaned up
+ */
+export async function cleanupZombieRuns(): Promise<number> {
+  if (!isDatabaseConnected()) {
+    logger.warn('[TestRunsRepo] Cannot clean zombie runs - database not connected');
+    return 0;
+  }
+
+  try {
+    // Mark any 'running' or 'cancelling' runs as 'error'.
+    // These are orphans from a previous container lifecycle.
+    // If BullMQ retries the stalled job, the orchestrator will set status back to 'running'.
+    const result = await query(
+      `UPDATE test_runs
+       SET status = 'error',
+           error_message = 'Run interrupted by container restart — will be retried if queue job still exists',
+           completed_at = NOW()
+       WHERE status IN ('running', 'cancelling')
+       RETURNING id, suite_id, status`,
+      []
+    );
+
+    const cleaned = result?.rowCount ?? 0;
+    if (cleaned > 0) {
+      const ids = result?.rows?.map((r) => (r as Record<string, unknown>).id as string) || [];
+      logger.warn({ count: cleaned, runIds: ids.slice(0, 10) },
+        '[TestRunsRepo] Cleaned up zombie runs from previous lifecycle');
+    } else {
+      logger.info('[TestRunsRepo] No zombie runs found during startup cleanup');
+    }
+    return cleaned;
+  } catch (error) {
+    logger.error({ error }, '[TestRunsRepo] Failed to clean up zombie runs');
+    return 0;
+  }
+}
+
+/**
  * Delete a test run
  */
 export async function deleteTestRun(id: string): Promise<boolean> {

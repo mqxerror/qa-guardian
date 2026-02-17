@@ -417,6 +417,24 @@ async function start() {
       log.info('Redis not available - using in-memory cache fallback');
     }
 
+    // Feature #BMAD: Clean up zombie runs from previous lifecycle.
+    // After a deploy/restart, runs stuck in 'running' are orphans — mark them as 'error'.
+    // Done after cache init so we can flush stale cached run listings.
+    if (dbConnected) {
+      try {
+        const { cleanupZombieRuns } = await import('./services/repositories/test-runs.js');
+        const cleaned = await cleanupZombieRuns();
+        if (cleaned > 0) {
+          log.warn({ count: cleaned }, 'Cleaned up zombie runs from previous container lifecycle');
+          // Flush all cached run listings so the frontend sees the updated statuses
+          await cache.clear();
+          log.info('Flushed cache after zombie cleanup');
+        }
+      } catch (err) {
+        log.error({ error: err }, 'Failed to run zombie cleanup - continuing startup');
+      }
+    }
+
     // Feature #155: Initialize BullMQ execution queue (requires Redis)
     const queueInitialized = await initializeExecutionQueue();
     if (queueInitialized) {

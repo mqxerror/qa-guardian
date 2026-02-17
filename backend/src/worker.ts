@@ -120,6 +120,18 @@ async function startWorker(): Promise<void> {
     process.exit(1);
   }
 
+  // Feature #BMAD: Clean up zombie runs from previous lifecycle before processing new jobs.
+  // Runs stuck in 'running' or 'cancelling' are orphans from the previous container.
+  try {
+    const { cleanupZombieRuns } = await import('./services/repositories/test-runs.js');
+    const cleaned = await cleanupZombieRuns();
+    if (cleaned > 0) {
+      log.warn({ count: cleaned }, 'Cleaned up zombie runs from previous container lifecycle');
+    }
+  } catch (err) {
+    log.error({ error: err }, 'Failed to run zombie cleanup - continuing startup');
+  }
+
   // Feature #200: Initialize Redis event publisher BEFORE loading execution module
   // This allows emitRunEvent() to publish events via Redis Pub/Sub
   const publisherInitialized = await initializeEventPublisher();
