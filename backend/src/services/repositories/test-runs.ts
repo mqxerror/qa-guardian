@@ -457,10 +457,12 @@ export async function cleanupZombieRuns(): Promise<number> {
   }
 
   try {
-    // Mark any 'running' or 'cancelling' runs as 'error'.
+    let totalCleaned = 0;
+
+    // 1. Mark any 'running' or 'cancelling' runs as 'error'.
     // These are orphans from a previous container lifecycle.
     // If BullMQ retries the stalled job, the orchestrator will set status back to 'running'.
-    const result = await query(
+    const runningResult = await query(
       `UPDATE test_runs
        SET status = 'error',
            error_message = 'Run interrupted by container restart — will be retried if queue job still exists',
@@ -470,15 +472,40 @@ export async function cleanupZombieRuns(): Promise<number> {
       []
     );
 
-    const cleaned = result?.rowCount ?? 0;
-    if (cleaned > 0) {
-      const ids = result?.rows?.map((r) => (r as Record<string, unknown>).id as string) || [];
-      logger.warn({ count: cleaned, runIds: ids.slice(0, 10) },
-        '[TestRunsRepo] Cleaned up zombie runs from previous lifecycle');
-    } else {
+    const runningCleaned = runningResult?.rowCount ?? 0;
+    if (runningCleaned > 0) {
+      const ids = runningResult?.rows?.map((r) => (r as Record<string, unknown>).id as string) || [];
+      logger.warn({ count: runningCleaned, runIds: ids.slice(0, 10) },
+        '[TestRunsRepo] Cleaned up zombie running/cancelling runs');
+      totalCleaned += runningCleaned;
+    }
+
+    // 2. Feature #BMAD: Clean up stale 'pending' runs older than 10 minutes.
+    // These are runs created before a restart where the queue was unavailable,
+    // or runs whose BullMQ job was lost during container recreation.
+    const pendingResult = await query(
+      `UPDATE test_runs
+       SET status = 'error',
+           error_message = 'Run was pending for over 10 minutes — likely orphaned by container restart',
+           completed_at = NOW()
+       WHERE status = 'pending'
+         AND created_at < NOW() - INTERVAL '10 minutes'
+       RETURNING id, suite_id, status`,
+      []
+    );
+
+    const pendingCleaned = pendingResult?.rowCount ?? 0;
+    if (pendingCleaned > 0) {
+      const ids = pendingResult?.rows?.map((r) => (r as Record<string, unknown>).id as string) || [];
+      logger.warn({ count: pendingCleaned, runIds: ids.slice(0, 10) },
+        '[TestRunsRepo] Cleaned up stale pending runs');
+      totalCleaned += pendingCleaned;
+    }
+
+    if (totalCleaned === 0) {
       logger.info('[TestRunsRepo] No zombie runs found during startup cleanup');
     }
-    return cleaned;
+    return totalCleaned;
   } catch (error) {
     logger.error({ error }, '[TestRunsRepo] Failed to clean up zombie runs');
     return 0;

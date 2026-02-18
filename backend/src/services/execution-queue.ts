@@ -617,8 +617,20 @@ export async function enqueueOrExecute(
   }
 
   // In API-only mode, never execute directly - the whole point is to keep Chromium out of the API process
+  // Feature #BMAD: Fail-fast — mark run as 'error' immediately so it doesn't stay 'pending' forever
   if (API_ONLY_MODE) {
     logger.error({ runId }, 'Queue unavailable in API-only mode - is Redis running?');
+    try {
+      const { updateTestRun } = await import('./repositories/test-runs.js');
+      await updateTestRun(runId, {
+        status: 'error',
+        error: 'Execution queue unavailable — Redis or worker container offline. Please retry.',
+        completed_at: new Date(),
+      });
+      logger.warn({ runId }, 'Marked run as error due to queue unavailability');
+    } catch (dbErr) {
+      logger.error({ runId, error: dbErr instanceof Error ? dbErr.message : String(dbErr) }, 'Failed to mark run as error after queue failure');
+    }
     return { queued: false, error: 'Queue unavailable - worker container required' };
   }
 

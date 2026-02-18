@@ -127,6 +127,13 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
         triggeredBy: getUserId(request),
       });
 
+      // Feature #BMAD: Fail-fast — return 503 if queue is unavailable (run already marked as error in DB)
+      if (queueResult.error) {
+        run.status = 'error';
+        setTestRun(id, run);
+        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Runner offline / queue unavailable. Please try again later.');
+      }
+
       // Update status to 'queued' if the run was queued (not executed directly)
       if (queueResult.queued) {
         run.status = 'pending'; // pending = waiting in queue
@@ -202,6 +209,13 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
       const queueResult = await enqueueOrExecute(id, testType, {
         triggeredBy: getUserId(request),
       });
+
+      // Feature #BMAD: Fail-fast — return 503 if queue is unavailable (run already marked as error in DB)
+      if (queueResult.error) {
+        run.status = 'error';
+        setTestRun(id, run);
+        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Runner offline / queue unavailable. Please try again later.');
+      }
 
       // Update status if queued
       if (queueResult.queued) {
@@ -290,6 +304,13 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
         triggeredBy: getUserId(request),
       });
 
+      // Feature #BMAD: Fail-fast — return 503 if queue is unavailable (run already marked as error in DB)
+      if (queueResult.error) {
+        run.status = 'error';
+        setTestRun(id, run);
+        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Runner offline / queue unavailable. Please try again later.');
+      }
+
       if (queueResult.queued) {
         logger.info(`[RunTrigger] Rerun ${id} queued at position ${queueResult.position || 'unknown'}`);
       }
@@ -302,7 +323,7 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
           organization_id: orgId,
           browser: browserToUse,
           branch: branchToUse,
-          status: 'pending',
+          status: run.status,
           created_at: run.created_at.toISOString(),
           test_ids: validTestIds,
         },
