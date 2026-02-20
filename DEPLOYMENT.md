@@ -668,12 +668,42 @@ docker stats --no-stream
 # Check Traefik logs for routing issues
 docker logs dokploy-traefik 2>&1 | tail -50
 
-# Verify backend is on dokploy-network
+# Verify backend and frontend are on dokploy-network
 docker inspect qa-guardian-backend --format='{{json .NetworkSettings.Networks}}' | jq 'keys'
-# Should include both "qa-guardian_qa-network" and "dokploy-network"
+docker inspect qa-guardian-frontend --format='{{json .NetworkSettings.Networks}}' | jq 'keys'
+# Both should include "qa-guardian_qa-network" and "dokploy-network"
 
-# Test routing directly (any non-502 confirms Traefik can reach the backend)
-curl -s -o /dev/null -w "%{http_code}" https://qa.pixelcraftedmedia.com/api/v1/health
+# Verify traefik.docker.network label is set (required for multi-network containers)
+docker inspect qa-guardian-frontend --format='{{index .Config.Labels "traefik.docker.network"}}'
+# Should return: dokploy-network
+
+# Test routing directly
+curl -s -o /dev/null -w "Frontend: %{http_code}\n" https://qa.pixelcraftedmedia.com/
+curl -s -o /dev/null -w "Backend API: %{http_code}\n" https://qa.pixelcraftedmedia.com/api/v1/health
+# Frontend should be 200, Backend API should be non-502 (404 is OK -- proves routing works)
+
+# Check for conflicts between Docker labels and Dokploy file config
+docker exec dokploy-traefik wget -qO- http://localhost:8080/api/http/routers 2>&1 | python3 -m json.tool | grep -B 2 'qa-guardian'
+# Look for duplicate @docker vs @file entries -- file config takes priority if its priority number is higher
+```
+
+### Dokploy File Config
+
+Traefik routing comes from two sources:
+
+1. **Docker labels** (in `docker-compose.deploy.yml`) -- handles frontend, backend API, WebSocket, HTTP-to-HTTPS redirect
+2. **Dokploy file config** (`/etc/dokploy/traefik/dynamic/qa-guardian.yml`) -- handles `/health` and `/mcp` routes only
+
+The file config must NOT duplicate routes already in Docker labels. If both define the same router name (e.g., `qa-guardian-frontend`), Traefik merges them by provider -- the `@file` version may have higher auto-calculated priority and win, causing 502 if it points to a wrong port.
+
+```bash
+# View current file config
+cat /etc/dokploy/traefik/dynamic/qa-guardian.yml
+
+# The file should only contain:
+# - qa-guardian-health router (priority 100) -> backend:3006
+# - qa-guardian-mcp router (priority 150) -> mcp:3008
+# - redirect-to-https and mcp-stripprefix middlewares
 ```
 
 ---
@@ -847,24 +877,54 @@ This is already handled throughout the codebase. If you see this error, a new fi
 
 ### 502 Bad Gateway Through Traefik
 
-Traefik returns 502 when it cannot reach the backend container.
+Traefik returns 502 when it cannot reach a container. This can happen for several reasons:
+
+**Step 1: Check if the container is running and healthy**
 
 ```bash
-# 1. Check if backend is running
 docker ps --filter name=qa-guardian-backend
+docker ps --filter name=qa-guardian-frontend
+docker exec qa-guardian-backend curl -sf http://localhost:3001/health
+docker exec qa-guardian-frontend curl -sf http://localhost/health
+```
 
-# 2. Verify backend is on dokploy-network
-docker inspect qa-guardian-backend --format='{{json .NetworkSettings.Networks}}' | jq 'keys'
+**Step 2: Verify the container is on dokploy-network**
+
+```bash
+docker inspect qa-guardian-frontend --format='{{json .NetworkSettings.Networks}}' | jq 'keys'
 # Must include "dokploy-network"
 
-# 3. If not on dokploy-network, you deployed without the overlay
+# If not on dokploy-network, you deployed without the overlay
 docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate backend frontend
+```
 
-# 4. Check Traefik can see the service
-docker logs dokploy-traefik 2>&1 | grep "qa-guardian"
+**Step 3: Check for Dokploy file config conflicts**
 
-# 5. Verify the backend is actually listening
-docker exec qa-guardian-backend curl -sf http://localhost:3001/health
+Dokploy stores Traefik routing rules in `/etc/dokploy/traefik/dynamic/qa-guardian.yml`. If this file has stale routes that conflict with Docker labels, the file-based routes may win due to higher priority.
+
+```bash
+# View the file-based config
+cat /etc/dokploy/traefik/dynamic/qa-guardian.yml
+
+# Check Traefik's active routers via API (look for duplicate @file vs @docker entries)
+docker exec dokploy-traefik wget -qO- http://localhost:8080/api/http/routers | python3 -m json.tool | grep -A 5 'qa-guardian-frontend'
+
+# Check which service Traefik is routing to (look for wrong ports or IPs)
+docker exec dokploy-traefik wget -qO- http://localhost:8080/api/http/services | python3 -m json.tool | grep -A 5 'qa-guardian-frontend'
+```
+
+The file config should only contain routes NOT handled by Docker labels (`/health`, `/mcp`). Frontend, backend API, and WebSocket routes are managed via Docker labels in `docker-compose.deploy.yml`.
+
+**Step 4: Test connectivity from Traefik to the container**
+
+When a container is on multiple networks, Traefik must use the correct one. The `traefik.docker.network=dokploy-network` label ensures this.
+
+```bash
+# Get the container's dokploy-network IP
+docker inspect qa-guardian-frontend --format='{{(index .NetworkSettings.Networks "dokploy-network").IPAddress}}'
+
+# Test from inside the Traefik container
+docker exec dokploy-traefik wget -qO- --timeout=3 http://<IP>:80/health
 ```
 
 ### Container Fails to Start
