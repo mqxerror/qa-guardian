@@ -21,6 +21,8 @@ services:
       qa-network: {}
       dokploy-network: {}
     labels:
+      # --- Traefik: Network selection (required when container is on multiple networks) ---
+      - "traefik.docker.network=dokploy-network"
       # --- Traefik: API routing ---
       - "traefik.enable=true"
       - "traefik.http.routers.qa-guardian-api.rule=Host(`qa.pixelcraftedmedia.com`) && PathPrefix(`/api`)"
@@ -47,6 +49,8 @@ services:
       qa-network: {}
       dokploy-network: {}
     labels:
+      # --- Traefik: Network selection (required when container is on multiple networks) ---
+      - "traefik.docker.network=dokploy-network"
       # --- Traefik: Frontend catch-all routing ---
       - "traefik.enable=true"
       - "traefik.http.routers.qa-guardian-frontend.rule=Host(`qa.pixelcraftedmedia.com`)"
