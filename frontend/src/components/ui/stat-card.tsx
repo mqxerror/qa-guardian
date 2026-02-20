@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Link } from "react-router-dom"
 import { LucideIcon, TrendingDown, TrendingUp, Minus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Card, CardContent } from "./card"
@@ -11,6 +12,10 @@ interface StatCardProps {
   trend?: "up" | "down" | "neutral"
   trendValue?: string
   className?: string
+  /** Optional link target for clickable stat cards */
+  href?: string
+  /** Compact mode for single-row stat bar */
+  compact?: boolean
 }
 
 export function StatCard({
@@ -20,6 +25,8 @@ export function StatCard({
   trend,
   trendValue,
   className,
+  href,
+  compact,
 }: StatCardProps) {
   const prefersReducedMotion = useReducedMotion()
 
@@ -35,11 +42,36 @@ export function StatCard({
       ? "text-destructive"
       : "text-muted-foreground"
 
-  return (
+  // Phase 3: Compact mode for single-row stat bar
+  if (compact) {
+    const content = (
+      <div className={cn(
+        "flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors",
+        href && "hover:bg-muted/50 cursor-pointer",
+        className
+      )}>
+        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 flex-shrink-0">
+          <Icon className="h-4 w-4 text-primary" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-lg font-bold tracking-tight leading-none">{value}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+        </div>
+      </div>
+    )
+
+    if (href) {
+      return <Link to={href}>{content}</Link>
+    }
+    return content
+  }
+
+  const card = (
     <Card
       className={cn(
         "relative overflow-hidden",
         !prefersReducedMotion && "animate-card-enter",
+        href && "hover:bg-muted/30 cursor-pointer transition-colors",
         className
       )}
     >
@@ -62,4 +94,9 @@ export function StatCard({
       </CardContent>
     </Card>
   )
+
+  if (href) {
+    return <Link to={href}>{card}</Link>
+  }
+  return card
 }

@@ -11,8 +11,8 @@
  * Feature #1074: Quick link to healing options
  */
 
-import React, { useState } from 'react';
-import { FlaskConical, CheckCircle2, XCircle, Clock, Loader2, ChevronDown, ChevronUp, ImageIcon, Eye, ZoomIn, ChevronRight, Pencil } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { FlaskConical, CheckCircle2, XCircle, Clock, Loader2, ChevronDown, ChevronUp, ImageIcon, Eye, ZoomIn, ChevronRight, Pencil, AlertTriangle, WifiOff } from 'lucide-react';
 import type { EditSelectorModalState } from './modals';
 import { ScoreCard } from '../ui/score-card';
 import { WaveProgressCard, type WaveProgressStatus, type StepStatus } from '../ui/wave-progress-card';
@@ -36,8 +36,10 @@ export interface ScreenshotHistoryItem {
 
 interface SuiteRun {
  id: string;
- status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled';
+ status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled' | 'error';
  duration_ms?: number;
+ error_message?: string;
+ started_at?: string;
  results?: SuiteRunResult[];
 }
 
@@ -99,6 +101,8 @@ interface SuiteRunResultsProps {
  // WebSocket-driven progress counters (real-time updates during execution)
  wsCompletedTests?: number;
  wsTotalTests?: number;
+ // Phase 4: Stale detection - timestamp of last WebSocket progress event
+ lastProgressTimestamp?: number;
  onCancelSuiteRun: () => void;
  onExpandScreenshot: (base64: string) => void;
  onEditSelector: (state: EditSelectorModalState) => void;
@@ -116,6 +120,7 @@ export function SuiteRunResults({
  currentStep,
  wsCompletedTests,
  wsTotalTests,
+ lastProgressTimestamp,
  onCancelSuiteRun,
  onExpandScreenshot,
  onEditSelector,
@@ -125,6 +130,71 @@ export function SuiteRunResults({
  const [expandedTestIds, setExpandedTestIds] = useState<Set<string>>(new Set());
  // Feature #576: Show all tests toggle for 20+ test suites
  const [showAllTests, setShowAllTests] = useState(false);
+
+ // Phase 4: Elapsed time counter for sticky header
+ const [elapsed, setElapsed] = useState(0);
+ const startTimeRef = useRef<number | null>(null);
+
+ // Phase 4: Stale detection state
+ const [staleSince, setStaleSince] = useState<number | null>(null);
+ const lastProgressRef = useRef<number>(Date.now());
+
+ // Track elapsed time when running
+ useEffect(() => {
+  if (!suiteRun) return;
+  const isActive = suiteRun.status === 'running' || suiteRun.status === 'pending';
+  if (!isActive) {
+   startTimeRef.current = null;
+   return;
+  }
+
+  if (!startTimeRef.current) {
+   startTimeRef.current = suiteRun.started_at
+    ? new Date(suiteRun.started_at).getTime()
+    : Date.now();
+  }
+
+  const interval = setInterval(() => {
+   setElapsed(Math.floor((Date.now() - (startTimeRef.current || Date.now())) / 1000));
+  }, 1000);
+
+  return () => clearInterval(interval);
+ }, [suiteRun?.status, suiteRun?.started_at]);
+
+ // Phase 4: Stale detection - track time since last progress
+ useEffect(() => {
+  if (lastProgressTimestamp) {
+   lastProgressRef.current = lastProgressTimestamp;
+   setStaleSince(null);
+  }
+ }, [lastProgressTimestamp]);
+
+ useEffect(() => {
+  if (!suiteRun) return;
+  const isActive = suiteRun.status === 'running';
+  if (!isActive) {
+   setStaleSince(null);
+   return;
+  }
+
+  const interval = setInterval(() => {
+   const gap = Date.now() - lastProgressRef.current;
+   if (gap >= 30000) {
+    setStaleSince(gap);
+   } else {
+    setStaleSince(null);
+   }
+  }, 5000);
+
+  return () => clearInterval(interval);
+ }, [suiteRun?.status]);
+
+ // Format elapsed seconds to MM:SS
+ const formatElapsed = (secs: number) => {
+  const m = Math.floor(secs / 60).toString().padStart(2, '0');
+  const s = (secs % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+ };
 
  if (!suiteRun) return null;
 
@@ -217,6 +287,56 @@ export function SuiteRunResults({
  <div className="mt-6 rounded-lg border border-border bg-card p-6">
  <h2 className="text-xl font-semibold text-foreground mb-4">Suite Run</h2>
 
+ {/* Phase 4: Sticky run header when active */}
+ {isRunning && (
+ <div className="sticky top-0 z-10 -mx-6 -mt-2 mb-4 px-6 py-3 bg-card border-b border-border flex items-center gap-4 flex-wrap">
+  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
+   suiteRun.status === 'running' ? 'bg-primary/10 text-primary' : 'bg-warning/10 text-warning'
+  }`}>
+   {suiteRun.status === 'running' ? (
+    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Running</>
+   ) : (
+    <><Clock className="h-3.5 w-3.5" /> Pending</>
+   )}
+  </span>
+  <span className="text-sm text-muted-foreground font-mono">{formatElapsed(elapsed)} elapsed</span>
+  <span className="text-sm text-muted-foreground">
+   {completedCount}/{totalCount} tests
+  </span>
+  <div className="flex-1 min-w-[100px] max-w-[200px] h-2 rounded-full bg-secondary overflow-hidden">
+   <div className="h-full bg-primary transition-all duration-300 ease-out" style={{ width: `${progressPercent}%` }} />
+  </div>
+  <button
+   onClick={onCancelSuiteRun}
+   disabled={isCancellingSuite}
+   className="ml-auto rounded-md bg-destructive px-3 py-1 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+  >
+   {isCancellingSuite ? 'Cancelling...' : 'Cancel'}
+  </button>
+ </div>
+ )}
+
+ {/* Phase 4: Stale detection warning */}
+ {isRunning && staleSince !== null && (
+ <div className={`mb-4 rounded-lg border p-3 flex items-center gap-2 ${
+  staleSince >= 60000 ? 'border-destructive/30 bg-destructive/5' : 'border-warning/30 bg-warning/5'
+ }`}>
+  <WifiOff className={`h-4 w-4 flex-shrink-0 ${staleSince >= 60000 ? 'text-destructive' : 'text-warning'}`} />
+  <span className={`text-sm ${staleSince >= 60000 ? 'text-destructive' : 'text-warning'}`}>
+   No progress for {Math.floor(staleSince / 1000)}s — the runner may be offline.
+  </span>
+  {staleSince >= 60000 && (
+   <button
+    onClick={onCancelSuiteRun}
+    disabled={isCancellingSuite}
+    className="ml-auto text-sm text-destructive underline hover:no-underline"
+   >
+    Cancel run
+   </button>
+  )}
+ </div>
+ )}
+
  {/* Status and Duration */}
  <div className="flex items-center gap-4 mb-4">
  <span className={`rounded-full px-3 py-1 text-sm font-medium ${
@@ -224,10 +344,11 @@ export function SuiteRunResults({
  suiteRun.status === 'failed' ? 'bg-destructive/10 text-destructive' :
  suiteRun.status === 'running' ? 'bg-primary/10 text-primary' :
  suiteRun.status === 'pending' ? 'bg-warning/10 text-warning' :
- suiteRun.status === 'cancelled' ? 'bg-warning/10 text-warning' :
+ suiteRun.status === 'error' ? 'bg-warning/15 text-warning' :
+ suiteRun.status === 'cancelled' ? 'bg-muted text-foreground' :
  'bg-muted text-foreground'
  }`}>
- {suiteRun.status}
+ {suiteRun.status === 'error' ? 'Error' : suiteRun.status}
  </span>
  {suiteRun.duration_ms && (
  <span className="text-sm text-muted-foreground">
@@ -396,8 +517,20 @@ export function SuiteRunResults({
  </div>
  )}
 
+ {/* Error indicator */}
+ {suiteRun.status === 'error' && (
+ <div className="mb-4 rounded-lg border border-warning/30 bg-warning/5 p-4">
+ <div className="flex items-center gap-2 text-sm">
+ <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0" />
+ <span className="text-warning font-medium">
+  {suiteRun.error_message || 'Test run failed with an error. The worker may have crashed or gone offline.'}
+ </span>
+ </div>
+ </div>
+ )}
+
  {/* Feature #525: Suite Pass Rate ScoreCard on completion */}
- {(suiteRun.status === 'passed' || suiteRun.status === 'failed') && suiteRun.results && (
+ {(suiteRun.status === 'passed' || suiteRun.status === 'failed' || suiteRun.status === 'error') && suiteRun.results && (
  <div className="mb-4">
    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
      <ScoreCard

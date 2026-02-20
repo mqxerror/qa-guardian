@@ -17,10 +17,9 @@ import { EmptyStates } from '../components/ui/EmptyState';
 // Feature #337: Design system components
 import {
   PageHeader,
-  AnimatedCard,
   StatusPill,
-  CardContent,
 } from '../components/ui';
+import { DataTable, type DataTableColumn } from '../components/ui/DataTable';
 import { Plus, Archive, RotateCcw, Loader2 } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Button } from '@/components/ui/button';
@@ -214,84 +213,93 @@ export function ProjectsPage() {
           }
         />
 
-        {/* Projects list */}
+        {/* Phase 5: Projects table - denser and more scannable */}
         <div>
-          {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-40 bg-muted/50 rounded-lg animate-pulse" />
-              ))}
-            </div>
-          ) : filteredProjects.length === 0 ? (
-            /* Feature #126: Reusable empty state with CTA */
+          {filteredProjects.length === 0 && !isLoading ? (
             projects.length === 0 ? (
               EmptyStates.noProjects(canCreateProject ? () => setShowCreateModal(true) : undefined)
             ) : (
               EmptyStates.noSearchResults(selectedProjectFilter, () => setSelectedProjectFilter('all'))
             )
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredProjects.map((project, index) => (
-                <AnimatedCard
-                  key={project.id}
-                  variant="interactive"
-                  staggerIndex={index < 8 ? index : undefined}
-                  className={project.archived ? 'border-warning/30 opacity-75' : ''}
-                  onClick={() => navigate(`/projects/${project.id}`)}
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-semibold text-foreground truncate">{project.name}</h3>
-                          {project.archived && (
-                            <StatusPill status="warning">Archived</StatusPill>
-                          )}
-                        </div>
-                        {project.description && (
-                          <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
-                            {project.description}
-                          </p>
-                        )}
-                      </div>
-                      {(user?.role === 'admin' || user?.role === 'owner') && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleArchiveProject(project.id, !project.archived);
-                          }}
-                          disabled={archivingProjectId === project.id}
-                          className={`shrink-0 ${
-                            project.archived
-                              ? 'text-success hover:bg-success/10'
-                              : 'text-warning hover:bg-warning/10'
-                          }`}
-                          title={project.archived ? 'Unarchive project' : 'Archive project'}
-                        >
-                          {archivingProjectId === project.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : project.archived ? (
-                            <RotateCcw className="h-4 w-4" />
-                          ) : (
-                            <Archive className="h-4 w-4" />
-                          )}
-                        </Button>
+            <DataTable
+              data={filteredProjects as (Project & Record<string, unknown>)[]}
+              columns={[
+                {
+                  key: 'name',
+                  header: 'Name',
+                  sortable: true,
+                  render: (item) => (
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-foreground">{(item as unknown as Project).name}</span>
+                      {(item as unknown as Project).archived && (
+                        <StatusPill status="warning">Archived</StatusPill>
                       )}
                     </div>
-                    <p className="mt-4 text-xs text-muted-foreground">
-                      ID: {project.id}
-                      {project.archived_at && (
-                        <span className="ml-2">
-                          · Archived {new Date(project.archived_at).toLocaleDateString()}
-                        </span>
+                  ),
+                },
+                {
+                  key: 'description',
+                  header: 'Description',
+                  hideOnMobile: true,
+                  render: (item) => (
+                    <span className="text-sm text-muted-foreground truncate max-w-[300px] block">
+                      {(item as unknown as Project).description || '—'}
+                    </span>
+                  ),
+                },
+                {
+                  key: 'base_url',
+                  header: 'Base URL',
+                  hideOnMobile: true,
+                  render: (item) => {
+                    const p = item as unknown as Project;
+                    const url = p.base_url || p.repository_url;
+                    return (
+                      <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px] block">
+                        {url || '—'}
+                      </span>
+                    );
+                  },
+                },
+                ...(user?.role === 'admin' || user?.role === 'owner' ? [{
+                  key: 'actions',
+                  header: '',
+                  width: '60px',
+                  align: 'right' as const,
+                  render: (item: Project & Record<string, unknown>) => (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        handleArchiveProject(item.id, !item.archived);
+                      }}
+                      disabled={archivingProjectId === item.id}
+                      className={`shrink-0 ${
+                        item.archived
+                          ? 'text-success hover:bg-success/10'
+                          : 'text-warning hover:bg-warning/10'
+                      }`}
+                      title={item.archived ? 'Unarchive' : 'Archive'}
+                    >
+                      {archivingProjectId === item.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : item.archived ? (
+                        <RotateCcw className="h-4 w-4" />
+                      ) : (
+                        <Archive className="h-4 w-4" />
                       )}
-                    </p>
-                  </CardContent>
-                </AnimatedCard>
-              ))}
-            </div>
+                    </Button>
+                  ),
+                }] as DataTableColumn<Project & Record<string, unknown>>[] : []),
+              ]}
+              keyExtractor={(item) => (item as unknown as Project).id}
+              onRowClick={(item) => navigate(`/projects/${(item as unknown as Project).id}`)}
+              loading={isLoading}
+              hoverable
+              compact
+            />
           )}
         </div>
 

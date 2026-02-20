@@ -16,7 +16,7 @@ export interface TestRun {
   project_id?: string;
   test_id?: string;
   test_name?: string;
-  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled';
+  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled' | 'error';
   browser?: string;
   branch?: string;
   created_at: string;
@@ -50,7 +50,7 @@ export interface SuiteRunResultLocal {
  */
 export interface SuiteRunLocal {
   id: string;
-  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled';
+  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled' | 'error';
   started_at?: string;
   completed_at?: string;
   duration_ms?: number;

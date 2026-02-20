@@ -27,7 +27,7 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 // Feature #513: Removed unused Bell import
-import { ChevronDown, ChevronRight, Pin, LogOut, RefreshCw, Eye, EyeOff, Building2, Check, Users, Key, CreditCard, FileCode, ClipboardList, Bot, Zap, Scale } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pin, LogOut, RefreshCw, Eye, EyeOff, Building2, Check, Users, Key, CreditCard, ClipboardList, Bot, Zap } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useSidebarStore, SidebarSection } from '../stores/sidebarStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
@@ -86,13 +86,7 @@ import {
   SettingsIcon,
   VisualReviewIcon,
   SecurityIcon,
-  SecurityGroupIcon,
-  DASTIcon,
-  ContainerScanIcon,
-  DependenciesIcon,
-  MonitoringIcon,
   AIInsightsIcon,
-  AIGroupIcon,
   AITestGeneratorIcon,
   MCPToolsIcon,
   TestingGroupIcon,
@@ -182,7 +176,7 @@ export function AppSidebar() {
 
   // Feature #1364, #256: Reset preferences with default collapsed groups
   const resetNavPreferences = () => {
-    const defaultCollapsed: SidebarSection[] = ['security', 'ai-mcp', 'settings', 'developer-tools'];
+    const defaultCollapsed: SidebarSection[] = ['tools', 'admin', 'security', 'ai-mcp', 'settings', 'developer-tools'];
     setPinnedItems([]);
     setCollapsedSections(defaultCollapsed);
     setShowAdvancedFeatures(false);
@@ -237,17 +231,17 @@ export function AppSidebar() {
         switch (key) {
           case 't':
             e.preventDefault();
-            expandSection('testing');
+            expandSection('tools');
             navigate('/projects');
             break;
           case 's':
             e.preventDefault();
-            expandSection('security');
+            expandSection('admin');
             navigate('/security');
             break;
           case 'a':
             e.preventDefault();
-            expandSection('ai-mcp');
+            expandSection('tools');
             navigate('/ai-insights');
             break;
           case 'd':
@@ -256,7 +250,7 @@ export function AppSidebar() {
             break;
           case 'm':
             e.preventDefault();
-            expandSection('ai-mcp');
+            expandSection('admin');
             navigate('/mcp');
             break;
         }
@@ -298,49 +292,34 @@ export function AppSidebar() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Menu item configurations per Feature #256 spec
-  // Group 2: Testing (expanded by default)
-  const testingMenuItems: MenuItemConfig[] = [
-    { path: '/schedules', icon: <SchedulesIcon />, label: 'Schedules', visibility: 'all' },
+  // Phase 2: Simplified sidebar structure
+  // Tools group (collapsed by default) - merges Testing + AI
+  const toolsMenuItems: MenuItemConfig[] = [
     { path: '/visual-review', icon: <VisualReviewIcon />, label: 'Visual Review', visibility: 'all' },
     { path: '/analytics', icon: <AnalyticsIcon />, label: 'Analytics', visibility: 'qa' },
-  ];
-
-  // Group 3: Security & Quality (collapsed by default)
-  // Feature #861: Updated to show all remaining security pages after 12 mock pages were removed
-  const securityMenuItems: MenuItemConfig[] = [
-    { path: '/security', icon: <SecurityIcon />, label: 'Security Dashboard', visibility: 'qa' },
-    { path: '/security/npm-audit', icon: <DependenciesIcon />, label: 'NPM Audit', visibility: 'qa' },
-    { path: '/security/containers', icon: <ContainerScanIcon />, label: 'Container Scan', visibility: 'qa' },
-    { path: '/security/sbom', icon: <DependenciesIcon />, label: 'SBOM', visibility: 'qa' },
-    { path: '/security/dependency-tree', icon: <DependenciesIcon />, label: 'Dependency Tree', visibility: 'qa' },
-    { path: '/security/dast-compare', icon: <DASTIcon />, label: 'DAST Comparison', visibility: 'qa' },
-    { path: '/security/licenses', icon: <Scale className="h-5 w-5" />, label: 'License Compliance', visibility: 'qa' },
-    { path: '/monitoring', icon: <MonitoringIcon />, label: 'Monitoring', visibility: 'qa' },
-  ];
-
-  // Group 4: AI Features (collapsed by default)
-  const aiMenuItems: MenuItemConfig[] = [
     { path: '/ai-insights', icon: <AIInsightsIcon />, label: 'AI Insights', visibility: 'all' },
     { path: '/ai/test-generator', icon: <AITestGeneratorIcon />, label: 'Test Generator', visibility: 'qa' },
     { path: '/mcp/chat', icon: <MCPToolsIcon />, label: 'AI Chat', visibility: 'all' },
   ];
 
-  // Group 5: Settings (collapsed by default)
-  // Feature #262: Added AI Providers settings link
-  const settingsMenuItems: MenuItemConfig[] = [
+  // Admin group (collapsed by default) - merges Security + Settings + Developer Tools
+  const adminMenuItems: MenuItemConfig[] = [
+    { path: '/security', icon: <SecurityIcon />, label: 'Security Dashboard', visibility: 'qa' },
     { path: '/settings/team', icon: <Users className="h-4 w-4" />, label: 'Team', visibility: 'admin' },
     { path: '/settings', icon: <SettingsIcon />, label: 'Settings', visibility: 'developer' },
     { path: '/ai/router', icon: <Bot className="h-4 w-4" />, label: 'AI Providers', visibility: 'admin' },
-    { path: '/settings/billing', icon: <CreditCard className="h-4 w-4" />, label: 'Billing', visibility: 'admin' },
     { path: '/settings/api-keys', icon: <Key className="h-4 w-4" />, label: 'API Keys', visibility: 'developer' },
-  ];
-
-  // Group 6: Developer Tools (collapsed by default, dev+ role only)
-  const developerToolsMenuItems: MenuItemConfig[] = [
+    { path: '/settings/billing', icon: <CreditCard className="h-4 w-4" />, label: 'Billing', visibility: 'admin' },
     { path: '/mcp', icon: <MCPToolsIcon />, label: 'MCP Hub', visibility: 'developer' },
     { path: '/audit-logs', icon: <ClipboardList className="h-4 w-4" />, label: 'Audit Logs', visibility: 'admin' },
   ];
+
+  // Legacy groups kept for backwards compatibility with existing code paths
+  const testingMenuItems: MenuItemConfig[] = [];
+  const securityMenuItems: MenuItemConfig[] = [];
+  const aiMenuItems: MenuItemConfig[] = [];
+  const settingsMenuItems: MenuItemConfig[] = [];
+  const developerToolsMenuItems: MenuItemConfig[] = [];
 
   // Filter menu items based on role
   const filterMenuItems = (items: MenuItemConfig[]): MenuItemConfig[] => {
@@ -355,19 +334,22 @@ export function AppSidebar() {
     });
   };
 
+  // Phase 2: Filter for new simplified groups
+  const visibleToolsItems = filterMenuItems(toolsMenuItems);
+  const visibleAdminItems = filterMenuItems(adminMenuItems);
+
+  // Legacy (empty arrays, kept for backwards compat with pinned items logic)
   const visibleTestingItems = filterMenuItems(testingMenuItems);
   const visibleSecurityItems = filterMenuItems(securityMenuItems);
   const visibleAiItems = filterMenuItems(aiMenuItems);
   const visibleSettingsItems = filterMenuItems(settingsMenuItems);
   const visibleDeveloperToolsItems = filterMenuItems(developerToolsMenuItems);
 
-  // Active item detection for each group
-  const hasActiveTestingItem = isActive('/schedules') || isActive('/visual-review') || isActive('/analytics');
-  const hasActiveSecurityItem = location.pathname.startsWith('/security') || isActive('/monitoring');
-  const hasActiveAiItem = location.pathname.startsWith('/ai-insights') ||
-    location.pathname.startsWith('/ai/') || isActive('/mcp/chat');
-  const hasActiveSettingsItem = location.pathname.startsWith('/settings');
-  const hasActiveDeveloperToolsItem = isActive('/mcp') || isActive('/audit-logs');
+  // Active item detection for new groups
+  const hasActiveToolsItem = isActive('/visual-review') || isActive('/analytics') ||
+    location.pathname.startsWith('/ai-insights') || location.pathname.startsWith('/ai/') || isActive('/mcp/chat');
+  const hasActiveAdminItem = location.pathname.startsWith('/security') || isActive('/monitoring') ||
+    location.pathname.startsWith('/settings') || isActive('/mcp') || isActive('/audit-logs');
 
   // Organization handling
   const currentOrg = organizations.find(org => org.is_current) || organizations.find(org => org.id === user?.organization_id);
@@ -561,32 +543,24 @@ export function AppSidebar() {
 
         {pinnedItems.length > 0 && !isCollapsed && <SidebarSeparator />}
 
-        {/* Group 1: Always Visible - Dashboard, Quick Test & Projects */}
+        {/* Phase 2: Always Visible - Dashboard, Quick Test, Projects, Runs, Schedules */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               {renderNavItem({ path: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard', visibility: 'all' })}
               {renderNavItem({ path: '/quick-test', icon: <Zap className="h-4 w-4" />, label: 'Quick Test', visibility: 'all' })}
               {renderNavItem({ path: '/projects', icon: <ProjectsIcon />, label: 'Projects', visibility: 'all' })}
-              {renderNavItem({ path: '/run-history', icon: <RunHistoryIcon />, label: 'Run History', visibility: 'all' })}
+              {renderNavItem({ path: '/run-history', icon: <RunHistoryIcon />, label: 'Runs', visibility: 'all' })}
+              {renderNavItem({ path: '/schedules', icon: <SchedulesIcon />, label: 'Schedules', visibility: 'all' })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Group 2: Testing (expanded by default) */}
-        {renderCollapsibleGroup('Testing', 'testing', <TestingGroupIcon />, visibleTestingItems, hasActiveTestingItem, { shortcutKey: 'T', badge: pendingCount, badgeColor: 'amber' })}
+        {/* Phase 2: Tools (collapsed) - Visual Review, Analytics, AI features */}
+        {renderCollapsibleGroup('Tools', 'tools', <TestingGroupIcon />, visibleToolsItems, hasActiveToolsItem, { shortcutKey: 'T', badge: pendingCount, badgeColor: 'amber' })}
 
-        {/* Group 3: Security & Quality (collapsed by default) */}
-        {renderCollapsibleGroup('Security & Quality', 'security', <SecurityGroupIcon />, visibleSecurityItems, hasActiveSecurityItem, { badge: securityAlertCount, badgeColor: 'red', shortcutKey: 'S' })}
-
-        {/* Group 4: AI Features (collapsed by default) */}
-        {renderCollapsibleGroup('AI Features', 'ai-mcp', <AIGroupIcon />, visibleAiItems, hasActiveAiItem, { shortcutKey: 'A' })}
-
-        {/* Group 5: Settings (collapsed by default) */}
-        {visibleSettingsItems.length > 0 && renderCollapsibleGroup('Settings', 'settings', <SettingsIcon />, visibleSettingsItems, hasActiveSettingsItem)}
-
-        {/* Group 6: Developer Tools (collapsed by default, dev+ role only) */}
-        {visibleDeveloperToolsItems.length > 0 && renderCollapsibleGroup('Developer Tools', 'developer-tools', <FileCode className="h-4 w-4" />, visibleDeveloperToolsItems, hasActiveDeveloperToolsItem, { shortcutKey: 'M' })}
+        {/* Phase 2: Admin (collapsed) - Security, Settings, DevTools */}
+        {visibleAdminItems.length > 0 && renderCollapsibleGroup('Admin', 'admin', <SettingsIcon />, visibleAdminItems, hasActiveAdminItem, { badge: securityAlertCount, badgeColor: 'red', shortcutKey: 'S' })}
 
         {/* Advanced Features Toggle for viewers */}
         {user?.role === 'viewer' && (

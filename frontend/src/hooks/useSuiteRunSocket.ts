@@ -63,9 +63,10 @@ export interface SuiteRunResult {
  */
 export interface SuiteRun {
   id: string;
-  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled';
+  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled' | 'error';
   started_at?: string;
   duration_ms?: number;
+  error_message?: string;
   results?: SuiteRunResult[];
 }
 

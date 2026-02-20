@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-// Feature #1509, #256: Sidebar section types
-// Added 'settings' and 'developer-tools' for Feature #256 collapsible groups
-export type SidebarSection = 'testing' | 'security' | 'ai-mcp' | 'settings' | 'developer-tools';
+// Phase 2: Simplified sidebar - 2 collapsible groups (tools + admin)
+// Legacy sections kept for migration compatibility
+export type SidebarSection = 'testing' | 'security' | 'ai-mcp' | 'settings' | 'developer-tools' | 'tools' | 'admin';
 
 interface SidebarState {
   collapsed: boolean;
@@ -30,9 +30,8 @@ export const useSidebarStore = create<SidebarState>()(
         set((state) => ({ collapsed: !state.collapsed }));
       },
 
-      // Feature #1509, #256: Collapsed sections state
-      // Per spec: security, ai-mcp, settings, developer-tools start collapsed; testing starts expanded
-      collapsedSections: ['security', 'ai-mcp', 'settings', 'developer-tools'] as SidebarSection[],
+      // Phase 2: Simplified sidebar - tools and admin start collapsed
+      collapsedSections: ['tools', 'admin', 'security', 'ai-mcp', 'settings', 'developer-tools'] as SidebarSection[],
 
       setCollapsedSections: (sections) => {
         set({ collapsedSections: sections });
@@ -70,18 +69,18 @@ export const useSidebarStore = create<SidebarState>()(
     }),
     {
       name: 'qa-guardian-sidebar',
-      version: 4, // Bump version for Feature #256 - new sections
+      version: 5, // Bump version for Phase 2 - simplified sidebar
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
         // Ensure collapsedSections is always a valid array
         // Feature #1549: Fix for corrupted localStorage data
         // Feature #256: Added settings and developer-tools sections
-        const validSections = ['testing', 'security', 'ai-mcp', 'settings', 'developer-tools'];
+        const validSections = ['testing', 'security', 'ai-mcp', 'settings', 'developer-tools', 'tools', 'admin'];
         const validatedSections = Array.isArray(state?.collapsedSections)
           ? state.collapsedSections.filter((s): s is SidebarSection =>
               typeof s === 'string' && validSections.includes(s)
             )
-          : ['security', 'ai-mcp', 'settings', 'developer-tools'] as SidebarSection[];
+          : ['tools', 'admin', 'security', 'ai-mcp', 'settings', 'developer-tools'] as SidebarSection[];
 
         return {
           collapsed: typeof state?.collapsed === 'boolean' ? state.collapsed : false,

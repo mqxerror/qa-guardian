@@ -62,8 +62,11 @@ export function getErrorMessage(error: unknown, fallbackMessage = 'An unexpected
   if (error instanceof Error) {
     const message = error.message;
 
-    // Server errors (5xx)
-    if (message.includes('500') || message.includes('502') || message.includes('503') || message.includes('504')) {
+    // Server errors (5xx) - differentiate 503 for runner-offline feedback
+    if (message.includes('503')) {
+      return 'Service temporarily unavailable. The test runner may be offline.';
+    }
+    if (message.includes('500') || message.includes('502') || message.includes('504')) {
       return 'The server is temporarily unavailable. Please try again later.';
     }
 

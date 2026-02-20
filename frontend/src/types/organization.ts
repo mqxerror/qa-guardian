@@ -27,6 +27,8 @@ export interface Project {
   name: string;
   description?: string;
   slug?: string;
+  base_url?: string;
+  repository_url?: string;
   created_at?: string;
   archived?: boolean;
   archived_at?: string;

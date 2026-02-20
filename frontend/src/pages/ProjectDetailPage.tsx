@@ -13,10 +13,10 @@ import { SkeletonProjectDetail } from "../components/ui/Skeleton";
 // Feature #526: Added ScoreCard for project health overview
 import {
   PageHeader,
-  AnimatedCard,
   ScoreCard,
   EmptyStates, // Feature #559: Enhanced empty state
 } from "../components/ui";
+import { DataTable, type DataTableColumn } from "../components/ui/DataTable";
 import { Flame, Settings, Loader2, FolderKanban, MoreHorizontal, Github, Shield, ChevronDown, Globe, FileCheck, CheckCircle2, XCircle, Search, X, Clock, Zap, GitBranch, AlertTriangle } from "lucide-react";
 // Feature #550: Real-time wave visualization for smoke test
 import { WaveProgressCard, type WaveProgressStatus } from "../components/ui/wave-progress-card";
@@ -54,8 +54,6 @@ import {
   DASTScanResult,
   // Utilities
   getRelativeTime,
-  // Components
-  SuiteCard,
   // Hooks (Feature #49)
   useGitHubHandlers,
   useSastHandlers,
@@ -542,7 +540,7 @@ function ProjectDetailPage() {
 
         {/* Feature #550: Inline Smoke Test Wave Visualization */}
         {(smokeTest.isRunningQuickSmokeTest || smokeTest.smokeTestResult) && (
-          <div className="rounded-lg border border-border bg-card p-4">
+          <div className="rounded-lg border border-border bg-card p-4 border-l-4 border-l-warning">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                 <Flame className="h-5 w-5 text-warning" />
@@ -707,7 +705,7 @@ function ProjectDetailPage() {
           const recentRuns = (recentRunsData?.runs || recentRunsData?.data || []).slice(0, 5);
           if (recentRuns.length === 0) return null;
           return (
-            <div className="mt-4 rounded-lg border border-border bg-card">
+            <div className="mt-4 rounded-lg border border-border bg-card border-l-4 border-l-primary">
               <div className="px-4 py-3 border-b border-border">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Zap className="w-4 h-4" />
@@ -909,23 +907,72 @@ function ProjectDetailPage() {
               }
 
               return (
-                /* Feature #549: Enriched suite cards with AnimatedCard + SuiteCard */
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {filteredSuites.map((suite, index) => (
-                    <AnimatedCard
-                      key={suite.id}
-                      variant="interactive"
-                      staggerIndex={index}
-                      className="p-0"
-                    >
-                      <SuiteCard
-                        suite={suite as TestSuite}
-                        projectId={id || ''}
-                        formatDate={formatDate}
-                      />
-                    </AnimatedCard>
-                  ))}
-                </div>
+                /* Phase 5: DataTable for denser, more scannable suite listing */
+                <DataTable
+                  data={filteredSuites as (TestSuite & Record<string, unknown>)[]}
+                  columns={[
+                    {
+                      key: 'name',
+                      header: 'Suite Name',
+                      sortable: true,
+                      render: (item) => {
+                        const s = item as unknown as TestSuite;
+                        return (
+                          <div className="min-w-0">
+                            <span className="font-medium text-foreground">{s.name}</span>
+                            {s.description && (
+                              <p className="text-xs text-muted-foreground truncate max-w-[300px]">{s.description}</p>
+                            )}
+                          </div>
+                        );
+                      },
+                    },
+                    {
+                      key: 'test_count',
+                      header: 'Tests',
+                      sortable: true,
+                      width: '80px',
+                      render: (item) => (
+                        <span className="text-sm tabular-nums">
+                          {(item as unknown as TestSuite).test_count ?? 0}
+                        </span>
+                      ),
+                    },
+                    {
+                      key: 'browser',
+                      header: 'Browser',
+                      hideOnMobile: true,
+                      width: '100px',
+                      render: (item) => {
+                        const browser = (item as unknown as TestSuite).browser;
+                        const icon = browser === 'firefox' ? '🦊' : browser === 'webkit' ? '🧭' : '🌐';
+                        return (
+                          <span className="text-sm">
+                            {icon} {browser || 'chromium'}
+                          </span>
+                        );
+                      },
+                    },
+                    {
+                      key: 'created_at',
+                      header: 'Created',
+                      hideOnMobile: true,
+                      width: '140px',
+                      sortable: true,
+                      render: (item) => (
+                        <span className="text-xs text-muted-foreground">
+                          {(item as unknown as TestSuite).created_at
+                            ? formatDate((item as unknown as TestSuite).created_at!)
+                            : '—'}
+                        </span>
+                      ),
+                    },
+                  ] as DataTableColumn<TestSuite & Record<string, unknown>>[]}
+                  keyExtractor={(item) => (item as unknown as TestSuite).id}
+                  onRowClick={(item) => navigate(`/suites/${(item as unknown as TestSuite).id}`)}
+                  hoverable
+                  compact
+                />
               );
             })()}
           </div>

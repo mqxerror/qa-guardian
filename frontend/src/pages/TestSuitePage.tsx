@@ -468,7 +468,13 @@ function TestSuitePage() {
       setSuiteRunActive(true);
     } catch (err) {
       logger.error('Failed to run suite:', err);
-      toast.error(getErrorMessage(err, 'Failed to start test run'));
+      // Phase 1B: Contextual 503 error toast
+      const errObj = err as { status?: number };
+      if (errObj?.status === 503 || (err instanceof Error && err.message.includes('503'))) {
+        toast.error('Runner offline or queue unavailable. The worker may need to be restarted.');
+      } else {
+        toast.error(getErrorMessage(err, 'Failed to start test run'));
+      }
       setIsRunningSuite(false);
     }
   };
@@ -483,7 +489,12 @@ function TestSuitePage() {
       navigate(`/tests/${testId}`);
     } catch (err) {
       logger.error('Failed to run test:', err);
-      toast.error(getErrorMessage(err, 'Failed to start test run'));
+      const errObj = err as { status?: number };
+      if (errObj?.status === 503 || (err instanceof Error && err.message.includes('503'))) {
+        toast.error('Runner offline or queue unavailable. The worker may need to be restarted.');
+      } else {
+        toast.error(getErrorMessage(err, 'Failed to start test run'));
+      }
     } finally {
       setRunningTestId(null);
     }

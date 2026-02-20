@@ -32,7 +32,7 @@ interface SuiteRunResult {
 // Suite run state passed from parent
 interface SuiteRun {
   id: string;
-  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled';
+  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled' | 'error';
   started_at?: string;
   duration_ms?: number;
   results?: SuiteRunResult[];
