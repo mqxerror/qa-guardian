@@ -150,6 +150,8 @@ services:
       retries: 3
       start_period: 30s
     labels:
+      # Traefik: Network selection (required when container is on multiple networks)
+      - "traefik.docker.network=dokploy-network"
       - "traefik.enable=true"
       # API routing for staging domain
       - "traefik.http.routers.qa-guardian-staging-api.rule=Host(`staging.qa.pixelcraftedmedia.com`) && PathPrefix(`/api`)"
@@ -251,6 +253,8 @@ services:
       retries: 3
       start_period: 10s
     labels:
+      # Traefik: Network selection (required when container is on multiple networks)
+      - "traefik.docker.network=dokploy-network"
       - "traefik.enable=true"
       # Frontend routing for staging domain
       - "traefik.http.routers.qa-guardian-staging-frontend.rule=Host(`staging.qa.pixelcraftedmedia.com`)"

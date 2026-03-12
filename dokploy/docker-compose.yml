@@ -189,6 +189,8 @@ services:
       retries: 3
       start_period: 30s
     labels:
+      # Traefik: Network selection (required when container is on multiple networks)
+      - "traefik.docker.network=dokploy-network"
       # Traefik labels for API routing
       - "traefik.enable=true"
       - "traefik.http.routers.qa-guardian-api.rule=Host(`qa.pixelcraftedmedia.com`) && PathPrefix(`/api`)"
@@ -311,6 +313,8 @@ services:
       retries: 3
       start_period: 10s
     labels:
+      # Traefik: Network selection (required when container is on multiple networks)
+      - "traefik.docker.network=dokploy-network"
       # Traefik labels for frontend routing
       - "traefik.enable=true"
       - "traefik.http.routers.qa-guardian-frontend.rule=Host(`qa.pixelcraftedmedia.com`)"
@@ -361,6 +365,8 @@ services:
       - internal
       - traefik
     labels:
+      # Traefik: Network selection (required when container is on multiple networks)
+      - "traefik.docker.network=dokploy-network"
       # Traefik labels for MCP routing
       - "traefik.enable=true"
       - "traefik.http.routers.qa-guardian-mcp.rule=Host(`qa.pixelcraftedmedia.com`) && PathPrefix(`/mcp`)"

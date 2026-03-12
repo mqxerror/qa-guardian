@@ -157,7 +157,7 @@ jobs:
 
       - name: Verify production deployment
         run: |
-          sleep 15
+          sleep 30
           DOMAIN="https://${{ env.PRODUCTION_DOMAIN }}"
 
           # 1. Verify frontend is accessible via Traefik
