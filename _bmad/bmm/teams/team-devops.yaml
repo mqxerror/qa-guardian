@@ -1,0 +1,10 @@
+# <!-- Powered by BMAD-CORE™ -->
+bundle:
+  name: DevOps and Technical Operations Team
+  icon: 🔧
+  description: Team for infrastructure analysis, deployment optimization, reliability engineering, and production excellence.
+agents:
+  - devops-engineer
+  - technical-devops-lead
+  - architect
+party: "./default-party.csv"
