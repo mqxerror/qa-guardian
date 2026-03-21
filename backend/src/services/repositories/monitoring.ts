@@ -111,6 +111,17 @@ export {
   createMaintenanceWindow,
   getMaintenanceWindows,
   deleteMaintenanceWindow,
+  // Managed incidents
+  createManagedIncident,
+  getManagedIncident,
+  updateManagedIncident,
+  deleteManagedIncident,
+  listManagedIncidents,
+  countManagedIncidents,
+  // Managed incident child entities
+  addManagedIncidentNote,
+  addManagedIncidentTimelineEntry,
+  addManagedIncidentResponder,
 } from './monitoring-incidents.js';
 
 // Monitoring Alerts Module
@@ -129,6 +140,18 @@ export {
   addDeletedCheckHistory,
   getDeletedCheckHistory,
   listDeletedCheckHistory,
+  // Alert grouping rules (Feature #2118)
+  createAlertGroupingRule,
+  getAlertGroupingRule,
+  updateAlertGroupingRule,
+  deleteAlertGroupingRule,
+  listAlertGroupingRules,
+  // Alert groups (Feature #2118)
+  createAlertGroup,
+  getAlertGroup,
+  updateAlertGroup,
+  listAlertGroups,
+  findActiveAlertGroup,
   // Memory store compatibility stubs
   getMemoryUptimeChecks,
   getMemoryCheckResults,
@@ -168,3 +191,41 @@ export {
   getMemoryManagedIncidents,
   getMemoryIncidentsByOrg,
 } from './monitoring-alerts.js';
+
+// Monitoring Alert Routing Module (Feature #2118: DB migration for routing/correlation/runbooks)
+export {
+  // Alert routing rules
+  createAlertRoutingRule,
+  getAlertRoutingRule,
+  updateAlertRoutingRule,
+  deleteAlertRoutingRule,
+  listAlertRoutingRules,
+  getMaxAlertRoutingRulePriority,
+  // Alert routing logs
+  addAlertRoutingLog,
+  listAlertRoutingLogs,
+  // Alert rate limit configs
+  getAlertRateLimitConfig,
+  setAlertRateLimitConfig,
+  // Alert rate limit states
+  getAlertRateLimitState,
+  setAlertRateLimitState,
+  deleteAlertRateLimitState,
+  // Alert correlation configs
+  getAlertCorrelationConfig,
+  setAlertCorrelationConfig,
+  // Alert correlations
+  createAlertCorrelation,
+  getAlertCorrelation,
+  updateAlertCorrelation,
+  deleteAlertCorrelation,
+  listAlertCorrelations,
+  deleteAlertCorrelationsByOrg,
+  getCorrelationIdForAlert,
+  // Alert runbooks
+  createAlertRunbook,
+  getAlertRunbook,
+  updateAlertRunbook,
+  deleteAlertRunbook,
+  listAlertRunbooks,
+} from './monitoring-alert-routing.js';

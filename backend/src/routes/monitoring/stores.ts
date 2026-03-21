@@ -120,6 +120,74 @@ export const addDeletedCheckHistory = monitoringRepo.addDeletedCheckHistory;
 export const getDeletedCheckHistory = monitoringRepo.getDeletedCheckHistory;
 export const listDeletedCheckHistory = monitoringRepo.listDeletedCheckHistory;
 
+// Alert grouping rules (Feature #2118)
+export const createAlertGroupingRule = monitoringRepo.createAlertGroupingRule;
+export const getAlertGroupingRule = monitoringRepo.getAlertGroupingRule;
+export const updateAlertGroupingRule = monitoringRepo.updateAlertGroupingRule;
+export const deleteAlertGroupingRule = monitoringRepo.deleteAlertGroupingRule;
+export const listAlertGroupingRules = monitoringRepo.listAlertGroupingRules;
+
+// Alert groups (Feature #2118)
+export const createAlertGroup = monitoringRepo.createAlertGroup;
+export const getAlertGroup = monitoringRepo.getAlertGroup;
+export const updateAlertGroup = monitoringRepo.updateAlertGroup;
+export const listAlertGroups = monitoringRepo.listAlertGroups;
+export const findActiveAlertGroup = monitoringRepo.findActiveAlertGroup;
+
+// Managed incidents
+export const createManagedIncident = monitoringRepo.createManagedIncident;
+export const getManagedIncident = monitoringRepo.getManagedIncident;
+export const updateManagedIncident = monitoringRepo.updateManagedIncident;
+export const deleteManagedIncident = monitoringRepo.deleteManagedIncident;
+export const listManagedIncidents = monitoringRepo.listManagedIncidents;
+export const countManagedIncidents = monitoringRepo.countManagedIncidents;
+
+// Managed incident child entities
+export const addManagedIncidentNote = monitoringRepo.addManagedIncidentNote;
+export const addManagedIncidentTimelineEntry = monitoringRepo.addManagedIncidentTimelineEntry;
+export const addManagedIncidentResponder = monitoringRepo.addManagedIncidentResponder;
+
+// Alert routing rules
+export const createAlertRoutingRule = monitoringRepo.createAlertRoutingRule;
+export const getAlertRoutingRule = monitoringRepo.getAlertRoutingRule;
+export const updateAlertRoutingRule = monitoringRepo.updateAlertRoutingRule;
+export const deleteAlertRoutingRule = monitoringRepo.deleteAlertRoutingRule;
+export const listAlertRoutingRules = monitoringRepo.listAlertRoutingRules;
+export const getMaxAlertRoutingRulePriority = monitoringRepo.getMaxAlertRoutingRulePriority;
+
+// Alert routing logs
+export const addAlertRoutingLog = monitoringRepo.addAlertRoutingLog;
+export const listAlertRoutingLogs = monitoringRepo.listAlertRoutingLogs;
+
+// Alert rate limit configs
+export const getAlertRateLimitConfig = monitoringRepo.getAlertRateLimitConfig;
+export const setAlertRateLimitConfig = monitoringRepo.setAlertRateLimitConfig;
+
+// Alert rate limit states
+export const getAlertRateLimitState = monitoringRepo.getAlertRateLimitState;
+export const setAlertRateLimitState = monitoringRepo.setAlertRateLimitState;
+export const deleteAlertRateLimitState = monitoringRepo.deleteAlertRateLimitState;
+
+// Alert correlation configs
+export const getAlertCorrelationConfig = monitoringRepo.getAlertCorrelationConfig;
+export const setAlertCorrelationConfig = monitoringRepo.setAlertCorrelationConfig;
+
+// Alert correlations
+export const createAlertCorrelation = monitoringRepo.createAlertCorrelation;
+export const getAlertCorrelation = monitoringRepo.getAlertCorrelation;
+export const updateAlertCorrelation = monitoringRepo.updateAlertCorrelation;
+export const deleteAlertCorrelation = monitoringRepo.deleteAlertCorrelation;
+export const listAlertCorrelations = monitoringRepo.listAlertCorrelations;
+export const deleteAlertCorrelationsByOrg = monitoringRepo.deleteAlertCorrelationsByOrg;
+export const getCorrelationIdForAlert = monitoringRepo.getCorrelationIdForAlert;
+
+// Alert runbooks
+export const createAlertRunbook = monitoringRepo.createAlertRunbook;
+export const getAlertRunbook = monitoringRepo.getAlertRunbook;
+export const updateAlertRunbook = monitoringRepo.updateAlertRunbook;
+export const deleteAlertRunbook = monitoringRepo.deleteAlertRunbook;
+export const listAlertRunbooks = monitoringRepo.listAlertRunbooks;
+
 
 // =============================
 // RUNTIME-ONLY MAP (cannot be serialized to DB)

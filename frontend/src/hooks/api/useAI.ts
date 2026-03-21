@@ -13,8 +13,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
 import { fetchWithAuth } from './fetchWithAuth'; // Feature #655: Shared auth fetch
 
-// API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 // Types for AI Test Generator
 export interface GenerationHistoryItem {
@@ -193,7 +191,7 @@ export function useAIAnalytics(period: string = '7d') {
 
   return useQuery({
     queryKey: aiKeys.analytics(period),
-    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/analytics?period=${period}`, token) as Promise<AIUsageAnalytics>,
+    queryFn: () => fetchWithAuth(`/api/v1/ai/analytics?period=${period}`, token) as Promise<AIUsageAnalytics>,
     enabled: !!token,
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 2 * 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
@@ -208,7 +206,7 @@ export function useAIAnalyticsComparison(period: string = '7d') {
 
   return useQuery({
     queryKey: aiKeys.comparison(period),
-    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/analytics/comparison?period=${period}`, token),
+    queryFn: () => fetchWithAuth(`/api/v1/ai/analytics/comparison?period=${period}`, token),
     enabled: !!token,
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 2 * 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
@@ -223,7 +221,7 @@ export function useAIAnalyticsTrends(period: string = '7d') {
 
   return useQuery({
     queryKey: aiKeys.trends(period),
-    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/analytics/trends?period=${period}`, token),
+    queryFn: () => fetchWithAuth(`/api/v1/ai/analytics/trends?period=${period}`, token),
     enabled: !!token,
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 2 * 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
@@ -238,7 +236,7 @@ export function useAIExports() {
 
   return useQuery({
     queryKey: aiKeys.exports(),
-    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/analytics/exports`, token),
+    queryFn: () => fetchWithAuth(`/api/v1/ai/analytics/exports`, token),
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
     gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
@@ -254,7 +252,7 @@ export function useExportAIAnalytics() {
 
   return useMutation({
     mutationFn: ({ period, format }: { period: string; format: string }) =>
-      fetchWithAuth(`${API_BASE_URL}/api/v1/ai/analytics/export`, token, {
+      fetchWithAuth(`/api/v1/ai/analytics/export`, token, {
         method: 'POST',
         body: JSON.stringify({ period, format }),
       }),
@@ -276,7 +274,7 @@ export function useCostSummary(period: string = '7d') {
 
   return useQuery({
     queryKey: aiKeys.costSummary(period),
-    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/cost-analytics/summary?days=${days}`, token) as Promise<CostSummary>,
+    queryFn: () => fetchWithAuth(`/api/v1/ai/cost-analytics/summary?days=${days}`, token) as Promise<CostSummary>,
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
     gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
@@ -292,7 +290,7 @@ export function useBudget() {
 
   return useQuery({
     queryKey: aiKeys.budget(),
-    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/cost-analytics/budget`, token),
+    queryFn: () => fetchWithAuth(`/api/v1/ai/cost-analytics/budget`, token),
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
     gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
@@ -308,7 +306,7 @@ export function useCostHistory() {
 
   return useQuery({
     queryKey: aiKeys.costHistory(),
-    queryFn: () => fetchWithAuth(`${API_BASE_URL}/api/v1/ai/cost-analytics?days=30`, token),
+    queryFn: () => fetchWithAuth(`/api/v1/ai/cost-analytics?days=30`, token),
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
     gcTime: 2 * 60 * 1000, // Feature #106: 2x staleTime for garbage collection
@@ -325,7 +323,7 @@ export function useUpdateBudget() {
 
   return useMutation({
     mutationFn: (budget: { monthly_limit: number; alert_threshold: number }) =>
-      fetchWithAuth(`${API_BASE_URL}/api/v1/ai/cost-analytics/budget`, token, {
+      fetchWithAuth(`/api/v1/ai/cost-analytics/budget`, token, {
         method: 'PATCH',
         body: JSON.stringify({ monthlyLimitUsd: budget.monthly_limit }),
       }),

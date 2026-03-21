@@ -328,7 +328,7 @@ export function useStepHandlers({
         ? test.playwright_code
         : generatePlaywrightCode(test.steps, test.name);
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/explain-test`, {
+      const response = await fetch(`/api/v1/ai/explain-test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

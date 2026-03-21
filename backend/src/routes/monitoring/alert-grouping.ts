@@ -35,8 +35,18 @@ function getUserEmail(user: AuthUser | undefined): string | undefined {
 }
 
 import {
-  alertGroupingRules,
-  alertGroups,
+  // Async DB functions for alert grouping rules (Feature #2118)
+  createAlertGroupingRule as dbCreateAlertGroupingRule,
+  getAlertGroupingRule as dbGetAlertGroupingRule,
+  updateAlertGroupingRule as dbUpdateAlertGroupingRule,
+  deleteAlertGroupingRule as dbDeleteAlertGroupingRule,
+  listAlertGroupingRules as dbListAlertGroupingRules,
+  // Async DB functions for alert groups (Feature #2118)
+  createAlertGroup as dbCreateAlertGroup,
+  getAlertGroup as dbGetAlertGroup,
+  updateAlertGroup as dbUpdateAlertGroup,
+  listAlertGroups as dbListAlertGroups,
+  findActiveAlertGroup as dbFindActiveAlertGroup,
 } from './stores.js';
 
 import { createLogger } from '../../services/logger.js';
@@ -70,8 +80,9 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
     async (request, _reply) => {
       const orgId = getOrganizationId(request);
 
-      const rules = Array.from(alertGroupingRules.values())
-        .filter(r => r.organization_id === orgId)
+      // Feature #2118: Use async DB function instead of in-memory Map
+      const allRules = await dbListAlertGroupingRules(orgId);
+      const rules = allRules
         .sort((a, b) => a.priority - b.priority)
         .map(rule => ({
           ...rule,
@@ -125,8 +136,8 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
 
       const ruleId = Date.now().toString();
 
-      // Get max priority if not provided
-      const existingRules = Array.from(alertGroupingRules.values()).filter(r => r.organization_id === orgId);
+      // Feature #2118: Get max priority from DB instead of in-memory Map
+      const existingRules = await dbListAlertGroupingRules(orgId);
       const maxPriority = existingRules.length > 0 ? Math.max(...existingRules.map(r => r.priority)) : 0;
 
       const rule: AlertGroupingRule = {
@@ -147,7 +158,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
         updated_at: new Date(),
       };
 
-      alertGroupingRules.set(ruleId, rule);
+      await dbCreateAlertGroupingRule(rule);
 
       // Log audit entry
       logAuditEntry(
@@ -179,7 +190,8 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const { ruleId } = request.params as { ruleId: string };
 
-      const rule = alertGroupingRules.get(ruleId);
+      // Feature #2118: Use async DB function instead of in-memory Map
+      const rule = await dbGetAlertGroupingRule(ruleId);
       if (!rule || rule.organization_id !== orgId) {
         return sendError(reply, 404, 'NOT_FOUND', 'Alert grouping rule not found');
       }
@@ -205,8 +217,9 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const { ruleId } = request.params as { ruleId: string };
 
-      const rule = alertGroupingRules.get(ruleId);
-      if (!rule || rule.organization_id !== orgId) {
+      // Feature #2118: Use async DB function instead of in-memory Map
+      const existing = await dbGetAlertGroupingRule(ruleId);
+      if (!existing || existing.organization_id !== orgId) {
         return sendError(reply, 404, 'NOT_FOUND', 'Alert grouping rule not found');
       }
 
@@ -234,19 +247,23 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
         priority?: number;
       };
 
-      if (name !== undefined) rule.name = name.trim();
-      if (description !== undefined) rule.description = description.trim();
-      if (group_by !== undefined) rule.group_by = group_by;
-      if (time_window_minutes !== undefined) rule.time_window_minutes = time_window_minutes;
-      if (deduplication_enabled !== undefined) rule.deduplication_enabled = deduplication_enabled;
-      if (deduplication_key !== undefined) rule.deduplication_key = deduplication_key;
-      if (max_alerts_per_group !== undefined) rule.max_alerts_per_group = max_alerts_per_group;
-      if (notification_delay_seconds !== undefined) rule.notification_delay_seconds = notification_delay_seconds;
-      if (is_active !== undefined) rule.is_active = is_active;
-      if (priority !== undefined) rule.priority = priority;
+      // Build partial updates object for only the fields that were provided
+      const updates: Partial<AlertGroupingRule> = {};
+      if (name !== undefined) updates.name = name.trim();
+      if (description !== undefined) updates.description = description.trim();
+      if (group_by !== undefined) updates.group_by = group_by;
+      if (time_window_minutes !== undefined) updates.time_window_minutes = time_window_minutes;
+      if (deduplication_enabled !== undefined) updates.deduplication_enabled = deduplication_enabled;
+      if (deduplication_key !== undefined) updates.deduplication_key = deduplication_key;
+      if (max_alerts_per_group !== undefined) updates.max_alerts_per_group = max_alerts_per_group;
+      if (notification_delay_seconds !== undefined) updates.notification_delay_seconds = notification_delay_seconds;
+      if (is_active !== undefined) updates.is_active = is_active;
+      if (priority !== undefined) updates.priority = priority;
 
-      rule.updated_at = new Date();
-      alertGroupingRules.set(ruleId, rule);
+      const rule = await dbUpdateAlertGroupingRule(ruleId, updates);
+      if (!rule) {
+        return sendError(reply, 500, 'INTERNAL_ERROR', 'Failed to update alert grouping rule');
+      }
 
       // Log audit entry
       logAuditEntry(
@@ -278,12 +295,13 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const { ruleId } = request.params as { ruleId: string };
 
-      const rule = alertGroupingRules.get(ruleId);
+      // Feature #2118: Use async DB function instead of in-memory Map
+      const rule = await dbGetAlertGroupingRule(ruleId);
       if (!rule || rule.organization_id !== orgId) {
         return sendError(reply, 404, 'NOT_FOUND', 'Alert grouping rule not found');
       }
 
-      alertGroupingRules.delete(ruleId);
+      await dbDeleteAlertGroupingRule(ruleId);
 
       // Log audit entry
       logAuditEntry(
@@ -308,8 +326,8 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       const orgId = getOrganizationId(request);
       const { status } = request.query as { status?: string };
 
-      let groups = Array.from(alertGroups.values())
-        .filter(g => g.organization_id === orgId);
+      // Feature #2118: Use async DB function instead of in-memory Map
+      let groups = await dbListAlertGroups(orgId);
 
       if (status) {
         groups = groups.filter(g => g.status === status);
@@ -349,7 +367,8 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       const { note: _note } = request.body as { note?: string };
       const user = getUser(request);
 
-      const group = alertGroups.get(groupId);
+      // Feature #2118: Use async DB function instead of in-memory Map
+      const group = await dbGetAlertGroup(groupId);
       if (!group) {
         return sendError(reply, 404, 'NOT_FOUND', 'Alert group not found');
       }
@@ -366,26 +385,34 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
         return sendError(reply, 400, 'BAD_REQUEST', 'Alert group already resolved');
       }
 
-      // Update group status to acknowledged
-      group.status = 'acknowledged';
-      group.acknowledged_by = getUserEmail(user) || user?.id || 'unknown';
-      group.acknowledged_at = new Date();
+      // Update group status to acknowledged via DB
+      const acknowledgedBy = getUserEmail(user) || user?.id || 'unknown';
+      const acknowledgedAt = new Date();
+      const updatedGroup = await dbUpdateAlertGroup(groupId, {
+        status: 'acknowledged',
+        acknowledged_by: acknowledgedBy,
+        acknowledged_at: acknowledgedAt,
+      });
+
+      if (!updatedGroup) {
+        return sendError(reply, 500, 'INTERNAL_ERROR', 'Failed to acknowledge alert group');
+      }
 
       // Cancel any pending escalations for this group
       // (In a real system, this would cancel scheduled escalation jobs)
-      logger.info({ groupId, acknowledgedBy: group.acknowledged_by }, 'Escalation stopped - alert group acknowledged');
+      logger.info({ groupId, acknowledgedBy }, 'Escalation stopped - alert group acknowledged');
 
       return {
         success: true,
         message: 'Alert group acknowledged',
         group: {
-          ...group,
-          first_alert_at: group.first_alert_at.toISOString(),
-          last_alert_at: group.last_alert_at.toISOString(),
-          notification_sent_at: group.notification_sent_at?.toISOString(),
-          acknowledged_at: group.acknowledged_at?.toISOString(),
-          resolved_at: group.resolved_at?.toISOString(),
-          alerts: group.alerts.map(a => ({
+          ...updatedGroup,
+          first_alert_at: updatedGroup.first_alert_at.toISOString(),
+          last_alert_at: updatedGroup.last_alert_at.toISOString(),
+          notification_sent_at: updatedGroup.notification_sent_at?.toISOString(),
+          acknowledged_at: updatedGroup.acknowledged_at?.toISOString(),
+          resolved_at: updatedGroup.resolved_at?.toISOString(),
+          alerts: updatedGroup.alerts.map(a => ({
             ...a,
             triggered_at: a.triggered_at.toISOString(),
           })),
@@ -407,7 +434,8 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       const { resolution_notes } = request.body as { resolution_notes?: string };
       const user = getUser(request);
 
-      const group = alertGroups.get(groupId);
+      // Feature #2118: Use async DB function instead of in-memory Map
+      const group = await dbGetAlertGroup(groupId);
       if (!group) {
         return sendError(reply, 404, 'NOT_FOUND', 'Alert group not found');
       }
@@ -426,28 +454,36 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
         (resolvedAt.getTime() - group.first_alert_at.getTime()) / 1000
       );
 
-      // Update group status to resolved
-      group.status = 'resolved';
-      group.resolved_at = resolvedAt;
       const resolverEmail = 'email' in (user || {}) ? (user as JwtPayload).email : undefined;
-      group.resolved_by = resolverEmail || user?.id || 'unknown';
-      group.resolution_notes = resolution_notes || '';
-      group.resolution_time_seconds = resolutionTimeSeconds;
+      const resolvedBy = resolverEmail || user?.id || 'unknown';
 
-      logger.info({ groupId, resolvedBy: group.resolved_by, resolutionTimeSeconds }, 'Alert group resolved');
+      // Update group status to resolved via DB
+      const updatedGroup = await dbUpdateAlertGroup(groupId, {
+        status: 'resolved',
+        resolved_at: resolvedAt,
+        resolved_by: resolvedBy,
+        resolution_notes: resolution_notes || '',
+        resolution_time_seconds: resolutionTimeSeconds,
+      });
+
+      if (!updatedGroup) {
+        return sendError(reply, 500, 'INTERNAL_ERROR', 'Failed to resolve alert group');
+      }
+
+      logger.info({ groupId, resolvedBy, resolutionTimeSeconds }, 'Alert group resolved');
 
       return {
         success: true,
         message: 'Alert group resolved',
         resolution_time_seconds: resolutionTimeSeconds,
         group: {
-          ...group,
-          first_alert_at: group.first_alert_at.toISOString(),
-          last_alert_at: group.last_alert_at.toISOString(),
-          notification_sent_at: group.notification_sent_at?.toISOString(),
-          acknowledged_at: group.acknowledged_at?.toISOString(),
-          resolved_at: group.resolved_at?.toISOString(),
-          alerts: group.alerts.map(a => ({
+          ...updatedGroup,
+          first_alert_at: updatedGroup.first_alert_at.toISOString(),
+          last_alert_at: updatedGroup.last_alert_at.toISOString(),
+          notification_sent_at: updatedGroup.notification_sent_at?.toISOString(),
+          acknowledged_at: updatedGroup.acknowledged_at?.toISOString(),
+          resolved_at: updatedGroup.resolved_at?.toISOString(),
+          alerts: updatedGroup.alerts.map(a => ({
             ...a,
             triggered_at: a.triggered_at.toISOString(),
           })),
@@ -473,7 +509,8 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
         return sendError(reply, 400, 'BAD_REQUEST', 'Invalid duration. Must be 1, 4, or 24 hours.');
       }
 
-      const group = alertGroups.get(groupId);
+      // Feature #2118: Use async DB function instead of in-memory Map
+      const group = await dbGetAlertGroup(groupId);
       if (!group) {
         return sendError(reply, 404, 'NOT_FOUND', 'Alert group not found');
       }
@@ -488,28 +525,35 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
 
       const snoozedAt = new Date();
       const snoozedUntil = new Date(snoozedAt.getTime() + duration_hours * 60 * 60 * 1000);
+      const snoozedBy = getUserEmail(user) || user?.id || 'unknown';
 
-      group.snoozed_at = snoozedAt;
-      group.snoozed_until = snoozedUntil;
-      group.snoozed_by = getUserEmail(user) || user?.id || 'unknown';
-      group.snooze_duration_hours = duration_hours;
+      const updatedGroup = await dbUpdateAlertGroup(groupId, {
+        snoozed_at: snoozedAt,
+        snoozed_until: snoozedUntil,
+        snoozed_by: snoozedBy,
+        snooze_duration_hours: duration_hours,
+      });
 
-      logger.info({ groupId, snoozedBy: group.snoozed_by, durationHours: duration_hours, snoozedUntil: snoozedUntil.toISOString() }, 'Alert group snoozed');
+      if (!updatedGroup) {
+        return sendError(reply, 500, 'INTERNAL_ERROR', 'Failed to snooze alert group');
+      }
+
+      logger.info({ groupId, snoozedBy, durationHours: duration_hours, snoozedUntil: snoozedUntil.toISOString() }, 'Alert group snoozed');
 
       return {
         success: true,
         message: `Alert group snoozed for ${duration_hours} hour(s)`,
         snoozed_until: snoozedUntil.toISOString(),
         group: {
-          ...group,
-          first_alert_at: group.first_alert_at.toISOString(),
-          last_alert_at: group.last_alert_at.toISOString(),
-          notification_sent_at: group.notification_sent_at?.toISOString(),
-          acknowledged_at: group.acknowledged_at?.toISOString(),
-          resolved_at: group.resolved_at?.toISOString(),
-          snoozed_at: group.snoozed_at?.toISOString(),
-          snoozed_until: group.snoozed_until?.toISOString(),
-          alerts: group.alerts.map(a => ({
+          ...updatedGroup,
+          first_alert_at: updatedGroup.first_alert_at.toISOString(),
+          last_alert_at: updatedGroup.last_alert_at.toISOString(),
+          notification_sent_at: updatedGroup.notification_sent_at?.toISOString(),
+          acknowledged_at: updatedGroup.acknowledged_at?.toISOString(),
+          resolved_at: updatedGroup.resolved_at?.toISOString(),
+          snoozed_at: updatedGroup.snoozed_at?.toISOString(),
+          snoozed_until: updatedGroup.snoozed_until?.toISOString(),
+          alerts: updatedGroup.alerts.map(a => ({
             ...a,
             triggered_at: a.triggered_at.toISOString(),
           })),
@@ -530,7 +574,8 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       const { groupId } = request.params as { groupId: string };
       const user = getUser(request);
 
-      const group = alertGroups.get(groupId);
+      // Feature #2118: Use async DB function instead of in-memory Map
+      const group = await dbGetAlertGroup(groupId);
       if (!group) {
         return sendError(reply, 404, 'NOT_FOUND', 'Alert group not found');
       }
@@ -544,10 +589,18 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const wasSnoozedUntil = group.snoozed_until;
-      group.snoozed_at = undefined;
-      group.snoozed_until = undefined;
-      group.snoozed_by = undefined;
-      group.snooze_duration_hours = undefined;
+
+      // Clear snooze fields by setting them to undefined (DB will store as NULL)
+      const updatedGroup = await dbUpdateAlertGroup(groupId, {
+        snoozed_at: undefined,
+        snoozed_until: undefined,
+        snoozed_by: undefined,
+        snooze_duration_hours: undefined,
+      });
+
+      if (!updatedGroup) {
+        return sendError(reply, 500, 'INTERNAL_ERROR', 'Failed to unsnooze alert group');
+      }
 
       logger.info({ groupId, unsnoozedBy: getUserEmail(user) || 'unknown', wasSnoozedUntil: wasSnoozedUntil.toISOString() }, 'Alert group unsnoozed');
 
@@ -555,13 +608,13 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
         success: true,
         message: 'Alert group unsnoozed - notifications will resume',
         group: {
-          ...group,
-          first_alert_at: group.first_alert_at.toISOString(),
-          last_alert_at: group.last_alert_at.toISOString(),
-          notification_sent_at: group.notification_sent_at?.toISOString(),
-          acknowledged_at: group.acknowledged_at?.toISOString(),
-          resolved_at: group.resolved_at?.toISOString(),
-          alerts: group.alerts.map(a => ({
+          ...updatedGroup,
+          first_alert_at: updatedGroup.first_alert_at.toISOString(),
+          last_alert_at: updatedGroup.last_alert_at.toISOString(),
+          notification_sent_at: updatedGroup.notification_sent_at?.toISOString(),
+          acknowledged_at: updatedGroup.acknowledged_at?.toISOString(),
+          resolved_at: updatedGroup.resolved_at?.toISOString(),
+          alerts: updatedGroup.alerts.map(a => ({
             ...a,
             triggered_at: a.triggered_at.toISOString(),
           })),
@@ -594,9 +647,8 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
         limit?: string;
       };
 
-      // Get all alert groups for this org
-      let groups = Array.from(alertGroups.values())
-        .filter(g => g.organization_id === orgId);
+      // Feature #2118: Use async DB function instead of in-memory Map
+      let groups = await dbListAlertGroups(orgId);
 
       // Date filtering
       if (start_date) {
@@ -730,9 +782,8 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
         format?: string;
       };
 
-      // Get all alert groups for this org
-      let groups = Array.from(alertGroups.values())
-        .filter(g => g.organization_id === orgId);
+      // Feature #2118: Use async DB function instead of in-memory Map
+      let groups = await dbListAlertGroups(orgId);
 
       // Date filtering
       if (start_date) {
@@ -821,9 +872,10 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
         return sendError(reply, 400, 'BAD_REQUEST', 'At least one alert is required');
       }
 
-      // Get active rules for this org
-      const activeRules = Array.from(alertGroupingRules.values())
-        .filter(r => r.organization_id === orgId && r.is_active)
+      // Feature #2118: Use async DB functions instead of in-memory Maps
+      const allRules = await dbListAlertGroupingRules(orgId);
+      const activeRules = allRules
+        .filter(r => r.is_active)
         .sort((a, b) => a.priority - b.priority);
 
       if (activeRules.length === 0) {
@@ -858,16 +910,11 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
         }
         const groupKey = keyParts.join('|');
 
-        // Find existing group within time window
+        // Find existing group within time window using DB query
         const now = new Date();
         const timeWindowMs = rule.time_window_minutes * 60 * 1000;
-        const existingGroup = Array.from(alertGroups.values()).find(
-          g => g.organization_id === orgId &&
-               g.rule_id === rule.id &&
-               g.group_key === groupKey &&
-               g.status === 'active' &&
-               (now.getTime() - g.first_alert_at.getTime()) < timeWindowMs &&
-               g.alerts.length < rule.max_alerts_per_group
+        const existingGroup = await dbFindActiveAlertGroup(
+          orgId, rule.id, groupKey, timeWindowMs, rule.max_alerts_per_group
         );
 
         let deduplicated = false;
@@ -896,12 +943,15 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
         };
 
         if (existingGroup) {
-          existingGroup.alerts.push(groupedAlert);
-          existingGroup.last_alert_at = now;
-          alertGroups.set(existingGroup.id, existingGroup);
+          // Append alert to existing group and update via DB
+          const updatedAlerts = [...existingGroup.alerts, groupedAlert];
+          await dbUpdateAlertGroup(existingGroup.id, {
+            alerts: updatedAlerts,
+            last_alert_at: now,
+          });
           results.push({ alert, grouped: true, deduplicated, group_id: existingGroup.id });
         } else {
-          // Create new group
+          // Create new group in DB
           const groupId = `group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
           const newGroup: AlertGroup = {
             id: groupId,
@@ -914,7 +964,7 @@ export async function alertGroupingRoutes(app: FastifyInstance): Promise<void> {
             last_alert_at: now,
             notification_sent: false,
           };
-          alertGroups.set(groupId, newGroup);
+          await dbCreateAlertGroup(newGroup);
           results.push({ alert, grouped: false, deduplicated: false, group_id: groupId });
         }
       }

@@ -173,8 +173,7 @@ export const RecordStep: React.FC<RecordStepProps> = ({
 
     try {
       // Create recording session
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${apiUrl}/api/v1/recording/start`, {
+      const response = await fetch(`/api/v1/recording/start`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -195,8 +194,8 @@ export const RecordStep: React.FC<RecordStepProps> = ({
       const sessionId = data.sessionId;
       setRecordingSessionId(sessionId);
 
-      // Connect to socket for live updates
-      const socket = io(apiUrl, {
+      // Connect to socket for live updates (uses current origin via Traefik)
+      const socket = io({
         auth: { token },
         transports: ['websocket'],
       });
@@ -255,8 +254,7 @@ export const RecordStep: React.FC<RecordStepProps> = ({
     if (!recordingSessionId) return;
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      await fetch(`${apiUrl}/api/v1/recording/stop`, {
+      await fetch(`/api/v1/recording/stop`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

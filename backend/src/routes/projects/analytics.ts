@@ -3,7 +3,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
-import { getTest, getTestSuite, listAllTestSuites, listAllTests } from '../../services/repositories/test-suites.js';
+import { getTest, getTestSuite, listAllTestSuites, listAllTests, batchGetTests, batchGetTestSuites } from '../../services/repositories/test-suites.js';
 import { listTestRunsByOrg } from '../../services/repositories/test-runs.js';
 import { listProjects as dbListProjects } from '../../services/repositories/projects.js';
 import { Project } from './types.js';
@@ -193,16 +193,32 @@ export async function analyticsRoutes(app: FastifyInstance) {
       last_failure?: Date;
     }> = new Map();
 
-    // Analyze each run's results
+    // Batch-load all referenced tests and suites upfront (eliminates N+1 queries)
+    const allTestIds = new Set<string>();
+    for (const run of orgRuns) {
+      if (!run.results) continue;
+      for (const result of run.results) {
+        allTestIds.add(result.test_id);
+      }
+    }
+
+    const testsMap = await batchGetTests(Array.from(allTestIds));
+    const allSuiteIds = new Set<string>();
+    for (const test of testsMap.values()) {
+      allSuiteIds.add(test.suite_id);
+    }
+    const suitesMap = await batchGetTestSuites(Array.from(allSuiteIds));
+
+    // Analyze each run's results using pre-fetched maps
     for (const run of orgRuns) {
       if (!run.results) continue;
 
       for (const result of run.results) {
         const testId = result.test_id;
-        const test = await getTest(testId);
+        const test = testsMap.get(testId);
         if (!test) continue;
 
-        const suite = await getTestSuite(test.suite_id);
+        const suite = suitesMap.get(test.suite_id);
         if (!suite) continue;
 
         const project = projectsMap.get(suite.project_id);

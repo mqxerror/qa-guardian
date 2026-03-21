@@ -43,12 +43,12 @@ function AIRouterPage() {
     setIsLoading(true);
     try {
       const [configRes, statsRes, cbRes, logsRes, activeRes, changeLogsRes] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/router/config`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/router/stats`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/router/circuit-breaker`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/router/logs?limit=20`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/provider/active`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/provider/change-logs?limit=10`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`/api/v1/ai/router/config`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`/api/v1/ai/router/stats`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`/api/v1/ai/router/circuit-breaker`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`/api/v1/ai/router/logs?limit=20`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`/api/v1/ai/provider/active`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`/api/v1/ai/provider/change-logs?limit=10`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       if (configRes.ok) setConfig(await configRes.json());
       if (statsRes.ok) setStats(await statsRes.json());
@@ -65,7 +65,7 @@ function AIRouterPage() {
   const updateConfig = async (updates: Partial<AIRouterConfig>) => {
     setIsSaving(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/router/config`, {
+      const response = await fetch(`/api/v1/ai/router/config`, {
         method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       });
@@ -77,7 +77,7 @@ function AIRouterPage() {
   const testFailover = async (failureType: 'timeout' | 'rate_limit' | 'error') => {
     setIsTesting(true); setTestResult(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/router/test-failover`, {
+      const response = await fetch(`/api/v1/ai/router/test-failover`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ simulate_failure: failureType }),
       });
@@ -88,7 +88,7 @@ function AIRouterPage() {
 
   const resetCircuitBreaker = async (provider: string) => {
     try {
-      await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/router/circuit-breaker/reset`, {
+      await fetch(`/api/v1/ai/router/circuit-breaker/reset`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider }),
       });
@@ -99,7 +99,7 @@ function AIRouterPage() {
   const hotSwapProvider = async () => {
     setIsSwitching(true); setSwitchResult(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/provider/switch`, {
+      const response = await fetch(`/api/v1/ai/provider/switch`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ target_provider: targetProvider, reason: switchReason || 'Manual switch via admin UI', graceful_switch: gracefulSwitch, drain_timeout_ms: 5000 }),
       });

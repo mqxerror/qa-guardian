@@ -85,7 +85,7 @@ const SELECTOR_OVERRIDE_COLUMNS = [
  */
 const HEALED_SELECTOR_COLUMNS = [
   'run_id', 'test_id', 'step_id', 'original_selector', 'healed_selector',
-  'strategy', 'confidence', 'healed_at', 'approved', 'approved_by', 'approved_at'
+  'strategy', 'confidence', 'healed_at', 'was_accepted', 'accepted_by', 'accepted_at'
 ].join(', ');
 
 // ============================================================================

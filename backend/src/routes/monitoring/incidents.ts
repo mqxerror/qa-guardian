@@ -7,6 +7,7 @@
  * - Incident statistics
  *
  * Feature #1375: Split incident management routes for maintainability
+ * Migrated from in-memory Maps to async DB functions (managedIncidents, incidentsByOrg).
  */
 
 import { FastifyInstance } from 'fastify';
@@ -32,9 +33,39 @@ import {
 } from './types.js';
 
 import {
-  managedIncidents,
-  incidentsByOrg,
+  createManagedIncident,
+  getManagedIncident,
+  updateManagedIncident,
+  listManagedIncidents,
+  countManagedIncidents,
+  addManagedIncidentNote,
+  addManagedIncidentTimelineEntry,
+  addManagedIncidentResponder,
 } from './stores.js';
+
+/** Helper to serialize a ManagedIncident's Date fields to ISO strings for JSON response */
+function serializeIncident(incident: ManagedIncident) {
+  return {
+    ...incident,
+    created_at: incident.created_at.toISOString(),
+    updated_at: incident.updated_at.toISOString(),
+    acknowledged_at: incident.acknowledged_at?.toISOString(),
+    resolved_at: incident.resolved_at?.toISOString(),
+    notes: incident.notes.map(n => ({
+      ...n,
+      created_at: n.created_at.toISOString(),
+    })),
+    timeline: incident.timeline.map(t => ({
+      ...t,
+      created_at: t.created_at.toISOString(),
+    })),
+    responders: incident.responders.map(r => ({
+      ...r,
+      assigned_at: r.assigned_at.toISOString(),
+      acknowledged_at: r.acknowledged_at?.toISOString(),
+    })),
+  };
+}
 
 export async function incidentRoutes(app: FastifyInstance): Promise<void> {
   // ================================
@@ -49,54 +80,26 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request) => {
       const orgId = getOrganizationId(request);
-      const query = request.query as { status?: string; priority?: string; limit?: string };
+      const queryParams = request.query as { status?: string; priority?: string; limit?: string };
 
-      const incidentIds = incidentsByOrg.get(orgId) || [];
-      let incidents = incidentIds
-        .map(id => managedIncidents.get(id))
-        .filter((i): i is ManagedIncident => i !== undefined);
+      const limit = parseInt(queryParams.limit || '50', 10);
 
-      // Filter by status
-      if (query.status) {
-        const statuses = query.status.split(',');
-        incidents = incidents.filter(i => statuses.includes(i.status));
-      }
+      // Build filter options for the DB query
+      const statusFilter = queryParams.status ? queryParams.status.split(',') : undefined;
+      const priorityFilter = queryParams.priority ? queryParams.priority.split(',') : undefined;
 
-      // Filter by priority
-      if (query.priority) {
-        const priorities = query.priority.split(',');
-        incidents = incidents.filter(i => i.priority && priorities.includes(i.priority));
-      }
+      const incidents = await listManagedIncidents(orgId, {
+        status: statusFilter,
+        priority: priorityFilter,
+        limit,
+      });
 
-      // Sort by created_at descending (newest first)
-      incidents.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-      // Apply limit
-      const limit = parseInt(query.limit || '50', 10);
-      incidents = incidents.slice(0, limit);
+      // Total count includes all incidents for the org (unfiltered)
+      const total = await countManagedIncidents(orgId);
 
       return {
-        incidents: incidents.map(i => ({
-          ...i,
-          created_at: i.created_at.toISOString(),
-          updated_at: i.updated_at.toISOString(),
-          acknowledged_at: i.acknowledged_at?.toISOString(),
-          resolved_at: i.resolved_at?.toISOString(),
-          notes: i.notes.map(n => ({
-            ...n,
-            created_at: n.created_at.toISOString(),
-          })),
-          timeline: i.timeline.map(t => ({
-            ...t,
-            created_at: t.created_at.toISOString(),
-          })),
-          responders: i.responders.map(r => ({
-            ...r,
-            assigned_at: r.assigned_at.toISOString(),
-            acknowledged_at: r.acknowledged_at?.toISOString(),
-          })),
-        })),
-        total: incidentIds.length,
+        incidents: incidents.map(serializeIncident),
+        total,
       };
     }
   );
@@ -169,10 +172,8 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
         updated_at: now,
       };
 
-      managedIncidents.set(incidentId, incident);
-      const orgIncidents = incidentsByOrg.get(orgId) || [];
-      orgIncidents.push(incidentId);
-      incidentsByOrg.set(orgId, orgIncidents);
+      // Persist to database (inserts incident + initial timeline entry)
+      const created = await createManagedIncident(incident);
 
       // Log audit entry
       logAuditEntry(
@@ -185,15 +186,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
       );
 
       reply.status(201);
-      return {
-        ...incident,
-        created_at: incident.created_at.toISOString(),
-        updated_at: incident.updated_at.toISOString(),
-        timeline: incident.timeline.map(t => ({
-          ...t,
-          created_at: t.created_at.toISOString(),
-        })),
-      };
+      return serializeIncident(created);
     }
   );
 
@@ -208,32 +201,13 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
       const { incidentId } = request.params as { incidentId: string };
       const orgId = getOrganizationId(request);
 
-      const incident = managedIncidents.get(incidentId);
+      const incident = await getManagedIncident(incidentId);
       if (!incident || incident.organization_id !== orgId) {
         reply.status(404);
         return { error: 'Incident not found' };
       }
 
-      return {
-        ...incident,
-        created_at: incident.created_at.toISOString(),
-        updated_at: incident.updated_at.toISOString(),
-        acknowledged_at: incident.acknowledged_at?.toISOString(),
-        resolved_at: incident.resolved_at?.toISOString(),
-        notes: incident.notes.map(n => ({
-          ...n,
-          created_at: n.created_at.toISOString(),
-        })),
-        timeline: incident.timeline.map(t => ({
-          ...t,
-          created_at: t.created_at.toISOString(),
-        })),
-        responders: incident.responders.map(r => ({
-          ...r,
-          assigned_at: r.assigned_at.toISOString(),
-          acknowledged_at: r.acknowledged_at?.toISOString(),
-        })),
-      };
+      return serializeIncident(incident);
     }
   );
 
@@ -256,7 +230,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
         postmortem_url?: string;
       };
 
-      const incident = managedIncidents.get(incidentId);
+      const incident = await getManagedIncident(incidentId);
       if (!incident || incident.organization_id !== orgId) {
         reply.status(404);
         return { error: 'Incident not found' };
@@ -271,24 +245,27 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
       const oldStatus = incident.status;
       const now = new Date();
 
-      incident.status = body.status;
-      incident.updated_at = now;
+      // Build the update payload for scalar fields
+      const updatePayload: Partial<ManagedIncident> = {
+        status: body.status,
+        updated_at: now,
+      };
 
       // Track acknowledgment time
       if (body.status === 'acknowledged' && !incident.acknowledged_at) {
-        incident.acknowledged_at = now;
-        incident.time_to_acknowledge_seconds = Math.round((now.getTime() - incident.created_at.getTime()) / 1000);
+        updatePayload.acknowledged_at = now;
+        updatePayload.time_to_acknowledge_seconds = Math.round((now.getTime() - incident.created_at.getTime()) / 1000);
       }
 
       // Track resolution time
       if (body.status === 'resolved' && !incident.resolved_at) {
-        incident.resolved_at = now;
-        incident.time_to_resolve_seconds = Math.round((now.getTime() - incident.created_at.getTime()) / 1000);
+        updatePayload.resolved_at = now;
+        updatePayload.time_to_resolve_seconds = Math.round((now.getTime() - incident.created_at.getTime()) / 1000);
         if (body.resolution_summary) {
-          incident.resolution_summary = body.resolution_summary.trim();
+          updatePayload.resolution_summary = body.resolution_summary.trim();
         }
         if (body.postmortem_url) {
-          incident.postmortem_url = body.postmortem_url.trim();
+          updatePayload.postmortem_url = body.postmortem_url.trim();
         }
       }
 
@@ -302,9 +279,14 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
         metadata: { old_status: oldStatus, new_status: body.status },
         created_at: now,
       };
-      incident.timeline.push(timelineEvent);
+      await addManagedIncidentTimelineEntry(incidentId, timelineEvent);
 
-      managedIncidents.set(incidentId, incident);
+      // Persist scalar field updates
+      const updated = await updateManagedIncident(incidentId, updatePayload);
+      if (!updated) {
+        reply.status(500);
+        return { error: 'Failed to update incident' };
+      }
 
       // Log audit entry
       logAuditEntry(
@@ -312,30 +294,11 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
         'update_incident_status',
         'managed_incident',
         incidentId,
-        incident.title,
+        updated.title,
         { old_status: oldStatus, new_status: body.status }
       );
 
-      return {
-        ...incident,
-        created_at: incident.created_at.toISOString(),
-        updated_at: incident.updated_at.toISOString(),
-        acknowledged_at: incident.acknowledged_at?.toISOString(),
-        resolved_at: incident.resolved_at?.toISOString(),
-        notes: incident.notes.map(n => ({
-          ...n,
-          created_at: n.created_at.toISOString(),
-        })),
-        timeline: incident.timeline.map(t => ({
-          ...t,
-          created_at: t.created_at.toISOString(),
-        })),
-        responders: incident.responders.map(r => ({
-          ...r,
-          assigned_at: r.assigned_at.toISOString(),
-          acknowledged_at: r.acknowledged_at?.toISOString(),
-        })),
-      };
+      return serializeIncident(updated);
     }
   );
 
@@ -359,7 +322,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
         role?: 'primary' | 'secondary' | 'observer';
       };
 
-      const incident = managedIncidents.get(incidentId);
+      const incident = await getManagedIncident(incidentId);
       if (!incident || incident.organization_id !== orgId) {
         reply.status(404);
         return { error: 'Incident not found' };
@@ -387,8 +350,8 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
         assigned_at: now,
       };
 
-      incident.responders.push(responder);
-      incident.updated_at = now;
+      // Persist responder to database
+      await addManagedIncidentResponder(incidentId, responder);
 
       // Add timeline entry
       const timelineEvent: IncidentTimeline = {
@@ -400,9 +363,14 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
         metadata: { responder_id: responder.id, responder_name: body.user_name, role: responder.role },
         created_at: now,
       };
-      incident.timeline.push(timelineEvent);
+      await addManagedIncidentTimelineEntry(incidentId, timelineEvent);
 
-      managedIncidents.set(incidentId, incident);
+      // Update the incident's updated_at timestamp
+      const updated = await updateManagedIncident(incidentId, { updated_at: now });
+      if (!updated) {
+        reply.status(500);
+        return { error: 'Failed to update incident' };
+      }
 
       // Log audit entry
       logAuditEntry(
@@ -410,7 +378,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
         'assign_incident_responder',
         'managed_incident',
         incidentId,
-        incident.title,
+        updated.title,
         { responder_name: body.user_name, role: responder.role }
       );
 
@@ -420,26 +388,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
           ...responder,
           assigned_at: responder.assigned_at.toISOString(),
         },
-        incident: {
-          ...incident,
-          created_at: incident.created_at.toISOString(),
-          updated_at: incident.updated_at.toISOString(),
-          acknowledged_at: incident.acknowledged_at?.toISOString(),
-          resolved_at: incident.resolved_at?.toISOString(),
-          notes: incident.notes.map(n => ({
-            ...n,
-            created_at: n.created_at.toISOString(),
-          })),
-          timeline: incident.timeline.map(t => ({
-            ...t,
-            created_at: t.created_at.toISOString(),
-          })),
-          responders: incident.responders.map(r => ({
-            ...r,
-            assigned_at: r.assigned_at.toISOString(),
-            acknowledged_at: r.acknowledged_at?.toISOString(),
-          })),
-        },
+        incident: serializeIncident(updated),
       };
     }
   );
@@ -462,7 +411,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
         visibility?: 'internal' | 'public';
       };
 
-      const incident = managedIncidents.get(incidentId);
+      const incident = await getManagedIncident(incidentId);
       if (!incident || incident.organization_id !== orgId) {
         reply.status(404);
         return { error: 'Incident not found' };
@@ -483,8 +432,8 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
         created_at: now,
       };
 
-      incident.notes.push(note);
-      incident.updated_at = now;
+      // Persist note to database
+      await addManagedIncidentNote(incidentId, note);
 
       // Add timeline entry
       const timelineEvent: IncidentTimeline = {
@@ -496,9 +445,14 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
         metadata: { note_id: note.id, visibility: note.visibility },
         created_at: now,
       };
-      incident.timeline.push(timelineEvent);
+      await addManagedIncidentTimelineEntry(incidentId, timelineEvent);
 
-      managedIncidents.set(incidentId, incident);
+      // Update the incident's updated_at timestamp
+      const updated = await updateManagedIncident(incidentId, { updated_at: now });
+      if (!updated) {
+        reply.status(500);
+        return { error: 'Failed to update incident' };
+      }
 
       // Log audit entry
       logAuditEntry(
@@ -506,7 +460,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
         'add_incident_note',
         'managed_incident',
         incidentId,
-        incident.title,
+        updated.title,
         { note_preview: body.content.substring(0, 50) }
       );
 
@@ -516,26 +470,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
           ...note,
           created_at: note.created_at.toISOString(),
         },
-        incident: {
-          ...incident,
-          created_at: incident.created_at.toISOString(),
-          updated_at: incident.updated_at.toISOString(),
-          acknowledged_at: incident.acknowledged_at?.toISOString(),
-          resolved_at: incident.resolved_at?.toISOString(),
-          notes: incident.notes.map(n => ({
-            ...n,
-            created_at: n.created_at.toISOString(),
-          })),
-          timeline: incident.timeline.map(t => ({
-            ...t,
-            created_at: t.created_at.toISOString(),
-          })),
-          responders: incident.responders.map(r => ({
-            ...r,
-            assigned_at: r.assigned_at.toISOString(),
-            acknowledged_at: r.acknowledged_at?.toISOString(),
-          })),
-        },
+        incident: serializeIncident(updated),
       };
     }
   );
@@ -559,7 +494,7 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
         postmortem_completed?: boolean;
       };
 
-      const incident = managedIncidents.get(incidentId);
+      const incident = await getManagedIncident(incidentId);
       if (!incident || incident.organization_id !== orgId) {
         reply.status(404);
         return { error: 'Incident not found' };
@@ -577,18 +512,22 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
 
       const now = new Date();
       const oldStatus = incident.status;
+      const timeToResolve = Math.round((now.getTime() - incident.created_at.getTime()) / 1000);
 
-      incident.status = 'resolved';
-      incident.resolved_at = now;
-      incident.resolution_summary = body.resolution_summary.trim();
-      incident.time_to_resolve_seconds = Math.round((now.getTime() - incident.created_at.getTime()) / 1000);
-      incident.updated_at = now;
+      // Build the update payload
+      const updatePayload: Partial<ManagedIncident> = {
+        status: 'resolved',
+        resolved_at: now,
+        resolution_summary: body.resolution_summary.trim(),
+        time_to_resolve_seconds: timeToResolve,
+        updated_at: now,
+      };
 
       if (body.postmortem_url) {
-        incident.postmortem_url = body.postmortem_url.trim();
+        updatePayload.postmortem_url = body.postmortem_url.trim();
       }
       if (body.postmortem_completed !== undefined) {
-        incident.postmortem_completed = body.postmortem_completed;
+        updatePayload.postmortem_completed = body.postmortem_completed;
       }
 
       // Add timeline entry
@@ -603,13 +542,18 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
           resolution_summary: body.resolution_summary.substring(0, 100),
           postmortem_url: body.postmortem_url,
           postmortem_completed: body.postmortem_completed,
-          time_to_resolve_seconds: incident.time_to_resolve_seconds,
+          time_to_resolve_seconds: timeToResolve,
         },
         created_at: now,
       };
-      incident.timeline.push(timelineEvent);
+      await addManagedIncidentTimelineEntry(incidentId, timelineEvent);
 
-      managedIncidents.set(incidentId, incident);
+      // Persist scalar field updates
+      const updated = await updateManagedIncident(incidentId, updatePayload);
+      if (!updated) {
+        reply.status(500);
+        return { error: 'Failed to resolve incident' };
+      }
 
       // Log audit entry
       logAuditEntry(
@@ -617,34 +561,15 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
         'resolve_incident',
         'managed_incident',
         incidentId,
-        incident.title,
+        updated.title,
         {
           resolution_summary: body.resolution_summary.substring(0, 100),
           postmortem_url: body.postmortem_url,
-          time_to_resolve_seconds: incident.time_to_resolve_seconds,
+          time_to_resolve_seconds: timeToResolve,
         }
       );
 
-      return {
-        ...incident,
-        created_at: incident.created_at.toISOString(),
-        updated_at: incident.updated_at.toISOString(),
-        acknowledged_at: incident.acknowledged_at?.toISOString(),
-        resolved_at: incident.resolved_at?.toISOString(),
-        notes: incident.notes.map(n => ({
-          ...n,
-          created_at: n.created_at.toISOString(),
-        })),
-        timeline: incident.timeline.map(t => ({
-          ...t,
-          created_at: t.created_at.toISOString(),
-        })),
-        responders: incident.responders.map(r => ({
-          ...r,
-          assigned_at: r.assigned_at.toISOString(),
-          acknowledged_at: r.acknowledged_at?.toISOString(),
-        })),
-      };
+      return serializeIncident(updated);
     }
   );
 
@@ -656,15 +581,12 @@ export async function incidentRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request) => {
       const orgId = getOrganizationId(request);
-      const query = request.query as { days?: string };
-      const days = parseInt(query.days || '30', 10);
+      const queryParams = request.query as { days?: string };
+      const days = parseInt(queryParams.days || '30', 10);
       const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-      const incidentIds = incidentsByOrg.get(orgId) || [];
-      const incidents = incidentIds
-        .map(id => managedIncidents.get(id))
-        .filter((i): i is ManagedIncident => i !== undefined)
-        .filter(i => i.created_at >= cutoff);
+      // Fetch incidents from DB with date filter
+      const incidents = await listManagedIncidents(orgId, { since: cutoff });
 
       const stats = {
         total: incidents.length,

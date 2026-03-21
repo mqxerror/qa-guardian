@@ -7,8 +7,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { TestFormData, DEFAULT_FORM_DATA, AICopilotSuggestion, TestType, VIEWPORT_PRESETS, ViewportPreset } from './types';
 
-// API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 /**
  * Extract URL from natural language text
@@ -287,7 +285,7 @@ export function useAIIntentParsing(
       debounceTimerRef.current = setTimeout(async () => {
         setIsParsing(true);
         try {
-          const response = await fetch(`${API_BASE_URL}/api/v1/ai/parse-intent`, {
+          const response = await fetch(`/api/v1/ai/parse-intent`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -592,7 +590,7 @@ export function useTestCreation(suiteId: string, token?: string) {
         }
 
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL ?? ''}/api/v1/suites/${suiteId}/tests`,
+          `/api/v1/suites/${suiteId}/tests`,
           {
             method: 'POST',
             headers: {

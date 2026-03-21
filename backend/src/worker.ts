@@ -29,6 +29,7 @@ import { createServer } from 'http';
 import { initializeEventPublisher, closePublisher, isPublisherAvailable } from './services/redis-events.js'; // Feature #200: Redis Pub/Sub for real-time events
 import { initializeDatabase, closeDatabase } from './services/database.js'; // Feature #169: Worker needs DB access for run lookup
 import { createLogger } from './services/logger.js'; // Feature #447: Structured logging
+import { initializeWebhookSubscriptionsFromDb, initializeWebhookPubSub, closeWebhookPubSub } from './routes/test-runs/webhooks.js'; // Worker needs webhook subscriptions for delivery
 
 // Feature #447: Worker logger for execution and lifecycle logging
 const log = createLogger('worker');
@@ -139,6 +140,18 @@ async function startWorker(): Promise<void> {
     log.info('Redis event publisher initialized - real-time events will be forwarded to API server');
   } else {
     log.warn('Redis event publisher not available - real-time events will be silently dropped');
+  }
+
+  // Initialize webhook subscriptions from DB so webhooks fire after run completion
+  try {
+    await initializeWebhookSubscriptionsFromDb();
+    log.info('Webhook subscriptions loaded from database');
+    const pubSubReady = await initializeWebhookPubSub();
+    if (pubSubReady) {
+      log.info('Webhook Pub/Sub initialized - cache invalidation active');
+    }
+  } catch (err) {
+    log.warn({ error: err }, 'Webhook initialization failed - webhooks may not fire');
   }
 
   // Load execution module after event publisher is ready
@@ -270,6 +283,9 @@ async function shutdown(signal: string): Promise<void> {
       log.error({ error: err }, 'Error closing worker');
     }
   }
+
+  // Close webhook Pub/Sub connections
+  await closeWebhookPubSub();
 
   // Feature #200: Close Redis event publisher
   await closePublisher();

@@ -14,8 +14,6 @@ import { createLogger } from '../utils/logger';
 
 const logger = createLogger('unified-ai');
 
-// API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 // Types for AI responses
 export interface AIMetadata {
@@ -150,7 +148,7 @@ class UnifiedAIServiceClass {
 
     this.statusCheckPromise = (async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/mcp/status`);
+        const response = await fetch(`/api/v1/mcp/status`);
         if (response.ok) {
           this.aiStatus = await response.json();
           return this.aiStatus!;
@@ -194,7 +192,7 @@ class UnifiedAIServiceClass {
     modelPreferences?: { provider?: string; model?: string }
   ): Promise<ChatResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/mcp/chat`, {
+      const response = await fetch(`/api/v1/mcp/chat`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({
@@ -288,7 +286,7 @@ class UnifiedAIServiceClass {
     error?: string;
   }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/mcp/execute`, {
+      const response = await fetch(`/api/v1/mcp/execute`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({
@@ -345,7 +343,7 @@ class UnifiedAIServiceClass {
   public async parseTestIntent(userInput: string): Promise<ParsedTestIntent> {
     // Try backend API first for real AI-powered parsing
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/ai/parse-intent`, {
+      const response = await fetch(`/api/v1/ai/parse-intent`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({
@@ -546,7 +544,7 @@ class UnifiedAIServiceClass {
     metadata?: AIMetadata;
   }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/mcp/execute`, {
+      const response = await fetch(`/api/v1/mcp/execute`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({

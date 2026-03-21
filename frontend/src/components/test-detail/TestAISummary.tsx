@@ -121,7 +121,7 @@ function TestAISummaryInner({
 
           // Call the AI failure analysis endpoint
           const response = await fetch(
-            `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/explain-failure`,
+            `/api/v1/ai/explain-failure`,
             {
               method: 'POST',
               headers: {
@@ -161,7 +161,7 @@ function TestAISummaryInner({
           const failRate = last10.length > 0 ? Math.round((last10.filter(r => r.status === 'failed' || r.status === 'error').length / last10.length) * 100) : 0;
 
           const response = await fetch(
-            `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/explain-failure`,
+            `/api/v1/ai/explain-failure`,
             {
               method: 'POST',
               headers: {

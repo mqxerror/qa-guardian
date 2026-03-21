@@ -624,7 +624,7 @@ export function useSettingsHandlers({
     setVisionHealingResult(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/ai/heal-with-vision`, {
+      const response = await fetch(`/api/v1/ai/heal-with-vision`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

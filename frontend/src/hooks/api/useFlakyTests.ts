@@ -284,7 +284,7 @@ export function useFlakyTestAIAnalysis() {
   return useMutation({
     mutationFn: async (payload: { message: string }) => {
       const response = await fetchWithAuth(
-        `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/mcp-tools/chat`,
+        `/api/v1/mcp-tools/chat`,
         token,
         {
           method: 'POST',

@@ -18,11 +18,10 @@ import type {
 import type { Project } from '@/types/organization';
 
 // API functions
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 async function fetchProjects(): Promise<Project[]> {
   const token = useAuthStore.getState().token;
-  const response = await fetch(`${API_BASE}/api/v1/projects`, {
+  const response = await fetch(`/api/v1/projects`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -37,7 +36,7 @@ async function fetchProjects(): Promise<Project[]> {
 
 async function fetchSbomList(projectId: string): Promise<SbomListResponse> {
   const token = useAuthStore.getState().token;
-  const response = await fetch(`${API_BASE}/api/v1/projects/${projectId}/sbom`, {
+  const response = await fetch(`/api/v1/projects/${projectId}/sbom`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -55,7 +54,7 @@ async function generateSbom(
   includeDevDeps: boolean
 ): Promise<GeneratedSbom> {
   const token = useAuthStore.getState().token;
-  const response = await fetch(`${API_BASE}/api/v1/projects/${projectId}/sbom/generate`, {
+  const response = await fetch(`/api/v1/projects/${projectId}/sbom/generate`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -75,7 +74,7 @@ async function generateSbom(
 
 async function downloadSbom(projectId: string, sbomId: string, filename: string): Promise<void> {
   const token = useAuthStore.getState().token;
-  const response = await fetch(`${API_BASE}/api/v1/projects/${projectId}/sbom/${sbomId}/download`, {
+  const response = await fetch(`/api/v1/projects/${projectId}/sbom/${sbomId}/download`, {
     headers: {
       'Authorization': `Bearer ${token}`,
     },

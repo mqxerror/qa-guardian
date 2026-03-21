@@ -9,6 +9,8 @@
  * - String similarity calculations
  *
  * Extracted from monitoring.ts (Feature #1374)
+ * Feature #2118: Migrated correlateAlert, findRunbookForAlert, checkAlertRateLimit
+ *   from in-memory Maps to async DB functions
  */
 
 import {
@@ -44,13 +46,15 @@ import {
   getCheckIncidentsAsync,
   // Runtime-only Map (cannot be serialized)
   checkIntervals,
-  // Deprecated Maps (no DB functions yet)
-  alertCorrelationConfigs,
-  alertCorrelations,
-  alertToCorrelation,
-  alertRateLimitConfigs,
-  alertRateLimitStates,
-  alertRunbooks,
+  // Async DB functions for alert correlation, rate limiting, runbooks
+  getAlertCorrelationConfig,
+  listAlertCorrelations,
+  createAlertCorrelation,
+  updateAlertCorrelation,
+  getAlertRateLimitConfig,
+  getAlertRateLimitState,
+  setAlertRateLimitState,
+  listAlertRunbooks,
 } from './stores.js';
 
 // Global monitoring locations
@@ -406,13 +410,14 @@ export function calculateStringSimilarity(str1: string, str2: string): number {
 }
 
 /**
- * Find or create correlation for an alert
+ * Find or create correlation for an alert.
+ * Now async -- queries the DB instead of in-memory Maps.
  */
-export function correlateAlert(
+export async function correlateAlert(
   orgId: string,
   alertInfo: CorrelatedAlert
-): { correlated: boolean; correlation_id?: string; correlation_reason?: string } {
-  const config = alertCorrelationConfigs.get(orgId);
+): Promise<{ correlated: boolean; correlation_id?: string; correlation_reason?: string }> {
+  const config = await getAlertCorrelationConfig(orgId);
 
   if (!config || !config.enabled) {
     return { correlated: false };
@@ -421,8 +426,13 @@ export function correlateAlert(
   const now = new Date();
   const timeWindowMs = config.time_window_seconds * 1000;
 
-  for (const [corrId, correlation] of alertCorrelations) {
-    if (correlation.organization_id !== orgId) continue;
+  // Fetch active/acknowledged correlations for this org
+  const existingCorrelations = await listAlertCorrelations(orgId, { status: 'active', limit: 200 });
+  // Also include acknowledged correlations that are still within the time window
+  const acknowledgedCorrelations = await listAlertCorrelations(orgId, { status: 'acknowledged', limit: 200 });
+  const allCorrelations = [...existingCorrelations, ...acknowledgedCorrelations];
+
+  for (const correlation of allCorrelations) {
     if (correlation.status === 'resolved') continue;
 
     const timeSinceCreation = now.getTime() - correlation.created_at.getTime();
@@ -449,23 +459,32 @@ export function correlateAlert(
     }
 
     if (reasons.length > 0) {
-      correlation.alerts.push(alertInfo);
-      correlation.updated_at = now;
-
+      // Add the alert to the existing correlation's alerts array
+      const updatedAlerts = [...correlation.alerts, alertInfo];
       const uniqueReasons = [...new Set(reasons)];
+
+      let newReason = correlation.correlation_reason;
+      let newDetails = correlation.correlation_details;
+
       if (uniqueReasons.length > 1) {
-        correlation.correlation_reason = 'multiple';
-        correlation.correlation_details = `Correlated by: ${uniqueReasons.join(', ')}`;
+        newReason = 'multiple';
+        newDetails = `Correlated by: ${uniqueReasons.join(', ')}`;
       } else if (uniqueReasons[0] !== correlation.correlation_reason) {
-        correlation.correlation_reason = 'multiple';
-        correlation.correlation_details = `Correlated by: ${correlation.correlation_reason}, ${uniqueReasons[0]}`;
+        newReason = 'multiple';
+        newDetails = `Correlated by: ${correlation.correlation_reason}, ${uniqueReasons[0]}`;
       }
 
-      alertToCorrelation.set(alertInfo.id, corrId);
-      return { correlated: true, correlation_id: corrId, correlation_reason: uniqueReasons.join(', ') };
+      await updateAlertCorrelation(correlation.id, {
+        alerts: updatedAlerts,
+        correlation_reason: newReason as AlertCorrelation['correlation_reason'],
+        correlation_details: newDetails,
+      });
+
+      return { correlated: true, correlation_id: correlation.id, correlation_reason: uniqueReasons.join(', ') };
     }
   }
 
+  // No existing correlation matched -- create a new one
   const correlationId = `corr-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   const newCorrelation: AlertCorrelation = {
     id: correlationId,
@@ -479,26 +498,26 @@ export function correlateAlert(
     updated_at: now,
   };
 
-  alertCorrelations.set(correlationId, newCorrelation);
-  alertToCorrelation.set(alertInfo.id, correlationId);
+  await createAlertCorrelation(newCorrelation);
 
   return { correlated: true, correlation_id: correlationId, correlation_reason: 'new_correlation' };
 }
 
 /**
- * Find matching runbook for an alert
+ * Find matching runbook for an alert.
+ * Now async -- queries the DB instead of iterating in-memory Map.
  */
-export function findRunbookForAlert(
+export async function findRunbookForAlert(
   orgId: string,
   checkType: string,
   severity: string
-): AlertRunbook | null {
+): Promise<AlertRunbook | null> {
+  const runbooks = await listAlertRunbooks(orgId);
+
   let bestMatch: AlertRunbook | null = null;
   let matchScore = 0;
 
-  for (const [_, runbook] of alertRunbooks) {
-    if (runbook.organization_id !== orgId) continue;
-
+  for (const runbook of runbooks) {
     let score = 0;
 
     if (runbook.check_type === checkType) {
@@ -527,21 +546,23 @@ export function findRunbookForAlert(
 }
 
 /**
- * Check rate limit and update state
+ * Check rate limit and update state.
+ * Now async -- reads/writes rate limit state from/to the DB.
  */
-export function checkAlertRateLimit(
+export async function checkAlertRateLimit(
   orgId: string,
   alertInfo: { alert_id: string; check_name: string; severity: string }
-): { allowed: boolean; suppressed_count: number; summary_needed: boolean } {
-  const config = alertRateLimitConfigs.get(orgId);
+): Promise<{ allowed: boolean; suppressed_count: number; summary_needed: boolean }> {
+  const config = await getAlertRateLimitConfig(orgId);
 
   if (!config || !config.enabled) {
     return { allowed: true, suppressed_count: 0, summary_needed: false };
   }
 
-  let state = alertRateLimitStates.get(orgId);
+  let state = await getAlertRateLimitState(orgId);
   const now = new Date();
 
+  // Reset window if expired or state doesn't exist
   if (!state || (now.getTime() - state.window_start.getTime()) > config.time_window_seconds * 1000) {
     state = {
       organization_id: orgId,
@@ -552,7 +573,6 @@ export function checkAlertRateLimit(
       sent_alerts: 0,
       suppressed_count: 0,
     };
-    alertRateLimitStates.set(orgId, state);
   }
 
   state.total_alerts++;
@@ -560,6 +580,7 @@ export function checkAlertRateLimit(
   if (state.alerts_in_window < config.max_alerts_per_minute) {
     state.alerts_in_window++;
     state.sent_alerts++;
+    await setAlertRateLimitState(state);
     return { allowed: true, suppressed_count: state.suppressed_count, summary_needed: false };
   }
 
@@ -578,8 +599,10 @@ export function checkAlertRateLimit(
       state.suppressed_alerts = [];
     }
 
+    await setAlertRateLimitState(state);
     return { allowed: false, suppressed_count: state.suppressed_count, summary_needed };
   }
 
+  await setAlertRateLimitState(state);
   return { allowed: false, suppressed_count: state.suppressed_count, summary_needed: false };
 }

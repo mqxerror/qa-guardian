@@ -28,9 +28,11 @@ import {
 const logger = createLogger('dependency-scanning');
 
 import {
-  githubConnections,
-  prStatusChecks,
-  prDependencyScans,
+  getGithubConnection,
+  updateGithubConnection,
+  addPRStatusCheck,
+  addPRDependencyScan,
+  getPRDependencyScansByPR,
   demoPullRequests,
 } from './stores.js';
 import {
@@ -73,25 +75,31 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
+    // Build partial update with only the fields that were provided
+    const updates: Record<string, unknown> = {};
     if (pr_dependency_scan_enabled !== undefined) {
+      updates.pr_dependency_scan_enabled = pr_dependency_scan_enabled;
       connection.pr_dependency_scan_enabled = pr_dependency_scan_enabled;
     }
     if (pr_dependency_scan_files !== undefined) {
+      updates.pr_dependency_scan_files = pr_dependency_scan_files;
       connection.pr_dependency_scan_files = pr_dependency_scan_files;
     }
     if (pr_dependency_scan_severity !== undefined) {
+      updates.pr_dependency_scan_severity = pr_dependency_scan_severity;
       connection.pr_dependency_scan_severity = pr_dependency_scan_severity;
     }
     if (pr_dependency_scan_block_on_critical !== undefined) {
+      updates.pr_dependency_scan_block_on_critical = pr_dependency_scan_block_on_critical;
       connection.pr_dependency_scan_block_on_critical = pr_dependency_scan_block_on_critical;
     }
 
-    githubConnections.set(projectId, connection);
+    await updateGithubConnection(projectId, updates);
 
     logger.info({
       enabled: pr_dependency_scan_enabled,
@@ -128,7 +136,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
@@ -159,7 +167,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
@@ -275,10 +283,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
     };
 
     // Store the scan result
-    if (!prDependencyScans.has(projectId)) {
-      prDependencyScans.set(projectId, []);
-    }
-    prDependencyScans.get(projectId)!.push(scanResult);
+    await addPRDependencyScan(scanResult);
 
     // Determine if PR should be blocked
     const hasCritical = scanResult.summary.critical > 0;
@@ -304,10 +309,7 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
         updated_at: new Date(),
       };
 
-      if (!prStatusChecks.has(projectId)) {
-        prStatusChecks.set(projectId, []);
-      }
-      prStatusChecks.get(projectId)!.push(statusCheck);
+      await addPRStatusCheck(statusCheck);
     }
 
     logger.info({
@@ -346,15 +348,13 @@ export async function dependencyScanningRoutes(app: FastifyInstance): Promise<vo
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
-    const projectScans = prDependencyScans.get(projectId) || [];
-    const prScans = projectScans
-      .filter(s => s.pr_number === parseInt(prNumber))
-      .sort((a, b) => b.started_at.getTime() - a.started_at.getTime());
+    // DB function returns scans sorted by started_at DESC already
+    const prScans = await getPRDependencyScansByPR(projectId, parseInt(prNumber));
 
     return {
       pr_number: parseInt(prNumber),

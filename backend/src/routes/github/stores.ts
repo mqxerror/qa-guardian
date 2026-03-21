@@ -2,14 +2,11 @@
  * GitHub Module Stores
  *
  * Feature #2114: Map exports REMOVED. Only async DB functions exported.
+ * Feature #2119: Route handlers migrated from in-memory Maps to async DB functions.
  * Demo data (repos, PRs, test files) kept as static constants.
  */
 
 import {
-  GitHubConnection,
-  PRStatusCheck,
-  PRComment,
-  PRDependencyScanResult,
   GitHubTestFile,
   DemoRepository,
   DemoPullRequest,
@@ -44,13 +41,6 @@ export const getPRDependencyScansByPR = githubRepo.getPRDependencyScansByPR;
 export const setUserGithubToken = githubRepo.setUserGithubToken;
 export const getUserGithubToken = githubRepo.getUserGithubToken;
 export const deleteUserGithubToken = githubRepo.deleteUserGithubToken;
-
-// DEPRECATED: Empty Map exports for backward compatibility until route migration (#2119)
-export const githubConnections = new Map<string, GitHubConnection>();
-export const prStatusChecks = new Map<string, PRStatusCheck[]>();
-export const prComments = new Map<string, PRComment[]>();
-export const prDependencyScans = new Map<string, PRDependencyScanResult[]>();
-export const userGithubTokens = new Map<string, string>();
 
 // Simulated open PRs for demo repos (static data, kept in-memory)
 export const demoPullRequests: Record<string, DemoPullRequest[]> = {

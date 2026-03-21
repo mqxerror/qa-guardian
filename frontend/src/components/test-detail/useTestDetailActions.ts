@@ -73,7 +73,7 @@ export function useTestDetailActions({
     setDeleteError('');
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/tests/${testId}`, {
+      const res = await fetch(`/api/v1/tests/${testId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -102,7 +102,7 @@ export function useTestDetailActions({
     setEditError('');
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/tests/${testId}`, {
+      const res = await fetch(`/api/v1/tests/${testId}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -137,7 +137,7 @@ export function useTestDetailActions({
     setDuplicateError('');
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/tests/${testId}/duplicate`, {
+      const res = await fetch(`/api/v1/tests/${testId}/duplicate`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -167,7 +167,7 @@ export function useTestDetailActions({
     setRunError('');
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/tests/${testId}/run`, {
+      const res = await fetch(`/api/v1/tests/${testId}/run`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -211,7 +211,7 @@ export function useTestDetailActions({
         throw new Error('No running test found');
       }
 
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/runs/${currentRunId}/cancel`, {
+      const res = await fetch(`/api/v1/runs/${currentRunId}/cancel`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -239,7 +239,7 @@ export function useTestDetailActions({
     setIsDownloadingArtifacts(true);
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/runs/${runId}/artifacts/download`, {
+      const res = await fetch(`/api/v1/runs/${runId}/artifacts/download`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 

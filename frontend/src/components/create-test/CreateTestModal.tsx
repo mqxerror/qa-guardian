@@ -388,10 +388,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  );
 
  try {
- // Use relative URL for Vite proxy or absolute URL for production
- const apiUrl = import.meta.env.VITE_API_URL
- ? `${import.meta.env.VITE_API_URL}/api/v1/suites/${suiteId}/tests`
- : `/api/v1/suites/${suiteId}/tests`;
+ const apiUrl = `/api/v1/suites/${suiteId}/tests`;
 
  // Feature #1972: Smoke test auto-generates health check steps
  const isSmokeTest = preview.type === 'smoke';
@@ -492,10 +489,7 @@ export const CreateTestModal: React.FC<CreateTestModalProps> = ({
  try {
  // Trigger a suite run (runs all tests in the suite)
  // This is more efficient than running tests individually
- // Use relative URL for Vite proxy or absolute URL for production
- const runApiUrl = import.meta.env.VITE_API_URL
- ? `${import.meta.env.VITE_API_URL}/api/v1/suites/${suiteId}/runs`
- : `/api/v1/suites/${suiteId}/runs`;
+ const runApiUrl = `/api/v1/suites/${suiteId}/runs`;
 
  const response = await fetch(runApiUrl, {
  method: 'POST',

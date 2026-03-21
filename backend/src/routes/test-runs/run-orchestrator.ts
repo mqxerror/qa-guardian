@@ -160,9 +160,11 @@ export async function runTestsForRun(runId: string) {
   setTestRun(runId, run);
 
   // Persist running status to database
-  dbUpdateTestRun(runId, { status: 'running', started_at: run.started_at }).catch(err =>
-    logger.error({ err }, '[RunStart] Failed to persist running status to database')
-  );
+  try {
+    await dbUpdateTestRun(runId, { status: 'running', started_at: run.started_at });
+  } catch (err) {
+    logger.error({ err }, '[RunStart] Failed to persist running status to database');
+  }
 
   // Emit run started event
   emitRunEvent(runId, orgId, 'run-start', {
@@ -419,19 +421,21 @@ export async function runTestsForRun(runId: string) {
     }
     setTestRun(runId, run);
 
-    // Persist completed run to database
-    dbUpdateTestRun(runId, {
-      status: run.status,
-      started_at: run.started_at,
-      completed_at: run.completed_at,
-      duration_ms: run.duration_ms,
-      results: run.results,
-      error: run.error,
-      test_type: run.test_type,
-      accessibility_results: run.accessibility_results,
-    }).catch(err =>
-      logger.error({ err }, '[RunComplete] Failed to persist completed run to database')
-    );
+    // Persist completed run to database (awaited to ensure data is saved)
+    try {
+      await dbUpdateTestRun(runId, {
+        status: run.status,
+        started_at: run.started_at,
+        completed_at: run.completed_at,
+        duration_ms: run.duration_ms,
+        results: run.results,
+        error: run.error,
+        test_type: run.test_type,
+        accessibility_results: run.accessibility_results,
+      });
+    } catch (err) {
+      logger.error({ err }, '[RunComplete] Failed to persist completed run to database');
+    }
 
     // Feature #212: Invalidate test run listing caches
     try {

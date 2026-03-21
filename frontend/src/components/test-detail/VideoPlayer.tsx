@@ -22,7 +22,7 @@ export function VideoPlayer({ videoFile, token }: VideoPlayerProps) {
         setError(null);
 
         const response = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/videos/${videoFile}`,
+          `/api/v1/videos/${videoFile}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -58,7 +58,7 @@ export function VideoPlayer({ videoFile, token }: VideoPlayerProps) {
   const handleDownload = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/videos/${videoFile}`,
+        `/api/v1/videos/${videoFile}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,

@@ -16,8 +16,6 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Mod
 import { fetchWithAuth } from '../hooks/api/fetchWithAuth';
 import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 
-// Feature #317: API base URL from environment
-const API_BASE = import.meta.env.VITE_API_URL || '';
 
 // Query keys for cache management
 const analyticsKeys = {
@@ -54,7 +52,7 @@ export function AIAnalyticsPage() {
   // React Query: Fetch analytics
   const { data: analytics, isLoading: isAnalyticsLoading, isError, error } = useQuery({
     queryKey: analyticsKeys.analytics(period),
-    queryFn: () => fetchWithAuth(`${API_BASE}/api/v1/ai/analytics?period=${period}`, token) as Promise<UsageAnalytics>,
+    queryFn: () => fetchWithAuth(`/api/v1/ai/analytics?period=${period}`, token) as Promise<UsageAnalytics>,
     enabled: !!token,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
@@ -62,7 +60,7 @@ export function AIAnalyticsPage() {
   // React Query: Fetch comparison
   const { data: comparison, isLoading: isComparisonLoading } = useQuery({
     queryKey: analyticsKeys.comparison(period),
-    queryFn: () => fetchWithAuth(`${API_BASE}/api/v1/ai/analytics/comparison?period=${period}`, token) as Promise<ProviderComparison>,
+    queryFn: () => fetchWithAuth(`/api/v1/ai/analytics/comparison?period=${period}`, token) as Promise<ProviderComparison>,
     enabled: !!token,
     staleTime: 2 * 60 * 1000,
   });
@@ -70,7 +68,7 @@ export function AIAnalyticsPage() {
   // React Query: Fetch trends
   const { data: trends, isLoading: isTrendsLoading } = useQuery({
     queryKey: analyticsKeys.trends(period),
-    queryFn: () => fetchWithAuth(`${API_BASE}/api/v1/ai/analytics/trends?period=${period}`, token) as Promise<UsageTrends>,
+    queryFn: () => fetchWithAuth(`/api/v1/ai/analytics/trends?period=${period}`, token) as Promise<UsageTrends>,
     enabled: !!token,
     staleTime: 2 * 60 * 1000,
   });
@@ -78,7 +76,7 @@ export function AIAnalyticsPage() {
   // React Query: Fetch budget
   const { data: budgetData, isLoading: isBudgetLoading } = useQuery({
     queryKey: analyticsKeys.budget(),
-    queryFn: () => fetchWithAuth(`${API_BASE}/api/v1/ai/cost-analytics/budget`, token),
+    queryFn: () => fetchWithAuth(`/api/v1/ai/cost-analytics/budget`, token),
     enabled: !!token,
     staleTime: 60 * 1000,
   });
@@ -99,7 +97,7 @@ export function AIAnalyticsPage() {
   // React Query: Fetch models
   const { data: modelsData } = useQuery({
     queryKey: analyticsKeys.models(),
-    queryFn: () => fetchWithAuth(`${API_BASE}/api/v1/ai/cost-analytics/models`, token),
+    queryFn: () => fetchWithAuth(`/api/v1/ai/cost-analytics/models`, token),
     enabled: !!token,
     staleTime: 5 * 60 * 1000,
   });
@@ -119,7 +117,7 @@ export function AIAnalyticsPage() {
   // React Query: Export mutation
   const exportMutation = useMutation({
     mutationFn: ({ type, period }: { type: string; period: string }) =>
-      fetchWithAuth(`${API_BASE}/api/v1/ai/analytics/export`, token, {
+      fetchWithAuth(`/api/v1/ai/analytics/export`, token, {
         method: 'POST',
         body: JSON.stringify({ type, period }),
       }),
@@ -134,7 +132,7 @@ export function AIAnalyticsPage() {
   // React Query: Update budget mutation
   const updateBudgetMutation = useMutation({
     mutationFn: (monthlyLimitUsd: number) =>
-      fetchWithAuth(`${API_BASE}/api/v1/ai/cost-analytics/budget`, token, {
+      fetchWithAuth(`/api/v1/ai/cost-analytics/budget`, token, {
         method: 'PATCH',
         body: JSON.stringify({ monthlyLimitUsd }),
       }),

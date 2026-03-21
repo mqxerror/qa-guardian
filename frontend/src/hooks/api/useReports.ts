@@ -56,8 +56,7 @@ export function useReport(reportId: string | undefined) {
   return useQuery({
     queryKey: reportKeys.detail(reportId || ''),
     queryFn: async () => {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
-      return fetchWithAuth(`${baseUrl}/api/v1/reports/${reportId}`, token) as Promise<ReportResponse>;
+      return fetchWithAuth(`/api/v1/reports/${reportId}`, token) as Promise<ReportResponse>;
     },
     enabled: !!token && !!reportId,
     staleTime: 60 * 1000, // 1 minute - reports don't change often

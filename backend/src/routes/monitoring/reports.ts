@@ -4,21 +4,19 @@
  * Handles uptime report generation with SLA calculations and incident summaries.
  *
  * Feature #955: Generate uptime report for multiple checks
+ * Migrated from in-memory Maps to async DB functions (managedIncidents, incidentsByOrg).
  */
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, requireRoles, getOrganizationId } from '../../middleware/auth.js';
 import {
   UptimeCheck,
-  ManagedIncident,
 } from './types.js';
 import {
   getUptimeCheck,
   listUptimeChecks,
   getCheckResults,
-  // managedIncidents / incidentsByOrg have no async DB functions yet; keep deprecated Map imports
-  managedIncidents,
-  incidentsByOrg,
+  listManagedIncidents,
 } from './stores.js';
 import { formatDuration } from './helpers.js';
 
@@ -231,12 +229,9 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
         ? overallResponseTimeSum / overallResponseTimeCount
         : 0;
 
-      // Get incidents summary for the period
-      const incidentIds = incidentsByOrg.get(orgId) || [];
-      const periodIncidents = incidentIds
-        .map(id => managedIncidents.get(id))
-        .filter((i): i is ManagedIncident => i !== undefined)
-        .filter(i => i.created_at >= startDate && i.created_at <= endDate);
+      // Get incidents summary for the period from the database
+      const periodIncidents = await listManagedIncidents(orgId, { since: startDate })
+        .then(incidents => incidents.filter(i => i.created_at <= endDate));
 
       const incidentSummary = {
         total_incidents: periodIncidents.length,

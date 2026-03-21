@@ -31,10 +31,18 @@ import {
 } from './types.js';
 
 import {
-  githubConnections,
-  prStatusChecks,
-  prComments,
-  userGithubTokens,
+  getGithubConnection,
+  createGithubConnection,
+  updateGithubConnection,
+  deleteGithubConnection,
+  getUserGithubToken,
+  setUserGithubToken,
+  deleteUserGithubToken,
+  addPRStatusCheck,
+  getPRStatusChecks,
+  getPRStatusChecksByPR,
+  addPRComment,
+  getPRCommentsByPR,
   demoPullRequests,
   demoRepositories,
   demoTestFiles,
@@ -55,7 +63,8 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     preHandler: [authenticate],
   }, async (request) => {
     const user = request.user as JwtPayload;
-    const hasToken = userGithubTokens.has(user.id);
+    const token = await getUserGithubToken(user.id);
+    const hasToken = token !== undefined;
 
     return {
       connected: hasToken,
@@ -70,7 +79,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const user = request.user as JwtPayload;
 
     // Simulate successful OAuth connection
-    userGithubTokens.set(user.id, `ghp_simulated_token_${Date.now()}`);
+    await setUserGithubToken(user.id, `ghp_simulated_token_${Date.now()}`);
 
     logger.info({ userEmail: user.email }, 'GitHub OAuth connected (simulated)');
 
@@ -86,7 +95,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     preHandler: [authenticate],
   }, async (request) => {
     const user = request.user as JwtPayload;
-    userGithubTokens.delete(user.id);
+    await deleteUserGithubToken(user.id);
 
     return {
       success: true,
@@ -100,7 +109,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
   }, async (request, reply) => {
     const user = request.user as JwtPayload;
 
-    if (!userGithubTokens.has(user.id)) {
+    if (!(await getUserGithubToken(user.id))) {
       return sendError(reply, 401, 'UNAUTHORIZED', 'GitHub account not connected. Please connect your GitHub account first.');
     }
 
@@ -117,7 +126,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const user = request.user as JwtPayload;
     const { owner, repo } = request.params;
 
-    if (!userGithubTokens.has(user.id)) {
+    if (!(await getUserGithubToken(user.id))) {
       return sendError(reply, 401, 'UNAUTHORIZED', 'GitHub account not connected');
     }
 
@@ -143,7 +152,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const { owner, repo } = request.params;
     const { branch } = request.query;
 
-    if (!userGithubTokens.has(user.id)) {
+    if (!(await getUserGithubToken(user.id))) {
       return sendError(reply, 401, 'UNAUTHORIZED', 'GitHub account not connected');
     }
 
@@ -168,7 +177,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const { owner, repo, branch = 'main', test_path = 'tests' } = request.body;
 
     // Check if user has GitHub connected
-    if (!userGithubTokens.has(user.id)) {
+    if (!(await getUserGithubToken(user.id))) {
       return sendError(reply, 401, 'UNAUTHORIZED', 'GitHub account not connected. Please connect your GitHub account first.');
     }
 
@@ -183,7 +192,8 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Check if already connected
-    if (githubConnections.has(projectId)) {
+    const existingConnection = await getGithubConnection(projectId);
+    if (existingConnection) {
       return sendError(reply, 400, 'BAD_REQUEST', 'This project already has a GitHub repository connected. Disconnect first to connect a different repository.');
     }
 
@@ -208,7 +218,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
       connected_by: user.id,
     };
 
-    githubConnections.set(projectId, connection);
+    await createGithubConnection(connection);
 
     // Discover and import test files based on branch
     const selectedBranch = connection.github_branch;
@@ -295,7 +305,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return {
         connected: false,
@@ -344,13 +354,13 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     // Remove the connection
-    githubConnections.delete(projectId);
+    await deleteGithubConnection(projectId);
 
     logger.info({
       projectName: project.name,
@@ -379,14 +389,15 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
     // Update last synced timestamp
-    connection.last_synced_at = new Date();
-    githubConnections.set(projectId, connection);
+    const syncedAt = new Date();
+    await updateGithubConnection(projectId, { last_synced_at: syncedAt });
+    connection.last_synced_at = syncedAt;
 
     // Get test files (simulated refresh) based on branch
     const fullName = `${connection.github_owner}/${connection.github_repo}`;
@@ -428,7 +439,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
@@ -441,9 +452,10 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const oldBranch = connection.github_branch;
+    const syncedAt = new Date();
+    await updateGithubConnection(projectId, { github_branch: branch, last_synced_at: syncedAt });
     connection.github_branch = branch;
-    connection.last_synced_at = new Date();
-    githubConnections.set(projectId, connection);
+    connection.last_synced_at = syncedAt;
 
     // Get test files for new branch
     const testFiles = getTestFilesForBranch(fullName, branch);
@@ -488,13 +500,13 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
+    await updateGithubConnection(projectId, { pr_checks_enabled });
     connection.pr_checks_enabled = pr_checks_enabled;
-    githubConnections.set(projectId, connection);
 
     logger.info({
       projectName: project.name,
@@ -524,7 +536,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
@@ -533,7 +545,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     const pullRequests = demoPullRequests[fullName] || [];
 
     // Get status checks for each PR
-    const projectChecks = prStatusChecks.get(projectId) || [];
+    const projectChecks = await getPRStatusChecks(projectId);
     const prsWithStatus = pullRequests.map(pr => {
       const latestCheck = projectChecks
         .filter(c => c.pr_number === pr.number)
@@ -570,7 +582,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
@@ -612,10 +624,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
     };
 
     // Store the status check
-    if (!prStatusChecks.has(projectId)) {
-      prStatusChecks.set(projectId, []);
-    }
-    prStatusChecks.get(projectId)!.push(statusCheck);
+    await addPRStatusCheck(statusCheck);
 
     logger.info({
       repository: fullName,
@@ -648,15 +657,13 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
-    const projectChecks = prStatusChecks.get(projectId) || [];
-    const prChecks = projectChecks
-      .filter(c => c.pr_number === parseInt(prNumber))
-      .sort((a, b) => b.updated_at.getTime() - a.updated_at.getTime());
+    // DB function returns checks sorted by created_at DESC already
+    const prChecks = await getPRStatusChecksByPR(projectId, parseInt(prNumber));
 
     return {
       pr_number: parseInt(prNumber),
@@ -682,13 +689,13 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
+    await updateGithubConnection(projectId, { pr_comments_enabled });
     connection.pr_comments_enabled = pr_comments_enabled;
-    githubConnections.set(projectId, connection);
 
     logger.info({
       projectName: project.name,
@@ -719,7 +726,7 @@ export async function coreGithubRoutes(app: FastifyInstance): Promise<void> {
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
@@ -774,10 +781,7 @@ ${status}
     };
 
     // Store the comment
-    if (!prComments.has(projectId)) {
-      prComments.set(projectId, []);
-    }
-    prComments.get(projectId)!.push(comment);
+    await addPRComment(comment);
 
     logger.info({
       repository: fullName,
@@ -820,15 +824,13 @@ ${status}
       return sendError(reply, 403, 'FORBIDDEN', 'You do not have access to this project');
     }
 
-    const connection = githubConnections.get(projectId);
+    const connection = await getGithubConnection(projectId);
     if (!connection) {
       return sendError(reply, 404, 'NOT_FOUND', 'No GitHub repository connected to this project');
     }
 
-    const projectComments = prComments.get(projectId) || [];
-    const prCommentsForPR = projectComments
-      .filter(c => c.pr_number === parseInt(prNumber))
-      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+    // DB function returns comments sorted by created_at DESC already
+    const prCommentsForPR = await getPRCommentsByPR(projectId, parseInt(prNumber));
 
     return {
       pr_number: parseInt(prNumber),

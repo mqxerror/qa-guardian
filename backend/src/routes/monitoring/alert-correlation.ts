@@ -10,6 +10,7 @@
  *
  * Feature #1375: Split alert management routes from monitoring.ts
  * Feature #506: Replaced console.* with structured Pino logger
+ * Feature #2118: Migrated from in-memory Maps to async DB functions
  */
 
 import { FastifyInstance } from 'fastify';
@@ -42,10 +43,19 @@ import {
 } from './types.js';
 
 import {
-  alertCorrelationConfigs,
-  alertCorrelations,
-  alertToCorrelation,
-  alertRunbooks,
+  // Async DB functions for correlation
+  getAlertCorrelationConfig,
+  setAlertCorrelationConfig,
+  getAlertCorrelation,
+  updateAlertCorrelation,
+  listAlertCorrelations,
+  deleteAlertCorrelationsByOrg,
+  // Async DB functions for runbooks
+  createAlertRunbook,
+  getAlertRunbook,
+  updateAlertRunbook as updateAlertRunbookDb,
+  deleteAlertRunbook as deleteAlertRunbookDb,
+  listAlertRunbooks,
 } from './stores.js';
 
 import {
@@ -66,7 +76,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     },
     async (request) => {
       const orgId = getOrganizationId(request);
-      const config = alertCorrelationConfigs.get(orgId);
+      const config = await getAlertCorrelationConfig(orgId);
 
       if (!config) {
         return {
@@ -117,7 +127,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
         updated_at: new Date(),
       };
 
-      alertCorrelationConfigs.set(orgId, config);
+      await setAlertCorrelationConfig(config);
 
       logger.info({ orgId, config }, 'Correlation config saved');
 
@@ -141,18 +151,13 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
       const { status, limit } = request.query;
       const maxResults = parseInt(limit || '50');
 
-      const correlations: AlertCorrelation[] = [];
-      for (const [, corr] of alertCorrelations) {
-        if (corr.organization_id !== orgId) continue;
-        if (status && corr.status !== status) continue;
-        correlations.push(corr);
-      }
-
-      // Sort by created_at descending
-      correlations.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+      const correlations = await listAlertCorrelations(orgId, {
+        status,
+        limit: maxResults,
+      });
 
       return {
-        correlations: correlations.slice(0, maxResults),
+        correlations,
         total: correlations.length,
       };
     }
@@ -171,7 +176,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
       const { correlationId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const correlation = alertCorrelations.get(correlationId);
+      const correlation = await getAlertCorrelation(correlationId);
       if (!correlation || correlation.organization_id !== orgId) {
         return sendError(reply, 404, 'NOT_FOUND', 'Correlation not found');
       }
@@ -194,15 +199,16 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
       const orgId = getOrganizationId(request);
       const user = request.user as JwtPayload;
 
-      const correlation = alertCorrelations.get(correlationId);
-      if (!correlation || correlation.organization_id !== orgId) {
+      const existing = await getAlertCorrelation(correlationId);
+      if (!existing || existing.organization_id !== orgId) {
         return sendError(reply, 404, 'NOT_FOUND', 'Correlation not found');
       }
 
-      correlation.status = 'acknowledged';
-      correlation.acknowledged_by = user.email;
-      correlation.acknowledged_at = new Date();
-      correlation.updated_at = new Date();
+      const correlation = await updateAlertCorrelation(correlationId, {
+        status: 'acknowledged',
+        acknowledged_by: user.email,
+        acknowledged_at: new Date(),
+      });
 
       return { success: true, correlation };
     }
@@ -221,13 +227,14 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
       const { correlationId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const correlation = alertCorrelations.get(correlationId);
-      if (!correlation || correlation.organization_id !== orgId) {
+      const existing = await getAlertCorrelation(correlationId);
+      if (!existing || existing.organization_id !== orgId) {
         return sendError(reply, 404, 'NOT_FOUND', 'Correlation not found');
       }
 
-      correlation.status = 'resolved';
-      correlation.updated_at = new Date();
+      const correlation = await updateAlertCorrelation(correlationId, {
+        status: 'resolved',
+      });
 
       return { success: true, correlation };
     }
@@ -250,7 +257,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
       const { alert_count = 5, scenario = 'mixed' } = request.body;
 
       // Enable correlation config if not already enabled
-      let config = alertCorrelationConfigs.get(orgId);
+      let config = await getAlertCorrelationConfig(orgId);
       if (!config || !config.enabled) {
         config = {
           organization_id: orgId,
@@ -263,7 +270,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
           similarity_threshold: 60,
           updated_at: new Date(),
         };
-        alertCorrelationConfigs.set(orgId, config);
+        await setAlertCorrelationConfig(config);
       }
 
       const results: Array<{
@@ -344,7 +351,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
             break;
         }
 
-        const result = correlateAlert(orgId, alertInfo);
+        const result = await correlateAlert(orgId, alertInfo);
         results.push({
           alert_id: alertId,
           correlated: result.correlated,
@@ -378,24 +385,13 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     async (request) => {
       const orgId = getOrganizationId(request);
 
-      // Remove all correlations for this org
-      const toDelete: string[] = [];
-      for (const [corrId, corr] of alertCorrelations) {
-        if (corr.organization_id === orgId) {
-          toDelete.push(corrId);
-          // Also clean up alert-to-correlation mappings
-          for (const alert of corr.alerts) {
-            alertToCorrelation.delete(alert.id);
-          }
-        }
-      }
-      toDelete.forEach(id => alertCorrelations.delete(id));
+      const deletedCount = await deleteAlertCorrelationsByOrg(orgId);
 
-      logger.info({ orgId, correlationsRemoved: toDelete.length }, 'Correlation state reset');
+      logger.info({ orgId, correlationsRemoved: deletedCount }, 'Correlation state reset');
 
       return {
         success: true,
-        message: `Correlation state reset, removed ${toDelete.length} correlations`,
+        message: `Correlation state reset, removed ${deletedCount} correlations`,
       };
     }
   );
@@ -412,21 +408,8 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
     },
     async (request) => {
       const orgId = getOrganizationId(request);
-      const runbooks: AlertRunbook[] = [];
-
-      for (const [, runbook] of alertRunbooks) {
-        if (runbook.organization_id === orgId) {
-          runbooks.push(runbook);
-        }
-      }
-
-      // Sort by check_type then severity
-      runbooks.sort((a, b) => {
-        if (a.check_type !== b.check_type) {
-          return a.check_type.localeCompare(b.check_type);
-        }
-        return (a.severity || 'all').localeCompare(b.severity || 'all');
-      });
+      // listAlertRunbooks returns sorted by check_type ASC, severity ASC from DB
+      const runbooks = await listAlertRunbooks(orgId);
 
       return { runbooks, total: runbooks.length };
     }
@@ -472,7 +455,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
         updated_at: now,
       };
 
-      alertRunbooks.set(runbookId, runbook);
+      await createAlertRunbook(runbook);
 
       logger.info({ runbookId, checkType: body.check_type, severity: body.severity || 'all' }, 'Runbook created');
 
@@ -493,7 +476,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
       const { runbookId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const runbook = alertRunbooks.get(runbookId);
+      const runbook = await getAlertRunbook(runbookId);
       if (!runbook || runbook.organization_id !== orgId) {
         return sendError(reply, 404, 'NOT_FOUND', 'Runbook not found');
       }
@@ -525,20 +508,22 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
       const orgId = getOrganizationId(request);
       const body = request.body;
 
-      const runbook = alertRunbooks.get(runbookId);
-      if (!runbook || runbook.organization_id !== orgId) {
+      const existing = await getAlertRunbook(runbookId);
+      if (!existing || existing.organization_id !== orgId) {
         return sendError(reply, 404, 'NOT_FOUND', 'Runbook not found');
       }
 
-      // Update fields
-      if (body.name) runbook.name = body.name;
-      if (body.description !== undefined) runbook.description = body.description;
-      if (body.check_type) runbook.check_type = body.check_type;
-      if (body.severity) runbook.severity = body.severity;
-      if (body.runbook_url) runbook.runbook_url = body.runbook_url;
-      if (body.instructions !== undefined) runbook.instructions = body.instructions;
-      if (body.tags) runbook.tags = body.tags;
-      runbook.updated_at = new Date();
+      // Build partial update
+      const updates: Partial<AlertRunbook> = {};
+      if (body.name) updates.name = body.name;
+      if (body.description !== undefined) updates.description = body.description;
+      if (body.check_type) updates.check_type = body.check_type;
+      if (body.severity) updates.severity = body.severity;
+      if (body.runbook_url) updates.runbook_url = body.runbook_url;
+      if (body.instructions !== undefined) updates.instructions = body.instructions;
+      if (body.tags) updates.tags = body.tags;
+
+      const runbook = await updateAlertRunbookDb(runbookId, updates);
 
       return { success: true, runbook };
     }
@@ -557,12 +542,12 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
       const { runbookId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const runbook = alertRunbooks.get(runbookId);
+      const runbook = await getAlertRunbook(runbookId);
       if (!runbook || runbook.organization_id !== orgId) {
         return sendError(reply, 404, 'NOT_FOUND', 'Runbook not found');
       }
 
-      alertRunbooks.delete(runbookId);
+      await deleteAlertRunbookDb(runbookId);
 
       logger.info({ runbookId }, 'Runbook deleted');
 
@@ -585,7 +570,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
       const orgId = getOrganizationId(request);
       const { check_type, severity = 'medium' } = request.query;
 
-      const runbook = findRunbookForAlert(orgId, check_type, severity);
+      const runbook = await findRunbookForAlert(orgId, check_type, severity);
 
       if (!runbook) {
         return { found: false, runbook: null };
@@ -613,7 +598,7 @@ export async function alertCorrelationRoutes(app: FastifyInstance): Promise<void
       const orgId = getOrganizationId(request);
       const body = request.body;
 
-      const runbook = findRunbookForAlert(orgId, body.check_type, body.severity);
+      const runbook = await findRunbookForAlert(orgId, body.check_type, body.severity);
 
       const testAlert = {
         id: `test-alert-${Date.now()}`,

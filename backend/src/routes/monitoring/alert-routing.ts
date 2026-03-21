@@ -8,6 +8,7 @@
  * - Alert rate limit configuration
  *
  * Feature #248: Split alert-grouping-routing.ts for maintainability
+ * Feature #2118: Migrated from in-memory Maps to async DB functions
  */
 
 import { FastifyInstance } from 'fastify';
@@ -34,10 +35,20 @@ import {
 } from './types.js';
 
 import {
-  alertRoutingRules,
-  alertRoutingLogs,
-  alertRateLimitConfigs,
-  alertRateLimitStates,
+  // Async DB functions for alert routing
+  createAlertRoutingRule,
+  getAlertRoutingRule,
+  updateAlertRoutingRule as updateAlertRoutingRuleDb,
+  deleteAlertRoutingRule as deleteAlertRoutingRuleDb,
+  listAlertRoutingRules,
+  getMaxAlertRoutingRulePriority,
+  addAlertRoutingLog,
+  listAlertRoutingLogs,
+  // Async DB functions for rate limiting
+  getAlertRateLimitConfig,
+  setAlertRateLimitConfig,
+  getAlertRateLimitState,
+  deleteAlertRateLimitState,
 } from './stores.js';
 import { createLogger } from '../../services/logger.js';
 
@@ -59,14 +70,13 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request) => {
       const orgId = getOrganizationId(request);
-      const rules = Array.from(alertRoutingRules.values())
-        .filter(r => r.organization_id === orgId)
-        .sort((a, b) => a.priority - b.priority)
-        .map(r => ({
-          ...r,
-          created_at: r.created_at.toISOString(),
-          updated_at: r.updated_at.toISOString(),
-        }));
+      // listAlertRoutingRules returns sorted by priority ASC from DB
+      const allRules = await listAlertRoutingRules(orgId);
+      const rules = allRules.map(r => ({
+        ...r,
+        created_at: r.created_at.toISOString(),
+        updated_at: r.updated_at.toISOString(),
+      }));
 
       return { rules };
     }
@@ -127,8 +137,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
       }
 
       // Auto-assign priority if not provided
-      const existingRules = Array.from(alertRoutingRules.values()).filter(r => r.organization_id === orgId);
-      const maxPriority = existingRules.length > 0 ? Math.max(...existingRules.map(r => r.priority)) : 0;
+      const maxPriority = await getMaxAlertRoutingRulePriority(orgId);
 
       const ruleId = `${Date.now()}`;
       const rule: AlertRoutingRule = {
@@ -146,7 +155,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
         updated_at: new Date(),
       };
 
-      alertRoutingRules.set(ruleId, rule);
+      await createAlertRoutingRule(rule);
 
       logAuditEntry(
         request,
@@ -178,7 +187,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
       const { ruleId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const rule = alertRoutingRules.get(ruleId);
+      const rule = await getAlertRoutingRule(ruleId);
 
       if (!rule || rule.organization_id !== orgId) {
         return sendError(reply, 404, 'NOT_FOUND', 'Alert routing rule not found');
@@ -217,22 +226,27 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
       const { name, description, conditions, condition_match, destinations, enabled, priority } = request.body;
       const orgId = getOrganizationId(request);
 
-      const rule = alertRoutingRules.get(ruleId);
+      const existingRule = await getAlertRoutingRule(ruleId);
 
-      if (!rule || rule.organization_id !== orgId) {
+      if (!existingRule || existingRule.organization_id !== orgId) {
         return sendError(reply, 404, 'NOT_FOUND', 'Alert routing rule not found');
       }
 
-      if (name !== undefined) rule.name = name.trim();
-      if (description !== undefined) rule.description = description?.trim();
-      if (conditions !== undefined) rule.conditions = conditions;
-      if (condition_match !== undefined) rule.condition_match = condition_match;
-      if (destinations !== undefined) rule.destinations = destinations;
-      if (enabled !== undefined) rule.enabled = enabled;
-      if (priority !== undefined) rule.priority = priority;
-      rule.updated_at = new Date();
+      // Build partial update object with only changed fields
+      const updates: Partial<AlertRoutingRule> = {};
+      if (name !== undefined) updates.name = name.trim();
+      if (description !== undefined) updates.description = description?.trim();
+      if (conditions !== undefined) updates.conditions = conditions;
+      if (condition_match !== undefined) updates.condition_match = condition_match;
+      if (destinations !== undefined) updates.destinations = destinations;
+      if (enabled !== undefined) updates.enabled = enabled;
+      if (priority !== undefined) updates.priority = priority;
 
-      alertRoutingRules.set(ruleId, rule);
+      const rule = await updateAlertRoutingRuleDb(ruleId, updates);
+
+      if (!rule) {
+        return sendError(reply, 404, 'NOT_FOUND', 'Alert routing rule not found');
+      }
 
       logAuditEntry(
         request,
@@ -263,13 +277,13 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
       const { ruleId } = request.params;
       const orgId = getOrganizationId(request);
 
-      const rule = alertRoutingRules.get(ruleId);
+      const rule = await getAlertRoutingRule(ruleId);
 
       if (!rule || rule.organization_id !== orgId) {
         return sendError(reply, 404, 'NOT_FOUND', 'Alert routing rule not found');
       }
 
-      alertRoutingRules.delete(ruleId);
+      await deleteAlertRoutingRuleDb(ruleId);
 
       logAuditEntry(
         request,
@@ -305,10 +319,9 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
       const { alert } = request.body;
       const orgId = getOrganizationId(request);
 
-      // Get all enabled rules for this org, sorted by priority
-      const rules = Array.from(alertRoutingRules.values())
-        .filter(r => r.organization_id === orgId && r.enabled)
-        .sort((a, b) => a.priority - b.priority);
+      // Get all enabled rules for this org, sorted by priority (already sorted from DB)
+      const allRules = await listAlertRoutingRules(orgId);
+      const rules = allRules.filter(r => r.enabled);
 
       const matchedRules: { rule: AlertRoutingRule; matched_conditions: string[] }[] = [];
       const destinationsNotified: { type: string; name: string }[] = [];
@@ -411,10 +424,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
           routed_at: new Date(),
         };
 
-        const orgLogs = alertRoutingLogs.get(orgId) || [];
-        orgLogs.unshift(log);
-        if (orgLogs.length > 100) orgLogs.pop();
-        alertRoutingLogs.set(orgId, orgLogs);
+        await addAlertRoutingLog(log);
       }
 
       return {
@@ -444,7 +454,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request) => {
       const orgId = getOrganizationId(request);
-      const logs = alertRoutingLogs.get(orgId) || [];
+      const logs = await listAlertRoutingLogs(orgId);
 
       return {
         logs: logs.map(l => ({
@@ -467,7 +477,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request) => {
       const orgId = getOrganizationId(request);
-      const config = alertRateLimitConfigs.get(orgId);
+      const config = await getAlertRateLimitConfig(orgId);
 
       if (!config) {
         // Return default config if not set
@@ -519,7 +529,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
         updated_at: new Date(),
       };
 
-      alertRateLimitConfigs.set(orgId, config);
+      await setAlertRateLimitConfig(config);
 
       logger.info({ orgId, config }, 'Rate limit configuration updated');
 
@@ -544,7 +554,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request) => {
       const orgId = getOrganizationId(request);
-      const state = alertRateLimitStates.get(orgId);
+      const state = await getAlertRateLimitState(orgId);
 
       if (!state) {
         return {
@@ -580,7 +590,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
       const { alert_count = 10 } = request.body;
 
       // Reset state for fresh test
-      alertRateLimitStates.delete(orgId);
+      await deleteAlertRateLimitState(orgId);
 
       let sent = 0;
       let suppressed = 0;
@@ -594,7 +604,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
           severity: i % 4 === 0 ? 'critical' : i % 3 === 0 ? 'high' : i % 2 === 0 ? 'medium' : 'low',
         };
 
-        const result = checkAlertRateLimit(orgId, alertInfo);
+        const result = await checkAlertRateLimit(orgId, alertInfo);
 
         if (result.allowed) {
           sent++;
@@ -607,7 +617,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
         }
       }
 
-      const state = alertRateLimitStates.get(orgId);
+      const state = await getAlertRateLimitState(orgId);
 
       logger.info({ orgId, sent, suppressed, summariesNeeded }, 'Rate limit test completed');
 
@@ -634,7 +644,7 @@ export async function alertRoutingRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request) => {
       const orgId = getOrganizationId(request);
-      alertRateLimitStates.delete(orgId);
+      await deleteAlertRateLimitState(orgId);
       logger.info({ orgId }, 'Rate limit state reset');
       return {
         success: true,

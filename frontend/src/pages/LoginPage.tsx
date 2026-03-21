@@ -184,7 +184,7 @@ export function LoginPage() {
             animate={{ opacity: 1 }}
             transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.19 }}
             onClick={() => {
-              window.location.href = `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/auth/google`;
+              window.location.href = `${window.location.origin}/api/v1/auth/google`;
             }}
             className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3 font-medium text-foreground transition-colors hover:border-muted-foreground/50 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
           >

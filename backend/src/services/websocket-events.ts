@@ -112,16 +112,4 @@ export function emitTestDeleted(orgId: string, testId: string, suiteId?: string)
 
 // ========== Run Events ==========
 
-/**
- * Emit run-progress event for live status updates
- */
-export function emitRunProgress(orgId: string, runId: string, progress: number) {
-  if (io) {
-    const payload = { orgId, runId, progress };
-    // Emit to run-specific room
-    io.to(`run:${runId}`).emit('run-progress', payload);
-    // Also emit to organization room
-    io.to(`org:${orgId}`).emit('run-progress', payload);
-    // Don't log progress events (too noisy)
-  }
-}
+// emitRunProgress removed — was dead code (exported but never called)

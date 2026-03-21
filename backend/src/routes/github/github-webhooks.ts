@@ -15,8 +15,8 @@ import crypto from 'crypto';
 import { authenticate, requireScopes } from '../../middleware/auth.js'; // Feature #389: Add authentication
 import { createLogger } from '../../services/logger.js';
 import {
-  prStatusChecks,
-  prComments,
+  addPRStatusCheck,
+  addPRComment,
 } from './stores.js';
 import { PRStatusCheck, PRComment } from './types.js';
 // Feature #334: Import Gitleaks scanning functionality
@@ -396,10 +396,7 @@ async function createGitHubStatusCheck(
   };
 
   // Store the status check
-  if (!prStatusChecks.has(projectId)) {
-    prStatusChecks.set(projectId, []);
-  }
-  prStatusChecks.get(projectId)!.push(status);
+  await addPRStatusCheck(status);
 
   log.info({ prNumber, status: status.status, checkId: status.id }, 'Created status check for PR');
 
@@ -464,10 +461,7 @@ async function createPRComment(
   };
 
   // Store the comment
-  if (!prComments.has(projectId)) {
-    prComments.set(projectId, []);
-  }
-  prComments.get(projectId)!.push(comment);
+  await addPRComment(comment);
 
   log.info({ prNumber, commentId: comment.id }, 'Posted comment on PR');
 

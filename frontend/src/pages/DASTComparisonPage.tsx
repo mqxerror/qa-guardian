@@ -17,8 +17,6 @@ import type {
 } from '@/types/security';
 import type { ProjectOption } from '@/types/organization';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
-
 export function DASTComparisonPage() {
  const [searchParams] = useSearchParams();
  const { token } = useAuthStore();
@@ -34,7 +32,7 @@ export function DASTComparisonPage() {
  const [availableScans, setAvailableScans] = useState<DASTCompareScan[]>([]);
  const [loadingScans, setLoadingScans] = useState(false);
  const [isScanning, setIsScanning] = useState(false);
- const [scanTarget, setScanTarget] = useState('http://localhost:3001');
+ const [scanTarget, setScanTarget] = useState('');
  const [scanProfile, setScanProfile] = useState<'baseline' | 'full'>('baseline');
  const [scanProgress, setScanProgress] = useState<string>('');
  const [error, setError] = useState<string | null>(null);
@@ -48,7 +46,7 @@ export function DASTComparisonPage() {
  useEffect(() => {
  const loadProjects = async () => {
  try {
- const res = await fetch(`${API_BASE_URL}/api/v1/projects`, { headers });
+ const res = await fetch(`/api/v1/projects`, { headers });
  if (res.ok) {
  const data = await res.json();
  setProjects(data.projects || []);
@@ -74,7 +72,7 @@ export function DASTComparisonPage() {
  setLoadingScans(true);
  try {
  const res = await fetch(
- `${API_BASE_URL}/api/v1/projects/${selectedProject}/dast/scans?limit=20`,
+ `/api/v1/projects/${selectedProject}/dast/scans?limit=20`,
  { headers }
  );
  if (res.ok) {
@@ -98,7 +96,7 @@ export function DASTComparisonPage() {
 
  try {
  const res = await fetch(
- `${API_BASE_URL}/api/v1/projects/${selectedProject}/dast/scans`,
+ `/api/v1/projects/${selectedProject}/dast/scans`,
  {
  method: 'POST',
  headers,
@@ -128,7 +126,7 @@ export function DASTComparisonPage() {
  await new Promise(r => setTimeout(r, 5000));
  try {
  const res = await fetch(
- `${API_BASE_URL}/api/v1/projects/${selectedProject}/dast/scans/${scanId}`,
+ `/api/v1/projects/${selectedProject}/dast/scans/${scanId}`,
  { headers }
  );
  if (res.ok) {
