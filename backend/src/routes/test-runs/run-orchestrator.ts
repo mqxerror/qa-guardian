@@ -522,6 +522,14 @@ export async function runTestsForRun(runId: string) {
       failed: run.results?.filter(r => r.status === 'failed').length || 0,
       total: run.results?.length || 0,
       testName,
+      suite_id: run.suite_id,
+      results: run.results?.map(r => ({
+        test_id: r.test_id,
+        test_name: r.test_name,
+        status: r.status,
+        duration_ms: r.duration_ms,
+        error: r.error,
+      })),
     });
 
     // Check and send alerts for failed runs

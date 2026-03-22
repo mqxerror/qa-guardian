@@ -75,6 +75,7 @@ interface TestRow {
 // Extended row types for JOIN queries
 interface TestWithSuiteRow extends TestRow {
   suite_config?: string | Record<string, unknown>;
+  suite_organization_id?: string;
   suite_name?: string;
   project_name?: string;
   total_count?: string;
@@ -330,7 +331,7 @@ export async function getTest(id: string): Promise<Test | undefined> {
   // JOIN test_suites AND projects to get suite_name, project_id, project_name in single query
   const result = await query<TestWithSuiteRow>(
     `SELECT t.*,
-            ts.config as suite_config,
+            ts.organization_id as suite_organization_id,
             ts.name as suite_name,
             ts.project_id as project_id,
             p.name as project_name
@@ -342,9 +343,7 @@ export async function getTest(id: string): Promise<Test | undefined> {
   );
   if (result && result.rows[0]) {
     const row = result.rows[0];
-    // Extract organization_id from suite config
-    const suiteConfig = safeJsonParseOrPassthrough(row.suite_config, {} as Record<string, unknown>);
-    const orgId = (suiteConfig?.organization_id as string) || '';
+    const orgId = row.suite_organization_id || '';
     const test = rowToTest(row, orgId);
     // Add the enriched fields (suite_name, project_id, project_name)
     test.suite_name = row.suite_name;
@@ -481,7 +480,7 @@ export async function listAllTests(organizationId: string, limit: number = 1000)
   // PERFORMANCE FIX: Use WHERE clause instead of full table scan + JS filter
   // The organization_id is stored in test_suites.config JSONB column
   const result = await query<TestWithSuiteRow>(
-    `SELECT t.*, ts.config as suite_config FROM tests t
+    `SELECT t.*, ts.organization_id as suite_organization_id FROM tests t
      INNER JOIN test_suites ts ON t.suite_id = ts.id
      WHERE ts.organization_id = $1
      ORDER BY t.created_at DESC
@@ -490,8 +489,7 @@ export async function listAllTests(organizationId: string, limit: number = 1000)
   );
   if (result) {
     return result.rows.map(row => {
-      const suiteConfig = safeJsonParseOrPassthrough(row.suite_config, {} as Record<string, unknown>);
-      const orgId = (suiteConfig?.organization_id as string) || organizationId;
+      const orgId = row.suite_organization_id || organizationId;
       return rowToTest(row, orgId);
     });
   }
@@ -524,7 +522,7 @@ export async function batchGetTests(ids: string[]): Promise<Map<string, Test>> {
   // Single query using ANY($1) instead of N separate queries
   const queryResult = await query<TestWithSuiteRow>(
     `SELECT t.*,
-            ts.config as suite_config,
+            ts.organization_id as suite_organization_id,
             ts.name as suite_name,
             ts.project_id as project_id,
             p.name as project_name
@@ -537,8 +535,7 @@ export async function batchGetTests(ids: string[]): Promise<Map<string, Test>> {
 
   if (queryResult) {
     for (const row of queryResult.rows) {
-      const suiteConfig = safeJsonParseOrPassthrough(row.suite_config, {} as Record<string, unknown>);
-      const orgId = (suiteConfig?.organization_id as string) || '';
+      const orgId = row.suite_organization_id || '';
       const test = rowToTest(row, orgId);
       test.suite_name = row.suite_name;
       test.project_id = row.project_id;
@@ -811,14 +808,13 @@ export async function getTestsMap(): Promise<Map<string, Test>> {
   }
 
   const result = await query<TestWithSuiteRow>(
-    `SELECT t.*, ts.config as suite_config FROM tests t
+    `SELECT t.*, ts.organization_id as suite_organization_id FROM tests t
      LEFT JOIN test_suites ts ON t.suite_id = ts.id
      ORDER BY t.created_at DESC`
   );
   if (result) {
     for (const row of result.rows) {
-      const suiteConfig = safeJsonParseOrPassthrough(row.suite_config, {} as Record<string, unknown>);
-      const orgId = (suiteConfig?.organization_id as string) || '';
+      const orgId = row.suite_organization_id || '';
       const test = rowToTest(row, orgId);
       map.set(row.id, test);
     }
@@ -883,7 +879,7 @@ export async function getTestsMapByOrg(organizationId: string, limit: number = 1
   }
 
   const result = await query<TestWithSuiteRow>(
-    `SELECT t.*, ts.config as suite_config FROM tests t
+    `SELECT t.*, ts.organization_id as suite_organization_id FROM tests t
      INNER JOIN test_suites ts ON t.suite_id = ts.id
      WHERE ts.organization_id = $1
      ORDER BY t.created_at DESC
@@ -892,8 +888,7 @@ export async function getTestsMapByOrg(organizationId: string, limit: number = 1
   );
   if (result) {
     for (const row of result.rows) {
-      const suiteConfig = safeJsonParseOrPassthrough(row.suite_config, {} as Record<string, unknown>);
-      const orgId = (suiteConfig?.organization_id as string) || organizationId;
+      const orgId = row.suite_organization_id || organizationId;
       const test = rowToTest(row, orgId);
       map.set(row.id, test);
     }

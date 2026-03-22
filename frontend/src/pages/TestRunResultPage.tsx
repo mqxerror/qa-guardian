@@ -10,7 +10,8 @@ import { useAuthStore } from '../stores/authStore';
 import { useOrganizationBrandingStore } from '../stores/organizationBrandingStore';
 // Feature #567: Replaced standalone io() connection with shared useSocketStore
 import { useSocketStore } from '../stores/socketStore';
-// toast, PageHeader, AnimatedCard, StatusPill, SectionHeader, CardContent, Tabs, TabsList, TabsTrigger, TabsContent, useReducedMotion removed - unused
+import { toast } from '../stores/toastStore';
+// PageHeader, AnimatedCard, StatusPill, SectionHeader, CardContent, Tabs, TabsList, TabsTrigger, TabsContent, useReducedMotion removed - unused
 // Feature #571: Added Lucide icons to replace emoji in tab navigation
 import { Button } from '../components/ui/button';
 import { Download, RefreshCw, FlaskConical, ListOrdered, Camera, BarChart3, Globe, Eye, Accessibility, ScrollText, Loader2, Frown, Lock, Server, WifiOff, AlertTriangle, ArrowLeft, Info } from 'lucide-react';
@@ -564,11 +565,15 @@ export default function TestRunResultPage() {
 
  if (response.ok) {
  const data = await response.json();
- // Navigate to new run
+ toast.success(`Rerunning ${failedTestIds.length} failed test(s)`);
  navigate(`/runs/${data.run_id}`);
+ } else {
+ const errorData = await response.json().catch(() => ({ message: 'Failed to rerun tests' }));
+ toast.error(errorData.message || `Rerun failed (${response.status})`);
  }
  } catch (err) {
  console.error('Failed to rerun tests:', err);
+ toast.error(err instanceof Error ? err.message : 'Failed to rerun tests');
  } finally {
  setRerunningTests(new Set());
  }
