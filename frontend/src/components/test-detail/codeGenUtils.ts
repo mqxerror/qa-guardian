@@ -6,6 +6,7 @@
 // - highlightJavaScript: Syntax highlighting for JavaScript/K6 code
 
 import type { TestType, TestStep } from './types';
+import { escapeHtml } from '../../utils/format';
 
 // Extended step type for accessibility checks (optional properties not in base TestStep)
 interface A11yStep extends TestStep {
@@ -334,19 +335,6 @@ export default function () {
   };
 }
 
-/**
- * SECURITY: Escape HTML special characters to prevent XSS attacks.
- * This MUST be called before any regex-based syntax highlighting
- * when the output will be used with dangerouslySetInnerHTML.
- */
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
 
 /**
  * Syntax highlighting for JavaScript/K6 code

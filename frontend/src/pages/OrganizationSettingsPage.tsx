@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
+import { getBrowserIcon } from '../utils/browser';
 import { useThemeStore, Theme } from '../stores/themeStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { useTimezoneStore } from '../stores/timezoneStore';
@@ -98,14 +99,6 @@ function SessionManagementSection() {
  return '🐧';
  }
  return '💻';
- };
-
- const getBrowserIcon = (browser: string) => {
- if (browser === 'Chrome') return '🌐';
- if (browser === 'Firefox') return '🦊';
- if (browser === 'Safari') return '🧭';
- if (browser === 'Edge') return '🌀';
- return '🌐';
  };
 
  return (

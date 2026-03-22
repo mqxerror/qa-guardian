@@ -10,6 +10,7 @@ import { generateReport } from './generator.js';
 import { GenerateReportRequest, ComprehensiveReport } from './types.js';
 
 import { sendError } from '../../utils/errors.js';
+import { escapeHTML } from '../../utils/index.js';
 /**
  * Generate CSV content from report data
  */
@@ -173,8 +174,6 @@ function generateCSV(report: ComprehensiveReport): string {
  * Generate HTML content from report data (for PDF printing)
  */
 function generateHTML(report: ComprehensiveReport): string {
-  const escapeHtml = (str: string) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'passing':
@@ -217,7 +216,7 @@ function generateHTML(report: ComprehensiveReport): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(report.title)}</title>
+  <title>${escapeHTML(report.title)}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937; max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
@@ -251,9 +250,9 @@ function generateHTML(report: ComprehensiveReport): string {
 </head>
 <body>
   <header>
-    <h1>${escapeHtml(report.title)}</h1>
+    <h1>${escapeHTML(report.title)}</h1>
     <p class="meta">
-      Project: ${escapeHtml(report.projectName)} |
+      Project: ${escapeHTML(report.projectName)} |
       Generated: ${new Date(report.createdAt).toLocaleString()} |
       Period: ${new Date(report.period.start).toLocaleDateString()} - ${new Date(report.period.end).toLocaleDateString()}
     </p>
@@ -273,7 +272,7 @@ function generateHTML(report: ComprehensiveReport): string {
       <h3 style="color: #22c55e;">Highlights</h3>
       <ul class="highlight-list success">
         ${report.executiveSummary.highlights.length > 0
-          ? report.executiveSummary.highlights.map(h => `<li>${escapeHtml(h)}</li>`).join('')
+          ? report.executiveSummary.highlights.map(h => `<li>${escapeHTML(h)}</li>`).join('')
           : '<li><em>No highlights</em></li>'}
       </ul>
     </div>
@@ -281,7 +280,7 @@ function generateHTML(report: ComprehensiveReport): string {
       <h3 style="color: #ef4444;">Critical Issues</h3>
       <ul class="highlight-list warning">
         ${report.executiveSummary.criticalIssues.length > 0
-          ? report.executiveSummary.criticalIssues.map(i => `<li>${escapeHtml(i)}</li>`).join('')
+          ? report.executiveSummary.criticalIssues.map(i => `<li>${escapeHTML(i)}</li>`).join('')
           : '<li style="color: #22c55e;"><em>No critical issues</em></li>'}
       </ul>
     </div>
@@ -289,7 +288,7 @@ function generateHTML(report: ComprehensiveReport): string {
       <h3 style="color: #3b82f6;">Recommendations</h3>
       <ul class="highlight-list info">
         ${report.executiveSummary.recommendations.length > 0
-          ? report.executiveSummary.recommendations.map(r => `<li>${escapeHtml(r)}</li>`).join('')
+          ? report.executiveSummary.recommendations.map(r => `<li>${escapeHTML(r)}</li>`).join('')
           : '<li><em>No recommendations</em></li>'}
       </ul>
     </div>
@@ -314,10 +313,10 @@ function generateHTML(report: ComprehensiveReport): string {
     <tbody>
       ${report.sections.e2e.tests.slice(0, 20).map(t => `
         <tr>
-          <td>${escapeHtml(t.name)}</td>
+          <td>${escapeHTML(t.name)}</td>
           <td><span class="status-badge" style="background: ${getStatusColor(t.status)}">${t.status}</span></td>
           <td>${(t.duration / 1000).toFixed(2)}s</td>
-          <td style="color: #ef4444; font-size: 0.875rem;">${t.error ? escapeHtml(t.error) : '-'}</td>
+          <td style="color: #ef4444; font-size: 0.875rem;">${t.error ? escapeHTML(t.error) : '-'}</td>
         </tr>
       `).join('')}
     </tbody>
@@ -345,10 +344,10 @@ function generateHTML(report: ComprehensiveReport): string {
     <tbody>
       ${report.sections.accessibility.violations.slice(0, 20).map(v => `
         <tr>
-          <td><code>${escapeHtml(v.rule)}</code></td>
+          <td><code>${escapeHTML(v.rule)}</code></td>
           <td><span class="status-badge" style="background: ${getSeverityColor(v.impact)}">${v.impact}</span></td>
-          <td>${escapeHtml(v.wcagLevel)}</td>
-          <td style="font-size: 0.875rem;">${escapeHtml(v.description)}</td>
+          <td>${escapeHTML(v.wcagLevel)}</td>
+          <td style="font-size: 0.875rem;">${escapeHTML(v.description)}</td>
           <td>${v.nodes}</td>
         </tr>
       `).join('')}
@@ -404,10 +403,10 @@ function generateHTML(report: ComprehensiveReport): string {
     <tbody>
       ${report.sections.security.vulnerabilities.slice(0, 20).map(v => `
         <tr>
-          <td>${escapeHtml(v.name)}</td>
+          <td>${escapeHTML(v.name)}</td>
           <td><span class="status-badge" style="background: ${getSeverityColor(v.severity)}">${v.severity}</span></td>
-          <td>${escapeHtml(v.category)}</td>
-          <td style="font-size: 0.875rem;">${escapeHtml(v.description)}</td>
+          <td>${escapeHTML(v.category)}</td>
+          <td style="font-size: 0.875rem;">${escapeHTML(v.description)}</td>
         </tr>
       `).join('')}
     </tbody>

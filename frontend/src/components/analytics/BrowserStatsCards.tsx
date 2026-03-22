@@ -2,31 +2,12 @@
 // Browser-Specific Pass Rates Cards Component
 
 import type { BrowserStats } from './types';
+import { getBrowserDisplayName, getBrowserIcon } from '../../utils/browser';
 
 interface BrowserStatsCardsProps {
   browserStats: BrowserStats[];
   isLoading: boolean;
 }
-
-// Get browser display name
-const getBrowserDisplayName = (browser: string) => {
-  switch (browser) {
-    case 'chromium': return 'Chrome';
-    case 'firefox': return 'Firefox';
-    case 'webkit': return 'Safari';
-    default: return browser;
-  }
-};
-
-// Get browser icon
-const getBrowserIcon = (browser: string) => {
-  switch (browser) {
-    case 'chromium': return '🌐';
-    case 'firefox': return '🦊';
-    case 'webkit': return '🧭';
-    default: return '📱';
-  }
-};
 
 export function BrowserStatsCards({ browserStats, isLoading }: BrowserStatsCardsProps) {
   return (
@@ -108,5 +89,5 @@ export function BrowserStatsCards({ browserStats, isLoading }: BrowserStatsCards
   );
 }
 
-// Export helper functions for use by parent component if needed
+// Re-export helper functions for use by parent component if needed
 export { getBrowserDisplayName, getBrowserIcon };

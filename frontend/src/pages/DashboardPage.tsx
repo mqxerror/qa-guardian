@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { formatRelativeTime } from '../utils/format';
 import { Layout } from '../components/Layout';
 // Feature #70: Import React Query hooks for dashboard caching
 import { useDashboardStats, useRecentRuns } from '../hooks/api/useDashboard';
@@ -206,7 +207,7 @@ export function DashboardPage() {
                             )}
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {formatTimeAgo(run.created_at)}
+                              {formatRelativeTime(run.created_at)}
                             </span>
                           </div>
                         </div>
@@ -429,18 +430,3 @@ export function DashboardPage() {
   );
 }
 
-// Feature #871: Helper to format relative time
-function formatTimeAgo(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}

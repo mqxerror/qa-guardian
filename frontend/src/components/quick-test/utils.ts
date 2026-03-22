@@ -4,17 +4,10 @@
  * Shared helper functions for quick-test components
  */
 
-/**
- * Validate URL format for quick test
- */
-export function isValidUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return ['http:', 'https:'].includes(parsed.protocol);
-  } catch {
-    return false;
-  }
-}
+import { isValidUrl as sharedIsValidUrl } from '../../utils/url';
+
+// Re-export for backward compatibility
+export const isValidUrl = sharedIsValidUrl;
 
 /**
  * Get text color class based on score

@@ -5,6 +5,9 @@
 
 import type { TestTypeEnum, TestStatus, SortField, SortDirection, TestType } from './types';
 import { formatDurationWithDash } from '../../utils/formatDuration';
+import { formatRelativeTime as sharedFormatRelativeTime } from '../../utils/format';
+import { isValidUrl as sharedIsValidUrl, autoCompleteUrl as sharedAutoCompleteUrl } from '../../utils/url';
+import { getBrowserIcon as sharedGetBrowserIcon } from '../../utils/browser';
 
 // Re-export formatDuration for backward compatibility
 export { formatDurationWithDash as formatDuration };
@@ -98,20 +101,10 @@ export function extractViewportFromText(text: string): { width: number; height: 
 
 /**
  * Format date as relative time (e.g., "2m ago", "1h ago")
+ * Delegates to shared utility, accepting Date objects for backward compatibility.
  */
 export function formatRelativeTime(date: Date): string {
- const now = new Date();
- const diffMs = now.getTime() - date.getTime();
- const diffSec = Math.floor(diffMs / 1000);
- const diffMin = Math.floor(diffSec / 60);
- const diffHour = Math.floor(diffMin / 60);
- const diffDay = Math.floor(diffHour / 24);
-
- if (diffSec < 60) return 'Just now';
- if (diffMin < 60) return `${diffMin}m ago`;
- if (diffHour < 24) return `${diffHour}h ago`;
- if (diffDay < 7) return `${diffDay}d ago`;
- return date.toLocaleDateString();
+ return sharedFormatRelativeTime(date);
 }
 
 /**
@@ -287,28 +280,14 @@ export function sortTests(tests: TestType[], field: SortField, direction: SortDi
 }
 
 /**
- * Validate URL format
+ * Validate URL format - delegates to shared utility
  */
-export function isValidUrl(url: string): boolean {
- try {
- const parsed = new URL(url);
- return parsed.protocol === 'http:' || parsed.protocol === 'https:';
- } catch {
- return false;
- }
-}
+export const isValidUrl = sharedIsValidUrl;
 
 /**
- * Auto-complete URL with https:// if missing
+ * Auto-complete URL with https:// if missing - delegates to shared utility
  */
-export function autoCompleteUrl(url: string): string {
- if (!url) return url;
- const trimmed = url.trim();
- if (trimmed && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
- return `https://${trimmed}`;
- }
- return trimmed;
-}
+export const autoCompleteUrl = sharedAutoCompleteUrl;
 
 /**
  * Get CSS class for AI confidence score
@@ -332,20 +311,9 @@ export function formatConfidence(score: number | undefined): string {
 }
 
 /**
- * Get browser icon
+ * Get browser icon - delegates to shared utility
  */
-export function getBrowserIcon(browser?: string): string {
- switch (browser) {
- case 'chromium':
- return '🌐';
- case 'firefox':
- return '🦊';
- case 'webkit':
- return '🧭';
- default:
- return '🌐';
- }
-}
+export const getBrowserIcon = sharedGetBrowserIcon;
 
 /**
  * Truncate text with ellipsis

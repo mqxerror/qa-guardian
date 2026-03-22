@@ -6,6 +6,7 @@ import { dbIsTokenBlacklisted } from '../routes/auth.js';
 import { getApiKeyByHash as dbGetApiKeyByHash, updateApiKey as dbUpdateApiKey } from '../services/repositories/api-keys.js';
 // Feature #439: Use structured logger instead of console.*
 import { logger } from '../services/logger.js';
+import { isValidUUID } from '../utils/index.js';
 
 // Internal service token for service-to-service communication (MCP -> Backend)
 const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
@@ -207,16 +208,6 @@ export function requireScopes(requiredScopes: string[]) {
 export function isApiKeyRequest(request: FastifyRequest): boolean {
   const user = request.user as JwtPayload | ApiKeyPayload;
   return 'type' in user && user.type === 'api_key';
-}
-
-// Feature #2096: UUID validation helper
-// Allows both standard UUIDs (versions 1-5) and nil/zero UUIDs used for seeded test data
-function isValidUUID(str: string): boolean {
-  // Standard UUID pattern (versions 1-5)
-  const standardUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  // Zero/nil UUID pattern (used for seeded default org/user data)
-  const zeroUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return standardUUID.test(str) || zeroUUID.test(str);
 }
 
 // Helper to get organization ID from either JWT or API key

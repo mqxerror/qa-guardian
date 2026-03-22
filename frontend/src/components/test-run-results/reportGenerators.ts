@@ -9,6 +9,10 @@
 import type { jsPDF } from 'jspdf';
 import { TestRun, ResultSummary, PdfSections } from './types';
 import { formatDuration } from './utils';
+import { escapeHtml } from '../../utils/format';
+
+// Re-export for backward compatibility
+export { escapeHtml };
 
 /**
  * Parameters for PDF report generation
@@ -30,18 +34,6 @@ export interface HtmlReportParams {
   resultSummary: ResultSummary;
   setGeneratingHtml: (generating: boolean) => void;
 }
-
-/**
- * Helper to escape HTML special characters
- */
-export const escapeHtml = (str: string): string => {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-};
 
 /**
  * Helper to infer test type from result data if test_type not explicitly set

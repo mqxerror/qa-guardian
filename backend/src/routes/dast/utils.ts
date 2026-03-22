@@ -156,12 +156,5 @@ export function calculateDASTNextRun(cronExpression: string, _timezone: string):
   return next;
 }
 
-// Helper to escape HTML
-export function escapeHTML(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
+// Re-export escapeHTML from shared utils for backward compatibility
+export { escapeHTML } from '../../utils/index.js';

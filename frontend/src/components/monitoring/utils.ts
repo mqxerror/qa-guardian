@@ -5,6 +5,7 @@
 
 import { CheckStatus, PerformanceStatus, MonitoringLocation } from './types';
 import { formatDurationPrecise } from '../../utils/formatDuration';
+import { formatRelativeTime as sharedFormatRelativeTime } from '../../utils/format';
 
 // Re-export formatDuration for backward compatibility
 export { formatDurationPrecise as formatDuration };
@@ -132,22 +133,8 @@ export const formatDateTime = (dateStr?: string): string => {
  return new Date(dateStr).toLocaleString();
 };
 
-// Format relative time (e.g., "2 minutes ago")
-export const formatRelativeTime = (dateStr?: string): string => {
- if (!dateStr) return '-';
- const date = new Date(dateStr);
- const now = new Date();
- const diffMs = now.getTime() - date.getTime();
- const diffMins = Math.floor(diffMs / 60000);
- const diffHours = Math.floor(diffMins / 60);
- const diffDays = Math.floor(diffHours / 24);
-
- if (diffMins < 1) return 'Just now';
- if (diffMins < 60) return `${diffMins}m ago`;
- if (diffHours < 24) return `${diffHours}h ago`;
- if (diffDays < 7) return `${diffDays}d ago`;
- return date.toLocaleDateString();
-};
+// Re-export shared formatRelativeTime for backward compatibility
+export const formatRelativeTime = (dateStr?: string): string => sharedFormatRelativeTime(dateStr);
 
 // Get location display name
 export const getLocationName = (location: MonitoringLocation): string => {

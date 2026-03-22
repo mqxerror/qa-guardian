@@ -9,6 +9,7 @@ import { logger } from '../../utils/logger';
 import { getStatusColor, getSeverityColor } from '../../constants/colors';
 import type { K6LoadTestData } from './pdfExport';
 import { formatDurationPrecise } from '../../utils/formatDuration';
+import { formatBytes as sharedFormatBytes } from '../../utils/format';
 
 // Re-export formatDuration for backward compatibility
 export { formatDurationPrecise as formatDuration };
@@ -41,14 +42,8 @@ export const formatRelativeTime = (timestamp: number, startTime: number): string
  return `+${mins}m ${secs}s`;
 };
 
-// Format bytes to human-readable
-export const formatBytes = (bytes: number): string => {
- if (bytes === 0) return '0 B';
- const k = 1024;
- const sizes = ['B', 'KB', 'MB', 'GB'];
- const i = Math.floor(Math.log(bytes) / Math.log(k));
- return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-};
+// Re-export shared formatBytes for backward compatibility
+export const formatBytes = sharedFormatBytes;
 
 // Simple error patterns for detection (Feature #1951)
 export const SIMPLE_ERROR_PATTERNS: SimpleErrorPattern[] = [

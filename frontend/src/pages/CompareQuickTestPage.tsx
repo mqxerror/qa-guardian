@@ -46,6 +46,7 @@ import type {
   QuickTestSummary,
   CompareState,
 } from '@/types/tests';
+import { isValidUrl } from '../utils/url';
 
 // ============================================================
 // Constants - Feature #612: Centralized to constants/waves.ts
@@ -55,19 +56,6 @@ import type {
 const WAVE_ICONS: Record<number, React.ElementType> = Object.fromEntries(
   WAVE_DEFINITIONS.map(def => [def.wave, def.icon])
 );
-
-// ============================================================
-// Helper Functions
-// ============================================================
-
-function isValidUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return ['http:', 'https:'].includes(parsed.protocol);
-  } catch {
-    return false;
-  }
-}
 
 function getScoreColor(score: number): string {
   if (score >= 80) return 'text-success';

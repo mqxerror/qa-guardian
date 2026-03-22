@@ -15,24 +15,11 @@ import { AIBadge } from './AIBadge';
 import { HealingBadge } from './HealingBadge';
 import { TestTypeBadge } from './TestTypeBadge';
 import { formatDuration } from '../../utils/formatDuration';
+import { formatRelativeTime as sharedFormatRelativeTime } from '../../utils/format';
 
-// Feature #1958: Format relative time
+// Wrapper to return 'Never' for null values instead of the default '-'
 function formatRelativeTime(dateString: string | Date | null | undefined): string {
- if (!dateString) return 'Never';
-
- const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
- const now = new Date();
- const diffMs = now.getTime() - date.getTime();
- const diffSec = Math.floor(diffMs / 1000);
- const diffMin = Math.floor(diffSec / 60);
- const diffHour = Math.floor(diffMin / 60);
- const diffDay = Math.floor(diffHour / 24);
-
- if (diffSec < 60) return 'Just now';
- if (diffMin < 60) return `${diffMin}m ago`;
- if (diffHour < 24) return `${diffHour}h ago`;
- if (diffDay < 7) return `${diffDay}d ago`;
- return date.toLocaleDateString();
+ return sharedFormatRelativeTime(dateString, { nullValue: 'Never' });
 }
 
 // Feature #1958: Result badge component

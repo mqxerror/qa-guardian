@@ -15,19 +15,9 @@ import { encrypt, decrypt } from '../encryption.js'; // Feature #217: Encrypt se
 import { Project, ProjectMember, EnvironmentVariable, ProjectVisualSettings, ProjectHealingSettings } from '../../routes/projects/types.js';
 // Feature #449: Use structured logger instead of console.*
 import { createLogger } from '../logger.js';
+import { isValidUUID } from '../../utils/index.js';
 
 const log = createLogger('repo:projects');
-
-// Feature #2097: UUID validation helper for defensive programming
-// Allows both standard UUIDs (versions 1-5) and zero/nil UUIDs used for seeded test data
-function isValidUUID(str: string): boolean {
-  if (!str) return false;
-  // Standard UUID pattern (versions 1-5)
-  const standardUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  // Zero/nil UUID pattern (used for seeded default org/user data)
-  const zeroUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return standardUUID.test(str) || zeroUUID.test(str);
-}
 
 // In-memory fallback stores for when PostgreSQL is not available
 // This allows the application to function in development without a database

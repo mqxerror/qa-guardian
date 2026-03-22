@@ -7,6 +7,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { TestSuite } from './types';
+import { getBrowserIcon } from '../../utils/browser';
 
 interface SuiteCardProps {
  suite: TestSuite;
@@ -19,18 +20,6 @@ const SuiteCard: React.FC<SuiteCardProps> = React.memo(({
  // projectId, // Currently unused - kept in interface for future use
  formatDate,
 }) => {
- const getBrowserIcon = (browser?: string) => {
- switch (browser) {
- case 'chromium':
- return '🌐';
- case 'firefox':
- return '🦊';
- case 'webkit':
- return '🧭';
- default:
- return '🌐';
- }
- };
 
  return (
  <Link

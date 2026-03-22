@@ -10,6 +10,7 @@ import { useAuthStore } from '../stores/authStore';
 import { Loader2, FileText, CheckCircle, Download, Check, AlertTriangle } from 'lucide-react';
 // Feature #728: EmptyState adoption
 import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
+import { formatBytes } from '../utils/format';
 
 import type {
   GeneratedSbom,
@@ -93,14 +94,6 @@ async function downloadSbom(projectId: string, sbomId: string, filename: string)
   document.body.removeChild(a);
 }
 
-// Format bytes to human readable
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
 
 // Format date
 function formatDate(dateStr: string): string {

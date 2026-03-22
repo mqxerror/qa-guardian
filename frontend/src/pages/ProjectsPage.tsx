@@ -9,6 +9,7 @@ import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../stores/toastStore';
 import { getErrorMessage, isNetworkError, isOffline } from '../utils/errorHandling';
+import { isValidUrl as sharedIsValidUrl } from '../utils/url';
 // Feature #71: Import React Query hooks for caching
 // Feature #712: Added useArchiveProject to eliminate raw fetch()
 import { useProjects, useCreateProject, useArchiveProject } from '../hooks/api/useProjects';
@@ -50,15 +51,10 @@ export function ProjectsPage() {
   // Derive projects from React Query data
   const projects = (projectsData?.projects || []) as Project[];
 
-  // URL validation helper
+  // URL validation helper - empty is valid since base_url is optional
   const isValidUrl = (url: string): boolean => {
-    if (!url) return true; // Empty is valid (optional field)
-    try {
-      const parsed = new URL(url);
-      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-    } catch {
-      return false;
-    }
+    if (!url) return true;
+    return sharedIsValidUrl(url);
   };
 
   // Validate URL on blur

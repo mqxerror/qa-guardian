@@ -5,6 +5,7 @@
 
 import { TestStatus, RunStatus, ResultStatus, StepStatus, TestCategory } from './types';
 import { formatDurationPrecise } from '../../utils/formatDuration';
+import { formatRelativeTime as sharedFormatRelativeTime, formatBytes as sharedFormatBytes } from '../../utils/format';
 
 // Re-export formatDuration for backward compatibility
 export { formatDurationPrecise as formatDuration };
@@ -15,22 +16,8 @@ export const formatDateTime = (dateStr?: string): string => {
  return new Date(dateStr).toLocaleString();
 };
 
-// Format relative time
-export const formatRelativeTime = (dateStr?: string): string => {
- if (!dateStr) return '-';
- const date = new Date(dateStr);
- const now = new Date();
- const diffMs = now.getTime() - date.getTime();
- const diffMins = Math.floor(diffMs / 60000);
- const diffHours = Math.floor(diffMins / 60);
- const diffDays = Math.floor(diffHours / 24);
-
- if (diffMins < 1) return 'Just now';
- if (diffMins < 60) return `${diffMins}m ago`;
- if (diffHours < 24) return `${diffHours}h ago`;
- if (diffDays < 7) return `${diffDays}d ago`;
- return date.toLocaleDateString();
-};
+// Re-export shared formatRelativeTime for backward compatibility
+export const formatRelativeTime = (dateStr?: string): string => sharedFormatRelativeTime(dateStr);
 
 // Get status color classes
 export const getStatusColorClass = (status: TestStatus | RunStatus | ResultStatus | StepStatus | undefined): string => {
@@ -191,14 +178,8 @@ export const formatPercentage = (value?: number): string => {
  return `${value.toFixed(1)}%`;
 };
 
-// Format bytes
-export const formatBytes = (bytes: number): string => {
- if (bytes === 0) return '0 B';
- const k = 1024;
- const sizes = ['B', 'KB', 'MB', 'GB'];
- const i = Math.floor(Math.log(bytes) / Math.log(k));
- return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-};
+// Re-export shared formatBytes for backward compatibility
+export const formatBytes = sharedFormatBytes;
 
 // Get Lighthouse score color
 export const getLighthouseScoreColorClass = (score: number): string => {

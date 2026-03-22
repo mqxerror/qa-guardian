@@ -110,7 +110,6 @@ export function timeFromNow(seconds: number): string {
 
 /**
  * Formats bytes to human-readable string.
- * Note: Also exported from test-runs/storage.ts for backwards compatibility.
  *
  * @param bytes - Number of bytes
  * @returns Human-readable string (e.g., '1.5 MB')
@@ -125,19 +124,44 @@ export function formatBytes(bytes: number): string {
 
 /**
  * Formats duration in milliseconds to human-readable string.
+ * Handles sub-second through multi-day durations.
  *
  * @param ms - Duration in milliseconds
- * @returns Human-readable string (e.g., '2m 30s')
+ * @returns Human-readable string (e.g., '2m 30s', '3d 2h')
  */
 export function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
-  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-  if (minutes < 60) return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+  const seconds = Math.floor(ms / 1000);
+  if (seconds < 60) return `${(ms / 1000).toFixed(1)}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    const remainingSec = seconds % 60;
+    return remainingSec > 0 ? `${minutes}m ${remainingSec}s` : `${minutes}m`;
+  }
   const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  if (days > 0) {
+    const remainingHours = hours % 24;
+    return `${days}d ${remainingHours}h`;
+  }
   const remainingMinutes = minutes % 60;
   return `${hours}h ${remainingMinutes}m`;
+}
+
+/**
+ * Escapes HTML special characters to prevent XSS attacks.
+ * Replaces &, <, >, ", and ' with their HTML entity equivalents.
+ *
+ * @param str - The string to escape
+ * @returns HTML-escaped string safe for embedding in HTML
+ */
+export function escapeHTML(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 /**
@@ -301,6 +325,23 @@ export function isValidUrl(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Validates a UUID format.
+ * Accepts both standard UUIDs (versions 1-5) and zero/nil UUIDs
+ * used for seeded test data.
+ *
+ * @param str - The string to validate
+ * @returns Whether the string is a valid UUID
+ */
+export function isValidUUID(str: string): boolean {
+  if (!str) return false;
+  // Standard UUID pattern (versions 1-5)
+  const standardUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  // Zero/nil UUID pattern (used for seeded default org/user data)
+  const zeroUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return standardUUID.test(str) || zeroUUID.test(str);
 }
 
 // ============================================

@@ -8,6 +8,7 @@
 import { isDatabaseConnected, query } from '../services/database.js';
 import { deleteExpiredQuickTestComparisons } from '../services/repositories/quick-test.js';
 import { createLogger } from '../services/logger.js';
+import { formatBytes } from '../utils/index.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -212,17 +213,6 @@ async function cleanupArtifactFiles(cutoffDate: Date): Promise<{ deletedFiles: n
   logger.info(`[Cleanup] Deleted ${deletedFiles} artifact files, freed ${formatBytes(freedBytes)}`);
 
   return { deletedFiles, freedBytes };
-}
-
-/**
- * Format bytes to human readable string
- */
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 // Export for testing
