@@ -455,7 +455,8 @@ export async function authRoutes(app: FastifyInstance) {
               return sendError(reply, 401, 'UNAUTHORIZED', 'Token has been invalidated');
             }
           }
-        } catch {
+        } catch (err) {
+          logger.debug({ err, context: 'auth/me' }, 'JWT verification failed for /auth/me');
           return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid or expired token');
         }
       },
@@ -492,8 +493,9 @@ export async function authRoutes(app: FastifyInstance) {
       async (request: FastifyRequest, _reply: FastifyReply) => {
         try {
           await request.jwtVerify();
-        } catch {
-          // Allow logout even with invalid token
+        } catch (err) {
+          // Allow logout even with invalid token, but log it for debugging
+          logger.debug({ err, context: 'auth/logout' }, 'JWT verification failed during logout (proceeding anyway)');
           return;
         }
       },
@@ -740,7 +742,8 @@ export async function authRoutes(app: FastifyInstance) {
               return sendError(reply, 401, 'UNAUTHORIZED', 'Token has been invalidated');
             }
           }
-        } catch {
+        } catch (err) {
+          logger.debug({ err, context: 'auth/sessions' }, 'JWT verification failed for GET /auth/sessions');
           return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid or expired token');
         }
       },
@@ -788,7 +791,8 @@ export async function authRoutes(app: FastifyInstance) {
               return sendError(reply, 401, 'UNAUTHORIZED', 'Token has been invalidated');
             }
           }
-        } catch {
+        } catch (err) {
+          logger.debug({ err, context: 'auth/sessions/:sessionId' }, 'JWT verification failed for DELETE /auth/sessions/:sessionId');
           return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid or expired token');
         }
       },
@@ -830,7 +834,8 @@ export async function authRoutes(app: FastifyInstance) {
               return sendError(reply, 401, 'UNAUTHORIZED', 'Token has been invalidated');
             }
           }
-        } catch {
+        } catch (err) {
+          logger.debug({ err, context: 'auth/sessions/logout-all' }, 'JWT verification failed for POST /auth/sessions/logout-all');
           return sendError(reply, 401, 'UNAUTHORIZED', 'Invalid or expired token');
         }
       },

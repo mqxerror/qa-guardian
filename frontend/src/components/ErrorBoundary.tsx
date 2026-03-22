@@ -91,9 +91,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     this.setState({ errorInfo });
 
-    // Log error to console for debugging
-    console.error('[ErrorBoundary] Caught error:', error);
-    console.error('[ErrorBoundary] Error info:', errorInfo);
+    // Log error with full context for debugging
+    console.error(
+      `[ErrorBoundary] Caught error: ${error.name}: ${error.message}`,
+      '\n\nStack trace:',
+      error.stack,
+      '\n\nComponent stack:',
+      errorInfo.componentStack
+    );
 
     // Feature #166: Report error to backend (only once per error)
     if (!this.state.errorReported) {

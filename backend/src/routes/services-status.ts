@@ -14,6 +14,9 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import * as net from 'net';
 import * as http from 'http';
+import { createLogger } from '../services/logger.js';
+
+const logger = createLogger('services-status');
 
 // Feature #392: Use execFile instead of exec to prevent command injection
 const execFileAsync = promisify(execFile);
@@ -295,7 +298,8 @@ async function checkPlaywright(): Promise<ServiceInfo> {
         { label: 'Trace Collection', value: 'Enabled (screenshots, DOM snapshots)' },
       ],
     };
-  } catch {
+  } catch (err) {
+    logger.warn({ err, context: 'checkPlaywright' }, 'Playwright version check failed');
     return {
       name: 'Playwright',
       category: 'Testing Tools',
@@ -344,7 +348,8 @@ async function checkK6(): Promise<ServiceInfo> {
         { label: 'Protocols', value: 'HTTP/1.1, HTTP/2, WebSocket, gRPC' },
       ],
     };
-  } catch {
+  } catch (err) {
+    logger.warn({ err, context: 'checkK6' }, 'k6 version check failed');
     return {
       name: 'k6',
       category: 'Testing Tools',
@@ -387,7 +392,8 @@ async function checkLighthouse(): Promise<ServiceInfo> {
         { name: 'Core Web Vitals', status: 'implemented' },
       ],
     };
-  } catch {
+  } catch (err) {
+    logger.warn({ err, context: 'checkLighthouse' }, 'Lighthouse version check failed');
     return {
       name: 'Lighthouse',
       category: 'Testing Tools',
@@ -428,7 +434,8 @@ async function checkGitleaks(): Promise<ServiceInfo> {
         { name: 'Pre-commit Hook', status: 'planned' },
       ],
     };
-  } catch {
+  } catch (err) {
+    logger.warn({ err, context: 'checkGitleaks' }, 'Gitleaks version check failed');
     return {
       name: 'Gitleaks',
       category: 'Security Scanners',
@@ -467,7 +474,8 @@ async function checkSemgrep(): Promise<ServiceInfo> {
         { name: 'CI Integration', status: 'planned' },
       ],
     };
-  } catch {
+  } catch (err) {
+    logger.warn({ err, context: 'checkSemgrep' }, 'Semgrep version check failed');
     return {
       name: 'Semgrep',
       category: 'Security Scanners',
@@ -509,7 +517,8 @@ async function checkZAP(): Promise<ServiceInfo> {
         { name: 'Authentication Testing', status: 'implemented' },
       ],
     };
-  } catch {
+  } catch (err) {
+    logger.warn({ err, context: 'checkZAP' }, 'OWASP ZAP Docker check failed');
     return {
       name: 'OWASP ZAP',
       category: 'Security Scanners',
@@ -711,12 +720,12 @@ async function getDockerContainers(): Promise<Map<string, ContainerInfo>> {
             image: container.Image || 'unknown',
           });
         }
-      } catch {
-        // skip malformed JSON lines
+      } catch (err) {
+        logger.debug({ err, line, context: 'getDockerContainers' }, 'Skipping malformed Docker JSON line');
       }
     }
-  } catch {
-    // Docker not available - gracefully return empty map
+  } catch (err) {
+    logger.debug({ err, context: 'getDockerContainers' }, 'Docker not available, returning empty container map');
   }
   return containerMap;
 }

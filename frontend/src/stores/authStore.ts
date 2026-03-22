@@ -166,8 +166,9 @@ export const useAuthStore = create<AuthState>()(
               // Feature #213: Send refresh token so backend can revoke it
               body: JSON.stringify({ refresh_token: refreshToken }),
             });
-          } catch {
-            // Continue with logout even if API call fails
+          } catch (err) {
+            // Continue with local logout even if backend call fails (e.g. network error)
+            logger.auth.warn('Logout API call failed, proceeding with local logout:', err);
           }
         }
 
@@ -252,7 +253,8 @@ export const useAuthStore = create<AuthState>()(
             });
             return false;
           }
-        } catch {
+        } catch (err) {
+          logger.auth.error('Auth check failed due to network or unexpected error:', err);
           set({
             user: null,
             token: null,
@@ -314,8 +316,9 @@ export const useAuthStore = create<AuthState>()(
             const data = await response.json();
             set({ organizations: data.organizations || [] });
           }
-        } catch {
-          // Silently fail - user may not have access to multiple orgs
+        } catch (err) {
+          // Non-critical: user may not have access to multiple orgs
+          logger.auth.warn('Failed to fetch organizations:', err);
         }
       },
 

@@ -74,20 +74,35 @@ export async function fetchWithAuth<T = any>(
     let errorDetails: Record<string, unknown> | undefined;
 
     try {
-      const body = await response.json();
-      // Parse the standardized { error: { code, message, details? } } shape
-      if (body?.error?.code && body?.error?.message) {
-        errorCode = body.error.code;
-        errorMessage = body.error.message;
-        errorDetails = body.error.details;
-      } else if (typeof body?.error === 'string') {
-        // Fallback for legacy error responses that might not be migrated
-        errorMessage = body.error;
-      } else if (typeof body?.message === 'string') {
-        errorMessage = body.message;
+      // Attempt to read the response body as text first, then parse as JSON.
+      // This avoids losing the body content if response.json() throws.
+      const responseText = await response.text();
+      try {
+        const body = JSON.parse(responseText);
+        // Parse the standardized { error: { code, message, details? } } shape
+        if (body?.error?.code && body?.error?.message) {
+          errorCode = body.error.code;
+          errorMessage = body.error.message;
+          errorDetails = body.error.details;
+        } else if (typeof body?.error === 'string') {
+          // Fallback for legacy error responses that might not be migrated
+          errorMessage = body.error;
+        } else if (typeof body?.message === 'string') {
+          errorMessage = body.message;
+        }
+      } catch {
+        // Response body is not valid JSON - include the raw text if short enough to be useful
+        if (responseText && responseText.length > 0 && responseText.length < 200) {
+          errorMessage = `API error ${response.status}: ${responseText}`;
+        }
+        console.warn(
+          `[fetchWithAuth] Non-JSON error response from ${url} (HTTP ${response.status}):`,
+          responseText.substring(0, 500)
+        );
       }
-    } catch {
-      // Response body is not JSON or not parseable - use default message
+    } catch (parseErr) {
+      // Could not read the response body at all (e.g., network stream error)
+      console.warn(`[fetchWithAuth] Failed to read error response body from ${url}:`, parseErr);
     }
 
     const err = new Error(errorMessage) as FetchError;
