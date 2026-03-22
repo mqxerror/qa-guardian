@@ -111,6 +111,10 @@ export interface QuickTestResult {
 const quickTestResults = new Map<string, QuickTestResult>();
 const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+// Feature #BMAD: Track TTL cleanup timers so they can be cleared on graceful shutdown.
+// Without this, pending timers keep the process alive or fire after shutdown begins.
+const ttlTimers = new Map<string, NodeJS.Timeout>();
+
 // Feature #446: Bound in-memory Map with max size to prevent memory exhaustion
 const MAX_RESULTS = 1000;
 const quickTestLogger = createLogger('quick-test-runner');
@@ -227,9 +231,12 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
   await createQuickTestResult(runId, orgId, userId, url, testResult.waves as unknown as DbWaveResult[]);
 
   // Schedule cleanup after TTL (only for in-memory cache, DB records persist)
-  setTimeout(() => {
+  // Feature #BMAD: Track the timer so it can be cleared on graceful shutdown
+  const ttlTimer = setTimeout(() => {
     quickTestResults.delete(runId);
+    ttlTimers.delete(runId);
   }, TTL_MS);
+  ttlTimers.set(runId, ttlTimer);
 
   let browser: Browser | null = null;
   let healthResult: HealthCheckResult | undefined;
@@ -647,14 +654,19 @@ export async function getQuickTestResultAsync(runId: string): Promise<QuickTestR
   return undefined;
 }
 
-export function getQuickTestScreenshots(runId: string): { desktop?: string; mobile?: string } | undefined {
-  const result = quickTestResults.get(runId);
-  if (!result) return undefined;
+// ============================================================
+// Graceful Shutdown
+// ============================================================
 
-  const visualWave = result.waves.find(w => w.wave === 2);
-  if (!visualWave || visualWave.status !== 'completed') return undefined;
-
-  // Get the full visual result (we stored partial data in wave.data)
-  // Note: Screenshots are stored separately in the result object
-  return undefined; // Screenshots aren't persisted in the simplified data
+/**
+ * Feature #BMAD: Clear all pending TTL timers to allow clean process shutdown.
+ * Called from the server's gracefulShutdown() function.
+ */
+export function shutdownQuickTestTimers(): void {
+  for (const [runId, timer] of ttlTimers) {
+    clearTimeout(timer);
+    ttlTimers.delete(runId);
+  }
+  log.info({ clearedTimers: ttlTimers.size === 0 ? 'all' : ttlTimers.size }, 'Quick test TTL timers cleared');
 }
+

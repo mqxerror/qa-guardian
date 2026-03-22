@@ -69,7 +69,7 @@ import { setWebSocketIO } from './services/websocket-events.js'; // Feature #108
 import { initializeEventSubscriber, closeSubscriber } from './services/redis-events.js'; // Feature #200: Redis Pub/Sub for worker events
 import { generateRequestId } from './utils/index.js';
 import { getTestRun } from './services/repositories/test-runs.js'; // Feature #388: Organization check for Socket.IO join-run
-import { getQuickTestResultAsync } from './services/quick-test-runner.js'; // Feature #461: Organization check for Socket.IO join-quick-test
+import { getQuickTestResultAsync, shutdownQuickTestTimers } from './services/quick-test-runner.js'; // Feature #461: Organization check for Socket.IO join-quick-test, Feature #BMAD: TTL timer cleanup
 import { createLogger } from './services/logger.js'; // Feature #447: Structured logging
 import { sendError } from './utils/errors.js'; // Feature #722: Standardized error responses
 
@@ -495,11 +495,20 @@ async function start() {
 
     // Initialize Socket.IO server attached to Fastify's underlying HTTP server
     // Feature #358: Use shared CORS_ALLOWED_ORIGINS constant
-    log.info({ allowedOrigins: CORS_ALLOWED_ORIGINS }, 'Socket.IO allowed origins');
+    // Feature #BMAD: Include configuredOrigins from CORS_ORIGINS env var for parity with Fastify CORS
+    const corsOriginsEnv = process.env.CORS_ORIGINS;
+    const socketConfiguredOrigins = corsOriginsEnv
+      ? corsOriginsEnv.split(',').map(o => o.trim()).filter(Boolean)
+      : [];
+    const socketAllowedOrigins = [
+      ...socketConfiguredOrigins,
+      ...CORS_ALLOWED_ORIGINS,
+    ];
+    log.info({ allowedOrigins: socketAllowedOrigins }, 'Socket.IO allowed origins');
 
     io = new SocketIOServer(app.server, {
       cors: {
-        origin: [...CORS_ALLOWED_ORIGINS], // Spread to convert readonly tuple to mutable array
+        origin: socketAllowedOrigins,
         credentials: true,
       },
     });
@@ -677,13 +686,13 @@ async function start() {
         }
 
         // Feature #461: Verify the quick test belongs to the user's organization
+        // Feature #BMAD: Reject join if record not found — the DB record is created
+        // BEFORE the job is queued, so a missing record means the runId is invalid.
         try {
           const result = await getQuickTestResultAsync(runId);
           if (!result) {
-            // If result is not found, allow join anyway (the test might be starting)
-            // The room will just receive no events if the test doesn't exist
-            socket.join(`quick-test:${runId}`);
-            log.debug({ socketId: socket.id, runId }, 'Socket.IO client joined quick-test room (result not found)');
+            log.warn({ socketId: socket.id, runId }, 'Socket.IO client denied access to quick-test - record not found');
+            socket.emit('error', { message: 'Quick test not found' });
             return;
           }
 
@@ -785,6 +794,7 @@ async function gracefulShutdown(): Promise<void> {
   stopCleanupJob(); // Feature #154: Stop cleanup job
   stopQuickTestScheduler(); // Feature #684: Stop quick test scheduler
   stopSuiteScheduleExecutor(); // Feature #870: Stop suite schedule executor
+  shutdownQuickTestTimers(); // Feature #BMAD: Clear quick test TTL timers
   await shutdownExecutionQueue(); // Feature #155: Stop execution queue
   await shutdownWebhookQueue(); // Feature #320: Stop webhook queue
   await closeSubscriber(); // Feature #200: Close Redis event subscriber

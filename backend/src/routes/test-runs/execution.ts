@@ -665,8 +665,18 @@ export function stopRunCleanup(): void {
   }
 }
 
-// Auto-start cleanup on module load
-startRunCleanup();
+// Feature #BMAD: Only auto-start cleanup in the API server process.
+// The worker process (worker.ts) imports this module via the test-runs import chain,
+// but it doesn't maintain a meaningful in-memory testRuns map — its runs are transient
+// and scoped to individual job executions. Running a periodic interval timer in the
+// worker wastes resources and can mask shutdown issues.
+// Detection: worker.ts sets EXECUTION_MAX_CONCURRENCY and uses a different entry point,
+// but the most reliable signal is checking for the worker health port env var which is
+// only set on worker containers, or checking if EXECUTION_MAX_CONCURRENCY is 0 (API-only).
+const isWorkerProcess = process.env.WORKER_HEALTH_PORT !== undefined;
+if (!isWorkerProcess) {
+  startRunCleanup();
+}
 
 /**
  * Track running browsers for cancellation and pause

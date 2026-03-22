@@ -88,8 +88,10 @@ services:
       - NODE_OPTIONS=--max-old-space-size=1536
       # Feature #209: ZAP API key for DAST scanning
       - ZAP_API_KEY=${ZAP_API_KEY:-dev-zap-key-change-in-prod}
-      # Feature #169: Backend runs local worker (explicit override of .env)
-      - EXECUTION_MAX_CONCURRENCY=2
+      # Feature #BMAD: API-only mode — only the worker container processes BullMQ jobs.
+      # Setting concurrency to 0 prevents the backend from picking up jobs, avoiding
+      # a dual-worker race condition where both containers compete for the same jobs.
+      - EXECUTION_MAX_CONCURRENCY=0
     volumes:
       - backend_data:/app/data
     depends_on:
