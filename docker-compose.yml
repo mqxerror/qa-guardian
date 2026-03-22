@@ -20,7 +20,17 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-QaGuardian2024Secure}
       POSTGRES_DB: ${POSTGRES_DB:-qa_guardian}
     # Feature #165: Slow query logging (queries > 1 second)
-    command: postgres -c log_min_duration_statement=1000 -c log_statement=none
+    command: >
+      postgres
+      -c log_min_duration_statement=1000
+      -c log_statement=none
+      -c shared_buffers=1024MB
+      -c work_mem=64MB
+      -c effective_cache_size=3072MB
+      -c maintenance_work_mem=256MB
+      -c max_connections=120
+      -c random_page_cost=1.1
+      -c statement_timeout=30000
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -35,10 +45,10 @@ services:
       resources:
         limits:
           cpus: '1'
-          memory: 1G
+          memory: 4G
         reservations:
           cpus: '0.25'
-          memory: 256M
+          memory: 512M
 
   redis:
     image: redis:7-alpine
@@ -47,7 +57,7 @@ services:
     # Feature #148: Add password authentication for Redis
     # Feature #156: Add maxmemory policy to prevent OOM
     # DEV ONLY: Default password for local development. Override in production!
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-QaGuardianRedis2024} --maxmemory 400mb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-QaGuardianRedis2024} --maxmemory 1024mb --maxmemory-policy noeviction
     volumes:
       - redis_data:/data
     healthcheck:
@@ -63,10 +73,10 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: 512M
+          memory: 1G
         reservations:
           cpus: '0.1'
-          memory: 64M
+          memory: 128M
 
   backend:
     build:
@@ -92,6 +102,9 @@ services:
       # Setting concurrency to 0 prevents the backend from picking up jobs, avoiding
       # a dual-worker race condition where both containers compete for the same jobs.
       - EXECUTION_MAX_CONCURRENCY=0
+      # Infra: Separate pool sizes — backend serves many short API queries
+      - DB_POOL_MAX=15
+      - DB_POOL_MIN=3
     volumes:
       - backend_data:/app/data
     depends_on:
@@ -136,10 +149,15 @@ services:
       - NODE_ENV=production
       # Feature #156: Limit Node.js heap to leave room for Chromium
       - NODE_OPTIONS=--max-old-space-size=1536
-      # Feature #169: Worker processes up to 2 test executions concurrently
-      - EXECUTION_MAX_CONCURRENCY=2
+      # Infra: concurrency=1 eliminates Chromium OOM from concurrent Lighthouse+Playwright
+      # Scale horizontally via replicas (remove container_name, add deploy.replicas: 2)
+      - EXECUTION_MAX_CONCURRENCY=1
       - EXECUTION_JOB_TIMEOUT=600000
+      - EXECUTION_RETRY_ATTEMPTS=1
       - WORKER_HEALTH_PORT=3002
+      # Infra: Separate pool sizes — worker runs few long queries
+      - DB_POOL_MAX=5
+      - DB_POOL_MIN=1
       # Feature #209: ZAP API key for DAST scanning
       - ZAP_API_KEY=${ZAP_API_KEY:-dev-zap-key-change-in-prod}
     volumes:
@@ -157,15 +175,15 @@ services:
       start_period: 30s
     networks:
       - qa-network
-    # Feature #169: Extra memory headroom for Chromium browser instances
+    # Infra: 6GB gives 2x safety margin for Lighthouse+Playwright (peak ~3-4GB)
     deploy:
       resources:
         limits:
-          cpus: '2'
-          memory: 3G
+          cpus: '4'
+          memory: 6G
         reservations:
-          cpus: '0.5'
-          memory: 1G
+          cpus: '1'
+          memory: 2G
 
   zap:
     image: ghcr.io/zaproxy/zaproxy:stable
@@ -193,15 +211,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    # Feature #156: Resource constraints to prevent OOM
+    # Infra: ZAP needs 2GB — Java heap was at 99.5% of 1GB limit
     deploy:
       resources:
         limits:
           cpus: '1'
-          memory: 1G
+          memory: 2G
         reservations:
           cpus: '0.25'
-          memory: 256M
+          memory: 512M
 
   frontend:
     build:
