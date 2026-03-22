@@ -37,3 +37,7 @@ export { DetailedReport } from './DetailedReport';
 // ScreenshotModal component - Feature #514: Extracted from QuickTestPage
 export { ScreenshotModal } from './ScreenshotModal';
 export type { ScreenshotModalProps } from './ScreenshotModal';
+
+// Agent 7: Extracted section components for QuickTestPage decomposition
+export { ScoreDisplay } from './ScoreDisplay';
+export { HistoryPanel } from './HistoryPanel';

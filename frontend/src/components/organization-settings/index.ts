@@ -21,3 +21,8 @@ export type {
 
 // Re-export types for direct access
 export * from './types';
+
+// Agent 7: Extracted section components for OrganizationSettingsPage decomposition
+export { SessionManagementSection, ArtifactRetentionSection, StorageUsageSection } from './DataManagementSections';
+export { SlackIntegrationSection } from './SlackIntegrationSection';
+export { MCPConnectionsSection, MCPAuditLogSection, MCPAnalyticsDashboard, MCPToolsCatalogSection } from './McpSections';

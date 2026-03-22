@@ -22,30 +22,19 @@ import {
   PageHeader,
   AnimatedCard,
   CardContent,
-  ScoreTrendChart,
 } from '../components/ui';
-import { getScoreTextColor } from '../components/ui/score-card';
 import {
   Zap,
   Globe,
-  Shield,
-  Gauge,
   Loader2,
-  ExternalLink,
   History,
   Download,
   AlertCircle,
-  BarChart2,
-  Accessibility,
-  Network,
   ArrowLeftRight,
   CalendarClock,
-  Search,
   FileJson,
   FileText,
 } from 'lucide-react';
-// Feature #728: EmptyState adoption
-import { EmptyState, EmptyStateIcons } from '../components/ui/EmptyState';
 // Feature #514: Import extracted quick-test components and utilities
 import {
   // Types
@@ -54,7 +43,6 @@ import {
   type HistoryEntry,
   // Utilities
   isValidUrl,
-  getScoreColor,
   RECENT_URLS_KEY,
   MAX_RECENT_URLS,
   HISTORY_KEY,
@@ -67,6 +55,9 @@ import {
   ScreenshotModal,
   // Feature #537: Detailed report
   DetailedReport,
+  // Agent 7: Extracted section components
+  ScoreDisplay,
+  HistoryPanel,
 } from '../components/quick-test';
 import { Button } from '@/components/ui/button';
 import { WAVE_DEFINITIONS } from '../constants/waves';
@@ -81,84 +72,7 @@ import { WAVE_DEFINITIONS } from '../constants/waves';
 // Feature #514: Storage keys moved to ../components/quick-test/utils.ts
 // ============================================================
 
-// ============================================================
-// Score Display Component
-// Feature #522: Uses ScoreCardGrid from ../components/ui/score-card
-// ============================================================
-
-interface ScoreDisplayProps {
-  summary: QuickTestResult['summary'];
-}
-
-/** Feature #536: Weight definitions for each score category */
-const SCORE_WEIGHTS: Array<{
-  key: keyof NonNullable<QuickTestResult['summary']>;
-  label: string;
-  weight: number;
-  icon: React.ElementType;
-}> = [
-  { key: 'healthScore', label: 'Health', weight: 12, icon: Globe },
-  { key: 'performanceScore', label: 'Performance', weight: 18, icon: Gauge },
-  { key: 'securityScore', label: 'Security', weight: 18, icon: Shield },
-  { key: 'accessibilityScore', label: 'Accessibility', weight: 22, icon: Accessibility },
-  { key: 'apiScore', label: 'API', weight: 10, icon: Network },
-  { key: 'seoScore', label: 'SEO', weight: 10, icon: Search },
-];
-
-/**
- * Phase 6: Compact score summary header.
- * Shows overall score + 6 category scores in a single dense row,
- * replacing the previous hero + grid layout for better scannability.
- */
-function ScoreDisplay({ summary }: ScoreDisplayProps) {
-  if (!summary) return null;
-
-  const overallColor = getScoreTextColor(summary.overallScore);
-
-  return (
-    <div className="space-y-3">
-      {/* Compact single-row score bar */}
-      <div className="flex items-center gap-3 overflow-x-auto pb-1">
-        {/* Overall score - slightly larger */}
-        <div className="flex items-center gap-2 rounded-lg border-2 border-primary/30 bg-primary/5 px-4 py-2.5 flex-shrink-0">
-          <BarChart2 className="w-4 h-4 text-primary" />
-          <div>
-            <div className={`text-2xl font-bold leading-none ${overallColor}`}>
-              {summary.overallScore}
-            </div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">Overall</div>
-          </div>
-        </div>
-
-        {/* Category scores - compact pills */}
-        {SCORE_WEIGHTS.map(({ key, label, icon: Icon }) => {
-          const score = summary[key];
-          if (score === undefined || score === null) return null;
-
-          const scoreNum = typeof score === 'number' ? score : 0;
-          const textColor = getScoreTextColor(scoreNum);
-          const barColor = scoreNum >= 80 ? 'bg-success' : scoreNum >= 60 ? 'bg-warning' : 'bg-destructive';
-
-          return (
-            <div
-              key={key}
-              className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 flex-shrink-0 min-w-0"
-            >
-              <Icon className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-              <div className="min-w-0">
-                <div className={`text-lg font-bold leading-none ${textColor}`}>{scoreNum}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">{label}</div>
-                <div className="mt-1 h-1 w-12 rounded-full bg-muted overflow-hidden">
-                  <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(scoreNum, 100)}%` }} />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+// ScoreDisplay component extracted to components/quick-test/ScoreDisplay.tsx (Agent 7)
 
 // ============================================================
 // Main Component
@@ -758,94 +672,14 @@ export function QuickTestPage() {
           </AnimatedCard>
         )}
 
-        {/* Feature #542: Enhanced History Panel with re-view capability */}
+        {/* Feature #542: Enhanced History Panel (Agent 7: extracted) */}
         {showHistory && (
-          <AnimatedCard>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Recent Tests</h2>
-                <span className="text-xs text-muted-foreground">{history.length} result{history.length !== 1 ? 's' : ''}</span>
-              </div>
-              {historyLoading && (
-                <div className="flex items-center gap-2 mb-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
-                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                  <span className="text-sm text-primary">Loading test results...</span>
-                </div>
-              )}
-              {/* Feature #728: EmptyState adoption */}
-              {history.length === 0 ? (
-                <EmptyState icon={EmptyStateIcons.test} title="No completed tests yet" description="Run a test to see it here." size="sm" />
-              ) : (
-              <>
-              <div className="space-y-2">
-                {history.map(entry => {
-                  let hostname = entry.url;
-                  try { hostname = new URL(entry.url).hostname; } catch { /* keep full url */ }
-                  return (
-                  <Button
-                    key={entry.runId}
-                    variant="ghost"
-                    onClick={() => selectFromHistory(entry)}
-                    disabled={historyLoading}
-                    className="w-full h-auto p-3 flex items-center justify-between text-left bg-muted/50 hover:bg-muted"
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium text-foreground truncate">
-                          {hostname}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[280px]">
-                          {entry.url}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          {new Date(entry.timestamp).toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                    {entry.score !== undefined && (
-                      <div className={`text-lg font-bold ${getScoreColor(entry.score)} flex-shrink-0 ml-3`}>
-                        {entry.score}
-                      </div>
-                    )}
-                  </Button>
-                  );
-                })}
-              </div>
-
-              {/* Feature #492 / #556: Score Timeline Chart - uses reusable ScoreTrendChart */}
-              {(() => {
-                // Filter history entries that have scores and match the current URL being tested
-                const entriesWithScores = history
-                  .filter(e => e.score !== undefined && (testingUrl ? e.url === testingUrl : true))
-                  .slice(0, 10) // Last 10 runs
-                  .reverse(); // Oldest first for chart
-
-                if (entriesWithScores.length < 3) return null;
-
-                const chartData = entriesWithScores.map(e => ({
-                  label: new Date(e.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                  value: e.score || 0,
-                }));
-
-                return (
-                  <div className="mt-6 pt-4 border-t border-border">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                      <BarChart2 className="w-4 h-4" />
-                      Score Trend (Last {entriesWithScores.length} Runs)
-                    </h3>
-                    <ScoreTrendChart
-                      data={chartData}
-                      thresholds={{ good: 80, warning: 60 }}
-                      valueLabel="Score"
-                    />
-                  </div>
-                );
-              })()}
-              </>
-              )}
-            </CardContent>
-          </AnimatedCard>
+          <HistoryPanel
+            history={history}
+            historyLoading={historyLoading}
+            testingUrl={testingUrl}
+            onSelectEntry={selectFromHistory}
+          />
         )}
       </div>
 

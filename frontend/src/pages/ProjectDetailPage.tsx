@@ -14,12 +14,10 @@ import { SkeletonProjectDetail } from "../components/ui/Skeleton";
 import {
   PageHeader,
   ScoreCard,
-  EmptyStates, // Feature #559: Enhanced empty state
 } from "../components/ui";
-import { DataTable, type DataTableColumn } from "../components/ui/DataTable";
-import { Flame, Settings, Loader2, FolderKanban, MoreHorizontal, Github, Shield, ChevronDown, Globe, FileCheck, CheckCircle2, XCircle, Search, X, Clock, Zap, GitBranch, AlertTriangle } from "lucide-react";
-// Feature #550: Real-time wave visualization for smoke test
-import { WaveProgressCard, type WaveProgressStatus } from "../components/ui/wave-progress-card";
+// DataTable now used by SuitesTabContent sub-component
+import { Flame, Settings, Loader2, FolderKanban, MoreHorizontal, Github, Shield, ChevronDown, CheckCircle2, X, Clock, GitBranch, AlertTriangle } from "lucide-react";
+// WaveProgressCard now used by SmokeTestSection sub-component
 // useSuiteRunSocket moved to useSmokeTest hook (Feature #718)
 import {
   DropdownMenu,
@@ -52,8 +50,6 @@ import {
   AlertHistoryEntry,
   SASTScanResult,
   DASTScanResult,
-  // Utilities
-  getRelativeTime,
   // Hooks (Feature #49)
   useGitHubHandlers,
   useSastHandlers,
@@ -65,6 +61,10 @@ import {
   SettingsTab,
   // Modal Components (Feature #49)
   ProjectModals,
+  // Agent 7: Extracted section components
+  SuitesTabContent,
+  SmokeTestSection,
+  RecentActivityFeed,
 } from '../components/project-detail';
 // Feature #718: Extracted state hooks
 import { useCreateSuiteModal } from '../hooks/useCreateSuiteModal';
@@ -140,8 +140,7 @@ function ProjectDetailPage() {
   const detailModals = useProjectDetailModals(id, () => navigate('/projects'));
   const smokeTest = useSmokeTest(id, project?.base_url);
   const [githubDataLoaded, setGithubDataLoaded] = useState(false);
-  // Feature #559: Suite search filter
-  const [suiteSearchQuery, setSuiteSearchQuery] = useState('');
+
 
   // Feature #49: Settings state and handlers from useSettingsHandlers hook
   // Only destructure what's actually used in this file (rest is passed via settingsState/settingsHandlers objects)
@@ -538,134 +537,8 @@ function ProjectDetailPage() {
           }
         />
 
-        {/* Feature #550: Inline Smoke Test Wave Visualization */}
-        {(smokeTest.isRunningQuickSmokeTest || smokeTest.smokeTestResult) && (
-          <div className="rounded-lg border border-border bg-card p-4 border-l-4 border-l-warning">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <Flame className="h-5 w-5 text-warning" />
-                Smoke Test
-              </h3>
-              {smokeTest.smokeTestResult && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={smokeTest.dismissSmokeTestResult}
-                >
-                  Dismiss
-                </Button>
-              )}
-            </div>
-
-            {/* Wave Progress Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Health Check Wave */}
-              <WaveProgressCard
-                status={
-                  smokeTest.smokeTestResult === 'passed' ? 'completed' :
-                  smokeTest.smokeTestResult === 'failed' && smokeTest.smokeTestCurrentStep?.phase !== 'health' ? 'completed' :
-                  smokeTest.smokeTestResult === 'failed' && smokeTest.smokeTestCurrentStep?.phase === 'health' ? 'failed' :
-                  smokeTest.smokeTestCurrentStep?.phase === 'health' ? 'running' :
-                  (smokeTest.smokeTestCurrentStep?.stepIndex || 0) > 0 ? 'completed' :
-                  'waiting' as WaveProgressStatus
-                }
-                icon={Globe}
-                title="Health Check"
-                subtitle="DNS & SSL verification"
-                expanded={smokeTest.smokeTestExpandedPhase === 'health'}
-                onToggle={() => smokeTest.setSmokeTestExpandedPhase(
-                  smokeTest.smokeTestExpandedPhase === 'health' ? null : 'health'
-                )}
-                steps={[
-                  { name: 'DNS Resolution', status: (smokeTest.smokeTestCurrentStep?.stepIndex || 0) >= 1 || smokeTest.smokeTestResult ? 'completed' : smokeTest.smokeTestCurrentStep?.phase === 'health' ? 'running' : 'pending' },
-                  { name: 'SSL Certificate', status: (smokeTest.smokeTestCurrentStep?.stepIndex || 0) >= 1 || smokeTest.smokeTestResult ? 'completed' : 'pending' },
-                ]}
-                animate={smokeTest.smokeTestCurrentStep?.phase === 'health'}
-              />
-
-              {/* Page Load Wave */}
-              <WaveProgressCard
-                status={
-                  smokeTest.smokeTestResult === 'passed' ? 'completed' :
-                  smokeTest.smokeTestResult === 'failed' && smokeTest.smokeTestCurrentStep?.phase === 'validation' ? 'completed' :
-                  smokeTest.smokeTestResult === 'failed' && smokeTest.smokeTestCurrentStep?.phase === 'pageload' ? 'failed' :
-                  smokeTest.smokeTestCurrentStep?.phase === 'pageload' ? 'running' :
-                  (smokeTest.smokeTestCurrentStep?.stepIndex || 0) > 1 ? 'completed' :
-                  'waiting' as WaveProgressStatus
-                }
-                icon={FileCheck}
-                title="Page Load"
-                subtitle="HTTP response & timing"
-                expanded={smokeTest.smokeTestExpandedPhase === 'pageload'}
-                onToggle={() => smokeTest.setSmokeTestExpandedPhase(
-                  smokeTest.smokeTestExpandedPhase === 'pageload' ? null : 'pageload'
-                )}
-                steps={[
-                  { name: 'HTTP Status', status: (smokeTest.smokeTestCurrentStep?.stepIndex || 0) >= 2 || smokeTest.smokeTestResult ? 'completed' : smokeTest.smokeTestCurrentStep?.phase === 'pageload' ? 'running' : 'pending' },
-                  { name: 'Response Time', status: (smokeTest.smokeTestCurrentStep?.stepIndex || 0) >= 2 || smokeTest.smokeTestResult ? 'completed' : 'pending' },
-                ]}
-                animate={smokeTest.smokeTestCurrentStep?.phase === 'pageload'}
-              />
-
-              {/* Basic Validation Wave */}
-              <WaveProgressCard
-                status={
-                  smokeTest.smokeTestResult === 'passed' ? 'completed' :
-                  smokeTest.smokeTestResult === 'failed' && smokeTest.smokeTestCurrentStep?.phase === 'validation' ? 'failed' :
-                  smokeTest.smokeTestCurrentStep?.phase === 'validation' ? 'running' :
-                  'waiting' as WaveProgressStatus
-                }
-                icon={CheckCircle2}
-                title="Validation"
-                subtitle="Content & structure checks"
-                expanded={smokeTest.smokeTestExpandedPhase === 'validation'}
-                onToggle={() => smokeTest.setSmokeTestExpandedPhase(
-                  smokeTest.smokeTestExpandedPhase === 'validation' ? null : 'validation'
-                )}
-                steps={[
-                  { name: 'HTML Structure', status: smokeTest.smokeTestResult ? (smokeTest.smokeTestResult === 'passed' ? 'completed' : 'failed') : smokeTest.smokeTestCurrentStep?.phase === 'validation' ? 'running' : 'pending' },
-                  { name: 'Console Errors', status: smokeTest.smokeTestResult ? (smokeTest.smokeTestResult === 'passed' ? 'completed' : 'pending') : 'pending' },
-                ]}
-                animate={smokeTest.smokeTestCurrentStep?.phase === 'validation'}
-              />
-            </div>
-
-            {/* Results Summary */}
-            {smokeTest.smokeTestResult && (
-              <div className={`mt-4 p-3 rounded-lg ${
-                smokeTest.smokeTestResult === 'passed'
-                  ? 'bg-success/10 border border-success/20'
-                  : 'bg-destructive/10 border border-destructive/20'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {smokeTest.smokeTestResult === 'passed' ? (
-                      <CheckCircle2 className="h-5 w-5 text-success" />
-                    ) : (
-                      <XCircle className="h-5 w-5 text-destructive" />
-                    )}
-                    <span className={`font-medium ${
-                      smokeTest.smokeTestResult === 'passed' ? 'text-success' : 'text-destructive'
-                    }`}>
-                      {smokeTest.smokeTestResult === 'passed'
-                        ? 'All checks passed!'
-                        : 'Some checks failed'
-                      }
-                    </span>
-                  </div>
-                  {smokeTest.smokeTestTestId && (
-                    <Link
-                      to={`/tests/${smokeTest.smokeTestTestId}`}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      View Details →
-                    </Link>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Feature #550: Inline Smoke Test Wave Visualization (Agent 7: extracted) */}
+        <SmokeTestSection smokeTest={smokeTest} />
 
         {/* Feature #526: Project Health Overview with ScoreCards */}
         {suites.length > 0 && (
@@ -700,49 +573,8 @@ function ProjectDetailPage() {
           </div>
         )}
 
-        {/* Feature #558: Recent Activity feed - last 5 runs across all suites */}
-        {(() => {
-          const recentRuns = (recentRunsData?.runs || recentRunsData?.data || []).slice(0, 5);
-          if (recentRuns.length === 0) return null;
-          return (
-            <div className="mt-4 rounded-lg border border-border bg-card border-l-4 border-l-primary">
-              <div className="px-4 py-3 border-b border-border">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Zap className="w-4 h-4" />
-                  Recent Activity
-                </h3>
-              </div>
-              <div className="divide-y divide-border">
-                {recentRuns.map((run: { id: string; suite_name?: string; test_name?: string; status: string; created_at: string; duration_ms?: number }) => (
-                  <Button
-                    key={run.id}
-                    variant="ghost"
-                    onClick={() => navigate(`/runs/${run.id}`)}
-                    className="w-full h-auto flex items-center gap-3 px-4 py-2.5 text-sm text-left rounded-none"
-                  >
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                      run.status === 'passed' ? 'bg-success' :
-                      run.status === 'failed' ? 'bg-destructive' :
-                      run.status === 'running' ? 'bg-warning animate-pulse' :
-                      'bg-muted-foreground'
-                    }`} />
-                    <span className="flex-1 truncate text-foreground">
-                      {run.suite_name || 'Suite'}{run.test_name ? ` › ${run.test_name}` : ''}
-                    </span>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {getRelativeTime(run.created_at)}
-                    </span>
-                    {run.duration_ms != null && run.duration_ms > 0 && (
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {run.duration_ms < 1000 ? `${run.duration_ms}ms` : `${(run.duration_ms / 1000).toFixed(1)}s`}
-                      </span>
-                    )}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
+        {/* Feature #558: Recent Activity feed (Agent 7: extracted) */}
+        <RecentActivityFeed recentRunsData={recentRunsData} />
 
         {/* Tab Navigation - Feature #490: Progressive disclosure with badges */}
         <div className="mt-6 border-b border-border">
@@ -846,136 +678,13 @@ function ProjectDetailPage() {
           </nav>
         </div>
 
-        {/* Suites Tab Content */}
+        {/* Suites Tab Content (Agent 7: extracted) */}
         {activeTab === 'suites' && (
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-foreground">Test Suites</h2>
-              <div className="flex items-center gap-2">
-                {/* Feature #559: Suite search filter */}
-                {suites.length > 0 && (
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                    <input
-                      type="text"
-                      value={suiteSearchQuery}
-                      onChange={(e) => setSuiteSearchQuery(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Escape') setSuiteSearchQuery(''); }}
-                      placeholder="Search suites..."
-                      className="h-9 w-48 rounded-md border border-input bg-background pl-8 pr-8 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                    {suiteSearchQuery && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setSuiteSearchQuery('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground hover:text-foreground"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-                {canCreateSuite && (
-                  <Button
-                    size="sm"
-                    onClick={() => suiteModal.setShowCreateSuiteModal(true)}
-                  >
-                    Create Suite
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Feature #559: Enhanced empty state with EmptyStates component */}
-            {suites.length === 0 ? (
-              EmptyStates.noSuites(canCreateSuite ? () => suiteModal.setShowCreateSuiteModal(true) : undefined)
-            ) : (() => {
-              const query = suiteSearchQuery.toLowerCase().trim();
-              const filteredSuites = query
-                ? suites.filter((s) => {
-                    const suite = s as TestSuite;
-                    return (
-                      (suite.name || '').toLowerCase().includes(query) ||
-                      (suite.description || '').toLowerCase().includes(query)
-                    );
-                  })
-                : suites;
-
-              if (filteredSuites.length === 0) {
-                return EmptyStates.noSearchResults(suiteSearchQuery);
-              }
-
-              return (
-                /* Phase 5: DataTable for denser, more scannable suite listing */
-                <DataTable
-                  data={filteredSuites as (TestSuite & Record<string, unknown>)[]}
-                  columns={[
-                    {
-                      key: 'name',
-                      header: 'Suite Name',
-                      sortable: true,
-                      render: (item) => {
-                        const s = item as unknown as TestSuite;
-                        return (
-                          <div className="min-w-0">
-                            <span className="font-medium text-foreground">{s.name}</span>
-                            {s.description && (
-                              <p className="text-xs text-muted-foreground truncate max-w-[300px]">{s.description}</p>
-                            )}
-                          </div>
-                        );
-                      },
-                    },
-                    {
-                      key: 'test_count',
-                      header: 'Tests',
-                      sortable: true,
-                      width: '80px',
-                      render: (item) => (
-                        <span className="text-sm tabular-nums">
-                          {(item as unknown as TestSuite).test_count ?? 0}
-                        </span>
-                      ),
-                    },
-                    {
-                      key: 'browser',
-                      header: 'Browser',
-                      hideOnMobile: true,
-                      width: '100px',
-                      render: (item) => {
-                        const browser = (item as unknown as TestSuite).browser;
-                        const icon = browser === 'firefox' ? '🦊' : browser === 'webkit' ? '🧭' : '🌐';
-                        return (
-                          <span className="text-sm">
-                            {icon} {browser || 'chromium'}
-                          </span>
-                        );
-                      },
-                    },
-                    {
-                      key: 'created_at',
-                      header: 'Created',
-                      hideOnMobile: true,
-                      width: '140px',
-                      sortable: true,
-                      render: (item) => (
-                        <span className="text-xs text-muted-foreground">
-                          {(item as unknown as TestSuite).created_at
-                            ? formatDate((item as unknown as TestSuite).created_at!)
-                            : '—'}
-                        </span>
-                      ),
-                    },
-                  ] as DataTableColumn<TestSuite & Record<string, unknown>>[]}
-                  keyExtractor={(item) => (item as unknown as TestSuite).id}
-                  onRowClick={(item) => navigate(`/suites/${(item as unknown as TestSuite).id}`)}
-                  hoverable
-                  compact
-                />
-              );
-            })()}
-          </div>
+          <SuitesTabContent
+            suites={suites as TestSuite[]}
+            canCreateSuite={canCreateSuite}
+            onCreateSuite={() => suiteModal.setShowCreateSuiteModal(true)}
+          />
         )}
 
         {/* Settings Tab Content - Using SettingsTab component (Feature #49) */}

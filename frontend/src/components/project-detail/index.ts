@@ -51,3 +51,8 @@ export { SettingsTab, type SettingsTabProps } from './SettingsTab';
 
 // Modal Components (Feature #49: Extracted from ProjectDetailPage)
 export { ProjectModals, type ProjectModalsProps } from './ProjectModals';
+
+// Agent 7: Extracted section components for ProjectDetailPage decomposition
+export { SuitesTabContent } from './SuitesTabContent';
+export { SmokeTestSection, type SmokeTestSectionProps } from './SmokeTestSection';
+export { RecentActivityFeed } from './RecentActivityFeed';

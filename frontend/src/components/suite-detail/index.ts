@@ -65,3 +65,15 @@ export type { LiveScreenshot, ScreenshotHistoryItem } from './SuiteRunResults';
 
 // Test List
 export { TestListSection } from './TestListSection';
+
+// Agent 7: Extracted sub-components for TestSuitePage decomposition
+export { AIHealthInsightsPanel } from './AIHealthInsightsPanel';
+export type { AIHealthInsightsPanelProps } from './AIHealthInsightsPanel';
+export { RecentRunsSection } from './RecentRunsSection';
+export type { RecentRunsSectionProps } from './RecentRunsSection';
+export { PaginationControls } from './PaginationControls';
+export type { PaginationControlsProps, PaginationData } from './PaginationControls';
+export { useSuiteHandlers } from './useSuiteHandlers';
+export type { UseSuiteHandlersReturn, UseSuiteHandlersParams } from './useSuiteHandlers';
+// Agent 7: Consolidated page-level handlers for TestSuitePage
+export { useSuitePageHandlers } from './useSuitePageHandlers';
