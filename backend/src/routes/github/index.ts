@@ -31,7 +31,7 @@ export { coreGithubRoutes } from './core.js';
 export { dependencyScanningRoutes } from './dependency-scanning.js';
 export { vulnerabilityTrackingRoutes } from './vulnerability-tracking.js';
 export { aiProviderRoutes } from './ai-providers.js';
-export { aiTestGenerationRoutes } from './ai-test-generation.js';
+export { aiTestGenerationRoutes } from './ai-test-generation/index.js';
 export { naturalLanguageTestRoutes } from './natural-language-tests.js';
 export { aiAnalysisRoutes } from './ai-analysis.js';
 export { aiCostAnalyticsRoutes } from './ai-cost-analytics.js';

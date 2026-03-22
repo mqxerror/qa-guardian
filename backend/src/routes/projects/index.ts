@@ -32,9 +32,9 @@ export {
 
 // Import route modules
 import { coreRoutes } from './routes.js';
-import { analyticsRoutes } from './analytics.js';
+import { analyticsRoutes } from './analytics/index.js';
 import { aiInsightsRoutes } from './ai-insights-routes.js';
-import { flakyTestsRoutes } from './flaky-tests.js';
+import { flakyTestsRoutes } from './flaky-tests/index.js';
 import { remediationRoutes } from './remediation.js';
 import { memberRoutes } from './members.js';
 import { settingsRoutes } from './settings.js';

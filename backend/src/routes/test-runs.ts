@@ -240,7 +240,7 @@ import { organizationSettingsRoutes } from './test-runs/organization-settings.js
 import { healingRoutes } from './test-runs/healing-routes.js';
 
 // Feature #1356: Import artifact routes module
-import { artifactRoutes } from './test-runs/artifact-routes.js';
+import { artifactRoutes } from './test-runs/artifact-routes/index.js';
 
 // Feature #1356: Import results routes module
 import { resultsRoutes } from './test-runs/results-routes.js';
@@ -273,7 +273,7 @@ import { reviewExportRoutes } from './test-runs/review-export-routes.js';
 import { selectorOverrideRoutes } from './test-runs/selector-override-routes.js';
 
 // Feature #1356: Import run data routes module (logs, console, network, metrics, environment, compare)
-import { runDataRoutes } from './test-runs/run-data-routes.js';
+import { runDataRoutes } from './test-runs/run-data-routes/index.js';
 
 // Feature #1356: Import visual approval routes module
 import { visualApprovalRoutes } from './test-runs/visual-approval-routes.js';

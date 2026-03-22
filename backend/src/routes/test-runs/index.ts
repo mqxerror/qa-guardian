@@ -493,7 +493,7 @@ export {
 export {
   // Route Registration
   artifactRoutes,
-} from './artifact-routes.js';
+} from './artifact-routes/index.js';
 
 // Results Routes Module (Feature #1356 - Code Quality)
 export {
@@ -570,7 +570,7 @@ export {
 export {
   // Route Registration
   runDataRoutes,
-} from './run-data-routes.js';
+} from './run-data-routes/index.js';
 
 // Visual Approval Routes Module (Feature #1356 - Code Quality)
 export {
