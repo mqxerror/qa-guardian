@@ -163,7 +163,7 @@ export function CurrentRunPanel({
  }`}>
  {currentRun.status}
  </span>
- {currentRun.duration_ms !== undefined && (
+ {currentRun.duration_ms != null && (
  <span className="text-sm text-muted-foreground">
  Duration: {currentRun.duration_ms}ms
  </span>

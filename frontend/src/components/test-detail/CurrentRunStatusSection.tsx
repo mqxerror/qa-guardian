@@ -223,7 +223,9 @@ function CurrentRunStatusSectionInner({
           title={currentRun.status === 'running' && liveProgress?.currentStep?.action
             ? liveProgress.currentStep.action
             : `Test Run: ${currentRun.status.charAt(0).toUpperCase() + currentRun.status.slice(1)}`}
-          subtitle={currentRun.duration_ms !== undefined ? `Completed in ${currentRun.duration_ms}ms` : undefined}
+          subtitle={currentRun.duration_ms != null && currentRun.status !== 'pending' && currentRun.status !== 'running'
+            ? `Completed in ${Math.round(currentRun.duration_ms / 1000)}s`
+            : currentRun.status === 'pending' ? 'Waiting for worker...' : undefined}
           duration={currentRun.duration_ms}
           expanded={waveExpanded}
           onToggle={() => setWaveExpanded(!waveExpanded)}

@@ -78,7 +78,7 @@ function TestResultCardInner({
  {result.status}
  </span>
  <span className="font-medium text-foreground">{result.test_name}</span>
- {result.duration_ms !== undefined && (
+ {result.duration_ms != null && (
  <span className="text-sm text-muted-foreground">{result.duration_ms}ms</span>
  )}
  </div>
