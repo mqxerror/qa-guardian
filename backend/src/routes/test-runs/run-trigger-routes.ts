@@ -13,12 +13,9 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import { authenticate, requireScopes, getOrganizationId, JwtPayload, ApiKeyPayload, InternalServicePayload } from '../../middleware/auth.js';
 import { getTestSuite, getTest, listTests } from '../test-suites.js';
-import { testRuns, BrowserType, TestRun, TestType, setTestRun, createTestRun as dbCreateTestRun } from './execution.js';
-// Feature #61: Redis caching
-import { getCache, CacheKeys } from '../../services/cache.js';
-// Feature #155: Execution queue for concurrency limits
-import { enqueueOrExecute } from '../../services/execution-queue.js';
-import { createLogger } from '../../services/logger.js';
+import { BrowserType } from './execution.js';
+// Feature #Agent8: Use TestExecutionService for run creation orchestration
+import { testExecutionService } from '../../services/test-execution-service.js';
 
 import { sendError } from '../../utils/errors.js';
 // Feature #732: Zod validation for run trigger routes
@@ -30,7 +27,6 @@ import {
   runTriggerBodySchema,
   rerunBodySchema,
 } from '../../validation/index.js';
-const logger = createLogger('route:test-runs:run-trigger');
 
 // Type definitions for route params/body
 interface RunParams {
@@ -53,11 +49,6 @@ interface RerunBody {
   branch?: string;
 }
 
-// Extended TestRun for rerun with test_ids
-interface RerunTestRun extends TestRun {
-  test_ids?: string[];
-}
-
 // Type-safe user accessor for authenticated requests
 type AuthUser = JwtPayload | ApiKeyPayload | InternalServicePayload;
 function getUserId(request: FastifyRequest): string | undefined {
@@ -76,6 +67,7 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
   return async function runTriggerRoutes(app: FastifyInstance) {
     // Trigger test run for a suite
     // Feature #732: Zod validation for suite run trigger
+    // Feature #Agent8: Run creation delegated to TestExecutionService
     app.post<{ Params: RunParams; Body: RunBody }>('/api/v1/suites/:suiteId/runs', {
       preHandler: [authenticate, requireScopes(['execute'])],
       preValidation: [validateParams(suiteRunParamsSchema), validateBody(runTriggerBodySchema)],
@@ -84,83 +76,51 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
       const { browser: requestBrowser, branch: requestBranch } = request.body || {};
       const orgId = getOrganizationId(request);
 
-      // Verify suite exists
+      // Verify suite exists and belongs to this org
       const suite = await getTestSuite(suiteId);
       if (!suite || suite.organization_id !== orgId) {
         return sendError(reply, 404, 'NOT_FOUND', 'Test suite not found');
       }
 
-      // Check if there are tests in the suite
+      // Verify suite has tests
       const suiteTests = await listTests(suiteId);
       if (suiteTests.length === 0) {
         return sendError(reply, 400, 'BAD_REQUEST', 'No tests found in this suite');
       }
 
-      // Use request browser, suite browser, or default to chromium
-      const browserToUse: BrowserType = requestBrowser || suite.browser || 'chromium';
-      // Use request branch or default to 'main'
-      const branchToUse: string = requestBranch || 'main';
-
-      const id = crypto.randomUUID();
-      const run: TestRun = {
-        id,
-        suite_id: suiteId,
-        organization_id: orgId,
-        browser: browserToUse,
-        branch: branchToUse,
-        status: 'pending',
-        created_at: new Date(),
-      };
-
-      setTestRun(id, run);
-
-      // Persist to database BEFORE enqueuing - the worker needs the run in DB
-      await dbCreateTestRun(run);
-
-      // Feature #61: Invalidate runs cache for this suite
-      const cache = getCache();
-      await cache.delete(CacheKeys.runs.bySuite(suiteId));
-
-      // Feature #155: Queue test execution with concurrency limits
-      // enqueueOrExecute will queue the job if queue is available, otherwise execute directly
-      const queueResult = await enqueueOrExecute(id, 'e2e', {
+      const result = await testExecutionService.createRun({
+        suiteId,
+        orgId,
+        browser: requestBrowser,
+        branch: requestBranch,
         triggeredBy: getUserId(request),
       });
 
-      // Feature #BMAD: Fail-fast — return 503 if queue is unavailable (run already marked as error in DB)
-      if (queueResult.error) {
-        run.status = 'error';
-        setTestRun(id, run);
-        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Runner offline / queue unavailable. Please try again later.');
-      }
-
-      // Update status to 'queued' if the run was queued (not executed directly)
-      if (queueResult.queued) {
-        run.status = 'pending'; // pending = waiting in queue
-        setTestRun(id, run);
-        logger.info(`[RunTrigger] Run ${id} queued at position ${queueResult.position || 'unknown'}`);
+      if (result.error) {
+        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', result.error);
       }
 
       return reply.status(201).send({
         run: {
-          id: run.id,
-          suite_id: run.suite_id,
-          organization_id: run.organization_id,
-          browser: run.browser,
-          branch: run.branch,
-          status: run.status,
-          created_at: run.created_at.toISOString(),
+          id: result.run.id,
+          suite_id: result.run.suite_id,
+          organization_id: result.run.organization_id,
+          browser: result.run.browser,
+          branch: result.run.branch,
+          status: result.run.status,
+          created_at: result.run.created_at.toISOString(),
         },
-        queued: queueResult.queued,
-        queuePosition: queueResult.position,
-        message: queueResult.queued
-          ? `Test run queued${queueResult.position ? ` at position ${queueResult.position}` : ''}`
+        queued: result.queued,
+        queuePosition: result.queuePosition,
+        message: result.queued
+          ? `Test run queued${result.queuePosition ? ` at position ${result.queuePosition}` : ''}`
           : 'Test run started successfully',
       });
     });
 
     // Trigger test run for a single test
     // Feature #732: Zod validation for test run trigger
+    // Feature #Agent8: Run creation delegated to TestExecutionService
     app.post<{ Params: TestIdParams; Body: RunBody }>('/api/v1/tests/:testId/runs', {
       preHandler: [authenticate, requireScopes(['execute'])],
       preValidation: [validateParams(testRunTriggerParamsSchema), validateBody(runTriggerBodySchema)],
@@ -169,82 +129,47 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
       const { browser: requestBrowser, branch: requestBranch } = request.body || {};
       const orgId = getOrganizationId(request);
 
-      // Verify test exists
+      // Verify test exists and belongs to this org
       const test = await getTest(testId);
       if (!test || test.organization_id !== orgId) {
         return sendError(reply, 404, 'NOT_FOUND', 'Test not found');
       }
 
-      // Get suite to determine default browser
-      const suite = await getTestSuite(test.suite_id);
-      const browserToUse: BrowserType = requestBrowser || suite?.browser || 'chromium';
-      // Use request branch or default to 'main'
-      const branchToUse: string = requestBranch || 'main';
-
-      const id = crypto.randomUUID();
-      const run: TestRun = {
-        id,
-        suite_id: test.suite_id,
-        test_id: testId,
-        organization_id: orgId,
-        browser: browserToUse,
-        branch: branchToUse,
-        status: 'pending',
-        created_at: new Date(),
-      };
-
-      setTestRun(id, run);
-
-      // Persist to database BEFORE enqueuing - the worker needs the run in DB
-      await dbCreateTestRun(run);
-
-      // Feature #61: Invalidate runs cache for this test and suite
-      const cache = getCache();
-      await cache.delete(CacheKeys.runs.byTest(testId));
-      await cache.delete(CacheKeys.runs.bySuite(test.suite_id));
-
-      // Feature #155: Queue test execution with concurrency limits
-      // Determine test type for queue prioritization
-      const testType: TestType = (test.test_type as TestType) || 'e2e';
-      const queueResult = await enqueueOrExecute(id, testType, {
+      const result = await testExecutionService.createRun({
+        suiteId: test.suite_id,
+        orgId,
+        browser: requestBrowser,
+        branch: requestBranch,
+        testId,
         triggeredBy: getUserId(request),
       });
 
-      // Feature #BMAD: Fail-fast — return 503 if queue is unavailable (run already marked as error in DB)
-      if (queueResult.error) {
-        run.status = 'error';
-        setTestRun(id, run);
-        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Runner offline / queue unavailable. Please try again later.');
-      }
-
-      // Update status if queued
-      if (queueResult.queued) {
-        run.status = 'pending';
-        setTestRun(id, run);
-        logger.info(`[RunTrigger] Run ${id} queued at position ${queueResult.position || 'unknown'}`);
+      if (result.error) {
+        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', result.error);
       }
 
       return reply.status(201).send({
         run: {
-          id: run.id,
-          suite_id: run.suite_id,
-          test_id: run.test_id,
-          organization_id: run.organization_id,
-          browser: run.browser,
-          branch: run.branch,
-          status: run.status,
-          created_at: run.created_at.toISOString(),
+          id: result.run.id,
+          suite_id: result.run.suite_id,
+          test_id: result.run.test_id,
+          organization_id: result.run.organization_id,
+          browser: result.run.browser,
+          branch: result.run.branch,
+          status: result.run.status,
+          created_at: result.run.created_at.toISOString(),
         },
-        queued: queueResult.queued,
-        queuePosition: queueResult.position,
-        message: queueResult.queued
-          ? `Test run queued${queueResult.position ? ` at position ${queueResult.position}` : ''}`
+        queued: result.queued,
+        queuePosition: result.queuePosition,
+        message: result.queued
+          ? `Test run queued${result.queuePosition ? ` at position ${result.queuePosition}` : ''}`
           : 'Test run started successfully',
       });
     });
 
     // Rerun specific tests (e.g. failed tests from a previous run)
     // Feature #732: Zod validation for rerun body
+    // Feature #Agent8: Run creation delegated to TestExecutionService
     app.post<{ Body: RerunBody }>('/api/v1/runs/rerun', {
       preHandler: [authenticate, requireScopes(['execute'])],
       preValidation: [validateBody(rerunBodySchema)],
@@ -269,68 +194,35 @@ export function createRunTriggerRoutes(_runTestsForRun: RunTestsForRunFn) {
         return sendError(reply, 400, 'BAD_REQUEST', 'None of the provided test_ids belong to the specified suite');
       }
 
-      const browserToUse: BrowserType = requestBrowser || suite.browser || 'chromium';
-      const branchToUse: string = requestBranch || 'main';
-
-      const id = crypto.randomUUID();
-      // Use base TestRun interface and store test_ids separately for rerun logic
-      const run: TestRun = {
-        id,
-        suite_id,
-        organization_id: orgId,
-        browser: browserToUse,
-        branch: branchToUse,
-        status: 'pending',
-        created_at: new Date(),
-      };
-      // Store test_ids in the run for rerun handling (using type assertion for extended property)
-      const rerunRun = run as RerunTestRun;
-      rerunRun.test_ids = validTestIds;
-
-      setTestRun(id, rerunRun);
-
-      // Persist to database (must await before enqueuing to avoid race condition)
-      await dbCreateTestRun(rerunRun);
-
-      // Feature #61: Invalidate runs cache for the suite and all rerun tests
-      const cache = getCache();
-      await cache.delete(CacheKeys.runs.bySuite(suite_id));
-      for (const tid of validTestIds) {
-        await cache.delete(CacheKeys.runs.byTest(tid));
-      }
-
-      // Feature #155: Queue test execution with concurrency limits
-      const queueResult = await enqueueOrExecute(id, 'e2e', {
+      const result = await testExecutionService.createRun({
+        suiteId: suite_id,
+        orgId,
+        browser: requestBrowser,
+        branch: requestBranch,
+        testIds: validTestIds,
         triggeredBy: getUserId(request),
       });
 
-      // Feature #BMAD: Fail-fast — return 503 if queue is unavailable (run already marked as error in DB)
-      if (queueResult.error) {
-        run.status = 'error';
-        setTestRun(id, run);
-        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Runner offline / queue unavailable. Please try again later.');
-      }
-
-      if (queueResult.queued) {
-        logger.info(`[RunTrigger] Rerun ${id} queued at position ${queueResult.position || 'unknown'}`);
+      if (result.error) {
+        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', result.error);
       }
 
       return reply.status(201).send({
-        run_id: id,
+        run_id: result.run.id,
         run: {
-          id,
+          id: result.run.id,
           suite_id,
           organization_id: orgId,
-          browser: browserToUse,
-          branch: branchToUse,
-          status: run.status,
-          created_at: run.created_at.toISOString(),
+          browser: result.run.browser,
+          branch: result.run.branch,
+          status: result.run.status,
+          created_at: result.run.created_at.toISOString(),
           test_ids: validTestIds,
         },
-        queued: queueResult.queued,
-        queuePosition: queueResult.position,
-        message: queueResult.queued
-          ? `Rerun queued for ${validTestIds.length} test(s)${queueResult.position ? ` at position ${queueResult.position}` : ''}`
+        queued: result.queued,
+        queuePosition: result.queuePosition,
+        message: result.queued
+          ? `Rerun queued for ${validTestIds.length} test(s)${result.queuePosition ? ` at position ${result.queuePosition}` : ''}`
           : `Rerun started for ${validTestIds.length} test(s)`,
       });
     });

@@ -10,16 +10,16 @@ import { getProject as dbGetProject } from '../projects/stores.js';
 import {
   WebhookSubscription,
   webhookSubscriptions,
-  applyPayloadTemplate,
   generateWebhookSignature,
   createWebhookSubscriptionInDb,
   updateWebhookSubscriptionInDb,
-  deleteWebhookSubscriptionFromDb,
   MAX_WEBHOOK_RETRIES
 } from './webhooks.js';
-import { validateWebhookURL, validateWebhookURLWithDNS, generateId } from '../../utils/index.js';
+import { validateWebhookURLWithDNS, generateId } from '../../utils/index.js';
 import { WebhookLogEntry, webhookLog } from './alerts.js';
 import { createLogger } from '../../services/logger.js';
+// Feature #Agent8: Use WebhookService for subscription management
+import { webhookService } from '../../services/webhook-service.js';
 import { sendError } from '../../utils/errors.js';
 // Feature #716: Zod validation middleware and schemas
 import {
@@ -119,32 +119,12 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
   // ============================================================================
 
   // List webhook subscriptions
+  // Feature #Agent8: Subscription listing delegated to WebhookService
   app.get('/api/v1/webhook-subscriptions', {
     preHandler: [authenticate],
-  }, async (request, reply) => {
+  }, async (request) => {
     const orgId = getOrganizationId(request);
-
-    const subscriptions = Array.from(webhookSubscriptions.values())
-      .filter(sub => sub.organization_id === orgId)
-      .map(sub => ({
-        id: sub.id,
-        name: sub.name,
-        url: sub.url,
-        events: sub.events,
-        project_id: sub.project_id,
-        project_ids: sub.project_ids, // Feature #1299: Multi-project filtering
-        result_statuses: sub.result_statuses, // Feature #1300: Filter by result status
-        batch_enabled: sub.batch_enabled ?? false, // Feature #1304: Batch delivery
-        batch_size: sub.batch_size ?? 10, // Feature #1304: Batch delivery
-        batch_interval_seconds: sub.batch_interval_seconds ?? 60, // Feature #1304: Batch delivery
-        enabled: sub.enabled,
-        created_at: sub.created_at.toISOString(),
-        updated_at: sub.updated_at.toISOString(),
-        last_triggered_at: sub.last_triggered_at?.toISOString(),
-        success_count: sub.success_count,
-        failure_count: sub.failure_count,
-      }));
-
+    const subscriptions = webhookService.listSubscriptions(orgId);
     return {
       subscriptions,
       total: subscriptions.length,
@@ -671,6 +651,7 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
   });
 
   // Delete webhook subscription
+  // Feature #Agent8: Deletion delegated to WebhookService
   app.delete<{ Params: { subscriptionId: string } }>('/api/v1/webhook-subscriptions/:subscriptionId', {
     preHandler: [authenticate],
     preValidation: [validateParams(webhookSubscriptionIdParamsSchema)],
@@ -679,13 +660,12 @@ export async function webhookCrudRoutes(app: FastifyInstance) {
     const user = request.user as JwtPayload;
     const { subscriptionId } = request.params;
 
-    const subscription = webhookSubscriptions.get(subscriptionId);
-    if (!subscription || subscription.organization_id !== orgId) {
+    const subscription = webhookService.getSubscription(subscriptionId, orgId);
+    if (!subscription) {
       return sendError(reply, 404, 'NOT_FOUND', 'Webhook subscription not found');
     }
 
-    // Feature #329: Delete subscription from both memory and database
-    await deleteWebhookSubscriptionFromDb(subscriptionId);
+    await webhookService.deleteSubscription(subscriptionId);
 
     logger.info(`[WEBHOOK] Deleted subscription "${subscription.name}" (${subscriptionId}) by ${user.email}`);
 

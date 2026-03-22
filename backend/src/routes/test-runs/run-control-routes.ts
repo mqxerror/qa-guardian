@@ -6,9 +6,9 @@
 
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId } from '../../middleware/auth.js';
-import { testRuns, runningBrowsers, TestRun, setTestRun } from './execution.js';
-import { getTestRun as dbGetTestRun, updateTestRun as dbUpdateTestRun } from '../../services/repositories/test-runs.js';
-// listTestRunsByOrg available from test-runs repository if needed
+import { testRuns, setTestRun } from './execution.js';
+// Feature #Agent8: Use TestExecutionService for cancel, pause, resume, queue status
+import { testExecutionService } from '../../services/test-execution-service.js';
 import { createLogger } from '../../services/logger.js';
 
 import { sendError } from '../../utils/errors.js';
@@ -21,14 +21,6 @@ import {
   prioritizeRunBodySchema,
 } from '../../validation/index.js';
 const logger = createLogger('route:test-runs:run-control');
-
-// Helper: get test run from DB first (worker may have updated it), fall back to Map
-// Feature #169: DB-first lookup to support separate worker container architecture
-async function getTestRunWithFallback(runId: string): Promise<TestRun | undefined> {
-  const fromDb = await dbGetTestRun(runId) as TestRun | undefined;
-  if (fromDb) return fromDb;
-  return testRuns.get(runId);
-}
 
 // Type definitions
 interface TestRunParams {
@@ -53,14 +45,12 @@ interface QueueStatusQuery {
 // Helper function for emitting events (will be passed from parent)
 type EmitRunEventFn = (runId: string, orgId: string, event: string, data: Record<string, unknown>) => void;
 
-// Store reference to emitRunEvent function
-let emitRunEvent: EmitRunEventFn = () => {};
-
 /**
  * Set the emitRunEvent function (called from test-runs.ts)
+ * Feature #Agent8: Delegates to TestExecutionService emitter
  */
 export function setRunControlEmitter(emitter: EmitRunEventFn) {
-  emitRunEvent = emitter;
+  testExecutionService.setEmitter(emitter);
 }
 
 /**
@@ -70,6 +60,7 @@ export async function runControlRoutes(app: FastifyInstance) {
   // Cancel a running test (enhanced with options)
   // Feature #885: Enhanced cancel-run with force option and partial results control
   // Feature #732: Zod validation for cancel run
+  // Feature #Agent8: Cancellation logic delegated to TestExecutionService
   app.post<{ Params: TestRunParams; Body: CancelRunBody }>('/api/v1/runs/:runId/cancel', {
     preHandler: [authenticate],
     preValidation: [validateParams(runIdParamSchema), validateBody(cancelRunBodySchema)],
@@ -77,133 +68,33 @@ export async function runControlRoutes(app: FastifyInstance) {
     const { runId } = request.params;
     const orgId = getOrganizationId(request);
     const { force = false, save_partial_results = true, reason } = request.body || {};
-    const cancelStartTime = Date.now();
 
+    // Validate run exists and is in a cancellable state
     const run = testRuns.get(runId);
     if (!run || run.organization_id !== orgId) {
       return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
-    // Can only cancel running or cancelling tests
     if (run.status !== 'running' && run.status !== 'cancelling') {
       return sendError(reply, 400, 'BAD_REQUEST', `Cannot cancel test run with status "${run.status}". Only running or cancelling tests can be cancelled.`, { current_status: run.status });
     }
 
-    // If force mode and already cancelling, force to cancelled immediately
-    if (run.status === 'cancelling' && force) {
-      logger.info(`[CANCEL] Force cancelling already-cancelling run ${runId}`);
-    } else if (run.status === 'cancelling') {
-      // Already cancelling, return current state
-      return {
-        run: {
-          id: run.id,
-          status: run.status,
-          message: 'Run is already being cancelled',
-        },
-        already_cancelling: true,
-      };
-    }
-
-    // First transition to 'cancelling' status (if not already)
-    if (run.status !== 'cancelling') {
-      run.status = 'cancelling';
-      setTestRun(runId, run);
-      logger.info(`[CANCEL] Test run ${runId} status changed to 'cancelling' (force=${force}, reason=${reason || 'none'})`);
-    }
-
-    // Emit cancelling event
-    emitRunEvent(runId, orgId, 'run-cancelling', {
-      run_id: runId,
-      status: 'cancelling',
-      message: reason || 'Test run is being cancelled',
+    const result = await testExecutionService.cancelRun(runId, orgId, {
       force,
+      savePartialResults: save_partial_results,
+      reason,
     });
 
-    // Mark for cancellation in the running state
-    const runState = runningBrowsers.get(runId);
-    if (runState) {
-      runState.cancelled = true;
-      logger.info(`[CANCEL] Test run ${runId} marked for cancellation`);
-
-      // Close browser to force stop execution
-      try {
-        await runState.browser.close();
-      } catch {
-        // Browser may already be closed
-      }
+    if (!result) {
+      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
     }
 
-    // Wait a short time for the test loop to notice the cancellation and update status
-    // Skip waiting if force mode is enabled
-    if (!force) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    // If the test loop hasn't finalized yet, finalize it here
-    const updatedRun = testRuns.get(runId);
-    if (updatedRun && (updatedRun.status === 'cancelling' || force)) {
-      updatedRun.status = 'cancelled';
-      updatedRun.completed_at = new Date();
-      updatedRun.duration_ms = updatedRun.completed_at.getTime() - (updatedRun.started_at?.getTime() || updatedRun.created_at.getTime());
-
-      // Feature #885: Optionally clear partial results if save_partial_results is false
-      const partialResultsCount = updatedRun.results?.length || 0;
-      if (!save_partial_results && updatedRun.results) {
-        logger.info(`[CANCEL] Clearing ${partialResultsCount} partial results for run ${runId}`);
-        updatedRun.results = [];
-      }
-
-      setTestRun(runId, updatedRun);
-
-      // Persist cancelled status to database
-      dbUpdateTestRun(runId, {
-        status: 'cancelled',
-        completed_at: updatedRun.completed_at,
-        duration_ms: updatedRun.duration_ms,
-        results: updatedRun.results,
-      }).catch(err =>
-        logger.error('[Cancel] Failed to persist cancelled run to database:', err)
-      );
-
-      logger.info(`[CANCEL] Test run ${runId} status changed to 'cancelled' (saved ${save_partial_results ? partialResultsCount : 0} partial results)`);
-
-      // Emit cancellation complete event
-      emitRunEvent(runId, orgId, 'run-complete', {
-        status: 'cancelled',
-        duration_ms: updatedRun.duration_ms,
-        completed_at: updatedRun.completed_at.toISOString(),
-        message: reason || 'Test run cancelled by user',
-        partial_results: save_partial_results ? partialResultsCount : 0,
-        force,
-        reason,
-      });
-    }
-
-    // Return the final state
-    const finalRun = testRuns.get(runId)!;
-    const cancelDuration = Date.now() - cancelStartTime;
-
-    return {
-      run: {
-        id: finalRun.id,
-        status: finalRun.status,
-        completed_at: finalRun.completed_at?.toISOString(),
-        duration_ms: finalRun.duration_ms,
-        partial_results_count: finalRun.results?.length || 0,
-        partial_results_saved: save_partial_results,
-      },
-      message: 'Test run cancelled successfully',
-      cancel_options: {
-        force,
-        save_partial_results,
-        reason: reason || null,
-      },
-      cancel_duration_ms: cancelDuration,
-    };
+    return result;
   });
 
   // Feature #886: Pause a running test
   // Feature #732: Zod validation for pause run params
+  // Feature #Agent8: Pause logic delegated to TestExecutionService
   app.post<{ Params: TestRunParams }>('/api/v1/runs/:runId/pause', {
     preHandler: [authenticate],
     preValidation: [validateParams(runIdParamSchema)],
@@ -211,39 +102,19 @@ export async function runControlRoutes(app: FastifyInstance) {
     const { runId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
-    if (!run || run.organization_id !== orgId) {
-      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
+    const result = testExecutionService.pauseRun(runId, orgId);
+    if (!result.success) {
+      // Distinguish between "not found" and "wrong status"
+      if (result.error === 'Test run not found') {
+        return sendError(reply, 404, 'NOT_FOUND', result.error);
+      }
+      return sendError(reply, 400, 'BAD_REQUEST', result.error!, { current_status: testRuns.get(runId)?.status });
     }
-
-    // Can only pause running tests
-    if (run.status !== 'running') {
-      return sendError(reply, 400, 'BAD_REQUEST', `Cannot pause test run with status "${run.status}". Only running tests can be paused.`, { current_status: run.status });
-    }
-
-    // Mark the run as paused
-    run.status = 'paused';
-    setTestRun(runId, run);
-    logger.info(`[PAUSE] Test run ${runId} paused`);
-
-    // Mark the browser state as paused
-    const runState = runningBrowsers.get(runId);
-    if (runState) {
-      runState.paused = true;
-    }
-
-    // Emit pause event
-    emitRunEvent(runId, orgId, 'run-paused', {
-      run_id: runId,
-      status: 'paused',
-      message: 'Test run has been paused',
-      paused_at: new Date().toISOString(),
-    });
 
     return {
       run: {
-        id: run.id,
-        status: run.status,
+        id: runId,
+        status: 'paused',
         paused_at: new Date().toISOString(),
       },
       message: 'Test run paused successfully',
@@ -253,6 +124,7 @@ export async function runControlRoutes(app: FastifyInstance) {
 
   // Feature #886: Resume a paused test
   // Feature #732: Zod validation for resume run params
+  // Feature #Agent8: Resume logic delegated to TestExecutionService
   app.post<{ Params: TestRunParams }>('/api/v1/runs/:runId/resume', {
     preHandler: [authenticate],
     preValidation: [validateParams(runIdParamSchema)],
@@ -260,39 +132,18 @@ export async function runControlRoutes(app: FastifyInstance) {
     const { runId } = request.params;
     const orgId = getOrganizationId(request);
 
-    const run = testRuns.get(runId);
-    if (!run || run.organization_id !== orgId) {
-      return sendError(reply, 404, 'NOT_FOUND', 'Test run not found');
+    const result = testExecutionService.resumeRun(runId, orgId);
+    if (!result.success) {
+      if (result.error === 'Test run not found') {
+        return sendError(reply, 404, 'NOT_FOUND', result.error);
+      }
+      return sendError(reply, 400, 'BAD_REQUEST', result.error!, { current_status: testRuns.get(runId)?.status });
     }
-
-    // Can only resume paused tests
-    if (run.status !== 'paused') {
-      return sendError(reply, 400, 'BAD_REQUEST', `Cannot resume test run with status "${run.status}". Only paused tests can be resumed.`, { current_status: run.status });
-    }
-
-    // Mark the run as running again
-    run.status = 'running';
-    setTestRun(runId, run);
-    logger.info(`[RESUME] Test run ${runId} resumed`);
-
-    // Mark the browser state as not paused
-    const runState = runningBrowsers.get(runId);
-    if (runState) {
-      runState.paused = false;
-    }
-
-    // Emit resume event
-    emitRunEvent(runId, orgId, 'run-resumed', {
-      run_id: runId,
-      status: 'running',
-      message: 'Test run has been resumed',
-      resumed_at: new Date().toISOString(),
-    });
 
     return {
       run: {
-        id: run.id,
-        status: run.status,
+        id: runId,
+        status: 'running',
         resumed_at: new Date().toISOString(),
       },
       message: 'Test run resumed successfully',
@@ -300,97 +151,17 @@ export async function runControlRoutes(app: FastifyInstance) {
   });
 
   // Get queue status
+  // Feature #Agent8: Queue status computation delegated to TestExecutionService
   app.get<{ Querystring: QueueStatusQuery }>('/api/v1/runs/queue-status', {
     preHandler: [authenticate],
-  }, async (request, reply) => {
+  }, async (request) => {
     const { include_completed = 'false', limit = 100 } = request.query;
     const orgId = getOrganizationId(request);
-    const includeCompleted = include_completed === 'true';
 
-    // Get all runs for this organization
-    const orgRuns = Array.from(testRuns.values())
-      .filter(r => r.organization_id === orgId);
-
-    // Get pending runs (sorted by priority then created_at)
-    const pendingRuns = orgRuns
-      .filter(r => r.status === 'pending')
-      .sort((a, b) => {
-        const priorityA = a.priority ?? 100;
-        const priorityB = b.priority ?? 100;
-        if (priorityA !== priorityB) return priorityA - priorityB;
-        return a.created_at.getTime() - b.created_at.getTime();
-      })
-      .slice(0, limit)
-      .map((r, idx) => ({
-        id: r.id,
-        suite_id: r.suite_id,
-        test_id: r.test_id,
-        status: r.status,
-        priority: r.priority ?? 100,
-        queue_position: idx + 1,
-        created_at: r.created_at.toISOString(),
-      }));
-
-    // Get running runs
-    const runningRuns = orgRuns
-      .filter(r => r.status === 'running')
-      .map(r => ({
-        id: r.id,
-        suite_id: r.suite_id,
-        test_id: r.test_id,
-        status: r.status,
-        started_at: r.started_at?.toISOString(),
-        results_count: r.results?.length || 0,
-      }));
-
-    // Get paused runs
-    const pausedRuns = orgRuns
-      .filter(r => r.status === 'paused')
-      .map(r => ({
-        id: r.id,
-        suite_id: r.suite_id,
-        test_id: r.test_id,
-        status: r.status,
-        started_at: r.started_at?.toISOString(),
-      }));
-
-    // Optionally include completed runs
-    let completedRuns: Array<{ id: string; suite_id: string; status: string; started_at?: string; completed_at?: string }> = [];
-    if (includeCompleted) {
-      completedRuns = orgRuns
-        .filter(r => ['passed', 'failed', 'cancelled'].includes(r.status))
-        .sort((a, b) => (b.completed_at?.getTime() || 0) - (a.completed_at?.getTime() || 0))
-        .slice(0, limit)
-        .map(r => ({
-          id: r.id,
-          suite_id: r.suite_id,
-          test_id: r.test_id,
-          status: r.status,
-          completed_at: r.completed_at?.toISOString(),
-          duration_ms: r.duration_ms,
-        }));
-    }
-
-    return {
-      queue: {
-        pending: pendingRuns,
-        pending_count: pendingRuns.length,
-        running: runningRuns,
-        running_count: runningRuns.length,
-        paused: pausedRuns,
-        paused_count: pausedRuns.length,
-        ...(includeCompleted && {
-          completed: completedRuns,
-          completed_count: completedRuns.length,
-        }),
-      },
-      summary: {
-        total_pending: orgRuns.filter(r => r.status === 'pending').length,
-        total_running: orgRuns.filter(r => r.status === 'running').length,
-        total_paused: orgRuns.filter(r => r.status === 'paused').length,
-        total_completed: orgRuns.filter(r => ['passed', 'failed', 'cancelled'].includes(r.status)).length,
-      },
-    };
+    return testExecutionService.getQueueStatus(orgId, {
+      includeCompleted: include_completed === 'true',
+      limit,
+    });
   });
 
   // Prioritize a pending run

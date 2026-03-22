@@ -6,11 +6,12 @@
  */
 import { FastifyInstance } from 'fastify';
 import { authenticate, getOrganizationId, JwtPayload } from '../../middleware/auth.js';
-import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate, generateWebhookSignature, WEBHOOK_SIGNATURE_TOLERANCE_SECONDS, getWebhookDeliveryLogsFromDb, MAX_WEBHOOK_RETRIES } from './webhooks.js';
-import { validateWebhookURL, validateWebhookURLWithDNS, generateId } from '../../utils/index.js';
+import { WebhookSubscription, webhookSubscriptions, applyPayloadTemplate, WEBHOOK_SIGNATURE_TOLERANCE_SECONDS, getWebhookDeliveryLogsFromDb } from './webhooks.js';
 import { webhookLog } from './alerts.js';
-import { logWebhookDelivery, flattenObject } from './webhook-crud.js';
+import { flattenObject } from './webhook-crud.js';
 import * as webhookRepo from '../../services/repositories/webhooks.js';
+// Feature #Agent8: Use WebhookService for status computation and test delivery
+import { webhookService } from '../../services/webhook-service.js';
 // Feature #484: Pino structured logging
 import { createLogger } from '../../services/logger.js';
 
@@ -145,6 +146,7 @@ export async function webhookDeliveryRoutes(app: FastifyInstance) {
   });
 
   // Feature #1296: Get delivery status for a webhook subscription
+  // Feature #Agent8: Status computation delegated to WebhookService
   app.get<{
     Params: { subscriptionId: string };
   }>('/api/v1/webhook-subscriptions/:subscriptionId/status', {
@@ -153,153 +155,25 @@ export async function webhookDeliveryRoutes(app: FastifyInstance) {
     const orgId = getOrganizationId(request);
     const { subscriptionId } = request.params;
 
-    const subscription = webhookSubscriptions.get(subscriptionId);
-    if (!subscription || subscription.organization_id !== orgId) {
+    const result = webhookService.getSubscriptionStatus(subscriptionId, orgId);
+    if (!result) {
       return sendError(reply, 404, 'NOT_FOUND', 'Webhook subscription not found');
     }
 
-    // Get recent delivery logs for this subscription
-    const recentLogs = webhookLog
-      .filter(log => log.subscriptionId === subscriptionId)
-      .slice(0, 10);
-
-    // Calculate delivery statistics
-    const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const logsLast24h = webhookLog.filter(
-      log => log.subscriptionId === subscriptionId && log.timestamp >= last24Hours
-    );
-    const successesLast24h = logsLast24h.filter(log => log.success).length;
-    const failuresLast24h = logsLast24h.filter(log => !log.success).length;
-
-    // Determine current status
-    let status: 'healthy' | 'degraded' | 'failing' | 'unknown' = 'unknown';
-    if (recentLogs.length > 0) {
-      const recentSuccessRate = recentLogs.filter(l => l.success).length / recentLogs.length;
-      if (recentSuccessRate >= 0.9) {
-        status = 'healthy';
-      } else if (recentSuccessRate >= 0.5) {
-        status = 'degraded';
-      } else {
-        status = 'failing';
-      }
-    }
-
-    // Get last successful and failed deliveries
-    const lastSuccess = recentLogs.find(log => log.success);
-    const lastFailure = recentLogs.find(log => !log.success);
-
-    // Calculate average response time
-    const successfulLogs = recentLogs.filter(log => log.success && log.duration_ms !== undefined);
-    const avgResponseTime = successfulLogs.length > 0
-      ? Math.round(successfulLogs.reduce((sum, log) => sum + (log.duration_ms ?? 0), 0) / successfulLogs.length)
-      : undefined;
-
-    return {
-      subscription: {
-        id: subscription.id,
-        name: subscription.name,
-        url: subscription.url,
-        enabled: subscription.enabled,
-      },
-      status,
-      delivery_stats: {
-        total_success: subscription.success_count,
-        total_failure: subscription.failure_count,
-        success_rate: subscription.success_count + subscription.failure_count > 0
-          ? Math.round((subscription.success_count / (subscription.success_count + subscription.failure_count)) * 100)
-          : null,
-        last_24h: {
-          successes: successesLast24h,
-          failures: failuresLast24h,
-          total: logsLast24h.length,
-        },
-      },
-      timing: {
-        last_triggered_at: subscription.last_triggered_at?.toISOString(),
-        last_success_at: lastSuccess?.timestamp.toISOString(),
-        last_failure_at: lastFailure?.timestamp.toISOString(),
-        avg_response_time_ms: avgResponseTime,
-      },
-      retry_config: {
-        enabled: subscription.retry_enabled ?? true,
-        max_retries: subscription.max_retries ?? MAX_WEBHOOK_RETRIES,
-      },
-      recent_deliveries: recentLogs.map(log => ({
-        id: log.id,
-        timestamp: log.timestamp.toISOString(),
-        event: log.event,
-        status: log.success ? 'delivered' : 'failed',
-        response_status: log.responseStatus,
-        duration_ms: log.duration_ms,
-        attempt: log.attempt,
-        max_attempts: log.max_attempts,
-        error: log.error,
-      })),
-    };
+    return result;
   });
 
   // Feature #1296: Get delivery status summary for all subscriptions
+  // Feature #Agent8: Status computation delegated to WebhookService
   app.get('/api/v1/webhook-subscriptions/status/summary', {
     preHandler: [authenticate],
-  }, async (request, reply) => {
+  }, async (request) => {
     const orgId = getOrganizationId(request);
-
-    // Get all subscriptions for this organization
-    const orgSubscriptions = Array.from(webhookSubscriptions.values())
-      .filter(sub => sub.organization_id === orgId);
-
-    // Calculate status for each subscription
-    const subscriptionStatuses = orgSubscriptions.map(sub => {
-      const recentLogs = webhookLog
-        .filter(log => log.subscriptionId === sub.id)
-        .slice(0, 5);
-
-      let status: 'healthy' | 'degraded' | 'failing' | 'unknown' = 'unknown';
-      if (recentLogs.length > 0) {
-        const recentSuccessRate = recentLogs.filter(l => l.success).length / recentLogs.length;
-        if (recentSuccessRate >= 0.9) {
-          status = 'healthy';
-        } else if (recentSuccessRate >= 0.5) {
-          status = 'degraded';
-        } else {
-          status = 'failing';
-        }
-      }
-
-      return {
-        id: sub.id,
-        name: sub.name,
-        enabled: sub.enabled,
-        status,
-        success_count: sub.success_count,
-        failure_count: sub.failure_count,
-        last_triggered_at: sub.last_triggered_at?.toISOString(),
-      };
-    });
-
-    // Overall summary
-    const enabledCount = subscriptionStatuses.filter(s => s.enabled).length;
-    const healthyCount = subscriptionStatuses.filter(s => s.status === 'healthy').length;
-    const degradedCount = subscriptionStatuses.filter(s => s.status === 'degraded').length;
-    const failingCount = subscriptionStatuses.filter(s => s.status === 'failing').length;
-
-    return {
-      summary: {
-        total: subscriptionStatuses.length,
-        enabled: enabledCount,
-        disabled: subscriptionStatuses.length - enabledCount,
-        by_status: {
-          healthy: healthyCount,
-          degraded: degradedCount,
-          failing: failingCount,
-          unknown: subscriptionStatuses.length - healthyCount - degradedCount - failingCount,
-        },
-      },
-      subscriptions: subscriptionStatuses,
-    };
+    return webhookService.getStatusSummary(orgId);
   });
 
   // Test webhook subscription (sends a test event)
+  // Feature #Agent8: Test delivery delegated to WebhookService
   app.post<{ Params: { subscriptionId: string } }>('/api/v1/webhook-subscriptions/:subscriptionId/test', {
     preHandler: [authenticate],
   }, async (request, reply) => {
@@ -312,143 +186,30 @@ export async function webhookDeliveryRoutes(app: FastifyInstance) {
       return sendError(reply, 404, 'NOT_FOUND', 'Webhook subscription not found');
     }
 
-    // Feature #315 + #400: SSRF protection with DNS resolution check
-    // This prevents DNS rebinding attacks where a hostname resolves to a private IP
-    const ssrfValidation = await validateWebhookURLWithDNS(subscription.url);
-    if (!ssrfValidation.safe) {
-      return sendError(reply, 400, 'BAD_REQUEST', `Webhook URL rejected: ${ssrfValidation.error}`, { ssrf_blocked: true });
-    }
-
-    // Build test payload
-    const testPayload = {
-      event: 'test',
-      timestamp: new Date().toISOString(),
-      message: 'This is a test webhook delivery',
-      subscription: {
-        id: subscription.id,
-        name: subscription.name,
-        events: subscription.events,
-      },
-      triggered_by: user.email,
-    };
-
     log.info({ subscriptionId, subscriptionName: subscription.name, code: 'WEBHOOK_TEST' }, 'Testing webhook subscription');
 
-    const startTime = Date.now();
-    const deliveryId = generateId('test', 7); // Feature #357: Use shared ID generator
+    const result = await webhookService.testWebhookDelivery(subscription, user.email);
 
-    const requestHeaders: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'X-Webhook-Event': 'test',
-      'X-Webhook-Delivery-Id': deliveryId,
-      ...subscription.headers,
+    // Map service result to the original API contract
+    if (!result.reachable && result.error) {
+      // SSRF block or network error
+      if (result.error.includes('rejected') || result.error.includes('SSRF')) {
+        return sendError(reply, 400, 'BAD_REQUEST', `Webhook URL rejected: ${result.error}`, { ssrf_blocked: true });
+      }
+      return {
+        success: false,
+        error: result.error,
+        delivery_id: result.delivery_id,
+      };
+    }
+
+    return {
+      success: result.success,
+      status_code: result.response?.status,
+      message: result.message,
+      error: result.error,
+      delivery_id: result.delivery_id,
     };
-
-    // Add HMAC signature if secret is configured
-    // Feature #314: Stripe-style signing with timestamp for replay protection
-    if (subscription.secret) {
-      const { signature } = generateWebhookSignature(JSON.stringify(testPayload), subscription.secret);
-      requestHeaders['X-Webhook-Signature'] = signature;
-    }
-
-    try {
-      const response = await fetch(subscription.url, {
-        method: 'POST',
-        headers: requestHeaders,
-        body: JSON.stringify(testPayload),
-      });
-
-      const responseStatus = response.status;
-      let responseBody: string | undefined;
-      const responseHeaders: Record<string, string> = {};
-
-      // Capture response headers
-      response.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
-      });
-
-      // Capture response body
-      try {
-        const body = await response.text();
-        responseBody = body.substring(0, 1000);
-      } catch {
-        responseBody = undefined;
-      }
-
-      // Feature #1295: Log the test delivery
-      logWebhookDelivery({
-        deliveryId,
-        subscription,
-        eventType: 'test',
-        payload: testPayload,
-        headers: requestHeaders,
-        attempt: 1,
-        maxAttempts: 1,
-        startTime,
-        success: response.ok,
-        responseStatus,
-        responseBody,
-        responseHeaders,
-        error: response.ok ? undefined : `HTTP ${response.status}: ${response.statusText}`,
-        context: { runId: 'test', projectId: subscription.project_id || 'org-wide' },
-      });
-
-      // Feature #1296: Update subscription stats
-      subscription.last_triggered_at = new Date();
-      if (response.ok) {
-        subscription.success_count++;
-      } else {
-        subscription.failure_count++;
-      }
-      subscription.updated_at = new Date();
-      webhookSubscriptions.set(subscriptionId, subscription);
-
-      if (!response.ok) {
-        return {
-          success: false,
-          status_code: responseStatus,
-          message: `Webhook returned HTTP ${responseStatus}`,
-          error: `HTTP ${response.status}: ${response.statusText}`,
-          delivery_id: deliveryId,
-        };
-      }
-
-      return {
-        success: true,
-        status_code: response.status,
-        message: 'Test webhook delivered successfully',
-        delivery_id: deliveryId,
-      };
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
-
-      // Feature #1295: Log the failed delivery
-      logWebhookDelivery({
-        deliveryId,
-        subscription,
-        eventType: 'test',
-        payload: testPayload,
-        headers: requestHeaders,
-        attempt: 1,
-        maxAttempts: 1,
-        startTime,
-        success: false,
-        error: errorMsg,
-        context: { runId: 'test', projectId: subscription.project_id || 'org-wide' },
-      });
-
-      // Feature #1296: Update subscription stats on error
-      subscription.last_triggered_at = new Date();
-      subscription.failure_count++;
-      subscription.updated_at = new Date();
-      webhookSubscriptions.set(subscriptionId, subscription);
-
-      return {
-        success: false,
-        error: errorMsg,
-        delivery_id: deliveryId,
-      };
-    }
   });
 
   // Feature #1291: Preview webhook payload with template interpolation
