@@ -13,6 +13,7 @@ import { toast } from '../../stores/toastStore';
 import { getErrorMessage } from '../../utils/errorHandling';
 import { createLogger } from '../../utils/logger';
 import type { TestType } from './types';
+import type { AIHealthReport } from './useAIHealthState';
 import type { UseAIHealthStateReturn } from './useAIHealthState';
 import type { UseReviewStateReturn } from './useReviewState';
 import type { UseSelectorEditStateReturn } from './useSelectorEditState';
@@ -136,7 +137,7 @@ export function useSuiteHandlers(params: UseSuiteHandlersParams) {
     aiHealth.startLoading();
     try {
       const data = await aiHealthCheckMutation.mutateAsync({ suiteId });
-      aiHealth.setReport(data.report);
+      aiHealth.setReport(data.report as AIHealthReport);
     } catch (err) {
       logger.error('AI health check failed:', err);
       toast.error('AI health check failed');

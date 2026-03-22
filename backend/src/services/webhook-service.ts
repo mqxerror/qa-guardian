@@ -351,14 +351,14 @@ export class WebhookService {
         max_retries: subscription.max_retries ?? MAX_WEBHOOK_RETRIES,
       },
       recent_deliveries: recentLogs.map(log => ({
-        id: log.id,
+        id: log.id ?? '',
         timestamp: log.timestamp.toISOString(),
-        event: log.event,
+        event: log.event ?? '',
         status: log.success ? 'delivered' : 'failed',
         response_status: log.responseStatus,
         duration_ms: log.duration_ms,
-        attempt: log.attempt,
-        max_attempts: log.max_attempts,
+        attempt: log.attempt ?? 1,
+        max_attempts: log.max_attempts ?? MAX_WEBHOOK_RETRIES,
         error: log.error,
       })),
     };
