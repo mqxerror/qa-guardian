@@ -3,14 +3,39 @@
  * Replaces HTTP polling with real-time WebSocket updates for suite runs.
  * Uses shared useSocketStore (NOT a separate Socket.IO connection).
  *
- * Events handled:
- * - run-start: Suite run started
- * - run-progress: Overall progress update
- * - test-start: Individual test started
- * - step-start: Step started within a test
- * - step-complete: Step completed
- * - step:screenshot: Live screenshot from step execution
- * - run-complete: Suite run finished
+ * === Socket.IO Event Contract ===
+ *
+ * Events emitted by the client (via socketStore):
+ *   join-run(runId: string)   - Subscribe to a run room for real-time events
+ *   leave-run(runId: string)  - Unsubscribe from a run room
+ *
+ * Events received from the server:
+ *   run-start        { runId, status }
+ *     Fired when the suite run begins execution. Updates run status to 'running'.
+ *
+ *   run-progress     { runId, totalTests, completedTests, currentTest? }
+ *     Periodic progress update. This is the SOLE source of truth for completedTests
+ *     and totalTests counters — do NOT increment counters from other events.
+ *
+ *   test-start       { runId, testId, testName }
+ *     Fired when an individual test begins. Updates per-test status to 'running'.
+ *
+ *   test-complete    { runId, testId, status: 'passed'|'failed'|'error'|'skipped' }
+ *     Fired when an individual test finishes. Updates per-test result data ONLY
+ *     (does not touch the completedTests counter — that comes from run-progress).
+ *
+ *   step-start       { runId, testId?, stepIndex, action, totalSteps? }
+ *     Fired when a step within a test begins execution.
+ *
+ *   step-complete    { runId, testId?, stepIndex, totalSteps, status }
+ *     Fired when a step within a test finishes.
+ *
+ *   step:screenshot  { runId, testId, testName, stepIndex, stepAction, stepSelector?, base64, timestamp }
+ *     Fired when a live screenshot is captured during step execution.
+ *
+ *   run-complete     { runId, status, duration_ms, results?: SuiteRunResult[] }
+ *     Fired when the entire suite run finishes (pass, fail, or error).
+ *     Contains final results for all tests.
  */
 
 import { useEffect, useCallback, useRef, useState } from 'react';
@@ -421,6 +446,8 @@ export function useSuiteRunSocket({
   }, [runId, onScreenshot, onScreenshotHistory]);
 
   // Handle test-complete event (not all backends emit this, but handle if present)
+  // NOTE: This handler updates per-test result data only. The completedTests counter
+  // is managed exclusively by the run-progress event to avoid double-counting drift.
   const handleTestComplete = useCallback((data: {
     runId: string;
     testId: string;
@@ -431,7 +458,6 @@ export function useSuiteRunSocket({
     logger.websocket.debug('useSuiteRunSocket: test-complete', data);
 
     perTestStatusRef.current.set(data.testId, data.status);
-    completedTestsRef.current += 1;
     triggerRender();
   }, [runId, triggerRender]);
 

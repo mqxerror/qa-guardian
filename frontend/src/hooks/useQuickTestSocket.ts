@@ -68,6 +68,15 @@ export function useQuickTestSocket() {
   // Track the current run ID
   const currentRunIdRef = useRef<string | null>(null);
 
+  // Track whether we've already joined the room to avoid redundant re-fetches
+  // on brief disconnect/reconnect cycles
+  const hasJoinedRef = useRef(false);
+
+  // Track when the socket last disconnected, so we can distinguish brief blips
+  // from extended outages that require a state catch-up fetch
+  const disconnectedAtRef = useRef<number | null>(null);
+  const EXTENDED_DISCONNECT_THRESHOLD_MS = 30_000;
+
   // State - Feature #612: Use centralized getInitialWaveStates()
   const [state, setState] = useState<QuickTestState>({
     runId: null,
@@ -91,6 +100,8 @@ export function useQuickTestSocket() {
       completedAt: null,
     });
     currentRunIdRef.current = null;
+    hasJoinedRef.current = false;
+    disconnectedAtRef.current = null;
   }, []);
 
   // Join quick-test room
@@ -228,26 +239,50 @@ export function useQuickTestSocket() {
     }
   }, [token]);
 
-  // Handle reconnection
+  // Track disconnection timestamp for extended-disconnect detection
+  useEffect(() => {
+    if (!isConnected) {
+      // Record when we disconnected (only if not already recorded)
+      if (disconnectedAtRef.current === null) {
+        disconnectedAtRef.current = Date.now();
+      }
+    }
+  }, [isConnected]);
+
+  // Handle reconnection: re-join room and optionally catch up on missed events
   useEffect(() => {
     if (!isConnected || !currentRunIdRef.current) return;
 
-    // Re-join room on reconnect
     const runId = currentRunIdRef.current;
+
+    // Always re-join the room on reconnect (server may have dropped the subscription)
     socket?.emit('join-quick-test', runId);
 
-    // Fetch current state to catch up on missed events
-    fetchState(runId).then(data => {
-      if (data) {
-        setState(prev => ({
-          ...prev,
-          status: data.status,
-          waves: data.waves || prev.waves,
-          summary: data.summary || prev.summary,
-          completedAt: data.completedAt ? new Date(data.completedAt) : prev.completedAt,
-        }));
-      }
-    });
+    // Only fetch state for catch-up if this is the initial join or after an
+    // extended disconnection (>30s). Brief reconnects don't need a full re-fetch
+    // because the socket events will fill in any small gaps.
+    const wasExtendedDisconnect =
+      disconnectedAtRef.current !== null &&
+      (Date.now() - disconnectedAtRef.current) > EXTENDED_DISCONNECT_THRESHOLD_MS;
+
+    if (!hasJoinedRef.current || wasExtendedDisconnect) {
+      hasJoinedRef.current = true;
+
+      fetchState(runId).then(data => {
+        if (data) {
+          setState(prev => ({
+            ...prev,
+            status: data.status,
+            waves: data.waves || prev.waves,
+            summary: data.summary || prev.summary,
+            completedAt: data.completedAt ? new Date(data.completedAt) : prev.completedAt,
+          }));
+        }
+      });
+    }
+
+    // Clear disconnection timestamp now that we're reconnected
+    disconnectedAtRef.current = null;
   }, [isConnected, socket, fetchState]);
 
   // Feature #fix: Fallback polling when WebSocket is disconnected during a running test

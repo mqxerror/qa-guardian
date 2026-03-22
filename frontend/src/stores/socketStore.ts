@@ -64,6 +64,10 @@ import {
 
 const MAX_RECONNECTION_EVENTS = 50; // Keep last 50 events
 
+// Debounce delay for token-change reconnection to avoid rapid reconnects
+// during token refresh flows (e.g., login -> immediate refresh -> settle)
+const TOKEN_CHANGE_DEBOUNCE_MS = 1000;
+
 // Get the WebSocket server URL
 function getSocketUrl(): string {
   // In development, use localhost; in production, use VITE_SOCKET_URL env var
@@ -346,9 +350,21 @@ export const useSocketStore = create<SocketState>((set, get) => {
         socket.emit('join-run', runId);
         logger.socket.debug('Joining run:', runId);
 
-        // Track subscription for re-subscribe
+        // Track subscription for re-subscribe, capped at 20 entries (FIFO eviction)
         if (!subscribedRuns.includes(runId)) {
-          set({ subscribedRuns: [...subscribedRuns, runId] });
+          const MAX_SUBSCRIBED_RUNS = 20;
+          const updatedRuns = [...subscribedRuns, runId];
+
+          // Evict oldest entries if we exceed the cap
+          while (updatedRuns.length > MAX_SUBSCRIBED_RUNS) {
+            const evicted = updatedRuns.shift();
+            if (evicted && socket?.connected) {
+              socket.emit('leave-run', evicted);
+              logger.socket.debug('Evicting oldest subscribed run:', evicted);
+            }
+          }
+
+          set({ subscribedRuns: updatedRuns });
         }
       }
     },
@@ -388,4 +404,52 @@ export const useSocketStore = create<SocketState>((set, get) => {
       return { healthy, lastHeartbeatAgo };
     },
   };
+});
+
+/**
+ * Subscribe to auth token changes and reconnect the socket with the new token.
+ * The auth token is baked into the socket at connect time, so when it changes
+ * (e.g., after a token refresh), we must disconnect and reconnect to use the
+ * new token. A debounce prevents rapid reconnections during token refresh flows.
+ */
+let tokenChangeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let previousAuthToken: string | null = useAuthStore.getState().token;
+
+useAuthStore.subscribe((state) => {
+  const newToken = state.token;
+
+  // Only act when the token actually changes
+  if (newToken === previousAuthToken) return;
+  previousAuthToken = newToken;
+
+  const { socket } = useSocketStore.getState();
+
+  // If socket is not connected and there's no token, nothing to do
+  if (!socket && !newToken) return;
+
+  // Clear any pending debounce
+  if (tokenChangeDebounceTimer) {
+    clearTimeout(tokenChangeDebounceTimer);
+  }
+
+  tokenChangeDebounceTimer = setTimeout(() => {
+    tokenChangeDebounceTimer = null;
+    const currentState = useSocketStore.getState();
+
+    if (!newToken) {
+      // Token cleared (logout) — disconnect the socket
+      if (currentState.isConnected || currentState.socket) {
+        socketLogger.debug('[Socket.IO] Token cleared, disconnecting socket');
+        currentState.disconnect();
+      }
+      return;
+    }
+
+    // Token changed — reconnect only if we have an active/existing socket
+    if (currentState.isConnected || currentState.socket) {
+      socketLogger.debug('[Socket.IO] Token changed, reconnecting with new token');
+      currentState.disconnect();
+      currentState.connect();
+    }
+  }, TOKEN_CHANGE_DEBOUNCE_MS);
 });
