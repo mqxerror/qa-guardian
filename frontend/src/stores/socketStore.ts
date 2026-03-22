@@ -244,7 +244,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
       // Feature #201: Pass JWT token for authentication
       const token = getAuthToken();
       const newSocket = io(socketUrl, {
-        transports: ['websocket', 'polling'],
+        transports: ['polling', 'websocket'],
         reconnection: false, // We handle reconnection ourselves
         timeout: SOCKET_CONNECT_TIMEOUT_MS,
         auth: token ? { token } : undefined, // Pass token if available
