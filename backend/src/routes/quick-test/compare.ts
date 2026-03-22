@@ -15,10 +15,11 @@ import {
   quickTestCompareBodySchema,
   quickTestCompareIdParamsSchema,
 } from '../../validation/index.js';
-import { runQuickTest, getQuickTestResultAsync } from '../../services/quick-test-runner.js';
+import { getQuickTestResultAsync } from '../../services/quick-test-runner.js';
+import { queueQuickTest } from '../../services/execution-queue.js';
 import { logAuditEntry } from '../audit-logs.js';
 import { validateWebhookURLWithDNS } from '../../utils/index.js';
-import { createQuickTestComparison, getQuickTestComparison } from '../../services/repositories/quick-test.js';
+import { createQuickTestResult, createQuickTestComparison, getQuickTestComparison } from '../../services/repositories/quick-test.js';
 import { sendError } from '../../utils/errors.js';
 import type { QuickTestCompareBody, QuickTestCompareParams } from './helpers.js';
 import { log, refreshScreenshotUrls } from './helpers.js';
@@ -119,24 +120,31 @@ export async function compareRoutes(app: FastifyInstance) {
       // TTL cleanup is handled by database expires_at column
       await createQuickTestComparison(compareId, orgId, runIdA, runIdB);
 
-      // Start both quick tests in parallel
-      Promise.all([
-        runQuickTest({
-          url: urlA,
-          runId: runIdA,
-          orgId,
-          userId: user.id,
-        }),
-        runQuickTest({
-          url: urlB,
-          runId: runIdB,
-          orgId,
-          userId: user.id,
-        }),
-      ]).catch((err) => {
-        // Feature #481: Use structured Pino logging
-        log.error({ compareId, urlA, urlB, error: err }, 'Unhandled error in quick test compare');
-      });
+      // Create DB records BEFORE queuing so GET endpoints have data immediately
+      const initialWaves = [
+        { wave: 1, name: 'Health Check', status: 'pending' as const },
+        { wave: 2, name: 'Visual + Performance', status: 'pending' as const },
+        { wave: 3, name: 'Security Scan', status: 'pending' as const },
+        { wave: 4, name: 'AI Analysis', status: 'pending' as const },
+        { wave: 5, name: 'Accessibility', status: 'pending' as const },
+        { wave: 6, name: 'API Discovery', status: 'pending' as const },
+        { wave: 7, name: 'SEO Analysis', status: 'pending' as const },
+      ];
+      await Promise.all([
+        createQuickTestResult(runIdA, orgId, user.id, urlA, initialWaves),
+        createQuickTestResult(runIdB, orgId, user.id, urlB, initialWaves),
+      ]);
+
+      // Route both quick tests through BullMQ worker
+      const [jobIdA, jobIdB] = await Promise.all([
+        queueQuickTest({ runId: runIdA, url: urlA, orgId, userId: user.id, browser: 'chromium' }),
+        queueQuickTest({ runId: runIdB, url: urlB, orgId, userId: user.id, browser: 'chromium' }),
+      ]);
+
+      if (!jobIdA || !jobIdB) {
+        log.error({ compareId, urlA, urlB, jobIdA, jobIdB }, 'Quick test queue unavailable for comparison');
+        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Quick test service temporarily unavailable. Please try again shortly.');
+      }
 
       // Log audit entry
       logAuditEntry(request, 'create', 'quick_test_compare', compareId, `Comparative quick test started for ${urlA} vs ${urlB}`, {

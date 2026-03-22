@@ -513,6 +513,49 @@ export async function cleanupZombieRuns(): Promise<number> {
 }
 
 /**
+ * Phase 2C: Clean up runs stuck in 'running' status for longer than the specified
+ * staleMinutes threshold. Unlike cleanupZombieRuns (which runs once at startup),
+ * this function runs periodically to catch runs that hang mid-execution due to
+ * Chromium crashes, memory leaks, or other unforeseen issues.
+ *
+ * @param staleMinutes - Number of minutes a run must be stuck before cleanup (default 30)
+ * @returns Number of cleaned-up runs
+ */
+export async function cleanupStaleRunningRuns(staleMinutes: number = 30): Promise<number> {
+  if (!isDatabaseConnected()) {
+    logger.warn('[TestRunsRepo] Cannot clean stale runs - database not connected');
+    return 0;
+  }
+
+  try {
+    const result = await query(
+      `UPDATE test_runs
+       SET status = 'error',
+           error_message = $1,
+           completed_at = NOW()
+       WHERE status = 'running'
+         AND started_at < NOW() - make_interval(mins => $2)
+       RETURNING id, suite_id`,
+      [
+        `Run stuck in running state for over ${staleMinutes} minutes — cleaned up by periodic zombie detector`,
+        staleMinutes,
+      ]
+    );
+
+    const cleaned = result?.rowCount ?? 0;
+    if (cleaned > 0) {
+      const ids = result?.rows?.map((r) => (r as Record<string, unknown>).id as string) || [];
+      logger.warn({ count: cleaned, staleMinutes, runIds: ids.slice(0, 10) },
+        '[TestRunsRepo] Cleaned up stale running runs');
+    }
+    return cleaned;
+  } catch (error) {
+    logger.error({ error }, '[TestRunsRepo] Failed to clean up stale running runs');
+    return 0;
+  }
+}
+
+/**
  * Delete a test run
  */
 export async function deleteTestRun(id: string): Promise<boolean> {

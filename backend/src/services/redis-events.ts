@@ -26,6 +26,9 @@ const logger = createLogger('redis-events');
 // Redis channel name for Socket.IO events
 const SOCKET_EVENTS_CHANNEL = 'qa-guardian:socket-events';
 
+// Redis channel name for Quick Test wave events (separate from test-run events)
+const QUICK_TEST_EVENTS_CHANNEL = 'qa-guardian:quick-test-events';
+
 // Event types that can be published
 export interface SocketEventPayload {
   event: string;
@@ -209,6 +212,40 @@ export async function publishRunEvent(
 }
 
 /**
+ * Publish a Quick Test wave event via Redis Pub/Sub
+ * This is called by worker when Socket.IO is not available for quick test events
+ */
+export async function publishQuickTestEvent(
+  runId: string,
+  orgId: string,
+  event: string,
+  data: Record<string, unknown>
+): Promise<boolean> {
+  if (!pubClient || !publisherInitialized) {
+    logger.warn({ action: 'publish_quick_test' }, 'Publisher not initialized, cannot publish quick test event');
+    return false;
+  }
+
+  try {
+    const payload: SocketEventPayload = {
+      event,
+      runId,
+      orgId,
+      data,
+      timestamp: Date.now(),
+    };
+
+    const message = JSON.stringify(payload);
+    await pubClient.publish(QUICK_TEST_EVENTS_CHANNEL, message);
+    logger.debug({ event, runId, orgId }, 'Published quick test event');
+    return true;
+  } catch (err) {
+    logger.error({ error: err }, 'Failed to publish quick test event');
+    return false;
+  }
+}
+
+/**
  * Initialize the Redis subscriber and forward events to Socket.IO
  * Call this in index.ts after Socket.IO is set up
  */
@@ -256,34 +293,40 @@ export async function initializeEventSubscriber(io: SocketIOServer): Promise<boo
       }, delay);
     });
 
-    // Subscribe to the socket events channel
-    await subClient.subscribe(SOCKET_EVENTS_CHANNEL);
-    logger.info({ channel: SOCKET_EVENTS_CHANNEL }, 'Subscribed to channel');
+    // Subscribe to both the test-run and quick-test event channels
+    await subClient.subscribe(SOCKET_EVENTS_CHANNEL, QUICK_TEST_EVENTS_CHANNEL);
+    logger.info({ channels: [SOCKET_EVENTS_CHANNEL, QUICK_TEST_EVENTS_CHANNEL] }, 'Subscribed to channels');
 
-    // Handle incoming messages
+    // Handle incoming messages from all channels
     subClient.on('message', (channel, message) => {
-      if (channel !== SOCKET_EVENTS_CHANNEL) {
-        return;
-      }
-
       try {
         const payload: SocketEventPayload = JSON.parse(message);
         const { event, runId, orgId, data } = payload;
 
-        // Forward to Socket.IO clients
-        const socketPayload = { runId, orgId, ...data };
+        if (channel === SOCKET_EVENTS_CHANNEL) {
+          // Test-run events: forward to run-specific and lifecycle org rooms
+          const socketPayload = { runId, orgId, ...data };
 
-        // Always emit to run-specific room
-        io.to(`run:${runId}`).emit(event, socketPayload);
+          // Always emit to run-specific room
+          io.to(`run:${runId}`).emit(event, socketPayload);
 
-        // Only emit lifecycle events to org room to prevent double delivery
-        // (clients in both run and org rooms would receive every event twice)
-        const orgRoomEvents = ['run-start', 'run-complete', 'run-cancelled'];
-        if (orgRoomEvents.includes(event)) {
+          // Only emit lifecycle events to org room to prevent double delivery
+          // (clients in both run and org rooms would receive every event twice)
+          const orgRoomEvents = ['run-start', 'run-complete', 'run-cancelled'];
+          if (orgRoomEvents.includes(event)) {
+            io.to(`org:${orgId}`).emit(event, socketPayload);
+          }
+
+          logger.debug({ event, runId }, 'Forwarded run event to Socket.IO clients');
+        } else if (channel === QUICK_TEST_EVENTS_CHANNEL) {
+          // Quick test events: forward to quick-test-specific and org rooms
+          const socketPayload = { orgId, runId, ...data };
+
+          io.to(`quick-test:${runId}`).emit(event, socketPayload);
           io.to(`org:${orgId}`).emit(event, socketPayload);
-        }
 
-        logger.debug({ event, runId }, 'Forwarded event to Socket.IO clients');
+          logger.debug({ event, runId }, 'Forwarded quick test event to Socket.IO clients');
+        }
       } catch (err) {
         logger.error({ error: err }, 'Failed to parse/forward event');
       }
@@ -346,7 +389,7 @@ export async function closeSubscriber(): Promise<void> {
   cachedIO = null;
 
   if (subClient) {
-    await subClient.unsubscribe(SOCKET_EVENTS_CHANNEL);
+    await subClient.unsubscribe(SOCKET_EVENTS_CHANNEL, QUICK_TEST_EVENTS_CHANNEL);
     await subClient.quit();
     subClient = null;
     subscriberInitialized = false;
@@ -361,10 +404,12 @@ export function getConnectionStatus(): {
   publisher: boolean;
   subscriber: boolean;
   channel: string;
+  channels: string[];
 } {
   return {
     publisher: publisherInitialized,
     subscriber: subscriberInitialized,
-    channel: SOCKET_EVENTS_CHANNEL,
+    channel: SOCKET_EVENTS_CHANNEL, // Kept for backward compatibility
+    channels: [SOCKET_EVENTS_CHANNEL, QUICK_TEST_EVENTS_CHANNEL],
   };
 }

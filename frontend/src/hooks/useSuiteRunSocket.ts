@@ -105,6 +105,10 @@ export interface UseSuiteRunSocketReturn {
   totalTests: number;
 }
 
+// Phase 2D: Stale detection constants (module-level to satisfy exhaustive-deps)
+const STALE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes without WS events triggers a poll
+const STALE_CHECK_INTERVAL_MS = 30 * 1000; // Check staleness every 30 seconds
+
 /**
  * Custom hook for WebSocket-based suite run tracking
  * Replaces HTTP polling with real-time Socket.IO events
@@ -130,6 +134,12 @@ export function useSuiteRunSocket({
   // Track overall progress
   const completedTestsRef = useRef(0);
   const totalTestsRef = useRef(0);
+
+  // Phase 2D: Track last WebSocket event timestamp to detect stale connections.
+  // When connected but no events arrive for 2 minutes during an active run,
+  // the hook polls the API to check if the run completed/errored server-side.
+  const lastEventTimestampRef = useRef<number>(Date.now());
+  const isRunActiveRef = useRef(false);
 
   // State-based render trigger: refs store the data, this counter forces re-renders
   // when WebSocket events arrive (refs alone don't trigger re-renders)
@@ -197,6 +207,64 @@ export function useSuiteRunSocket({
     return () => clearInterval(fallbackPoll);
   }, [enabled, runId, token, isConnected, onRunComplete, onRunUpdate, triggerRender]);
 
+  // Phase 2D: Stale connection detection - poll API when connected but no WS events
+  // arrive for 2 minutes during an active run. This catches cases where the WebSocket
+  // connection appears alive but the server-side run has completed or errored
+  // (e.g., due to timeout, crash, or missed run-complete event).
+  useEffect(() => {
+    if (!enabled || !runId || !token || !isConnected || !isRunActiveRef.current) return;
+
+    const staleChecker = setInterval(async () => {
+      const timeSinceLastEvent = Date.now() - lastEventTimestampRef.current;
+      if (timeSinceLastEvent < STALE_THRESHOLD_MS) return;
+
+      logger.websocket.debug(
+        'useSuiteRunSocket: No WS events for 2+ minutes during active run, polling API',
+        { runId, timeSinceLastEventMs: timeSinceLastEvent }
+      );
+
+      try {
+        const response = await fetch(`/api/v1/runs/${runId}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const run = data.run;
+
+        // If the server says the run is in a terminal state, update UI
+        if (run.status !== 'pending' && run.status !== 'running') {
+          logger.websocket.debug(
+            'useSuiteRunSocket: Stale detection found terminal status via poll',
+            { runId, status: run.status }
+          );
+
+          // Update per-test status from results
+          if (run.results && Array.isArray(run.results)) {
+            for (const result of run.results) {
+              perTestStatusRef.current.set(result.test_id, result.status as TestRunStatus);
+            }
+          }
+
+          isRunActiveRef.current = false;
+          currentStepRef.current = null;
+          triggerRender();
+
+          onRunComplete({
+            id: run.id,
+            status: run.status,
+            duration_ms: run.duration_ms,
+            results: run.results,
+          });
+        }
+      } catch {
+        // Silently ignore stale check poll errors
+      }
+    }, STALE_CHECK_INTERVAL_MS);
+
+    return () => clearInterval(staleChecker);
+  }, [enabled, runId, token, isConnected, onRunComplete, triggerRender]);
+
   // Join/leave run room when runId changes
   useEffect(() => {
     if (!enabled || !runId || !socket || !isConnected) return;
@@ -209,6 +277,9 @@ export function useSuiteRunSocket({
     currentStepRef.current = null;
     completedTestsRef.current = 0;
     totalTestsRef.current = 0;
+    lastEventTimestampRef.current = Date.now();
+    // Assume run is active when we join — the run-complete handler will clear this
+    isRunActiveRef.current = true;
 
     return () => {
       logger.websocket.debug('useSuiteRunSocket: Leaving run room:', runId);
@@ -219,6 +290,8 @@ export function useSuiteRunSocket({
   // Handle run-start event
   const handleRunStart = useCallback((data: { runId: string; status: string }) => {
     if (data.runId !== runId) return;
+    lastEventTimestampRef.current = Date.now();
+    isRunActiveRef.current = true;
     logger.websocket.debug('useSuiteRunSocket: run-start', data);
     onRunUpdate({ status: 'running' });
   }, [runId, onRunUpdate]);
@@ -231,6 +304,7 @@ export function useSuiteRunSocket({
     currentTest?: string;
   }) => {
     if (data.runId !== runId) return;
+    lastEventTimestampRef.current = Date.now();
     logger.websocket.debug('useSuiteRunSocket: run-progress', data);
 
     totalTestsRef.current = data.totalTests;
@@ -250,6 +324,7 @@ export function useSuiteRunSocket({
     testName: string;
   }) => {
     if (data.runId !== runId) return;
+    lastEventTimestampRef.current = Date.now();
     logger.websocket.debug('useSuiteRunSocket: test-start', data);
 
     perTestStatusRef.current.set(data.testId, 'running');
@@ -272,6 +347,7 @@ export function useSuiteRunSocket({
     totalSteps?: number;
   }) => {
     if (data.runId !== runId) return;
+    lastEventTimestampRef.current = Date.now();
     logger.websocket.debug('useSuiteRunSocket: step-start', data);
 
     if (currentStepRef.current) {
@@ -294,6 +370,7 @@ export function useSuiteRunSocket({
     status: string;
   }) => {
     if (data.runId !== runId) return;
+    lastEventTimestampRef.current = Date.now();
     logger.websocket.debug('useSuiteRunSocket: step-complete', data);
 
     if (currentStepRef.current) {
@@ -320,6 +397,7 @@ export function useSuiteRunSocket({
     timestamp: number;
   }) => {
     if (data.runId !== runId) return;
+    lastEventTimestampRef.current = Date.now();
     logger.websocket.debug('useSuiteRunSocket: step:screenshot', { runId: data.runId, stepIndex: data.stepIndex });
 
     // Notify parent of new screenshot
@@ -349,6 +427,7 @@ export function useSuiteRunSocket({
     status: 'passed' | 'failed' | 'error' | 'skipped';
   }) => {
     if (data.runId !== runId) return;
+    lastEventTimestampRef.current = Date.now();
     logger.websocket.debug('useSuiteRunSocket: test-complete', data);
 
     perTestStatusRef.current.set(data.testId, data.status);
@@ -364,6 +443,8 @@ export function useSuiteRunSocket({
     results?: SuiteRunResult[];
   }) => {
     if (data.runId !== runId) return;
+    lastEventTimestampRef.current = Date.now();
+    isRunActiveRef.current = false;
     logger.websocket.debug('useSuiteRunSocket: run-complete', data);
 
     // Update per-test status from results

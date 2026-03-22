@@ -46,6 +46,7 @@ import { dastRoutes } from './routes/dast.js';
 import { monitoringRoutes } from './routes/monitoring.js';
 import aiTestGeneratorRoutes from './routes/ai-test-generator/index.js';
 import mcpToolsRoutes from './routes/mcp-tools/index.js';
+import { aiRouter } from './services/providers/ai-router.js'; // Phase 3A: Startup initialization
 import quickTestRoutes from './routes/quick-test/index.js'; // Feature #424: Quick Test API
 import { reportsRoutes } from './routes/reports/index.js'; // Feature #1732
 import { servicesStatusRoutes, setServicesSocketIO } from './routes/services-status.js'; // Feature #2127
@@ -757,6 +758,12 @@ async function start() {
     const dbStatus = isDatabaseConnected()
       ? 'Connected (PostgreSQL)'
       : 'In-memory (data will not persist!)';
+
+    // Phase 3A: Initialize AI router at startup so it's ready for first request
+    if (aiConfigured) {
+      const initResult = aiRouter.reinitializeFromEnv();
+      log.info({ initialized: initResult }, 'AI Router startup initialization');
+    }
 
     log.info({
       port,

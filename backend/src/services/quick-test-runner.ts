@@ -12,6 +12,7 @@
 
 import { chromium, firefox, webkit, Browser, BrowserType } from 'playwright';
 import { getWebSocketIO } from './websocket-events.js';
+import { publishQuickTestEvent, isPublisherAvailable } from './redis-events.js';
 import { createLogger } from './logger.js';
 
 // Feature #579: Browser type for cross-browser Quick Test
@@ -145,9 +146,18 @@ function safeSetQuickTestResult(runId: string, result: QuickTestResult): void {
 function emitWaveEvent(orgId: string, runId: string, event: string, data: Record<string, unknown>) {
   const io = getWebSocketIO();
   if (io) {
+    // Direct Socket.IO emit (API server mode)
     const payload = { orgId, runId, ...data };
     io.to(`org:${orgId}`).emit(event, payload);
     io.to(`quick-test:${runId}`).emit(event, payload);
+  } else if (isPublisherAvailable()) {
+    // Redis Pub/Sub fallback (worker mode) - same pattern as emitRunEvent in run-orchestrator.ts
+    publishQuickTestEvent(runId, orgId, event, data).catch((err) => {
+      log.error({ error: err, event, runId }, 'Failed to publish quick test event via Redis');
+    });
+  } else {
+    // Neither Socket.IO nor Redis available - log warning
+    log.warn({ event, runId }, 'No event transport available for quick test event');
   }
 }
 

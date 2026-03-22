@@ -14,7 +14,9 @@ import {
   quickTestBodySchema,
   quickTestRunIdParamsSchema,
 } from '../../validation/index.js';
-import { runQuickTest, getQuickTestResultAsync } from '../../services/quick-test-runner.js';
+import { getQuickTestResultAsync } from '../../services/quick-test-runner.js';
+import { createQuickTestResult } from '../../services/repositories/quick-test.js';
+import { queueQuickTest } from '../../services/execution-queue.js';
 import { logAuditEntry } from '../audit-logs.js';
 import { validateWebhookURLWithDNS } from '../../utils/index.js';
 import { sendError } from '../../utils/errors.js';
@@ -104,18 +106,31 @@ export async function coreRoutes(app: FastifyInstance) {
       // Generate run ID
       const runId = uuidv4();
 
-      // Start the quick test asynchronously
-      // Feature #579: Pass browser selection to runner
-      runQuickTest({
-        url,
+      // Create the DB record BEFORE queuing so GET endpoint has data immediately
+      const initialWaves = [
+        { wave: 1, name: 'Health Check', status: 'pending' as const },
+        { wave: 2, name: 'Visual + Performance', status: 'pending' as const },
+        { wave: 3, name: 'Security Scan', status: 'pending' as const },
+        { wave: 4, name: 'AI Analysis', status: 'pending' as const },
+        { wave: 5, name: 'Accessibility', status: 'pending' as const },
+        { wave: 6, name: 'API Discovery', status: 'pending' as const },
+        { wave: 7, name: 'SEO Analysis', status: 'pending' as const },
+      ];
+      await createQuickTestResult(runId, orgId, user.id, url, initialWaves);
+
+      // Route through BullMQ worker instead of fire-and-forget
+      const jobId = await queueQuickTest({
         runId,
+        url,
         orgId,
         userId: user.id,
         browser,
-      }).catch((err) => {
-        // Feature #481: Use structured Pino logging
-        log.error({ runId, url, error: err }, 'Unhandled error in quick test');
       });
+
+      if (!jobId) {
+        log.error({ runId, url }, 'Quick test queue unavailable - cannot process test');
+        return sendError(reply, 503, 'SERVICE_UNAVAILABLE', 'Quick test service temporarily unavailable. Please try again shortly.');
+      }
 
       // Log audit entry
       logAuditEntry(request, 'create', 'quick_test', runId, `Quick test started for ${url}`, {

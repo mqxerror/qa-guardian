@@ -53,6 +53,10 @@ import { createLogger } from '../../services/logger.js';
 
 const logger = createLogger('route:test-runs:run-orchestrator');
 
+// Phase 2A: Per-test timeout to prevent indefinite hangs from Chromium crashes,
+// page hangs, or infinite loops. Configurable via environment variable.
+const PER_TEST_TIMEOUT_MS = parseInt(process.env.PER_TEST_TIMEOUT_MS || '300000', 10); // 5 minutes default
+
 // Socket.IO server instance (set by index.ts after server starts)
 let io: SocketIOServer | null = null;
 
@@ -138,6 +142,64 @@ async function checkAndSendAlerts(run: TestRun, results: TestRunResult[]): Promi
     () => suiteInfo,
     () => projectInfo
   );
+}
+
+/**
+ * Phase 2A: Wrap executeTest in a timeout to prevent indefinite hangs.
+ * If a single test execution takes longer than PER_TEST_TIMEOUT_MS (default 5 minutes),
+ * the promise resolves with an error result instead of hanging forever.
+ */
+async function executeTestWithTimeout(
+  test: ExecuteTestConfig,
+  browser: Browser,
+  runId: string,
+  orgId: string,
+  envVars: Record<string, string>,
+): Promise<TestRunResult> {
+  const timeoutMs = PER_TEST_TIMEOUT_MS;
+
+  return new Promise<TestRunResult>((resolve) => {
+    const timer = setTimeout(() => {
+      const timeoutMinutes = Math.round(timeoutMs / 60000);
+      logger.error({ testId: test.id, testName: test.name, timeoutMs, runId },
+        `[TIMEOUT] Test execution timed out after ${timeoutMinutes} minutes`);
+
+      // Emit test-complete with error status so the frontend is notified
+      emitRunEvent(runId, orgId, 'test-complete', {
+        testId: test.id,
+        testName: test.name,
+        status: 'error',
+        error: `Test execution timed out after ${timeoutMinutes} minutes`,
+      });
+
+      resolve({
+        test_id: test.id,
+        test_name: test.name,
+        status: 'error',
+        error: `Test execution timed out after ${timeoutMinutes} minutes`,
+        duration_ms: timeoutMs,
+        steps: [],
+      });
+    }, timeoutMs);
+
+    executeTest(test, browser, runId, orgId, envVars)
+      .then((result) => {
+        clearTimeout(timer);
+        resolve(result);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        logger.error({ err, testId: test.id, runId }, '[TIMEOUT] executeTest threw unexpectedly');
+        resolve({
+          test_id: test.id,
+          test_name: test.name,
+          status: 'error',
+          error: err instanceof Error ? err.message : 'Unknown execution error',
+          duration_ms: 0,
+          steps: [],
+        });
+      });
+  });
 }
 
 /**
@@ -333,7 +395,7 @@ export async function runTestsForRun(runId: string) {
       }
 
       const test = testsToRun[testIndex];
-      let result = await executeTest(test, browser, runId, orgId, envVars);
+      let result = await executeTestWithTimeout(test, browser, runId, orgId, envVars);
       let retryAttempt = 0;
       let passedOnRetry = false;
 
@@ -355,7 +417,7 @@ export async function runTestsForRun(runId: string) {
           maxRetries,
         });
 
-        result = await executeTest(test, browser, runId, orgId, envVars);
+        result = await executeTestWithTimeout(test, browser, runId, orgId, envVars);
 
         if (result.status === 'passed') {
           passedOnRetry = true;

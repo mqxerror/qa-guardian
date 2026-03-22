@@ -11,9 +11,10 @@ import { isDatabaseConnected } from '../services/database.js';
 import {
   getDueQuickTestSchedules,
   markScheduleRun,
+  createQuickTestResult,
   type QuickTestSchedule,
 } from '../services/repositories/quick-test.js';
-import { runQuickTest } from '../services/quick-test-runner.js';
+import { queueQuickTest } from '../services/execution-queue.js';
 import { validateWebhookURLWithDNS } from '../utils/index.js';
 import { createLogger } from '../services/logger.js';
 
@@ -155,20 +156,35 @@ async function runScheduledTest(schedule: QuickTestSchedule): Promise<void> {
       return;
     }
 
-    // Trigger the quick test (fire-and-forget)
-    // The runQuickTest function handles its own state management
-    runQuickTest({
-      url: schedule.url,
+    // Create the DB record before queuing so results are queryable immediately
+    const initialWaves = [
+      { wave: 1, name: 'Health Check', status: 'pending' as const },
+      { wave: 2, name: 'Visual + Performance', status: 'pending' as const },
+      { wave: 3, name: 'Security Scan', status: 'pending' as const },
+      { wave: 4, name: 'AI Analysis', status: 'pending' as const },
+      { wave: 5, name: 'Accessibility', status: 'pending' as const },
+      { wave: 6, name: 'API Discovery', status: 'pending' as const },
+      { wave: 7, name: 'SEO Analysis', status: 'pending' as const },
+    ];
+    await createQuickTestResult(runId, schedule.organizationId, schedule.userId, schedule.url, initialWaves);
+
+    // Route through BullMQ worker instead of fire-and-forget
+    const jobId = await queueQuickTest({
       runId,
+      url: schedule.url,
       orgId: schedule.organizationId,
       userId: schedule.userId,
-    }).catch(err => {
+      browser: 'chromium', // Scheduled tests always use chromium
+    });
+
+    if (!jobId) {
       log.error({
-        error: err,
         scheduleId: schedule.id,
         runId,
-      }, 'Scheduled quick test failed');
-    });
+      }, 'Quick test queue unavailable - scheduled test cannot be processed');
+      schedulerStats.errors++;
+      return;
+    }
 
     // Update the schedule with the new run info
     await markScheduleRun(schedule.id, runId, schedule.cronExpression);

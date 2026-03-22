@@ -51,7 +51,14 @@ export async function registerExecuteRoutes(fastify: FastifyInstance) {
       // Ensure AI is initialized for AI-powered tools
       const isAiTool = AI_POWERED_TOOLS.includes(tool_name);
       if (isAiTool && use_real_ai) {
-        ensureAIInitialized();
+        const aiInit = ensureAIInitialized();
+        if (!aiInit.initialized) {
+          return sendError(reply, 503, 'AI_UNAVAILABLE', `AI provider not available: ${aiInit.error || 'Unknown initialization error'}`, { metadata: {
+              tool_name,
+              used_real_ai: false,
+              execution_time_ms: Date.now() - startTime,
+            } });
+        }
       }
 
       // Add use_real_ai flag to args if this is an AI tool

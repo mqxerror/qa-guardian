@@ -15,6 +15,7 @@
 import { handlers as aiGenerationHandlers } from '../mcp/handlers/ai-generation.js';
 import { handlers as aiAnalysisHandlers } from '../mcp/handlers/ai-analysis.js';
 import { HandlerContext } from '../mcp/handlers/types.js';
+import { ensureAIInitialized } from '../routes/mcp-tools/helpers.js';
 // Feature #449: Use structured logger instead of console.*
 import { createLogger } from './logger.js';
 
@@ -213,10 +214,23 @@ export class AITestGenerationService {
   }
 
   /**
+   * Phase 3E: Ensure AI router is initialized before making AI calls.
+   * Logs a warning if initialization fails but does NOT throw --
+   * the underlying MCP handlers have their own template fallbacks.
+   */
+  private ensureAI(): void {
+    const result = ensureAIInitialized();
+    if (!result.initialized) {
+      log.warn({ error: result.error }, 'AI router not available for REST API call — handlers will use template fallback');
+    }
+  }
+
+  /**
    * Generate a Playwright test from natural language description
    * Uses REAL Claude AI via the MCP handler
    */
   async generateTest(request: GenerateTestRequest): Promise<unknown> {
+    this.ensureAI();
     const handler = aiGenerationHandlers.generate_test_from_description;
     if (!handler) {
       throw new Error('generate_test_from_description handler not found');
@@ -242,6 +256,7 @@ export class AITestGenerationService {
    * Generate a simplified test (uses cheaper Haiku model)
    */
   async generateSimpleTest(request: GenerateTestRequest): Promise<unknown> {
+    this.ensureAI();
     const handler = aiGenerationHandlers.generate_test;
     if (!handler) {
       throw new Error('generate_test handler not found');
@@ -262,6 +277,7 @@ export class AITestGenerationService {
    * Uses REAL Claude AI via the MCP handler
    */
   async generateTestSuite(request: GenerateTestSuiteRequest): Promise<unknown> {
+    this.ensureAI();
     const handler = aiGenerationHandlers.generate_test_suite;
     if (!handler) {
       throw new Error('generate_test_suite handler not found');
@@ -285,6 +301,7 @@ export class AITestGenerationService {
    * Uses REAL Claude AI via the MCP handler
    */
   async convertGherkin(request: ConvertGherkinRequest): Promise<unknown> {
+    this.ensureAI();
     const handler = aiGenerationHandlers.convert_gherkin;
     if (!handler) {
       throw new Error('convert_gherkin handler not found');
@@ -307,6 +324,7 @@ export class AITestGenerationService {
    * Uses REAL Claude Vision API via the MCP handler
    */
   async analyzeScreenshot(request: AnalyzeScreenshotRequest): Promise<unknown> {
+    this.ensureAI();
     const handler = aiGenerationHandlers.analyze_screenshot;
     if (!handler) {
       throw new Error('analyze_screenshot handler not found');
@@ -331,6 +349,7 @@ export class AITestGenerationService {
    * Uses REAL Claude Vision API via the MCP handler
    */
   async generateTestFromAnnotatedScreenshot(request: AnnotatedScreenshotRequest): Promise<unknown> {
+    this.ensureAI();
     const handler = aiGenerationHandlers.generate_test_from_annotated_screenshot;
     if (!handler) {
       throw new Error('generate_test_from_annotated_screenshot handler not found');
@@ -355,6 +374,7 @@ export class AITestGenerationService {
    * Assess the confidence/quality of a test description
    */
   async assessConfidence(request: AssessConfidenceRequest): Promise<unknown> {
+    this.ensureAI();
     const handler = aiGenerationHandlers.assess_test_confidence;
     if (!handler) {
       throw new Error('assess_test_confidence handler not found');
@@ -375,6 +395,7 @@ export class AITestGenerationService {
    * Generate optimal selectors for a UI element
    */
   async generateSelectors(request: GenerateSelectorsRequest): Promise<unknown> {
+    this.ensureAI();
     const handler = aiGenerationHandlers.generate_selectors;
     if (!handler) {
       throw new Error('generate_selectors handler not found');
@@ -397,6 +418,7 @@ export class AITestGenerationService {
    * Generate assertions for a test
    */
   async generateAssertions(request: GenerateAssertionsRequest): Promise<unknown> {
+    this.ensureAI();
     const handler = aiGenerationHandlers.generate_assertions;
     if (!handler) {
       throw new Error('generate_assertions handler not found');
@@ -419,6 +441,7 @@ export class AITestGenerationService {
    * Generate a multi-step user flow test
    */
   async generateUserFlow(request: GenerateUserFlowRequest): Promise<unknown> {
+    this.ensureAI();
     const handler = aiGenerationHandlers.generate_user_flow;
     if (!handler) {
       throw new Error('generate_user_flow handler not found');
@@ -443,6 +466,7 @@ export class AITestGenerationService {
    * Get coverage gaps for a project
    */
   async getCoverageGaps(request: GetCoverageGapsRequest): Promise<unknown> {
+    this.ensureAI();
     const handler = aiGenerationHandlers.get_coverage_gaps;
     if (!handler) {
       throw new Error('get_coverage_gaps handler not found');
@@ -462,6 +486,7 @@ export class AITestGenerationService {
    * Parse a test description to extract structured information
    */
   async parseTestDescription(description: string, targetUrl?: string): Promise<unknown> {
+    this.ensureAI();
     const handler = aiGenerationHandlers.parse_test_description;
     if (!handler) {
       throw new Error('parse_test_description handler not found');
@@ -486,6 +511,7 @@ export class AITestGenerationService {
    * Uses REAL Claude AI via the MCP handler
    */
   async explainTestCode(request: ExplainTestRequest): Promise<unknown> {
+    this.ensureAI();
     const handler = aiAnalysisHandlers.explain_test_failure_ai;
     if (!handler) {
       throw new Error('explain_test_failure_ai handler not found');
@@ -513,6 +539,7 @@ export class AITestGenerationService {
    * Uses REAL Claude AI via the MCP handler
    */
   async suggestTestImprovements(request: SuggestImprovementsRequest): Promise<unknown> {
+    this.ensureAI();
     const handler = aiAnalysisHandlers.suggest_test_improvements;
     if (!handler) {
       throw new Error('suggest_test_improvements handler not found');
@@ -537,6 +564,7 @@ export class AITestGenerationService {
    * Uses Claude Vision API to find the new selector
    */
   async healWithVision(request: HealWithVisionRequest): Promise<unknown> {
+    this.ensureAI();
     const handler = aiGenerationHandlers.analyze_screenshot;
     if (!handler) {
       throw new Error('analyze_screenshot handler not found');

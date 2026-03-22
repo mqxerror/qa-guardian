@@ -39,8 +39,11 @@ const log = createLogger('worker');
 // ============================================================================
 
 const QUEUE_NAME = 'test-execution';
+const QUICK_TEST_QUEUE_NAME = 'quick-test-execution';
 const MAX_CONCURRENCY = parseInt(process.env.EXECUTION_MAX_CONCURRENCY || '2', 10);
+const QUICK_TEST_CONCURRENCY = 2; // Quick tests are lighter weight than full test runs
 const JOB_TIMEOUT = parseInt(process.env.EXECUTION_JOB_TIMEOUT || '600000', 10); // 10 minutes
+const QUICK_TEST_TIMEOUT = 300000; // 5 minutes - 7 waves max ~4 min total
 const JOB_RETRY_ATTEMPTS = parseInt(process.env.EXECUTION_RETRY_ATTEMPTS || '3', 10);
 
 log.info({ maxConcurrency: MAX_CONCURRENCY, jobTimeoutMs: JOB_TIMEOUT }, 'Starting QA Guardian Test Execution Worker');
@@ -83,6 +86,14 @@ interface ExecutionJobData {
   scheduledAt?: string;
 }
 
+interface QuickTestJobData {
+  runId: string;
+  url: string;
+  orgId: string;
+  userId: string;
+  browser: 'chromium' | 'firefox' | 'webkit';
+}
+
 // ============================================================================
 // Test Execution Logic Import
 // ============================================================================
@@ -90,6 +101,10 @@ interface ExecutionJobData {
 // Import the actual test execution function from test-runs module
 // This is dynamically imported to ensure all dependencies are loaded
 let runTestsForRun: (runId: string) => Promise<void>;
+
+// Import the quick test execution function from quick-test-runner module
+// Dynamically imported like runTestsForRun to ensure all dependencies are loaded
+let runQuickTest: (request: { url: string; runId: string; orgId: string; userId: string; browser?: 'chromium' | 'firefox' | 'webkit' }) => Promise<void>;
 
 async function loadExecutionModule(): Promise<void> {
   try {
@@ -101,6 +116,16 @@ async function loadExecutionModule(): Promise<void> {
     log.error({ error: err }, 'Failed to load test execution module');
     process.exit(1);
   }
+
+  try {
+    // Dynamic import of the quick-test-runner module
+    const quickTestModule = await import('./services/quick-test-runner.js');
+    runQuickTest = quickTestModule.runQuickTest;
+    log.info('Quick test execution module loaded successfully');
+  } catch (err) {
+    log.error({ error: err }, 'Failed to load quick test execution module');
+    process.exit(1);
+  }
 }
 
 // ============================================================================
@@ -108,7 +133,13 @@ async function loadExecutionModule(): Promise<void> {
 // ============================================================================
 
 let worker: Worker | null = null;
+let quickTestWorker: Worker | null = null;
 let isShuttingDown = false;
+
+// Phase 2C: Periodic zombie run cleanup interval reference
+let zombieCleanupInterval: ReturnType<typeof setInterval> | null = null;
+const ZOMBIE_CLEANUP_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+const ZOMBIE_STALE_MINUTES = 30; // Runs stuck for 30+ minutes are considered zombies
 
 async function startWorker(): Promise<void> {
   // Feature #169: Initialize PostgreSQL connection - worker needs DB access
@@ -167,6 +198,22 @@ async function startWorker(): Promise<void> {
 
       const startTime = Date.now();
 
+      // Phase 2B: Extend BullMQ lock every 2 minutes to prevent long-running suites
+      // from being marked as stalled. The default lockDuration is 10 minutes, so
+      // extending every 2 minutes provides a comfortable safety margin.
+      const LOCK_EXTEND_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes
+      const lockExtender = setInterval(async () => {
+        try {
+          if (job.token) {
+            await job.extendLock(job.token, JOB_TIMEOUT);
+            log.debug({ jobId: job.id, runId }, 'Extended job lock');
+          }
+        } catch (err) {
+          log.warn({ jobId: job.id, runId, error: err instanceof Error ? err.message : String(err) },
+            'Failed to extend job lock - job may be marked as stalled');
+        }
+      }, LOCK_EXTEND_INTERVAL_MS);
+
       try {
         // Execute the test run
         await runTestsForRun(runId);
@@ -177,6 +224,9 @@ async function startWorker(): Promise<void> {
         const durationSec = Math.round((Date.now() - startTime) / 1000);
         log.error({ jobId: job.id, runId, durationSec, error: err instanceof Error ? err.message : String(err) }, 'Job failed');
         throw err; // Re-throw for BullMQ retry handling
+      } finally {
+        // Phase 2B: Always clear the lock extender interval
+        clearInterval(lockExtender);
       }
     },
     {
@@ -258,6 +308,121 @@ async function startWorker(): Promise<void> {
   worker.on('closed', () => {
     log.info('Worker closed');
   });
+
+  // Phase 2C: Start periodic zombie run cleanup every 15 minutes.
+  // This catches runs that get stuck in 'running' state due to Chromium crashes,
+  // memory leaks, or other unforeseen issues that the per-test timeout didn't catch.
+  zombieCleanupInterval = setInterval(async () => {
+    if (isShuttingDown) return;
+    try {
+      const { cleanupStaleRunningRuns } = await import('./services/repositories/test-runs.js');
+      const cleaned = await cleanupStaleRunningRuns(ZOMBIE_STALE_MINUTES);
+      if (cleaned > 0) {
+        log.warn({ count: cleaned, staleMinutes: ZOMBIE_STALE_MINUTES },
+          'Periodic zombie cleanup: cleaned up stale running runs');
+      }
+    } catch (err) {
+      log.error({ error: err instanceof Error ? err.message : String(err) },
+        'Periodic zombie cleanup failed');
+    }
+  }, ZOMBIE_CLEANUP_INTERVAL_MS);
+  log.info({ intervalMinutes: ZOMBIE_CLEANUP_INTERVAL_MS / 60000, staleThresholdMinutes: ZOMBIE_STALE_MINUTES },
+    'Periodic zombie run cleanup scheduled');
+
+  // ============================================================================
+  // Quick Test Worker (separate queue, higher concurrency, shorter timeout)
+  // ============================================================================
+
+  log.info({ concurrency: QUICK_TEST_CONCURRENCY, timeoutMs: QUICK_TEST_TIMEOUT }, 'Creating Quick Test BullMQ worker...');
+
+  quickTestWorker = new Worker<QuickTestJobData>(
+    QUICK_TEST_QUEUE_NAME,
+    async (job: Job<QuickTestJobData>) => {
+      const { runId, url, orgId, userId, browser } = job.data;
+      log.info({ jobId: job.id, runId, url, browser }, 'Processing quick test job');
+
+      const startTime = Date.now();
+
+      try {
+        await runQuickTest({ url, runId, orgId, userId, browser });
+
+        const durationSec = Math.round((Date.now() - startTime) / 1000);
+        log.info({ jobId: job.id, runId, durationSec }, 'Quick test job completed successfully');
+      } catch (err: unknown) {
+        const durationSec = Math.round((Date.now() - startTime) / 1000);
+        log.error({ jobId: job.id, runId, durationSec, error: err instanceof Error ? err.message : String(err) }, 'Quick test job failed');
+        throw err; // Re-throw for BullMQ retry handling
+      }
+    },
+    {
+      connection: redisOptions,
+      concurrency: QUICK_TEST_CONCURRENCY,
+      lockDuration: QUICK_TEST_TIMEOUT,
+      stalledInterval: 60000,
+      maxStalledCount: 2,
+    }
+  );
+
+  // Quick Test worker event handlers
+  quickTestWorker.on('completed', (job) => {
+    log.debug({ jobId: job.id, queue: QUICK_TEST_QUEUE_NAME }, 'Quick test job completed');
+  });
+
+  quickTestWorker.on('failed', async (job, err) => {
+    try {
+      if (!job) {
+        log.fatal({ error: err.message, queue: QUICK_TEST_QUEUE_NAME }, 'QUICK TEST JOB PERMANENTLY FAILED - stalled job removed');
+        return;
+      }
+
+      const maxAttempts = job.opts?.attempts ?? 2;
+      const isExhausted = job.attemptsMade >= maxAttempts;
+
+      if (isExhausted) {
+        log.fatal({
+          jobId: job.id,
+          runId: job.data?.runId,
+          attempts: job.attemptsMade,
+          maxAttempts,
+          error: err.message,
+        }, 'QUICK TEST JOB PERMANENTLY FAILED - all retries exhausted');
+
+        // Mark the quick test as failed in DB so UI doesn't show "running" forever
+        if (job.data?.runId) {
+          try {
+            const { completeQuickTestResult } = await import('./services/repositories/quick-test.js');
+            await completeQuickTestResult(job.data.runId, 'failed', [], null);
+          } catch (dbErr) {
+            log.error({ runId: job.data.runId, error: dbErr instanceof Error ? dbErr.message : String(dbErr) },
+              'Failed to mark quick test as failed after exhausted retries');
+          }
+        }
+      } else {
+        log.warn({
+          jobId: job.id,
+          runId: job.data?.runId,
+          attempt: job.attemptsMade,
+          maxAttempts,
+          error: err.message,
+        }, 'Quick test job failed - will retry');
+      }
+    } catch (handlerErr) {
+      log.error({ error: handlerErr instanceof Error ? handlerErr.message : String(handlerErr) },
+        'Error in quick test failed-job handler');
+    }
+  });
+
+  quickTestWorker.on('error', (err) => {
+    log.error({ error: err, queue: QUICK_TEST_QUEUE_NAME }, 'Quick test worker error');
+  });
+
+  quickTestWorker.on('stalled', (jobId) => {
+    log.warn({ jobId, queue: QUICK_TEST_QUEUE_NAME }, 'Quick test job stalled - may need investigation');
+  });
+
+  quickTestWorker.on('ready', () => {
+    log.info({ queueName: QUICK_TEST_QUEUE_NAME }, 'Quick test worker ready and listening for jobs');
+  });
 }
 
 // ============================================================================
@@ -273,14 +438,31 @@ async function shutdown(signal: string): Promise<void> {
   isShuttingDown = true;
   log.info({ signal }, 'Received shutdown signal, initiating graceful shutdown...');
 
-  // Close worker (waits for current jobs to finish)
+  // Phase 2C: Clear zombie cleanup interval before closing worker
+  if (zombieCleanupInterval) {
+    clearInterval(zombieCleanupInterval);
+    zombieCleanupInterval = null;
+    log.info('Periodic zombie cleanup interval cleared');
+  }
+
+  // Close workers (waits for current jobs to finish)
   if (worker) {
-    log.info('Closing worker (waiting for active jobs)...');
+    log.info('Closing test execution worker (waiting for active jobs)...');
     try {
       await worker.close();
-      log.info('Worker closed successfully');
+      log.info('Test execution worker closed successfully');
     } catch (err) {
-      log.error({ error: err }, 'Error closing worker');
+      log.error({ error: err }, 'Error closing test execution worker');
+    }
+  }
+
+  if (quickTestWorker) {
+    log.info('Closing quick test worker (waiting for active jobs)...');
+    try {
+      await quickTestWorker.close();
+      log.info('Quick test worker closed successfully');
+    } catch (err) {
+      log.error({ error: err }, 'Error closing quick test worker');
     }
   }
 
@@ -320,13 +502,15 @@ const HEALTH_PORT = parseInt(process.env.WORKER_HEALTH_PORT || '3002', 10);
 
 const healthServer = createServer((req, res) => {
   if (req.url === '/health' && req.method === 'GET') {
-    const isHealthy = worker !== null && !isShuttingDown;
+    const isHealthy = worker !== null && quickTestWorker !== null && !isShuttingDown;
     res.writeHead(isHealthy ? 200 : 503);
     res.end(JSON.stringify({
       status: isHealthy ? 'healthy' : 'unhealthy',
       worker: worker !== null,
+      quickTestWorker: quickTestWorker !== null,
       shuttingDown: isShuttingDown,
       maxConcurrency: MAX_CONCURRENCY,
+      quickTestConcurrency: QUICK_TEST_CONCURRENCY,
       // Feature #200: Include Redis event publisher status
       redisEventPublisher: isPublisherAvailable(),
     }));

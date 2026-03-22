@@ -130,27 +130,50 @@ export function checkForErrorInResult(result: unknown): { hasError: boolean; err
 }
 
 /**
- * Ensure AI router is initialized with API keys from environment
- * This handles the case where the singleton was created before dotenv loaded
+ * Result of AI initialization check with actionable error details
  */
-export function ensureAIInitialized(): boolean {
+export interface AIInitResult {
+  initialized: boolean;
+  error?: string;
+}
+
+/**
+ * Ensure AI router is initialized with API keys from environment.
+ * Returns an object with initialization status and a descriptive error
+ * if initialization failed, so callers can surface the reason to users.
+ */
+export function ensureAIInitialized(): AIInitResult {
   if (aiRouter.isInitialized()) {
-    return true;
+    return { initialized: true };
   }
 
-  // Try to reinitialize with current env vars
-  logger.info('AI router not initialized, attempting to reinitialize with env vars...');
+  // Check which API keys are present in the environment
+  const hasKie = !!process.env.KIE_API_KEY;
+  const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
 
-  // Use the new reinitializeFromEnv method
+  if (!hasKie && !hasAnthropic) {
+    pinoLog.warn({ hasKie, hasAnthropic }, 'No AI provider API keys configured');
+    return {
+      initialized: false,
+      error: 'No AI provider API keys configured. Set KIE_API_KEY or ANTHROPIC_API_KEY in your environment.',
+    };
+  }
+
+  // Keys are present but router isn't initialized -- try to reinitialize
+  logger.info('AI router not initialized, attempting to reinitialize with env vars...');
   const success = aiRouter.reinitializeFromEnv();
 
   if (success) {
     logger.info('AI router reinitialized successfully');
-  } else {
-    logger.error('AI router reinitialization failed - check API keys in .env');
+    return { initialized: true };
   }
 
-  return aiRouter.isInitialized();
+  // Reinitialize was called but still not working
+  pinoLog.error({ hasKie, hasAnthropic }, 'AI router reinitialization failed despite API keys being present');
+  return {
+    initialized: false,
+    error: `AI router initialization failed. Keys present: ${[hasKie && 'KIE_API_KEY', hasAnthropic && 'ANTHROPIC_API_KEY'].filter(Boolean).join(', ')}. Check that the keys are valid.`,
+  };
 }
 
 /**

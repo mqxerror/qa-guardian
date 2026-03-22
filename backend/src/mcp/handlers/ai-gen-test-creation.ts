@@ -106,6 +106,8 @@ export const generateTestFromDescription: ToolHandler = async (args, context) =>
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, prefer-const
     let suggestedVariations: string[] = [];
     let usedRealAi = false;
+    // Phase 3D: Track AI failure reason for frontend transparency
+    let aiFailureReason: string | undefined;
 
     if (useRealAi && aiAvailable) {
       // Use REAL Claude API via ai-router
@@ -210,10 +212,16 @@ Generate the complete test code.`;
         }
 
       } catch (aiError) {
-        context.log(`[AI] Real AI generation failed, falling back to template: ${aiError}`);
+        const reason = aiError instanceof Error ? aiError.message : String(aiError);
+        context.log(`[AI] Real AI generation failed, falling back to template: ${reason}`);
+        aiFailureReason = `AI generation failed: ${reason}`;
         // Fall back to template-based generation
         usedRealAi = false;
       }
+    } else if (useRealAi && !aiAvailable) {
+      // AI was requested but no provider is available
+      aiFailureReason = 'AI provider not initialized. Check that KIE_API_KEY or ANTHROPIC_API_KEY is configured.';
+      context.log(`[AI] ${aiFailureReason}`);
     }
 
     // Template-based fallback if AI not available or failed
@@ -326,6 +334,8 @@ test('${testName}', async ({ page }) => {
         },
         confidence_score: confidenceScore,
         used_real_ai: usedRealAi,
+        // Phase 3D: Surface AI failure reason so frontend can display it
+        ...(aiFailureReason ? { ai_failure_reason: aiFailureReason } : {}),
       },
       data_source: usedRealAi ? 'real' : 'template',
       suggestions: [
@@ -398,6 +408,8 @@ export const generateTest: ToolHandler = async (args, context) => {
     let inputTokens = 0;
     let outputTokens = 0;
     let usedRealAi = false;
+    // Phase 3D: Track AI failure reason for frontend transparency
+    let aiFailureReason: string | undefined;
 
     if (useRealAi && aiAvailable) {
       try {
@@ -476,9 +488,14 @@ Generate the complete test code.`;
         }
 
       } catch (aiError) {
-        context.log(`[AI] Real AI generation failed, falling back to template: ${aiError}`);
+        const reason = aiError instanceof Error ? aiError.message : String(aiError);
+        context.log(`[AI] Real AI generation failed, falling back to template: ${reason}`);
+        aiFailureReason = `AI generation failed: ${reason}`;
         usedRealAi = false;
       }
+    } else if (useRealAi && !aiAvailable) {
+      aiFailureReason = 'AI provider not initialized. Check that KIE_API_KEY or ANTHROPIC_API_KEY is configured.';
+      context.log(`[AI] ${aiFailureReason}`);
     }
 
     // Template-based fallback
@@ -570,6 +587,8 @@ test('${testName}', async ({ page }) => {
         model_tier: usedRealAi ? modelConfig.tier : 'fast',
         tokens_used: { input: inputTokens, output: outputTokens },
         used_real_ai: usedRealAi,
+        // Phase 3D: Surface AI failure reason so frontend can display it
+        ...(aiFailureReason ? { ai_failure_reason: aiFailureReason } : {}),
       },
       data_source: usedRealAi ? 'real' : 'template',
       generated_at: new Date().toISOString(),
@@ -613,6 +632,13 @@ export const generateTestSuite: ToolHandler = async (args, context) => {
 
     // Check if AI router is available
     const aiAvailable = aiRouter.isInitialized();
+
+    // Phase 3D: Track AI failure reason for frontend transparency
+    let aiFailureReason: string | undefined;
+    if (useRealAi && !aiAvailable) {
+      aiFailureReason = 'AI provider not initialized. Check that KIE_API_KEY or ANTHROPIC_API_KEY is configured.';
+      context.log(`[AI] ${aiFailureReason}`);
+    }
 
     // Try real AI generation first
     if (useRealAi && aiAvailable) {
@@ -708,7 +734,9 @@ Return the test suite as JSON.`;
           context.log(`[AI] Failed to parse AI response: ${parseError}`);
         }
       } catch (aiError) {
-        context.log(`[AI] Real AI generation failed, falling back to template: ${aiError}`);
+        const reason = aiError instanceof Error ? aiError.message : String(aiError);
+        context.log(`[AI] Real AI generation failed, falling back to template: ${reason}`);
+        aiFailureReason = `AI generation failed: ${reason}`;
       }
     }
 
@@ -898,6 +926,8 @@ Return the test suite as JSON.`;
         generation_time_ms: generationTimeMs,
         confidence_score: 0.75,
         used_real_ai: false,
+        // Phase 3D: Surface AI failure reason so frontend can display it
+        ...(aiFailureReason ? { ai_failure_reason: aiFailureReason } : {}),
       },
       data_source: 'template',
       recommendations: [

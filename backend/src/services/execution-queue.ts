@@ -59,11 +59,23 @@ export interface QueueHealth {
   uptime: number;
 }
 
+/**
+ * Quick Test job data for the quick-test-execution queue
+ */
+export interface QuickTestJobData {
+  runId: string;
+  url: string;
+  orgId: string;
+  userId: string;
+  browser: 'chromium' | 'firefox' | 'webkit';
+}
+
 // ============================================================================
 // Configuration
 // ============================================================================
 
 const QUEUE_NAME = 'test-execution';
+export const QUICK_TEST_QUEUE_NAME = 'quick-test-execution';
 const MAX_CONCURRENCY = parseInt(process.env.EXECUTION_MAX_CONCURRENCY || '2', 10);
 const JOB_TIMEOUT = parseInt(process.env.EXECUTION_JOB_TIMEOUT || '600000', 10); // 10 minutes default
 const JOB_RETRY_ATTEMPTS = parseInt(process.env.EXECUTION_RETRY_ATTEMPTS || '3', 10);
@@ -77,6 +89,7 @@ const API_ONLY_MODE = MAX_CONCURRENCY === 0;
 // ============================================================================
 
 let queue: Queue | null = null;
+let quickTestQueue: Queue | null = null;
 let worker: Worker | null = null;
 let queueEvents: QueueEvents | null = null;
 let connection: IORedis | null = null;
@@ -143,6 +156,26 @@ export async function initializeExecutionQueue(): Promise<boolean> {
         removeOnFail: {
           count: 50, // Keep last 50 failed jobs
           age: 7 * 24 * 60 * 60, // Remove after 7 days
+        },
+      },
+    });
+
+    // Create Quick Test queue with shorter retention (quick tests are lightweight)
+    quickTestQueue = new Queue(QUICK_TEST_QUEUE_NAME, {
+      connection: redisOptions,
+      defaultJobOptions: {
+        attempts: 2, // Quick tests need fewer retries
+        backoff: {
+          type: 'exponential',
+          delay: 3000, // 3 seconds initial backoff
+        },
+        removeOnComplete: {
+          count: 200, // Keep more (quick tests are smaller)
+          age: 12 * 60 * 60, // Remove after 12 hours
+        },
+        removeOnFail: {
+          count: 50,
+          age: 3 * 24 * 60 * 60, // Remove after 3 days
         },
       },
     });
@@ -333,6 +366,29 @@ export async function queueTestRun(
     return job.id || null;
   } catch (error) {
     logger.error({ error }, 'Failed to queue test run');
+    return null;
+  }
+}
+
+/**
+ * Add a Quick Test to the quick-test-execution queue
+ * @returns Job ID if queued successfully, null if queue not initialized
+ */
+export async function queueQuickTest(data: QuickTestJobData): Promise<string | null> {
+  if (!quickTestQueue || !isInitialized) {
+    logger.warn({ action: 'quick_test_queue_not_init' }, 'Quick test queue not initialized');
+    return null;
+  }
+
+  try {
+    const job = await quickTestQueue.add('execute-quick-test', data, {
+      jobId: `quick-test-${data.runId}`, // Deduplication by runId
+      priority: 5, // Higher priority than regular test runs (lower number = higher priority)
+    });
+    logger.info({ runId: data.runId, jobId: job.id, url: data.url }, 'Queued quick test');
+    return job.id || null;
+  } catch (error) {
+    logger.error({ error, runId: data.runId }, 'Failed to queue quick test');
     return null;
   }
 }
@@ -564,6 +620,11 @@ export async function shutdownExecutionQueue(): Promise<void> {
     if (queue) {
       await queue.close();
       queue = null;
+    }
+
+    if (quickTestQueue) {
+      await quickTestQueue.close();
+      quickTestQueue = null;
     }
 
     if (connection) {
