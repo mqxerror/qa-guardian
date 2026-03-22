@@ -17,6 +17,17 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# VITE build args — baked into the static bundle at build time
+# Defaults match production; override via docker compose build args
+ARG VITE_API_URL=https://qa.pixelcraftedmedia.com
+ARG VITE_API_BASE_URL=https://qa.pixelcraftedmedia.com
+ARG VITE_SOCKET_URL=https://qa.pixelcraftedmedia.com
+ARG VITE_MCP_URL=https://qa.pixelcraftedmedia.com/mcp
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_SOCKET_URL=$VITE_SOCKET_URL
+ENV VITE_MCP_URL=$VITE_MCP_URL
+
 # Build production bundle
 ENV NODE_ENV=production
 RUN npm run build
