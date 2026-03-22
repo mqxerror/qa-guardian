@@ -6,7 +6,7 @@
  */
 
 import { isDatabaseConnected, query } from '../services/database.js';
-import { deleteExpiredQuickTestComparisons } from '../services/repositories/quick-test.js';
+import { deleteExpiredQuickTestComparisons, deleteOldQuickTestResults } from '../services/repositories/quick-test.js';
 import { createLogger } from '../services/logger.js';
 import { formatBytes } from '../utils/index.js';
 import fs from 'fs';
@@ -118,6 +118,13 @@ async function runCleanup(): Promise<void> {
       const deletedComparisons = await deleteExpiredQuickTestComparisons();
       if (deletedComparisons > 0) {
         logger.info(`[Cleanup] Deleted ${deletedComparisons} expired quick test comparisons`);
+      }
+
+      // Clean up old quick test results (default 7 days)
+      const QUICK_TEST_RETENTION_DAYS = parseInt(process.env.QUICK_TEST_RETENTION_DAYS || '7', 10);
+      const deletedQuickTests = await deleteOldQuickTestResults(QUICK_TEST_RETENTION_DAYS);
+      if (deletedQuickTests > 0) {
+        logger.info(`[Cleanup] Deleted ${deletedQuickTests} quick test results older than ${QUICK_TEST_RETENTION_DAYS} days`);
       }
     } else {
       logger.info('[Cleanup] Database not connected, skipping DB cleanup');

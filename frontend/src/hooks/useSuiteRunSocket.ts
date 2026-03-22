@@ -306,6 +306,50 @@ export function useSuiteRunSocket({
     // Assume run is active when we join — the run-complete handler will clear this
     isRunActiveRef.current = true;
 
+    // Fix: Catch up on any events missed during the race window between
+    // room join and worker start. The worker may have already emitted
+    // run-start and run-progress (with totalTests) to an empty room.
+    setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/v1/runs/${runId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const run = data.run;
+
+          // Update counters from server state
+          if (run.results && Array.isArray(run.results)) {
+            let completed = 0;
+            totalTestsRef.current = run.results.length;
+            for (const result of run.results) {
+              const status = result.status as TestRunStatus;
+              perTestStatusRef.current.set(result.test_id, status);
+              if (status !== 'running' && status !== 'waiting') {
+                completed++;
+              }
+            }
+            completedTestsRef.current = completed;
+          }
+
+          // Check if run already completed while we were joining
+          if (run.status !== 'pending' && run.status !== 'running') {
+            isRunActiveRef.current = false;
+            currentStepRef.current = null;
+            onRunComplete({
+              id: run.id,
+              status: run.status,
+              duration_ms: run.duration_ms,
+              results: run.results,
+            });
+          }
+          triggerRender();
+        }
+      } catch {
+        // Stale check interval will catch it
+      }
+    }, 500);
+
     return () => {
       logger.websocket.debug('useSuiteRunSocket: Leaving run room:', runId);
       leaveRun(runId);

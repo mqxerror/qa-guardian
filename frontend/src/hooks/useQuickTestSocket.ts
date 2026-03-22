@@ -122,6 +122,26 @@ export function useQuickTestSocket() {
     }
   }, [socket, isConnected]);
 
+  // Fetch current state (for reconnection catch-up and race condition recovery)
+  const fetchState = useCallback(async (runId: string) => {
+    try {
+      const response = await fetch(`/api/v1/quick-test/${runId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      return data;
+    } catch {
+      return null;
+    }
+  }, [token]);
+
   // Start a new quick test
   // Feature #579: Added browser parameter for cross-browser testing
   const startTest = useCallback(async (url: string, browser: 'chromium' | 'firefox' | 'webkit' = 'chromium'): Promise<{ runId: string } | { error: string }> => {
@@ -158,32 +178,29 @@ export function useQuickTestSocket() {
       // Join the room for real-time updates
       joinRoom(runId);
 
+      // Fix: Catch up on any events missed during the race window between
+      // POST response and room join. The worker starts emitting events
+      // immediately, but the room may not be joined yet.
+      setTimeout(() => {
+        fetchState(runId).then(data => {
+          if (data) {
+            setState(prev => ({
+              ...prev,
+              status: data.status || prev.status,
+              waves: data.waves || prev.waves,
+              summary: data.summary || prev.summary,
+              completedAt: data.completedAt ? new Date(data.completedAt) : prev.completedAt,
+            }));
+          }
+        });
+      }, 500);
+
       return { runId };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to start test';
       return { error: message };
     }
-  }, [token, reset, joinRoom]);
-
-  // Fetch current state (for reconnection catch-up)
-  const fetchState = useCallback(async (runId: string) => {
-    try {
-      const response = await fetch(`/api/v1/quick-test/${runId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        return null;
-      }
-
-      const data = await response.json();
-      return data;
-    } catch {
-      return null;
-    }
-  }, [token]);
+  }, [token, reset, joinRoom, fetchState]);
 
   // Feature #542: Load a completed test result for re-viewing history
   const loadResult = useCallback(async (runId: string): Promise<boolean> => {
@@ -328,6 +345,31 @@ export function useQuickTestSocket() {
     }, 5000);
 
     return () => clearInterval(fallbackPoll);
+  }, [isConnected, state.status, fetchState]);
+
+  // Fix: Belt-and-suspenders polling while WebSocket IS connected during a running test.
+  // Socket.IO events provide instant updates; this catches any events silently dropped
+  // by Redis Pub/Sub or missed during brief reconnection windows.
+  useEffect(() => {
+    if (!isConnected || !currentRunIdRef.current) return;
+    if (state.status !== 'running') return;
+
+    const runId = currentRunIdRef.current;
+    const interval = setInterval(() => {
+      fetchState(runId).then(data => {
+        if (data) {
+          setState(prev => ({
+            ...prev,
+            status: data.status || prev.status,
+            waves: data.waves || prev.waves,
+            summary: data.summary || prev.summary,
+            completedAt: data.completedAt ? new Date(data.completedAt) : prev.completedAt,
+          }));
+        }
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [isConnected, state.status, fetchState]);
 
   // Socket event handlers
