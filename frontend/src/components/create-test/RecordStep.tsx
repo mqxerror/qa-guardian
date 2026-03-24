@@ -197,7 +197,7 @@ export const RecordStep: React.FC<RecordStepProps> = ({
       // Connect to socket for live updates (uses current origin via Traefik)
       const socket = io({
         auth: { token },
-        transports: ['websocket'],
+        transports: ['polling', 'websocket'],
       });
 
       socketRef.current = socket;
@@ -211,8 +211,11 @@ export const RecordStep: React.FC<RecordStepProps> = ({
         setRecordingConnected(false);
       });
 
-      socket.on('recording:frame', (data: { frame: string; width: number; height: number }) => {
-        setRecordingFrame(`data:image/jpeg;base64,${data.frame}`);
+      socket.on('recording:frame', (data: { base64?: string; frame?: string; width: number; height: number }) => {
+        const frameBase64 = data.base64 || data.frame;
+        if (frameBase64) {
+          setRecordingFrame(`data:image/jpeg;base64,${frameBase64}`);
+        }
         frameScaleRef.current = { scaleX: data.width, scaleY: data.height };
       });
 

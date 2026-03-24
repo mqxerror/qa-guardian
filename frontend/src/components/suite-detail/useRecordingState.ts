@@ -264,7 +264,7 @@ export function useRecordingState({
         : window.location.origin;
 
       const socket = io(socketUrl, {
-        transports: ['websocket', 'polling'],
+        transports: ['polling', 'websocket'],
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,
@@ -305,7 +305,7 @@ export function useRecordingState({
       });
 
       // Handle frames
-      socket.on('recording:frame', (frameData: { frame: string; url?: string; viewport?: { width: number; height: number } }) => {
+      socket.on('recording:frame', (frameData: { base64?: string; frame?: string; url?: string; width?: number; height?: number; viewport?: { width: number; height: number } }) => {
         lastFrameTimeRef.current = Date.now();
         setStaleFrameWarning('none');
 
@@ -314,9 +314,12 @@ export function useRecordingState({
         }
         if (frameData.viewport) {
           frameScaleRef.current = { scaleX: frameData.viewport.width, scaleY: frameData.viewport.height };
+        } else if (frameData.width && frameData.height) {
+          frameScaleRef.current = { scaleX: frameData.width, scaleY: frameData.height };
         }
 
-        pendingFrameRef.current = `data:image/jpeg;base64,${frameData.frame}`;
+        const frameBase64 = frameData.base64 || frameData.frame;
+        pendingFrameRef.current = frameBase64 ? `data:image/jpeg;base64,${frameBase64}` : null;
         if (!frameRequestRef.current) {
           frameRequestRef.current = requestAnimationFrame(() => {
             if (pendingFrameRef.current) {
