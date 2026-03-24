@@ -497,6 +497,7 @@ export const CustomTestWizard: React.FC<CustomTestWizardProps> = ({
  }}
  onChange={handleRecordFormChange}
  projectBaseUrl={projectBaseUrl}
+ suiteId={suiteId}
  />
  )}
 

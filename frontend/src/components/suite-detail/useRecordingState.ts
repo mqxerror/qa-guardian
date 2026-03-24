@@ -264,6 +264,7 @@ export function useRecordingState({
         : window.location.origin;
 
       const socket = io(socketUrl, {
+        auth: { token },
         transports: ['polling', 'websocket'],
         reconnection: true,
         reconnectionAttempts: 10,
@@ -371,13 +372,12 @@ export function useRecordingState({
 
     if (recordingSessionId) {
       try {
-        await fetch('/api/v1/recording/stop', {
+        await fetch(`/api/v1/recording/${recordingSessionId}/stop`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ session_id: recordingSessionId }),
         });
       } catch (err) {
         console.error('Failed to stop recording session:', err);

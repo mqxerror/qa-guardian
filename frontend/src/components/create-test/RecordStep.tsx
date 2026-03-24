@@ -52,6 +52,8 @@ export interface RecordStepProps {
   onChange?: (config: RecordConfig | null, isValid: boolean) => void;
   /** Project base URL for smart defaults */
   projectBaseUrl?: string;
+  /** Suite ID for recording session */
+  suiteId: string;
 }
 
 /**
@@ -92,6 +94,7 @@ function getActionIcon(action: string): string {
 export const RecordStep: React.FC<RecordStepProps> = ({
   onChange,
   projectBaseUrl,
+  suiteId,
 }) => {
   // Get token from auth store instead of props
   const { token } = useAuthStore();
@@ -180,8 +183,9 @@ export const RecordStep: React.FC<RecordStepProps> = ({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          url: targetUrl,
-          device: deviceEnabled ? deviceConfig : undefined,
+          target_url: targetUrl,
+          suite_id: suiteId,
+          device_config: deviceEnabled ? deviceConfig : undefined,
         }),
       });
 
@@ -191,7 +195,7 @@ export const RecordStep: React.FC<RecordStepProps> = ({
       }
 
       const data = await response.json();
-      const sessionId = data.sessionId;
+      const sessionId = data.session_id;
       setRecordingSessionId(sessionId);
 
       // Connect to socket for live updates (uses current origin via Traefik)
@@ -250,20 +254,19 @@ export const RecordStep: React.FC<RecordStepProps> = ({
     } finally {
       setIsStarting(false);
     }
-  }, [targetUrl, deviceEnabled, deviceConfig, token, testName]);
+  }, [targetUrl, deviceEnabled, deviceConfig, token, testName, suiteId]);
 
   // Stop recording
   const handleStopRecording = useCallback(async () => {
     if (!recordingSessionId) return;
 
     try {
-      await fetch(`/api/v1/recording/stop`, {
+      await fetch(`/api/v1/recording/${recordingSessionId}/stop`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ sessionId: recordingSessionId }),
       });
     } catch (err) {
       console.error('Error stopping recording:', err);
