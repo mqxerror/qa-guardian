@@ -1197,7 +1197,13 @@ export async function deliverWebhookWithRetry(
 // Feature #1295: Helper function to log webhook delivery details
 // Feature #329: Now also persists to database
 export function logWebhookDelivery(log: WebhookDeliveryLog): void {
-  webhookDeliveryLogs.set(log.id, log);
+  // Strip large body fields from in-memory copy (already persisted to DB)
+  const memoryLog: WebhookDeliveryLog = {
+    ...log,
+    request: log.request ? { ...log.request, body: '' } : log.request,
+    response: log.response ? { ...log.response, body: '' } : log.response,
+  };
+  webhookDeliveryLogs.set(log.id, memoryLog);
 
   // Keep only last 1000 logs per subscription to prevent memory bloat
   const subLogs = Array.from(webhookDeliveryLogs.entries())
@@ -1207,6 +1213,19 @@ export function logWebhookDelivery(log: WebhookDeliveryLog): void {
   if (subLogs.length > 1000) {
     // Remove oldest logs beyond 1000
     subLogs.slice(1000).forEach(([id]) => webhookDeliveryLogs.delete(id));
+  }
+
+  // Global cap to prevent memory leak — data is persisted to PostgreSQL
+  const GLOBAL_MAX_DELIVERY_LOGS = 2000;
+  if (webhookDeliveryLogs.size > GLOBAL_MAX_DELIVERY_LOGS) {
+    // Remove oldest entries (Map iteration order is insertion order)
+    const toDelete = webhookDeliveryLogs.size - GLOBAL_MAX_DELIVERY_LOGS;
+    let deleted = 0;
+    for (const key of webhookDeliveryLogs.keys()) {
+      if (deleted >= toDelete) break;
+      webhookDeliveryLogs.delete(key);
+      deleted++;
+    }
   }
 
   // Feature #329: Persist to database asynchronously (fire and forget)

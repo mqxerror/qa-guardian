@@ -89,8 +89,16 @@ export function endRequest(
   const key = getMetricsKey(method, path);
 
   // Get or create endpoint metrics
+  const MAX_METRICS_ENTRIES = 500;
   let metrics = metricsMap.get(key);
   if (!metrics) {
+    // Before adding a new entry, check if we need to evict
+    if (metricsMap.size >= MAX_METRICS_ENTRIES) {
+      // Evict the oldest entry (first key in insertion order)
+      const firstKey = metricsMap.keys().next().value;
+      if (firstKey) metricsMap.delete(firstKey);
+    }
+
     metrics = {
       method,
       path: key.split(':')[1],

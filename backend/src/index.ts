@@ -68,7 +68,7 @@ import { registerMetricsHooks } from './services/metrics.js'; // Feature #165: A
 import { setWebSocketIO } from './services/websocket-events.js'; // Feature #108: WebSocket CRUD events
 import { initializeEventSubscriber, closeSubscriber } from './services/redis-events.js'; // Feature #200: Redis Pub/Sub for worker events
 import { generateRequestId } from './utils/index.js';
-import { getTestRun } from './services/repositories/test-runs.js'; // Feature #388: Organization check for Socket.IO join-run
+import { getTestRunOrganization } from './services/repositories/test-runs.js'; // Feature #388: Organization check for Socket.IO join-run
 import { getQuickTestResultAsync, shutdownQuickTestTimers } from './services/quick-test-runner.js'; // Feature #461: Organization check for Socket.IO join-quick-test, Feature #BMAD: TTL timer cleanup
 import { createLogger } from './services/logger.js'; // Feature #447: Structured logging
 import { sendError } from './utils/errors.js'; // Feature #722: Standardized error responses
@@ -650,7 +650,7 @@ async function start() {
 
         // Feature #388: Verify the run belongs to the user's organization
         try {
-          const run = await getTestRun(runId);
+          const run = await getTestRunOrganization(runId);
           if (!run) {
             socket.emit('error', { message: 'Test run not found' });
             return;

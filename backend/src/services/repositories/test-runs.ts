@@ -314,6 +314,31 @@ export async function createTestRun(run: TestRun): Promise<TestRun> {
 }
 
 /**
+ * Lightweight check for run existence and organization ownership.
+ * Only fetches id and organization_id — avoids loading the massive results JSONB.
+ */
+export async function getTestRunOrganization(runId: string): Promise<{ id: string; organization_id: string } | undefined> {
+  if (isDatabaseConnected()) {
+    try {
+      const result = await query<{ id: string; organization_id: string }>(
+        'SELECT id, organization_id FROM test_runs WHERE id = $1',
+        [runId]
+      );
+      if (result && result.rows[0]) {
+        return result.rows[0];
+      }
+    } catch (error) {
+      logger.error({ error }, '[TestRunsRepo] Failed to get test run organization from database:');
+    }
+  }
+
+  // Fallback: read from in-memory Map when DB unavailable
+  const map = await getTestRunsMap();
+  const run = map.get(runId);
+  return run ? { id: run.id, organization_id: run.organization_id } : undefined;
+}
+
+/**
  * Get a test run by ID
  */
 export async function getTestRun(id: string): Promise<TestRun | undefined> {
