@@ -62,10 +62,33 @@ export async function fetchWithAuth<T = any>(
     ...options?.headers as Record<string, string>,
   };
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     ...options,
     headers,
   });
+
+  // Auto-refresh on 401: attempt token refresh and retry once
+  if (response.status === 401) {
+    try {
+      const { useAuthStore } = await import('../../stores/authStore');
+      const { refreshAccessToken } = useAuthStore.getState();
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        const newToken = useAuthStore.getState().token;
+        if (newToken) {
+          response = await fetch(url, {
+            ...options,
+            headers: {
+              ...headers,
+              'Authorization': `Bearer ${newToken}`,
+            },
+          });
+        }
+      }
+    } catch {
+      // Refresh failed — fall through to error handling below
+    }
+  }
 
   if (!response.ok) {
     // Feature #722: Parse the standardized error body for structured error info
