@@ -94,8 +94,9 @@ services:
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
       # Docker containers always run in production mode (overrides .env NODE_ENV=development)
       - NODE_ENV=production
-      # Feature #156: Limit Node.js heap to 1.5GB to leave room for other processes
-      - NODE_OPTIONS=--max-old-space-size=1536
+      # Infra: Increased heap from 1.5GB to 3GB — backend has a memory leak that
+      # causes OOM crash every ~50 minutes at 1.5GB. This buys time until the leak is found.
+      - NODE_OPTIONS=--max-old-space-size=3072
       # Feature #209: ZAP API key for DAST scanning
       - ZAP_API_KEY=${ZAP_API_KEY:-dev-zap-key-change-in-prod}
       # Feature #BMAD: API-only mode — only the worker container processes BullMQ jobs.
@@ -117,15 +118,15 @@ services:
       #   condition: service_healthy
     networks:
       - qa-network
-    # Feature #156: Resource constraints to prevent OOM
+    # Infra: 4GB container for 3GB heap + overhead. Backend has a memory leak.
     deploy:
       resources:
         limits:
           cpus: '2'
-          memory: 2G
+          memory: 4G
         reservations:
           cpus: '0.5'
-          memory: 512M
+          memory: 1G
 
   # ===========================================================================
   # Test Execution Worker (Feature #169)
