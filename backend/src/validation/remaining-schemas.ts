@@ -457,12 +457,16 @@ export const recordingIdParamsSchema = z.object({
 });
 
 export const startRecordingBodySchema = z.object({
-  url: z.string().url('Valid URL is required'),
-  name: z.string().optional(),
-  browser: z.enum(['chromium', 'firefox', 'webkit']).optional(),
-  viewport: z.object({
-    width: z.number().int().positive().optional(),
-    height: z.number().int().positive().optional(),
+  target_url: z.string().url('Valid URL is required'),
+  suite_id: z.string().min(1, 'Suite ID is required'),
+  device_config: z.object({
+    device_name: z.string().optional(),
+    viewport_width: z.number().int().positive().optional(),
+    viewport_height: z.number().int().positive().optional(),
+    user_agent: z.string().optional(),
+    is_mobile: z.boolean().optional(),
+    has_touch: z.boolean().optional(),
+    device_scale_factor: z.number().positive().optional(),
   }).optional(),
 });
 
