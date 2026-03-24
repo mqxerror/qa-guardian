@@ -93,7 +93,7 @@ class AIRouterService {
       fallback: 'anthropic',
       fallbackOnError: true,
       fallbackOnTimeout: true,
-      timeoutMs: parseInt(process.env.AI_TIMEOUT_MS || '30000'),
+      timeoutMs: parseInt(process.env.AI_TIMEOUT_MS || '60000'),
       costTracking: true,
     });
 

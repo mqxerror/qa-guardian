@@ -108,6 +108,7 @@ export interface GeneratedTest {
     provider: string;
     model: string;
     used_real_ai: boolean;
+    ai_failure_reason?: string;
   };
   data_source: string;
   version?: number;

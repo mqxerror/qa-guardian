@@ -86,7 +86,7 @@ const DEFAULT_CONFIG: Omit<AIProviderConfig, 'orgId' | 'createdAt' | 'updatedAt'
     onError: process.env.AI_FALLBACK_ON_ERROR !== 'false',
     onServerError: process.env.AI_FALLBACK_ON_SERVER_ERROR !== 'false',
   },
-  timeoutMs: parseInt(process.env.AI_TIMEOUT_MS || '30000'),
+  timeoutMs: parseInt(process.env.AI_TIMEOUT_MS || '60000'),
   circuitBreaker: {
     enabled: process.env.AI_CIRCUIT_BREAKER_ENABLED !== 'false',
     failureThreshold: parseInt(process.env.AI_CIRCUIT_BREAKER_THRESHOLD || '5'),

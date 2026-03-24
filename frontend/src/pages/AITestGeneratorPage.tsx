@@ -115,11 +115,15 @@ export function AITestGeneratorPage() {
  setError(null);
  setGeneratedTest(null);
 
+ const controller = new AbortController();
+ const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min
+
  try {
  // Call the MCP API to generate test via the execute endpoint
  const response = await fetch('/api/v1/mcp/execute', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
+ signal: controller.signal,
  body: JSON.stringify({
  tool_name: 'generate_test',
  args: {
@@ -134,6 +138,7 @@ export function AITestGeneratorPage() {
  }),
  });
 
+ clearTimeout(timeoutId);
  const apiResponse = await response.json();
 
  if (apiResponse.success && apiResponse.result) {
@@ -165,7 +170,12 @@ export function AITestGeneratorPage() {
  setError(apiResponse.error || 'Failed to generate test');
  }
  } catch (err) {
+ clearTimeout(timeoutId);
+ if (err instanceof Error && err.name === 'AbortError') {
+ setError('AI generation timed out. Please try again with a simpler description.');
+ } else {
  setError(`Generation failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+ }
  } finally {
  setIsGenerating(false);
  }
@@ -207,11 +217,15 @@ export function AITestGeneratorPage() {
  // Feature #326: Store original code before regeneration
  const originalCode = generatedTest.test_code;
 
+ const controller = new AbortController();
+ const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min
+
  try {
  // Call the MCP API to regenerate test with feedback via the execute endpoint
  const response = await fetch('/api/v1/mcp/execute', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
+ signal: controller.signal,
  body: JSON.stringify({
  tool_name: 'generate_test',
  args: {
@@ -230,6 +244,7 @@ export function AITestGeneratorPage() {
  }),
  });
 
+ clearTimeout(timeoutId);
  const apiResponse = await response.json();
 
  if (apiResponse.success && apiResponse.result) {
@@ -265,7 +280,12 @@ export function AITestGeneratorPage() {
  setError(apiResponse.error || 'Failed to regenerate test');
  }
  } catch (err) {
+ clearTimeout(timeoutId);
+ if (err instanceof Error && err.name === 'AbortError') {
+ setError('AI regeneration timed out. Please try again with simpler feedback.');
+ } else {
  setError(`Regeneration failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+ }
  } finally {
  setIsRegenerating(false);
  }
@@ -656,6 +676,24 @@ Example: Test that a user can login with valid credentials and see the welcome m
  <div className="space-y-4">
  {generatedTest ? (
  <>
+ {/* Template Fallback Warning - shown when AI was unavailable */}
+ {(generatedTest.data_source === 'template' || generatedTest.ai_metadata?.ai_failure_reason) && (
+ <div role="status" className="p-4 rounded-lg bg-warning/10 border border-warning/30 text-sm space-y-1">
+ <div className="font-medium text-warning flex items-center gap-2">
+ <span>&#9888;</span>
+ <span>AI was unavailable &mdash; template-based test generated</span>
+ </div>
+ {generatedTest.ai_metadata?.ai_failure_reason && (
+ <p className="text-warning/80 text-xs">
+ Reason: {generatedTest.ai_metadata.ai_failure_reason}
+ </p>
+ )}
+ <p className="text-muted-foreground text-xs">
+ This test was generated using a built-in template instead of AI. It may need more manual adjustments. Try again later for an AI-powered result.
+ </p>
+ </div>
+ )}
+
  {/* Test Info */}
  <div className="bg-card rounded-lg border border-border p-4 space-y-3">
  <div className="flex items-center justify-between">

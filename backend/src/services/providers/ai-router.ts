@@ -220,7 +220,7 @@ export class AIRouter implements IAIProvider {
       fallback: config.fallback || 'anthropic',
       fallbackOnError: config.fallbackOnError ?? true,
       fallbackOnTimeout: config.fallbackOnTimeout ?? true,
-      timeoutMs: config.timeoutMs ?? 30000,
+      timeoutMs: config.timeoutMs ?? 60000,
       costTracking: config.costTracking ?? true,
     };
 
@@ -687,7 +687,7 @@ export class AIRouter implements IAIProvider {
       defaultModel: '',
       maxRetries: 3,
       retryDelayMs: 1000,
-      timeoutMs: 30000,
+      timeoutMs: 60000,
       rateLimitRpm: 50,
     };
   }
