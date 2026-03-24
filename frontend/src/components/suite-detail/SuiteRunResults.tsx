@@ -179,12 +179,14 @@ export function SuiteRunResults({
 
   const interval = setInterval(() => {
    const gap = Date.now() - lastProgressRef.current;
-   if (gap >= 30000) {
+   // Lighthouse/K6 tests take 2-5 minutes per test with no intermediate events.
+   // Only show "runner offline" warning after 5 minutes of silence.
+   if (gap >= 300000) {
     setStaleSince(gap);
    } else {
     setStaleSince(null);
    }
-  }, 5000);
+  }, 10000);
 
   return () => clearInterval(interval);
  }, [suiteRun?.status]);
