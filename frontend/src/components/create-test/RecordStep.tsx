@@ -145,6 +145,28 @@ export const RecordStep: React.FC<RecordStepProps> = ({
     };
   }, []);
 
+  // Prevent scroll events from leaking to parent page.
+  // React's onWheel is passive and cannot call preventDefault(),
+  // so we attach a native non-passive wheel listener instead.
+  useEffect(() => {
+    const el = browserViewRef.current;
+    if (!el || !socketRef.current || !recordingSessionId) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      socketRef.current?.emit('recording:scroll', {
+        sessionId: recordingSessionId,
+        deltaX: e.deltaX,
+        deltaY: e.deltaY,
+      });
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [recordingSessionId]);
+
   // Notify parent of changes
   useEffect(() => {
     const isValid = recordedSteps.length > 0 && testName.trim().length > 0 && targetUrl.trim().length > 0;
@@ -267,6 +289,7 @@ export const RecordStep: React.FC<RecordStepProps> = ({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({}),
       });
     } catch (err) {
       console.error('Error stopping recording:', err);
@@ -566,7 +589,7 @@ export const RecordStep: React.FC<RecordStepProps> = ({
               <div
                 ref={browserViewRef}
                 className="relative rounded-lg border-2 border-border overflow-hidden bg-background cursor-crosshair focus:outline-none focus:border-primary/40"
-                style={{ aspectRatio: '16/9', maxHeight: '400px' }}
+                style={{ aspectRatio: '16/9', maxHeight: '400px', overscrollBehavior: 'contain', touchAction: 'none' }}
                 tabIndex={0}
                 onClick={handleBrowserViewClick}
                 onKeyDown={handleBrowserViewKeyDown}

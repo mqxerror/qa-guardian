@@ -11,7 +11,7 @@
  * Feature #127: Mobile responsive design audit and fixes
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Socket } from 'socket.io-client';
 import { toast } from '../../../stores/toastStore';
 import { DeviceConfig } from '../../test-modals/types';
@@ -80,7 +80,7 @@ interface RecordTestModalProps {
   // Handlers
   onStartRecording: () => Promise<void>;
   onStopRecording: () => Promise<void>;
-  onCancelRecording: () => void;
+  onCancelRecording: () => void | Promise<void>;
   onRetryConnection: () => void;
   onStopAndSave: () => void;
 
@@ -197,16 +197,29 @@ export function RecordTestModal({
     }
   };
 
-  // Handler for scroll/wheel in browser view
-  const handleBrowserViewWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    if (!recordingSocketRef.current || !recordingSessionId) return;
+  // Prevent scroll events from leaking to parent page.
+  // React's onWheel is passive and cannot call preventDefault(),
+  // so we attach a native non-passive wheel listener instead.
+  useEffect(() => {
+    const el = browserViewRef.current;
+    if (!el) return;
 
-    recordingSocketRef.current.emit('recording:scroll', {
-      sessionId: recordingSessionId,
-      deltaX: e.deltaX,
-      deltaY: e.deltaY,
-    });
-  };
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (recordingSocketRef.current && recordingSessionId) {
+        recordingSocketRef.current.emit('recording:scroll', {
+          sessionId: recordingSessionId,
+          deltaX: e.deltaX,
+          deltaY: e.deltaY,
+        });
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [recordingSocketRef, recordingSessionId]);
 
   // Handler for mouse move (debug overlay)
   const handleBrowserViewMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -369,11 +382,10 @@ export function RecordTestModal({
               <div
                 ref={browserViewRef}
                 className="relative rounded-lg border-2 border-border overflow-hidden bg-background cursor-crosshair focus:outline-none focus:border-primary/40"
-                style={{ aspectRatio: '16/9', maxHeight: '500px', width: '100%', maxWidth: 'calc(500px * 16 / 9)' }}
+                style={{ aspectRatio: '16/9', maxHeight: '500px', width: '100%', maxWidth: 'calc(500px * 16 / 9)', overscrollBehavior: 'contain', touchAction: 'none' }}
                 tabIndex={0}
                 onClick={handleBrowserViewClick}
                 onKeyDown={handleBrowserViewKeyDown}
-                onWheel={handleBrowserViewWheel}
                 onMouseMove={handleBrowserViewMouseMove}
                 onMouseLeave={handleBrowserViewMouseLeave}
               >

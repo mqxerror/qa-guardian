@@ -635,20 +635,27 @@ function setupRecordingSocketHandlers(socketIO: SocketIOServer) {
       }
     });
 
-    // Handle keypress events
-    socket.on('recording:keypress', async (data: { sessionId: string; key: string }) => {
-      const { sessionId, key } = data;
+    // Handle keypress events (with modifier key support)
+    socket.on('recording:keypress', async (data: { sessionId: string; key: string; code?: string; ctrlKey?: boolean; shiftKey?: boolean; altKey?: boolean; metaKey?: boolean }) => {
+      const { sessionId } = data;
       const session = recordingSessions.get(sessionId);
       if (!session || !session.page || session.status !== 'recording') return;
       touchSession(session);
 
       try {
-        await session.page.keyboard.press(key);
+        // Build Playwright key descriptor with modifiers
+        let keyCombo = '';
+        if (data.ctrlKey || data.metaKey) keyCombo += 'Control+';
+        if (data.shiftKey) keyCombo += 'Shift+';
+        if (data.altKey) keyCombo += 'Alt+';
+        keyCombo += data.key;
+
+        await session.page.keyboard.press(keyCombo);
         session.dirty = true;
 
         const action: RecordingSession['actions'][number] = {
           action: 'keypress',
-          value: key,
+          value: keyCombo,
           timestamp: Date.now(),
         };
         session.actions.push(action);
@@ -776,7 +783,7 @@ function startScreenshotStreaming(session: RecordingSession) {
   const takeScreenshot = async () => {
     if (!session.page || session.status !== 'recording') {
       if (session.screenshotInterval) {
-        clearInterval(session.screenshotInterval);
+        clearTimeout(session.screenshotInterval);
         session.screenshotInterval = null;
       }
       return;
@@ -797,10 +804,11 @@ function startScreenshotStreaming(session: RecordingSession) {
         lastScreenshotHash = quickHash;
         session.dirty = false;
 
+        const viewport = session.page?.viewportSize() || { width: 1280, height: 720 };
         io!.to(`recording:${session.id}`).emit('recording:frame', {
           base64,
-          width: 1280,
-          height: 720,
+          width: viewport.width,
+          height: viewport.height,
           timestamp: Date.now(),
         });
       }
@@ -812,8 +820,16 @@ function startScreenshotStreaming(session: RecordingSession) {
   // Take first screenshot immediately
   takeScreenshot();
 
-  // Then every 250ms
-  session.screenshotInterval = setInterval(takeScreenshot, 250);
+  // Self-scheduling loop: wait 250ms after each screenshot completes to prevent pileup
+  const scheduleNext = () => {
+    session.screenshotInterval = setTimeout(async () => {
+      await takeScreenshot();
+      if (session.status === 'recording' && session.page) {
+        scheduleNext();
+      }
+    }, 250) as unknown as ReturnType<typeof setInterval>;
+  };
+  scheduleNext();
 }
 
 /**
@@ -821,7 +837,7 @@ function startScreenshotStreaming(session: RecordingSession) {
  */
 async function cleanupSession(session: RecordingSession) {
   if (session.screenshotInterval) {
-    clearInterval(session.screenshotInterval);
+    clearTimeout(session.screenshotInterval);
     session.screenshotInterval = null;
   }
 
@@ -945,6 +961,40 @@ export async function recordingRoutes(app: FastifyInstance) {
       session.browser = browser;
       session.context = context;
       session.page = page;
+
+      // Detect browser crashes and disconnects
+      page.on('crash', () => {
+        logger.error({ sessionId }, '[RECORDER] Page crashed during recording');
+        session.status = 'error';
+        if (io) {
+          io.to(`recording:${sessionId}`).emit('recording:error', {
+            sessionId,
+            error: 'Browser page crashed. Please start a new recording.',
+          });
+        }
+        cleanupSession(session);
+        recordingSessions.delete(sessionId);
+      });
+
+      browser.on('disconnected', () => {
+        logger.error({ sessionId }, '[RECORDER] Browser disconnected during recording');
+        session.status = 'error';
+        if (io) {
+          io.to(`recording:${sessionId}`).emit('recording:error', {
+            sessionId,
+            error: 'Browser disconnected. Please start a new recording.',
+          });
+        }
+        // Don't call cleanupSession — browser is already gone
+        if (session.screenshotInterval) {
+          clearTimeout(session.screenshotInterval);
+          session.screenshotInterval = null;
+        }
+        session.page = null;
+        session.context = null;
+        session.browser = null;
+        recordingSessions.delete(sessionId);
+      });
 
       // Listen for page navigation events to auto-record
       page.on('framenavigated', (frame) => {

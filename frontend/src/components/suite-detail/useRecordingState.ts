@@ -92,7 +92,7 @@ export interface UseRecordingStateReturn extends RecordingState {
   // Handlers
   handleStartRecording: () => Promise<void>;
   handleStopRecording: () => Promise<void>;
-  handleCancelRecording: () => void;
+  handleCancelRecording: () => Promise<void>;
   handleSaveRecordedTest: () => Promise<void>;
   handleSaveAsTemplate: () => Promise<void>;
   handleRetryConnection: () => void;
@@ -378,6 +378,7 @@ export function useRecordingState({
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
+          body: JSON.stringify({}),
         });
       } catch (err) {
         console.error('Failed to stop recording session:', err);
@@ -389,10 +390,27 @@ export function useRecordingState({
   }, [recordingStartTime, recordingSessionId, token]);
 
   // Handle cancel recording
-  const handleCancelRecording = useCallback(() => {
+  const handleCancelRecording = useCallback(async () => {
     if (staleFrameTimerRef.current) {
       clearInterval(staleFrameTimerRef.current);
       staleFrameTimerRef.current = null;
+    }
+
+    // Notify backend to close the browser before disconnecting the socket.
+    // Without this, the Playwright browser process is orphaned until timeout.
+    if (recordingSessionId) {
+      try {
+        await fetch(`/api/v1/recording/${recordingSessionId}/stop`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({}),
+        });
+      } catch {
+        // Best-effort — session will timeout after 5 min if this fails
+      }
     }
 
     setIsRecording(false);
@@ -408,7 +426,7 @@ export function useRecordingState({
       recordingSocketRef.current.disconnect();
       recordingSocketRef.current = null;
     }
-  }, []);
+  }, [recordingSessionId, token]);
 
   // Handle save recorded test
   const handleSaveRecordedTest = useCallback(async () => {
