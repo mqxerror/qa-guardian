@@ -210,11 +210,12 @@ export function ModalHeader({
       </h2>
       {showCloseButton && onClose && (
         <button
-          onClick={onClose}
-          className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
+          className="relative z-10 p-2 -m-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           aria-label="Close modal"
         >
-<X className="w-5 h-5" />
+          <X className="w-5 h-5" />
         </button>
       )}
     </div>
