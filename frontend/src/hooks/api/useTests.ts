@@ -131,8 +131,8 @@ export function useTestsPaginated(suiteId: string | undefined, params: TestsQuer
       return fetchWithAuth(url, token) as Promise<PaginatedTestsResponse>;
     },
     enabled: !!token && !!suiteId,
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 60 * 1000, // Feature #106: 2x staleTime for garbage collection
+    staleTime: 5 * 1000, // 5 seconds — faster refresh after test creation/mutation
+    gcTime: 30 * 1000,
   });
 }
 

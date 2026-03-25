@@ -642,6 +642,11 @@ export function ProjectModals({
  <option value="webkit">WebKit (Safari)</option>
  </select>
  </div>
+ <details className="rounded-md border border-input">
+ <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+ Advanced Settings
+ </summary>
+ <div className="space-y-4 px-3 pb-3 pt-2">
  <div>
  <label htmlFor="device-preset" className="mb-1 block text-sm font-medium text-foreground">
  Device / Viewport Preset
@@ -742,6 +747,8 @@ export function ProjectModals({
  <p className="mt-1 text-xs text-muted-foreground">Retries on failure (0-5)</p>
  </div>
  </div>
+ </div>
+ </details>
  </form>
  </ModalBody>
  <ModalFooter>
