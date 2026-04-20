@@ -58,6 +58,69 @@ export interface QuickTestState {
 // getInitialWaveStates() imported from constants/waves
 
 // ============================================================
+// Merge helpers
+// ============================================================
+
+// Status ordering for monotonic transitions. A wave can only advance in this
+// order; a late/retransmitted event or stale poll response must never regress
+// it. Shared by polling paths and socket handlers.
+const STATUS_RANK: Record<string, number> = {
+  pending: 0,
+  waiting: 0,
+  running: 1,
+  completed: 2,
+  failed: 2,
+  skipped: 2,
+};
+
+type ApiWave = {
+  wave?: number;
+  status?: string;
+  startedAt?: string | Date;
+  completedAt?: string | Date;
+  duration?: number;
+  data?: Record<string, unknown>;
+  error?: string;
+  steps?: WaveStep[];
+};
+
+// Layer API response onto the 7-wave scaffold, preserving any in-memory wave
+// that is already ahead (e.g., socket event already advanced it to 'completed').
+// This is the single source of truth for reconciling poll data with socket state.
+function mergeApiWavesOntoState(prevWaves: WaveState[], apiWaves: ApiWave[] | undefined): WaveState[] {
+  const scaffold = getInitialWaveStates();
+  return scaffold.map((initial, idx) => {
+    const apiWave = apiWaves?.[idx];
+    const prevWave = prevWaves[idx] as WaveState | undefined;
+
+    if (!apiWave) {
+      return prevWave ?? ({ ...initial, steps: initial.steps.map(s => ({ ...s })) } as WaveState);
+    }
+
+    const apiRank = STATUS_RANK[apiWave.status ?? ''] ?? 0;
+    const prevRank = STATUS_RANK[prevWave?.status ?? ''] ?? 0;
+    // Monotonic guard: if socket already advanced this wave, keep the newer state
+    if (prevWave && prevRank > apiRank) return prevWave;
+
+    return {
+      ...initial,
+      status: (apiWave.status as WaveState['status']) || initial.status,
+      startedAt: apiWave.startedAt ? new Date(apiWave.startedAt) : prevWave?.startedAt,
+      completedAt: apiWave.completedAt ? new Date(apiWave.completedAt) : prevWave?.completedAt,
+      duration: apiWave.duration ?? prevWave?.duration,
+      data: apiWave.data ?? prevWave?.data,
+      error: apiWave.error ?? prevWave?.error,
+      steps: apiWave.steps || prevWave?.steps || initial.steps.map((s: BaseWaveStep) => ({
+        ...s,
+        status: apiWave.status === 'completed' ? ('completed' as const) :
+                apiWave.status === 'failed' ? ('failed' as const) :
+                apiWave.status === 'skipped' ? ('skipped' as const) : s.status,
+      })),
+    } as WaveState;
+  });
+}
+
+// ============================================================
 // Hook
 // ============================================================
 
@@ -76,6 +139,11 @@ export function useQuickTestSocket() {
   // from extended outages that require a state catch-up fetch
   const disconnectedAtRef = useRef<number | null>(null);
   const EXTENDED_DISCONNECT_THRESHOLD_MS = 30_000;
+
+  // Track the last applied poll signature so we can skip setState when nothing
+  // has changed. Without this, polling every 3-5s causes React re-renders that
+  // make wave cards visually "blink" even when data is identical.
+  const lastPolledSignatureRef = useRef<string>('');
 
   // State - Feature #612: Use centralized getInitialWaveStates()
   const [state, setState] = useState<QuickTestState>({
@@ -187,7 +255,7 @@ export function useQuickTestSocket() {
             setState(prev => ({
               ...prev,
               status: data.status || prev.status,
-              waves: data.waves || prev.waves,
+              waves: mergeApiWavesOntoState(prev.waves, data.waves),
               summary: data.summary || prev.summary,
               completedAt: data.completedAt ? new Date(data.completedAt) : prev.completedAt,
             }));
@@ -290,7 +358,7 @@ export function useQuickTestSocket() {
           setState(prev => ({
             ...prev,
             status: data.status,
-            waves: data.waves || prev.waves,
+            waves: mergeApiWavesOntoState(prev.waves, data.waves),
             summary: data.summary || prev.summary,
             completedAt: data.completedAt ? new Date(data.completedAt) : prev.completedAt,
           }));
@@ -311,37 +379,25 @@ export function useQuickTestSocket() {
     const runId = currentRunIdRef.current;
     const fallbackPoll = setInterval(async () => {
       const data = await fetchState(runId);
-      if (data) {
-        // Update wave states from API
-        const initialWaves = getInitialWaveStates();
-        const apiWaves: WaveState[] = initialWaves.map((initialWave, idx) => {
-          const apiWave = data.waves?.[idx];
-          if (!apiWave) return { ...initialWave, steps: initialWave.steps.map((s: BaseWaveStep) => ({ ...s })) } as WaveState;
-          return {
-            ...initialWave,
-            status: apiWave.status || initialWave.status,
-            startedAt: apiWave.startedAt ? new Date(apiWave.startedAt) : undefined,
-            completedAt: apiWave.completedAt ? new Date(apiWave.completedAt) : undefined,
-            duration: apiWave.duration,
-            data: apiWave.data,
-            error: apiWave.error,
-            steps: apiWave.steps || initialWave.steps.map((s: BaseWaveStep) => ({
-              ...s,
-              status: apiWave.status === 'completed' ? 'completed' as const :
-                      apiWave.status === 'failed' ? 'failed' as const :
-                      apiWave.status === 'skipped' ? 'skipped' as const : s.status,
-            })),
-          } as WaveState;
-        });
+      if (!data) return;
 
-        setState(prev => ({
+      setState(prev => {
+        const merged = mergeApiWavesOntoState(prev.waves, data.waves);
+
+        // Skip setState when nothing meaningful has changed — avoids unnecessary
+        // re-renders that make wave cards flicker on every poll interval.
+        const sig = `${data.status}|${merged.map(w => `${w.wave}:${w.status}`).join(',')}`;
+        if (sig === lastPolledSignatureRef.current) return prev;
+        lastPolledSignatureRef.current = sig;
+
+        return {
           ...prev,
           status: data.status || prev.status,
-          waves: apiWaves,
+          waves: merged,
           summary: data.summary || prev.summary,
           completedAt: data.completedAt ? new Date(data.completedAt) : prev.completedAt,
-        }));
-      }
+        };
+      });
     }, 5000);
 
     return () => clearInterval(fallbackPoll);
@@ -357,17 +413,32 @@ export function useQuickTestSocket() {
     const runId = currentRunIdRef.current;
     const interval = setInterval(() => {
       fetchState(runId).then(data => {
-        if (data) {
-          setState(prev => ({
+        if (!data) return;
+
+        // CRITICAL: merge onto scaffold, do NOT replace. Socket events may have
+        // already advanced waves locally while the DB hasn't persisted yet —
+        // replacing with DB state would regress the UI (prior "only SEO" bug).
+        setState(prev => {
+          const merged = mergeApiWavesOntoState(prev.waves, data.waves);
+
+          // Build signature from the merged 7-wave array (not data.waves, which
+          // may be shorter/partial). This prevents signature churn when DB
+          // responses grow between polls, which otherwise triggers identical-data
+          // re-renders that look like blinking.
+          const sig = `${data.status}|${merged.map(w => `${w.wave}:${w.status}`).join(',')}`;
+          if (sig === lastPolledSignatureRef.current) return prev;
+          lastPolledSignatureRef.current = sig;
+
+          return {
             ...prev,
             status: data.status || prev.status,
-            waves: data.waves || prev.waves,
+            waves: merged,
             summary: data.summary || prev.summary,
             completedAt: data.completedAt ? new Date(data.completedAt) : prev.completedAt,
-          }));
-        }
+          };
+        });
       });
-    }, 3000);
+    }, 10000);  // A4: 10s is a safety net; socket events are the primary path
 
     return () => clearInterval(interval);
   }, [isConnected, state.status, fetchState]);
@@ -382,11 +453,12 @@ export function useQuickTestSocket() {
 
       setState(prev => ({
         ...prev,
-        waves: prev.waves.map(w =>
-          w.wave === data.wave
-            ? { ...w, status: 'running', startedAt: new Date() }
-            : w
-        ),
+        waves: prev.waves.map(w => {
+          if (w.wave !== data.wave) return w;
+          // A5: monotonic guard — don't regress a wave that's already completed/failed/skipped
+          if ((STATUS_RANK[w.status] ?? 0) > (STATUS_RANK['running'] ?? 0)) return w;
+          return { ...w, status: 'running', startedAt: w.startedAt ?? new Date() };
+        }),
       }));
     };
 
@@ -398,6 +470,8 @@ export function useQuickTestSocket() {
         ...prev,
         waves: prev.waves.map(w => {
           if (w.wave !== data.wave) return w;
+          // A5: don't accept progress for a wave already completed/failed/skipped
+          if ((STATUS_RANK[w.status] ?? 0) > (STATUS_RANK['running'] ?? 0)) return w;
 
           // If step is provided, update that specific step
           if (data.step) {
@@ -417,7 +491,7 @@ export function useQuickTestSocket() {
     };
 
     // Wave completed (or skipped)
-    const handleWaveComplete = (data: { runId: string; wave: number; data?: Record<string, unknown>; completedAt?: string }) => {
+    const handleWaveComplete = (data: { runId: string; wave: number; duration?: number; data?: Record<string, unknown>; completedAt?: string }) => {
       if (data.runId !== currentRunIdRef.current) return;
 
       // Feature #520: Check if wave was skipped (e.g., AI provider not configured)
@@ -432,7 +506,8 @@ export function useQuickTestSocket() {
                 ...w,
                 status: waveStatus,
                 completedAt: data.completedAt ? new Date(data.completedAt) : new Date(),
-                duration: w.startedAt ? Date.now() - w.startedAt.getTime() : undefined,
+                // Prefer server-provided duration (authoritative); fall back to client calc if startedAt exists
+                duration: data.duration ?? (w.startedAt ? Date.now() - w.startedAt.getTime() : undefined),
                 data: data.data,
                 error: isSkipped ? (data.data?.summary as string) || 'Skipped' : w.error,
                 steps: (w.steps || []).map(s => ({ ...s, status: waveStatus })),

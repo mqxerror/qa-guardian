@@ -30,6 +30,7 @@ function getBrowserLauncher(browser: QuickTestBrowser): BrowserType {
 import {
   createQuickTestResult,
   completeQuickTestResult,
+  updateQuickTestWaves,
   getQuickTestResultById,
   type QuickTestWaveResult as DbWaveResult,
   type QuickTestSummary as DbSummary,
@@ -165,20 +166,52 @@ function emitWaveEvent(orgId: string, runId: string, event: string, data: Record
   }
 }
 
-function emitWaveStart(orgId: string, runId: string, wave: number, name: string) {
+function emitWaveStart(orgId: string, runId: string, wave: number, name: string, _waves?: WaveResult[]): void {
   emitWaveEvent(orgId, runId, 'wave:start', { wave, name, startedAt: new Date() });
+  // Note: we intentionally do NOT persist to DB on start. An earlier version did, but
+  // the background persist raced with emitWaveComplete's persist — the start-snapshot
+  // (status=running, no data) could land AFTER the complete-snapshot at the DB,
+  // overwriting the completed state. The frontend uses socket events to see 'running',
+  // and the mergeApiWavesOntoState monotonic guard handles cold polls safely.
+  // _waves kept for signature compatibility at call sites.
 }
 
 function emitWaveProgress(orgId: string, runId: string, wave: number, progress: number, message?: string) {
   emitWaveEvent(orgId, runId, 'wave:progress', { wave, progress, message });
 }
 
-function emitWaveComplete(orgId: string, runId: string, wave: number, data: Record<string, unknown>) {
-  emitWaveEvent(orgId, runId, 'wave:complete', { wave, completedAt: new Date(), data });
+/**
+ * Persist current wave state to DB. This is the ONLY path by which the API
+ * container sees wave progress (the worker runs in a separate process/container,
+ * so its in-memory quickTestResults Map is invisible to the API).
+ *
+ * If this fails, clients polling GET /api/v1/quick-test/:runId will see stale
+ * state and the UI may flicker. Log loudly so we catch it in prod.
+ */
+async function persistWavesToDb(runId: string, waves: WaveResult[]): Promise<void> {
+  try {
+    const ok = await updateQuickTestWaves(runId, waves as unknown as DbWaveResult[]);
+    if (!ok) {
+      log.error({ runId }, '[QuickTest] updateQuickTestWaves returned false — polling will show stale state');
+    }
+  } catch (err) {
+    // B1: upgraded from warn to error. A silent persistence failure is how "only SEO shows"
+    // manifests: the final wave is the last write, so it survives; earlier writes lost.
+    log.error({ runId, err }, '[QuickTest] Failed to persist wave progress to DB — polling will show stale state');
+  }
 }
 
-function emitWaveError(orgId: string, runId: string, wave: number, error: string) {
+async function emitWaveComplete(orgId: string, runId: string, wave: number, data: Record<string, unknown>, waves: WaveResult[]): Promise<void> {
+  // Include authoritative duration from server state (waves[wave-1].duration) so the frontend
+  // doesn't have to recompute from startedAt (which may be missing if wave:start was missed).
+  const serverDuration = waves[wave - 1]?.duration;
+  emitWaveEvent(orgId, runId, 'wave:complete', { wave, completedAt: new Date(), duration: serverDuration, data });
+  await persistWavesToDb(runId, waves);
+}
+
+async function emitWaveError(orgId: string, runId: string, wave: number, error: string, waves: WaveResult[]): Promise<void> {
   emitWaveEvent(orgId, runId, 'wave:error', { wave, error });
+  await persistWavesToDb(runId, waves);
 }
 
 // ============================================================
@@ -227,8 +260,18 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
   // Feature #446: Use safe setter that enforces max size limit (in-memory cache)
   safeSetQuickTestResult(runId, testResult);
 
-  // Feature #465: Create initial record in PostgreSQL for persistence
-  await createQuickTestResult(runId, orgId, userId, url, testResult.waves as unknown as DbWaveResult[]);
+  // Feature #465: Create initial record in PostgreSQL for persistence.
+  // Row may already exist if created by POST /api/v1/quick-test before job enqueue.
+  // Ignore unique constraint violations (PG error code 23505).
+  try {
+    await createQuickTestResult(runId, orgId, userId, url, testResult.waves as unknown as DbWaveResult[]);
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code;
+    if (code !== '23505') {
+      throw err;
+    }
+    log.debug({ runId }, '[QuickTest] Row already created by POST endpoint — skipping duplicate create');
+  }
 
   // Schedule cleanup after TTL (only for in-memory cache, DB records persist)
   // Feature #BMAD: Track the timer so it can be cleared on graceful shutdown
@@ -248,7 +291,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
     browser = await browserLauncher.launch(launchOptions);
 
     // Wave 1: Health Check
-    emitWaveStart(orgId, runId, 1, 'Health Check');
+    emitWaveStart(orgId, runId, 1, 'Health Check', testResult.waves);
     testResult.waves[0].status = 'running';
     testResult.waves[0].startedAt = new Date();
 
@@ -258,15 +301,15 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       testResult.waves[0].completedAt = new Date();
       testResult.waves[0].duration = healthResult.totalDurationMs;
       testResult.waves[0].data = healthResult as unknown as Record<string, unknown>;
-      emitWaveComplete(orgId, runId, 1, healthResult as unknown as Record<string, unknown>);
+      await emitWaveComplete(orgId, runId, 1, healthResult as unknown as Record<string, unknown>, testResult.waves);
     } catch (err) {
       testResult.waves[0].status = 'failed';
       testResult.waves[0].error = err instanceof Error ? err.message : 'Health check failed';
-      emitWaveError(orgId, runId, 1, testResult.waves[0].error);
+      await emitWaveError(orgId, runId, 1, testResult.waves[0].error, testResult.waves);
     }
 
     // Wave 2: Visual + Performance
-    emitWaveStart(orgId, runId, 2, 'Visual + Performance');
+    emitWaveStart(orgId, runId, 2, 'Visual + Performance', testResult.waves);
     testResult.waves[1].status = 'running';
     testResult.waves[1].startedAt = new Date();
 
@@ -318,15 +361,15 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
         hasMobileScreenshot: !!screenshotUrls.mobile,
       };
       testResult.waves[1].data = visualDataForEmit;
-      emitWaveComplete(orgId, runId, 2, visualDataForEmit);
+      await emitWaveComplete(orgId, runId, 2, visualDataForEmit, testResult.waves);
     } catch (err) {
       testResult.waves[1].status = 'failed';
       testResult.waves[1].error = err instanceof Error ? err.message : 'Visual/Performance check failed';
-      emitWaveError(orgId, runId, 2, testResult.waves[1].error);
+      await emitWaveError(orgId, runId, 2, testResult.waves[1].error, testResult.waves);
     }
 
     // Wave 3: Security Scan
-    emitWaveStart(orgId, runId, 3, 'Security Scan');
+    emitWaveStart(orgId, runId, 3, 'Security Scan', testResult.waves);
     testResult.waves[2].status = 'running';
     testResult.waves[2].startedAt = new Date();
 
@@ -338,15 +381,15 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       testResult.waves[2].completedAt = new Date();
       testResult.waves[2].duration = Date.now() - wave3Start;
       testResult.waves[2].data = securityResult as unknown as Record<string, unknown>;
-      emitWaveComplete(orgId, runId, 3, securityResult as unknown as Record<string, unknown>);
+      await emitWaveComplete(orgId, runId, 3, securityResult as unknown as Record<string, unknown>, testResult.waves);
     } catch (err) {
       testResult.waves[2].status = 'failed';
       testResult.waves[2].error = err instanceof Error ? err.message : 'Security scan failed';
-      emitWaveError(orgId, runId, 3, testResult.waves[2].error);
+      await emitWaveError(orgId, runId, 3, testResult.waves[2].error, testResult.waves);
     }
 
     // Wave 4: AI Analysis (runs without browser)
-    emitWaveStart(orgId, runId, 4, 'AI Analysis');
+    emitWaveStart(orgId, runId, 4, 'AI Analysis', testResult.waves);
     testResult.waves[3].status = 'running';
     testResult.waves[3].startedAt = new Date();
 
@@ -370,7 +413,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
         testResult.waves[3].completedAt = new Date();
         testResult.waves[3].duration = Date.now() - wave4Start;
         testResult.waves[3].error = `AI analysis timed out after ${AI_TIMEOUT_MS / 1000}s`;
-        emitWaveError(orgId, runId, 4, testResult.waves[3].error);
+        await emitWaveError(orgId, runId, 4, testResult.waves[3].error, testResult.waves);
         log.warn({ runId, duration: Date.now() - wave4Start }, testResult.waves[3].error);
       } else {
         // Feature #520: Show "skipped" status when AI provider not configured
@@ -381,26 +424,26 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
           testResult.waves[3].duration = Date.now() - wave4Start;
           testResult.waves[3].data = aiResultData;
           testResult.waves[3].error = aiResult.summary;
-          emitWaveComplete(orgId, runId, 4, aiResultData);
+          await emitWaveComplete(orgId, runId, 4, aiResultData, testResult.waves);
           log.info({ reason: aiResultData.skipReason }, 'AI Analysis wave skipped');
         } else {
           testResult.waves[3].status = 'completed';
           testResult.waves[3].completedAt = new Date();
           testResult.waves[3].duration = Date.now() - wave4Start;
           testResult.waves[3].data = aiResultData;
-          emitWaveComplete(orgId, runId, 4, aiResultData);
+          await emitWaveComplete(orgId, runId, 4, aiResultData, testResult.waves);
         }
       }
     } catch (err) {
       testResult.waves[3].status = 'failed';
       testResult.waves[3].error = err instanceof Error ? err.message : 'AI analysis failed';
-      emitWaveError(orgId, runId, 4, testResult.waves[3].error);
+      await emitWaveError(orgId, runId, 4, testResult.waves[3].error, testResult.waves);
     }
 
     // Feature #471: Wave 5 - Accessibility Scan using axe-core
     // Feature #680: Extracted to quick-test-waves/accessibility.ts
     let accessibilityResult: AccessibilityScanResult | undefined;
-    emitWaveStart(orgId, runId, 5, 'Accessibility');
+    emitWaveStart(orgId, runId, 5, 'Accessibility', testResult.waves);
     testResult.waves[4].status = 'running';
     testResult.waves[4].startedAt = new Date();
 
@@ -431,7 +474,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
         testResult.waves[4].completedAt = new Date();
         testResult.waves[4].duration = Date.now() - wave5Start;
         testResult.waves[4].data = accessibilityResult as unknown as Record<string, unknown>;
-        emitWaveComplete(orgId, runId, 5, accessibilityResult as unknown as Record<string, unknown>);
+        await emitWaveComplete(orgId, runId, 5, accessibilityResult as unknown as Record<string, unknown>, testResult.waves);
 
       } finally {
         // Only close browser if we created it
@@ -443,12 +486,12 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
     } catch (err) {
       testResult.waves[4].status = 'failed';
       testResult.waves[4].error = err instanceof Error ? err.message : 'Accessibility scan failed';
-      emitWaveError(orgId, runId, 5, testResult.waves[4].error);
+      await emitWaveError(orgId, runId, 5, testResult.waves[4].error, testResult.waves);
     }
 
     // Feature #472: Wave 6 - API Discovery (runs without browser)
     let apiDiscoveryResult: APIDiscoveryResult | undefined;
-    emitWaveStart(orgId, runId, 6, 'API Discovery');
+    emitWaveStart(orgId, runId, 6, 'API Discovery', testResult.waves);
     testResult.waves[5].status = 'running';
     testResult.waves[5].startedAt = new Date();
 
@@ -465,17 +508,17 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
       testResult.waves[5].completedAt = new Date();
       testResult.waves[5].duration = Date.now() - wave6Start;
       testResult.waves[5].data = apiDiscoveryResult as unknown as Record<string, unknown>;
-      emitWaveComplete(orgId, runId, 6, apiDiscoveryResult as unknown as Record<string, unknown>);
+      await emitWaveComplete(orgId, runId, 6, apiDiscoveryResult as unknown as Record<string, unknown>, testResult.waves);
     } catch (err) {
       testResult.waves[5].status = 'failed';
       testResult.waves[5].error = err instanceof Error ? err.message : 'API Discovery failed';
-      emitWaveError(orgId, runId, 6, testResult.waves[5].error);
+      await emitWaveError(orgId, runId, 6, testResult.waves[5].error, testResult.waves);
     }
 
     // Feature #527: Wave 7 - SEO Analysis (Smoke Test with sub-checks)
     // Feature #531: Unified smoke test wave with all SEO sub-checks
     let seoResult: SeoAnalysisResult | undefined;
-    emitWaveStart(orgId, runId, 7, 'SEO Analysis');
+    emitWaveStart(orgId, runId, 7, 'SEO Analysis', testResult.waves);
     testResult.waves[6].status = 'running';
     testResult.waves[6].startedAt = new Date();
 
@@ -505,7 +548,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
         testResult.waves[6].completedAt = new Date();
         testResult.waves[6].duration = Date.now() - wave7Start;
         testResult.waves[6].data = seoResult as unknown as Record<string, unknown>;
-        emitWaveComplete(orgId, runId, 7, seoResult as unknown as Record<string, unknown>);
+        await emitWaveComplete(orgId, runId, 7, seoResult as unknown as Record<string, unknown>, testResult.waves);
       } finally {
         // Only close browser if we created it
         if (ownsBrowser && seoBrowser) {
@@ -515,7 +558,7 @@ export async function runQuickTest(request: QuickTestRequest): Promise<void> {
     } catch (err) {
       testResult.waves[6].status = 'failed';
       testResult.waves[6].error = err instanceof Error ? err.message : 'SEO Analysis failed';
-      emitWaveError(orgId, runId, 7, testResult.waves[6].error);
+      await emitWaveError(orgId, runId, 7, testResult.waves[6].error, testResult.waves);
     }
 
     // Close any remaining browser from earlier waves

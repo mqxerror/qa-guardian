@@ -1025,6 +1025,9 @@ export async function recordingRoutes(app: FastifyInstance) {
       logger.error({ err, sessionId }, '[RECORDER] Failed to launch browser for session');
       session.status = 'error';
       await cleanupSession(session);
+      // C5: don't leak the Map entry on browser-launch failure — otherwise a
+      // burst of failed recordings accumulates indefinitely until TTL.
+      recordingSessions.delete(sessionId);
 
       return sendError(reply, 500, 'INTERNAL_SERVER_ERROR', `Failed to launch browser: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }

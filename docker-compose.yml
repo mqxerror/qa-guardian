@@ -108,6 +108,8 @@ services:
       - DB_POOL_MIN=3
     volumes:
       - backend_data:/app/data
+      - backend_screenshots:/app/screenshots
+      - backend_videos:/app/videos
     depends_on:
       postgres:
         condition: service_healthy
@@ -163,6 +165,8 @@ services:
       - ZAP_API_KEY=${ZAP_API_KEY:-dev-zap-key-change-in-prod}
     volumes:
       - backend_data:/app/data
+      - backend_screenshots:/app/screenshots
+      - backend_videos:/app/videos
     depends_on:
       postgres:
         condition: service_healthy
@@ -336,5 +340,7 @@ volumes:
   postgres_data:
   redis_data:
   backend_data:
+  backend_screenshots:
+  backend_videos:
   # Feature #151: Database backup volume
   backup_data:

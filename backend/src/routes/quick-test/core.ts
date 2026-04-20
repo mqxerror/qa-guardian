@@ -199,17 +199,25 @@ export async function coreRoutes(app: FastifyInstance) {
                     startedAt: { type: 'string' },
                     completedAt: { type: 'string' },
                     duration: { type: 'number' },
-                    data: { type: 'object' },
+                    // fast-json-stringify strips unknown object keys unless additionalProperties
+                    // is true. Without this, every wave.data arrives as `{}` on the wire
+                    // regardless of what the DB contains.
+                    data: { type: 'object', additionalProperties: true },
                     error: { type: 'string' },
                   },
+                  additionalProperties: true,
                 },
               },
               summary: {
                 type: 'object',
+                additionalProperties: true,
                 properties: {
                   healthScore: { type: 'number' },
                   performanceScore: { type: 'number' },
                   securityScore: { type: 'number' },
+                  accessibilityScore: { type: 'number' },
+                  apiScore: { type: 'number' },
+                  seoScore: { type: 'number' },
                   overallScore: { type: 'number' },
                 },
               },

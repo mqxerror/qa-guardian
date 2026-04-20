@@ -26,6 +26,7 @@ import 'dotenv/config';
 import { Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
 import { createServer } from 'http';
+import v8 from 'v8';
 import { initializeEventPublisher, closePublisher, isPublisherAvailable } from './services/redis-events.js'; // Feature #200: Redis Pub/Sub for real-time events
 import { initializeDatabase, closeDatabase } from './services/database.js'; // Feature #169: Worker needs DB access for run lookup
 import { createLogger } from './services/logger.js'; // Feature #447: Structured logging
@@ -140,6 +141,39 @@ let isShuttingDown = false;
 let zombieCleanupInterval: ReturnType<typeof setInterval> | null = null;
 const ZOMBIE_CLEANUP_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 const ZOMBIE_STALE_MINUTES = 30; // Runs stuck for 30+ minutes are considered zombies
+
+// C6: Heap self-heal interval reference
+let heapCheckInterval: ReturnType<typeof setInterval> | null = null;
+const HEAP_CHECK_INTERVAL_MS = 30 * 1000; // every 30s
+const HEAP_EXIT_THRESHOLD = 0.85; // exit if heap > 85% of --max-old-space-size
+
+/**
+ * C6: Periodic heap check — if the worker's heap grows past 85% of its Node
+ * limit, log fatal and exit. Docker `restart: unless-stopped` brings it back
+ * clean. Prevents the "silent zombie" state where the worker exists but GC
+ * thrashing prevents any job progress. This is the primary defense against
+ * the "ran for 2 days then stopped" cloud failure mode.
+ */
+function startHeapSelfHeal(): void {
+  if (heapCheckInterval) {
+    clearInterval(heapCheckInterval);
+    heapCheckInterval = null;
+  }
+  const heapLimitBytes = v8.getHeapStatistics().heap_size_limit;
+  const exitBytes = Math.floor(heapLimitBytes * HEAP_EXIT_THRESHOLD);
+  log.info({ heapLimitMB: Math.round(heapLimitBytes / 1024 / 1024), exitThresholdMB: Math.round(exitBytes / 1024 / 1024) },
+    'Heap self-heal monitor started');
+  heapCheckInterval = setInterval(() => {
+    if (isShuttingDown) return;
+    const used = process.memoryUsage().heapUsed;
+    if (used > exitBytes) {
+      log.fatal({ heapUsedMB: Math.round(used / 1024 / 1024), heapLimitMB: Math.round(heapLimitBytes / 1024 / 1024) },
+        'Heap usage exceeded self-heal threshold — exiting for Docker restart');
+      // Give logger a tick to flush, then exit. Non-zero code triggers restart policy.
+      setTimeout(() => process.exit(1), 100);
+    }
+  }, HEAP_CHECK_INTERVAL_MS);
+}
 
 async function startWorker(): Promise<void> {
   // Feature #169: Initialize PostgreSQL connection - worker needs DB access
@@ -312,6 +346,13 @@ async function startWorker(): Promise<void> {
   // Phase 2C: Start periodic zombie run cleanup every 15 minutes.
   // This catches runs that get stuck in 'running' state due to Chromium crashes,
   // memory leaks, or other unforeseen issues that the per-test timeout didn't catch.
+  // C3: clear any existing interval first — worker restart paths can re-enter this
+  // without first calling shutdown, which would otherwise stack intervals and
+  // cause CPU burn after ~48h.
+  if (zombieCleanupInterval) {
+    clearInterval(zombieCleanupInterval);
+    zombieCleanupInterval = null;
+  }
   zombieCleanupInterval = setInterval(async () => {
     if (isShuttingDown) return;
     try {
@@ -423,6 +464,9 @@ async function startWorker(): Promise<void> {
   quickTestWorker.on('ready', () => {
     log.info({ queueName: QUICK_TEST_QUEUE_NAME }, 'Quick test worker ready and listening for jobs');
   });
+
+  // C6: Start heap self-heal monitor after workers are ready
+  startHeapSelfHeal();
 }
 
 // ============================================================================
@@ -443,6 +487,12 @@ async function shutdown(signal: string): Promise<void> {
     clearInterval(zombieCleanupInterval);
     zombieCleanupInterval = null;
     log.info('Periodic zombie cleanup interval cleared');
+  }
+
+  // C6: Clear heap self-heal interval
+  if (heapCheckInterval) {
+    clearInterval(heapCheckInterval);
+    heapCheckInterval = null;
   }
 
   // Close workers (waits for current jobs to finish)
