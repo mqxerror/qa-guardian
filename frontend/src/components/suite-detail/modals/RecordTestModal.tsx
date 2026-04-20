@@ -133,6 +133,35 @@ export function RecordTestModal({
   // Local state for debug coordinates
   const [debugCoords, setDebugCoords] = useState<{ cssX: number; cssY: number; vpX: number; vpY: number } | null>(null);
 
+  // Prevent scroll events from leaking to parent page.
+  // React's onWheel is passive and cannot call preventDefault(),
+  // so we attach a native non-passive wheel listener instead.
+  //
+  // IMPORTANT: This useEffect must be declared BEFORE the `if (!isOpen) return null`
+  // early return. Otherwise toggling isOpen changes the hook-call count between
+  // renders and triggers React error #310 ("Rendered fewer hooks than expected"),
+  // which propagates to the ErrorBoundary and takes down the whole TestSuitePage.
+  useEffect(() => {
+    const el = browserViewRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (recordingSocketRef.current && recordingSessionId) {
+        recordingSocketRef.current.emit('recording:scroll', {
+          sessionId: recordingSessionId,
+          deltaX: e.deltaX,
+          deltaY: e.deltaY,
+        });
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [recordingSocketRef, recordingSessionId, browserViewRef, isOpen]);
+
   if (!isOpen) {
     return null;
   }
@@ -196,30 +225,6 @@ export function RecordTestModal({
       e.preventDefault();
     }
   };
-
-  // Prevent scroll events from leaking to parent page.
-  // React's onWheel is passive and cannot call preventDefault(),
-  // so we attach a native non-passive wheel listener instead.
-  useEffect(() => {
-    const el = browserViewRef.current;
-    if (!el) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (recordingSocketRef.current && recordingSessionId) {
-        recordingSocketRef.current.emit('recording:scroll', {
-          sessionId: recordingSessionId,
-          deltaX: e.deltaX,
-          deltaY: e.deltaY,
-        });
-      }
-    };
-
-    el.addEventListener('wheel', handleWheel, { passive: false });
-    return () => el.removeEventListener('wheel', handleWheel);
-  }, [recordingSocketRef, recordingSessionId]);
 
   // Handler for mouse move (debug overlay)
   const handleBrowserViewMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
