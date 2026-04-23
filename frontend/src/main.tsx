@@ -15,6 +15,12 @@ import '@fontsource/jetbrains-mono/latin-500.css';
 
 import './index.css';
 
+// Eagerly import themeStore so its module-level init (reads localStorage,
+// applies .dark/.light class to <html>) runs BEFORE any component renders.
+// Without this, the store only loaded when the settings page mounted, so on
+// refresh the page flashed dark (CSS :root default) regardless of saved pref.
+import './stores/themeStore';
+
 /**
  * Feature #107: Optimized QueryClient defaults for real-time testing platform
  *

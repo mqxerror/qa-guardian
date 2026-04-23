@@ -27,10 +27,11 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 // Feature #513: Removed unused Bell import
-import { ChevronDown, ChevronRight, Pin, LogOut, RefreshCw, Eye, EyeOff, Building2, Check, Users, Key, CreditCard, ClipboardList, Bot, Zap } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pin, LogOut, RefreshCw, Eye, EyeOff, Building2, Check, Users, Key, CreditCard, ClipboardList, Bot, Zap, Sun, Moon, Monitor, Keyboard } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useSidebarStore, SidebarSection } from '../stores/sidebarStore';
 import { useVisualReviewStore } from '../stores/visualReviewStore';
+import { useThemeStore, type Theme } from '../stores/themeStore';
 import { ConnectionStatusIndicator } from './ConnectionStatusIndicator';
 import { usePrefetch } from '../hooks/usePrefetch';
 import { createLogger } from '../utils/logger';
@@ -100,6 +101,8 @@ export function AppSidebar() {
   const { user, logout, token, organizations, fetchOrganizations, switchOrganization } = useAuthStore();
   const { collapsedSections, toggleSection: storeToggleSection, expandSection, setCollapsedSections } = useSidebarStore();
   const { pendingCount, fetchPendingCount } = useVisualReviewStore();
+  const { theme, setTheme } = useThemeStore();
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const { state } = useSidebar();
   const navigate = useNavigate();
   const location = useLocation();
@@ -613,8 +616,59 @@ export function AppSidebar() {
           </div>
         )}
 
-        {/* Logout */}
+        {/* Theme toggle — cycles through light → dark → system */}
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => {
+                const next: Theme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
+                setTheme(next);
+              }}
+              tooltip={`Theme: ${theme} (click to switch)`}
+            >
+              {theme === 'light' ? (
+                <Sun className="h-4 w-4" />
+              ) : theme === 'dark' ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Monitor className="h-4 w-4" />
+              )}
+              <span className="capitalize">{theme} theme</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          {/* Keyboard shortcuts help */}
+          <SidebarMenuItem>
+            <DropdownMenu open={showShortcuts} onOpenChange={setShowShortcuts}>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton tooltip="Keyboard shortcuts">
+                  <Keyboard className="h-4 w-4" />
+                  <span>Shortcuts</span>
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="end" className="w-64">
+                <DropdownMenuLabel>Keyboard Shortcuts</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1 text-xs text-muted-foreground">
+                  Press <kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">G</kbd> then:
+                </div>
+                {[
+                  { keys: 'D', label: 'Dashboard' },
+                  { keys: 'T', label: 'Projects' },
+                  { keys: 'S', label: 'Security' },
+                  { keys: 'A', label: 'AI Insights' },
+                  { keys: 'M', label: 'MCP Hub' },
+                ].map((s) => (
+                  <div key={s.keys} className="flex items-center justify-between px-2 py-1.5 text-sm">
+                    <span className="text-foreground">{s.label}</span>
+                    <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">G + {s.keys}</kbd>
+                  </div>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+
+          {/* Logout */}
           <SidebarMenuItem>
             <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
               <LogOut className="h-4 w-4" />

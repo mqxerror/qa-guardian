@@ -25,6 +25,15 @@ export interface AIMetadata {
     input?: number;
     output?: number;
   };
+  // P1a: routing transparency — populated by aiRouter via generateTest handler
+  tokens_used?: {
+    input: number;
+    output: number;
+  };
+  used_fallback?: boolean;
+  fallback_reason?: string;
+  latency_ms?: number;
+  ai_failure_reason?: string;
 }
 
 export interface AIStatusResponse {

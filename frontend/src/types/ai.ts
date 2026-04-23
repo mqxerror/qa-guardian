@@ -109,6 +109,11 @@ export interface GeneratedTest {
     model: string;
     used_real_ai: boolean;
     ai_failure_reason?: string;
+    // P1a: routing transparency — whether failover fired and why
+    used_fallback?: boolean;
+    fallback_reason?: string;
+    latency_ms?: number;
+    tokens_used?: { input: number; output: number };
   };
   data_source: string;
   version?: number;

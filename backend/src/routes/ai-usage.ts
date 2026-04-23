@@ -19,6 +19,8 @@ import {
   getRecentAlerts,
   checkBudgetAndAlert,
 } from '../services/repositories/ai-usage.js';
+// P1c: expose AI router state for the Test Generator observability panel
+import { aiRouter } from '../services/providers/ai-router.js';
 // Feature #716: Zod validation middleware and schemas
 import {
   validateBody,
@@ -221,5 +223,71 @@ export async function aiUsageRoutes(app: FastifyInstance) {
       exceeded: result.exceeded,
       alerts: result.alerts,
     };
+  });
+
+  // ============================================================================
+  // GET /api/v1/ai/routing-status — P1c: router + circuit breaker diagnostics
+  // Read-only snapshot for the Test Generator observability panel.
+  // Shows: current primary/fallback, per-provider availability, recent failover
+  // events with reasons, circuit-breaker state, and cost savings.
+  // ============================================================================
+  app.get('/api/v1/ai/routing-status', {
+    preHandler: [authenticate],
+  }, async (_request, reply) => {
+    try {
+      const config = aiRouter.getRouterConfig();
+      const stats = aiRouter.getRouterStats();
+      const kieCb = aiRouter.getCircuitBreaker('kie');
+      const anthropicCb = aiRouter.getCircuitBreaker('anthropic');
+      const costs = aiRouter.getCostSavings();
+      const switches = aiRouter.getProviderSwitchHistory().slice(-10);
+
+      if (reply.sent) return;
+
+      return {
+        config: {
+          primary: config.primary,
+          fallback: config.fallback,
+          fallbackOnError: config.fallbackOnError,
+          fallbackOnTimeout: config.fallbackOnTimeout,
+          timeoutMs: config.timeoutMs,
+        },
+        providers: {
+          kie: {
+            initialized: aiRouter.isProviderAvailable('kie'),
+            // CircuitBreaker exposes getState() — safe to call even if never tripped
+            circuitBreaker: kieCb ? kieCb.getState() : null,
+          },
+          anthropic: {
+            initialized: aiRouter.isProviderAvailable('anthropic'),
+            circuitBreaker: anthropicCb ? anthropicCb.getState() : null,
+          },
+        },
+        stats: {
+          totalRequests: stats.totalRequests,
+          primarySuccesses: stats.primarySuccesses,
+          fallbackSuccesses: stats.fallbackSuccesses,
+          totalFailures: stats.totalFailures,
+          primarySuccessRate: stats.totalRequests > 0
+            ? Math.round((stats.primarySuccesses / stats.totalRequests) * 1000) / 10
+            : null,
+          lastFailoverAt: stats.lastFailoverAt,
+          // Last 10 failover events (most recent first)
+          recentFailovers: [...stats.failoverEvents].slice(-10).reverse(),
+        },
+        providerSwitches: switches,
+        costSavings: {
+          anthropicCostUsd: Math.round(costs.anthropicCostUsd * 10000) / 10000,
+          actualCostUsd: Math.round(costs.actualCostUsd * 10000) / 10000,
+          savingsUsd: Math.round(costs.savingsUsd * 10000) / 10000,
+          savingsPercent: Math.round(costs.savingsPercent * 10) / 10,
+          byProvider: costs.byProvider,
+        },
+        generatedAt: new Date().toISOString(),
+      };
+    } catch (err) {
+      return sendError(reply, 500, 'INTERNAL_SERVER_ERROR',
+        err instanceof Error ? err.message : 'Failed to read routing status');
+    }
   });
 }
