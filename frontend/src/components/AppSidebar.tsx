@@ -308,17 +308,27 @@ export function AppSidebar() {
     { path: '/mcp/chat', icon: <MCPToolsIcon />, label: 'AI Chat', visibility: 'all' },
   ];
 
-  // Admin group (collapsed by default) - merges Security + Settings + Developer Tools
+  // Administration group (collapsed by default).
   //
-  // T1.1: the Settings page uses `?tab=<name>` query params, NOT nested routes.
-  // Prior hrefs like /settings/team produced 404s because no such route was
-  // registered. Switching to query-param style so all sub-tabs actually load.
+  // T1.1: Settings sub-tabs use `?tab=<name>` query params — nested routes
+  // like /settings/team produced 404s because no such route was registered.
+  //
+  // T3.1: Relabel ambiguous items so the two kinds of "key" don't confuse:
+  //   • "API Keys"    → "API Tokens"  (outbound tokens customers use to
+  //                                    call QA Guardian from their CI)
+  //   • "AI Providers" → "AI Router"   (the routing stats page, distinct
+  //                                    from setting provider credentials
+  //                                    which lives under Settings → AI)
+  //
+  // Added a direct shortcut to the new API Credentials form so admins
+  // rotating Kie/Anthropic keys don't have to hunt for it.
   const adminMenuItems: MenuItemConfig[] = [
     { path: '/security', icon: <SecurityIcon />, label: 'Security Dashboard', visibility: 'qa' },
     { path: '/settings?tab=team', icon: <Users className="h-4 w-4" />, label: 'Team', visibility: 'admin' },
+    { path: '/settings?tab=ai-config', icon: <Zap className="h-4 w-4" />, label: 'AI Credentials', visibility: 'admin' },
     { path: '/settings', icon: <SettingsIcon />, label: 'Settings', visibility: 'developer' },
-    { path: '/ai/router', icon: <Bot className="h-4 w-4" />, label: 'AI Providers', visibility: 'admin' },
-    { path: '/settings?tab=api-keys', icon: <Key className="h-4 w-4" />, label: 'API Keys', visibility: 'developer' },
+    { path: '/ai/router', icon: <Bot className="h-4 w-4" />, label: 'AI Router', visibility: 'admin' },
+    { path: '/settings?tab=api-keys', icon: <Key className="h-4 w-4" />, label: 'API Tokens', visibility: 'developer' },
     { path: '/settings?tab=billing', icon: <CreditCard className="h-4 w-4" />, label: 'Billing', visibility: 'admin' },
     { path: '/mcp', icon: <MCPToolsIcon />, label: 'MCP Hub', visibility: 'developer' },
     { path: '/settings?tab=audit-logs', icon: <ClipboardList className="h-4 w-4" />, label: 'Audit Logs', visibility: 'admin' },

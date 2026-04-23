@@ -46,6 +46,7 @@ import { dastRoutes } from './routes/dast.js';
 import { monitoringRoutes } from './routes/monitoring.js';
 import aiTestGeneratorRoutes from './routes/ai-test-generator/index.js';
 import mcpToolsRoutes from './routes/mcp-tools/index.js';
+import { registerMcpJsonRpcAdapter } from './routes/mcp-tools/jsonrpc-adapter.js'; // T2.1: JSON-RPC → REST bridge for MCP Hub UI
 import { aiRouter } from './services/providers/ai-router.js'; // Phase 3A: Startup initialization
 import quickTestRoutes from './routes/quick-test/index.js'; // Feature #424: Quick Test API
 import { reportsRoutes } from './routes/reports/index.js'; // Feature #1732
@@ -344,6 +345,7 @@ async function registerPlugins() {
   // This allows these modules to define paths relative to their prefix (e.g., /generate instead of /api/v1/ai/generate)
   await app.register(aiTestGeneratorRoutes, { prefix: '/api/v1/ai' });
   await app.register(mcpToolsRoutes, { prefix: '/api/v1/mcp' });
+  await registerMcpJsonRpcAdapter(app); // T2.1: POST /mcp/message (JSON-RPC) for the MCP Hub tabs
   await app.register(quickTestRoutes); // Feature #424: Quick Test API
   await app.register(reportsRoutes); // Feature #1732
   await app.register(servicesStatusRoutes); // Feature #2127

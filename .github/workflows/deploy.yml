@@ -78,7 +78,7 @@ jobs:
           VITE_API_URL: https://${{ env.PRODUCTION_DOMAIN }}
           VITE_API_BASE_URL: https://${{ env.PRODUCTION_DOMAIN }}
           VITE_SOCKET_URL: https://${{ env.PRODUCTION_DOMAIN }}
-          VITE_MCP_URL: https://${{ env.PRODUCTION_DOMAIN }}/mcp
+          VITE_MCP_URL: ''
         run: npm run build
 
   # ===========================================================================

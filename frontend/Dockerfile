@@ -22,7 +22,10 @@ COPY . .
 ARG VITE_API_URL=https://qa.pixelcraftedmedia.com
 ARG VITE_API_BASE_URL=https://qa.pixelcraftedmedia.com
 ARG VITE_SOCKET_URL=https://qa.pixelcraftedmedia.com
-ARG VITE_MCP_URL=https://qa.pixelcraftedmedia.com/mcp
+# T2.1: VITE_MCP_URL empty → fetch resolves to same-origin `/mcp/message`.
+# Nginx proxies /mcp to backend, where the JSON-RPC adapter lives. Prior
+# value produced /mcp/mcp/message (double prefix) — matched nothing.
+ARG VITE_MCP_URL=
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_SOCKET_URL=$VITE_SOCKET_URL
