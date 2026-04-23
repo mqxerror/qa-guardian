@@ -54,6 +54,7 @@ import { setRecordingSocketIO } from './routes/test-runs/recording-routes.js'; /
 import { stepTemplateRoutes } from './routes/step-templates.js'; // Feature #31: Reusable Step Templates
 import { errorsRoutes } from './routes/errors/index.js'; // Feature #166: Frontend error reporting
 import { aiUsageRoutes } from './routes/ai-usage.js'; // Feature #477: AI usage tracking
+import { aiProviderConfigRoutes } from './routes/ai-provider-configs.js'; // T1.4: DB-backed provider key management
 import { healthRoutes, setHealthSocketIO } from './routes/health.js'; // Feature #359: Health check routes
 import { requestTimeoutHook } from './middleware/timeout.js'; // Feature #90: Request timeout middleware
 import { registerRateLimiting } from './middleware/rate-limit.js'; // Feature #359: Rate limiting middleware
@@ -349,6 +350,7 @@ async function registerPlugins() {
   await app.register(stepTemplateRoutes); // Feature #31: Reusable Step Templates
   await app.register(errorsRoutes); // Feature #166: Frontend error reporting
   await app.register(aiUsageRoutes); // Feature #477: AI usage tracking
+  await app.register(aiProviderConfigRoutes); // T1.4: AI provider config CRUD
 
   // Global error handler - don't expose stack traces to clients
   // Feature #722: Global error handler uses standardized error shape
@@ -772,6 +774,16 @@ async function start() {
     if (aiConfigured) {
       const initResult = aiRouter.reinitializeFromEnv();
       log.info({ initialized: initResult }, 'AI Router startup initialization');
+    }
+
+    // T1.4: After env-var initialization, load any DB-stored provider keys
+    // (organization_ai_provider_configs) and override. This makes UI-saved
+    // keys take effect without editing .env. Safe if DB is empty (no-op).
+    try {
+      const { bootstrapProviderConfigs } = await import('./services/ai-provider-config-service.js');
+      await bootstrapProviderConfigs();
+    } catch (bootErr) {
+      log.warn({ err: bootErr }, 'Provider config bootstrap failed — continuing with env-var keys');
     }
 
     log.info({

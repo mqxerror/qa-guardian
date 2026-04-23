@@ -1,8 +1,9 @@
 // AIConfigurationTab - AI provider config
 // Feature #451: Extracted from SettingsPage.tsx
 // Feature #2074: AI Model Selection for Different Tasks
+// T1.5: DB-backed API credential management (Kie.ai + Anthropic)
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import {
   useAIModelPreferencesStore,
@@ -13,6 +14,28 @@ import {
   type AIProvider,
   type AIModel,
 } from '../../stores/aiModelPreferencesStore';
+import { toast } from '../../stores/toastStore';
+import { Eye, EyeOff, Loader2, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
+
+// -------------------------------------------------------------
+// T1.5: Types matching /api/v1/ai/providers response
+// -------------------------------------------------------------
+interface SupportedProvider { name: string; label: string; defaultModel?: string }
+interface ProviderConfig {
+  provider: string;
+  apiKeyMasked: string;
+  apiBaseUrl: string | null;
+  defaultModel: string | null;
+  lastTestedAt: string | null;
+  lastTestSuccess: boolean | null;
+  lastTestError: string | null;
+  updatedAt: string;
+}
+interface ProvidersResponse {
+  supported: SupportedProvider[];
+  configs: ProviderConfig[];
+  routerState: { primary: string; fallback: string; kieInitialized: boolean; anthropicInitialized: boolean };
+}
 
 export function AIConfigurationTab() {
   const {
@@ -73,6 +96,10 @@ export function AIConfigurationTab() {
 
   return (
     <div className="space-y-8">
+      {/* T1.5: API Credentials — the section that was missing. Without this
+           block, admins had to SSH to the server and edit .env by hand. */}
+      <APICredentialsSection token={token} />
+
       {/* AI Provider Status */}
       <div className="space-y-4">
         <div>
@@ -330,6 +357,317 @@ export function AIConfigurationTab() {
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+// =================================================================
+// T1.5: API Credentials Section
+// -----------------------------------------------------------------
+// Wraps GET/PATCH/POST/DELETE /api/v1/ai/providers into a UI the user
+// can actually operate. Each supported provider renders as a card with:
+//   - masked key display + edit mode
+//   - "Show/Hide" toggle on the input during entry
+//   - "Test connection" button that pings the provider via the backend
+//   - "Save" button that PATCHes and hot-reloads the router
+//   - "Remove" button that soft-deletes
+// =================================================================
+function APICredentialsSection({ token }: { token: string | null }) {
+  const [data, setData] = useState<ProvidersResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchConfigs = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/v1/ai/providers', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json: ProvidersResponse = await res.json();
+      setData(json);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load provider configs');
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => { fetchConfigs(); }, [fetchConfigs]);
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold text-foreground">API Credentials</h3>
+        <p className="text-sm text-muted-foreground">
+          Paste your Kie.ai and Anthropic keys here. Keys are encrypted at rest and applied without a restart.
+        </p>
+      </div>
+
+      {error && (
+        <div className="p-3 rounded-md bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+          {error}
+        </div>
+      )}
+
+      {loading && !data && (
+        <div className="p-6 bg-card rounded-lg border border-border text-center text-muted-foreground">
+          <Loader2 className="inline-block mr-2 h-4 w-4 animate-spin" />
+          Loading credentials…
+        </div>
+      )}
+
+      {data && (
+        <>
+          <div className="grid grid-cols-1 gap-4">
+            {data.supported.map(p => {
+              const existing = data.configs.find(c => c.provider === p.name);
+              const routerInit = p.name === 'kie'
+                ? data.routerState.kieInitialized
+                : p.name === 'anthropic' ? data.routerState.anthropicInitialized : false;
+              return (
+                <ProviderCard
+                  key={p.name}
+                  supported={p}
+                  existing={existing}
+                  token={token}
+                  routerInitialized={routerInit}
+                  onChanged={fetchConfigs}
+                />
+              );
+            })}
+          </div>
+
+          <div className="text-xs text-muted-foreground">
+            Router: <span className="font-mono">{data.routerState.primary}</span> →
+            fallback <span className="font-mono">{data.routerState.fallback}</span>
+            {' · '}
+            Kie: {data.routerState.kieInitialized ? '✓' : '✗'}
+            {' · '}
+            Anthropic: {data.routerState.anthropicInitialized ? '✓' : '✗'}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ProviderCard({
+  supported,
+  existing,
+  token,
+  routerInitialized,
+  onChanged,
+}: {
+  supported: SupportedProvider;
+  existing: ProviderConfig | undefined;
+  token: string | null;
+  routerInitialized: boolean;
+  onChanged: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [keyInput, setKeyInput] = useState('');
+  const [modelInput, setModelInput] = useState(existing?.defaultModel || supported.defaultModel || '');
+  const [showKey, setShowKey] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const statusDot = routerInitialized
+    ? <span className="w-2.5 h-2.5 rounded-full bg-success inline-block" />
+    : existing
+      ? <span className="w-2.5 h-2.5 rounded-full bg-warning inline-block" />
+      : <span className="w-2.5 h-2.5 rounded-full bg-destructive inline-block" />;
+
+  const handleSave = async () => {
+    if (!token || keyInput.trim().length < 10) {
+      toast.error('API key must be at least 10 characters');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/v1/ai/providers/${supported.name}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          apiKey: keyInput.trim(),
+          defaultModel: modelInput.trim() || undefined,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.message || body?.error || `HTTP ${res.status}`);
+      toast.success(body.routerApplied
+        ? `${supported.label} saved — router updated live`
+        : `${supported.label} saved (router couldn't apply: ${body.routerReason || 'unknown'})`);
+      setEditing(false);
+      setKeyInput('');
+      setTestResult(null);
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTest = async () => {
+    if (!token) return;
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch(`/api/v1/ai/providers/${supported.name}/test`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const body = await res.json().catch(() => ({}));
+      const success = !!body.success;
+      setTestResult({
+        success,
+        message: body.message || (success ? 'OK' : 'Test failed'),
+      });
+      if (success) toast.success(`${supported.label}: ${body.message || 'Connected'}`);
+      else toast.error(`${supported.label}: ${body.message || 'Test failed'}`);
+      onChanged();
+    } catch (err) {
+      setTestResult({ success: false, message: err instanceof Error ? err.message : 'Test failed' });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    if (!token) return;
+    if (!confirm(`Remove the saved ${supported.label} key? The router will stop using it on next restart.`)) return;
+    try {
+      const res = await fetch(`/api/v1/ai/providers/${supported.name}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      toast.success(`${supported.label} key removed`);
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Remove failed');
+    }
+  };
+
+  return (
+    <div className="bg-card rounded-lg border border-border p-5 space-y-3">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            {statusDot}
+            <h4 className="font-medium text-foreground">{supported.label}</h4>
+            {routerInitialized && (
+              <span className="text-xs px-1.5 py-0.5 rounded bg-success/10 text-success">Active</span>
+            )}
+            {existing && !routerInitialized && (
+              <span className="text-xs px-1.5 py-0.5 rounded bg-warning/10 text-warning">Saved, not loaded</span>
+            )}
+            {!existing && (
+              <span className="text-xs px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">Not configured</span>
+            )}
+          </div>
+          {existing && (
+            <p className="text-xs text-muted-foreground mt-1 font-mono">{existing.apiKeyMasked}</p>
+          )}
+          {existing?.lastTestedAt && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Last tested {new Date(existing.lastTestedAt).toLocaleString()}
+              {existing.lastTestSuccess === true && ' — OK'}
+              {existing.lastTestSuccess === false && (existing.lastTestError ? ` — ${existing.lastTestError}` : ' — failed')}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {editing ? (
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">API Key</label>
+            <div className="relative">
+              <input
+                type={showKey ? 'text' : 'password'}
+                value={keyInput}
+                onChange={(e) => setKeyInput(e.target.value)}
+                placeholder={`Paste ${supported.label} API key`}
+                className="w-full px-3 py-2 pr-10 border border-border rounded-md bg-background text-foreground font-mono text-sm"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button
+                type="button"
+                onClick={() => setShowKey(!showKey)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label={showKey ? 'Hide key' : 'Show key'}
+              >
+                {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Default Model (optional)</label>
+            <input
+              type="text"
+              value={modelInput}
+              onChange={(e) => setModelInput(e.target.value)}
+              placeholder={supported.defaultModel}
+              className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+            </button>
+            <button
+              onClick={() => { setEditing(false); setKeyInput(''); }}
+              className="px-3 py-1.5 rounded-md border border-border text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setEditing(true)}
+            className="px-3 py-1.5 rounded-md border border-border text-sm font-medium hover:bg-muted"
+          >
+            {existing ? 'Replace key' : 'Add key'}
+          </button>
+          {existing && (
+            <button
+              onClick={handleTest}
+              disabled={testing}
+              className="px-3 py-1.5 rounded-md border border-border text-sm font-medium hover:bg-muted disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {testing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+              Test connection
+            </button>
+          )}
+          {existing && (
+            <button
+              onClick={handleRemove}
+              className="px-3 py-1.5 rounded-md border border-destructive/30 text-destructive text-sm font-medium hover:bg-destructive/5 flex items-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Remove
+            </button>
+          )}
+          {testResult && (
+            <span className={`text-xs flex items-center gap-1 ${testResult.success ? 'text-success' : 'text-destructive'}`}>
+              {testResult.success ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+              {testResult.message}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

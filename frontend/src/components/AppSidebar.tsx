@@ -300,21 +300,28 @@ export function AppSidebar() {
   const toolsMenuItems: MenuItemConfig[] = [
     { path: '/visual-review', icon: <VisualReviewIcon />, label: 'Visual Review', visibility: 'all' },
     { path: '/analytics', icon: <AnalyticsIcon />, label: 'Analytics', visibility: 'qa' },
-    { path: '/ai-insights', icon: <AIInsightsIcon />, label: 'AI Insights', visibility: 'all' },
+    // T1.1: relabel — this path redirects to /ai/flaky-tests, so "Flaky Tests"
+    // is what the user actually lands on. Old label was "AI Insights" which
+    // implied a broader dashboard that doesn't exist yet.
+    { path: '/ai-insights', icon: <AIInsightsIcon />, label: 'Flaky Tests', visibility: 'all' },
     { path: '/ai/test-generator', icon: <AITestGeneratorIcon />, label: 'Test Generator', visibility: 'qa' },
     { path: '/mcp/chat', icon: <MCPToolsIcon />, label: 'AI Chat', visibility: 'all' },
   ];
 
   // Admin group (collapsed by default) - merges Security + Settings + Developer Tools
+  //
+  // T1.1: the Settings page uses `?tab=<name>` query params, NOT nested routes.
+  // Prior hrefs like /settings/team produced 404s because no such route was
+  // registered. Switching to query-param style so all sub-tabs actually load.
   const adminMenuItems: MenuItemConfig[] = [
     { path: '/security', icon: <SecurityIcon />, label: 'Security Dashboard', visibility: 'qa' },
-    { path: '/settings/team', icon: <Users className="h-4 w-4" />, label: 'Team', visibility: 'admin' },
+    { path: '/settings?tab=team', icon: <Users className="h-4 w-4" />, label: 'Team', visibility: 'admin' },
     { path: '/settings', icon: <SettingsIcon />, label: 'Settings', visibility: 'developer' },
     { path: '/ai/router', icon: <Bot className="h-4 w-4" />, label: 'AI Providers', visibility: 'admin' },
-    { path: '/settings/api-keys', icon: <Key className="h-4 w-4" />, label: 'API Keys', visibility: 'developer' },
-    { path: '/settings/billing', icon: <CreditCard className="h-4 w-4" />, label: 'Billing', visibility: 'admin' },
+    { path: '/settings?tab=api-keys', icon: <Key className="h-4 w-4" />, label: 'API Keys', visibility: 'developer' },
+    { path: '/settings?tab=billing', icon: <CreditCard className="h-4 w-4" />, label: 'Billing', visibility: 'admin' },
     { path: '/mcp', icon: <MCPToolsIcon />, label: 'MCP Hub', visibility: 'developer' },
-    { path: '/audit-logs', icon: <ClipboardList className="h-4 w-4" />, label: 'Audit Logs', visibility: 'admin' },
+    { path: '/settings?tab=audit-logs', icon: <ClipboardList className="h-4 w-4" />, label: 'Audit Logs', visibility: 'admin' },
   ];
 
   // Legacy groups kept for backwards compatibility with existing code paths
@@ -656,7 +663,7 @@ export function AppSidebar() {
                   { keys: 'D', label: 'Dashboard' },
                   { keys: 'T', label: 'Projects' },
                   { keys: 'S', label: 'Security' },
-                  { keys: 'A', label: 'AI Insights' },
+                  { keys: 'A', label: 'Flaky Tests' },
                   { keys: 'M', label: 'MCP Hub' },
                 ].map((s) => (
                   <div key={s.keys} className="flex items-center justify-between px-2 py-1.5 text-sm">
