@@ -105,16 +105,23 @@ export function APIKeysTab() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">API Keys</h3>
-          <p className="text-sm text-muted-foreground">Manage API keys for programmatic access.</p>
+          <h3 className="text-lg font-semibold text-foreground">API Tokens</h3>
+          <p className="text-sm text-muted-foreground">
+            Tokens for CI pipelines, the MCP server, and Claude Code CLI.
+          </p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
         >
-          Create API Key
+          Create API Token
         </button>
       </div>
+
+      {/* T4.6: Claude Code CLI connection snippet — makes this page the
+           one-stop for anyone wiring QA Guardian into their agent setup. */}
+      <ClaudeCodeConnectionSnippet />
+
 
       {/* Keys Table */}
       <div className="bg-card rounded-lg border border-border overflow-hidden">
@@ -269,6 +276,96 @@ export function APIKeysTab() {
           </form>
         )}
       </Modal>
+    </div>
+  );
+}
+
+// =================================================================
+// T4.6: Claude Code CLI connection snippet
+// -----------------------------------------------------------------
+// Renders a copy-paste-ready `claude mcp add` command using the
+// current origin so users don't have to guess the SSE URL. Uses
+// a placeholder token — users paste their own after creating one
+// above with scope: read + write.
+// =================================================================
+function ClaudeCodeConnectionSnippet() {
+  const [copied, setCopied] = useState<'cli' | 'json' | null>(null);
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://qa.pixelcraftedmedia.com';
+  const sseUrl = `${origin}/mcp-server/sse`;
+
+  const cliCmd = `claude mcp add qa-guardian \\
+  --transport sse \\
+  --url ${sseUrl} \\
+  --header "Authorization: Bearer YOUR_QA_GUARDIAN_TOKEN"`;
+
+  const jsonSnippet = JSON.stringify({
+    mcpServers: {
+      'qa-guardian': {
+        transport: { type: 'sse', url: sseUrl },
+        headers: { Authorization: 'Bearer YOUR_QA_GUARDIAN_TOKEN' },
+      },
+    },
+  }, null, 2);
+
+  const copy = (which: 'cli' | 'json', text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(which);
+      toast.success('Copied to clipboard');
+      setTimeout(() => setCopied(null), 2000);
+    }).catch(() => toast.error('Copy failed — select and copy manually'));
+  };
+
+  return (
+    <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+      <div>
+        <h4 className="text-base font-semibold text-foreground">Connect Claude Code CLI</h4>
+        <p className="text-xs text-muted-foreground mt-1">
+          Point Claude Code at your QA Guardian instance. Agents can then create test suites,
+          trigger runs, investigate failures, and generate regressions — all from the CLI.
+        </p>
+      </div>
+
+      <ol className="text-xs text-muted-foreground list-decimal ml-4 space-y-1">
+        <li>Create a token above with at least <code className="px-1 bg-muted rounded">read</code> and <code className="px-1 bg-muted rounded">write</code> scopes.</li>
+        <li>Copy the command below, replace <code className="px-1 bg-muted rounded">YOUR_QA_GUARDIAN_TOKEN</code> with the new token.</li>
+        <li>Run it in your terminal. Claude Code will register QA Guardian as an MCP server and auto-discover all 150+ tools.</li>
+      </ol>
+
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs font-medium text-muted-foreground">Shell command</span>
+          <button
+            onClick={() => copy('cli', cliCmd)}
+            className="text-xs px-2 py-0.5 rounded border border-border hover:bg-muted"
+          >
+            {copied === 'cli' ? '✓ Copied' : 'Copy'}
+          </button>
+        </div>
+        <pre className="bg-background border border-border rounded-md p-3 text-xs font-mono overflow-x-auto">
+{cliCmd}
+        </pre>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs font-medium text-muted-foreground">Or: config file <code>(~/.claude/mcp.json)</code></span>
+          <button
+            onClick={() => copy('json', jsonSnippet)}
+            className="text-xs px-2 py-0.5 rounded border border-border hover:bg-muted"
+          >
+            {copied === 'json' ? '✓ Copied' : 'Copy'}
+          </button>
+        </div>
+        <pre className="bg-background border border-border rounded-md p-3 text-xs font-mono overflow-x-auto">
+{jsonSnippet}
+        </pre>
+      </div>
+
+      <div className="text-xs text-muted-foreground">
+        <strong className="text-foreground">Tip:</strong> try{' '}
+        <code className="px-1 bg-muted rounded">claude "use qa-guardian to list my test suites and run the smoke suite against staging"</code>
+        {' '}as a first smoke test of the integration.
+      </div>
     </div>
   );
 }

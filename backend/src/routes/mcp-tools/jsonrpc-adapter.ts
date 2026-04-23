@@ -34,7 +34,20 @@ import {
   hasHandler,
   HANDLER_STATS,
 } from '../../mcp/handlers/index.js';
+// T4.1: Rich tool metadata (descriptions + JSON input schemas for 150+ tools)
+// already lives in tool-definitions.ts. Reuse it instead of synthesizing so
+// Claude Code CLI and the MCP Hub both see real docs + schemas.
+import { TOOLS } from '../../mcp/tool-definitions.js';
 import { AI_POWERED_TOOLS, createHandlerContext, logger } from './helpers.js';
+
+// Index tool definitions by name for O(1) lookup
+const TOOL_METADATA_BY_NAME: Record<string, typeof TOOLS[number]> = Object.fromEntries(
+  TOOLS.map(t => [t.name, t]),
+);
+
+function getToolMetadata(name: string): typeof TOOLS[number] | undefined {
+  return TOOL_METADATA_BY_NAME[name];
+}
 
 // =============================================================================
 // JSON-RPC types
@@ -82,32 +95,75 @@ function err(id: JsonRpcRequest['id'], code: number, message: string, data?: unk
 // Meta tools (handled inline — they describe the server itself)
 // =============================================================================
 
-function listAllTools(): unknown {
-  const toolNames = getRegisteredToolNames();
-  // We don't have per-tool description/category metadata in the registry, so
-  // group by the handler-module stats we do have. This is imperfect but gives
-  // the UI enough structure to render a usable list.
-  const stats = HANDLER_STATS.handlersByModule as Record<string, number>;
-  const categories: string[] = Object.keys(stats).filter(k => stats[k] > 0);
+/**
+ * Infer a high-level category from the tool name. Tool names are dotted
+ * (e.g., `project.create`) or underscore-prefixed by subject (e.g.,
+ * `generate_test_from_description`). This lets the UI group by category
+ * without us having to decorate every single tool.
+ */
+function categorize(name: string): string {
+  if (name.startsWith('project')) return 'projects';
+  if (name.startsWith('test_suite') || name.startsWith('suite')) return 'test-suites';
+  if (name.startsWith('test_execution') || name.startsWith('run_')) return 'execution';
+  if (name.startsWith('test_result') || name.includes('result')) return 'results';
+  if (name.includes('security') || name.includes('sast') || name.includes('scan')) return 'security';
+  if (name.includes('visual') || name.includes('screenshot') || name.includes('baseline')) return 'visual';
+  if (name.includes('perf') || name.includes('lighthouse') || name.includes('web_vital')) return 'performance';
+  if (name.includes('accessibility') || name.includes('a11y') || name.includes('wcag')) return 'accessibility';
+  if (name.includes('load') || name.includes('k6')) return 'load-testing';
+  if (name.includes('analytic') || name.includes('insight') || name.includes('flaky')) return 'analytics';
+  if (name.includes('monitor')) return 'monitoring';
+  if (name.includes('generate') || name.includes('ai_') || name.includes('suggest')) return 'ai-powered';
+  if (name.includes('artifact') || name.includes('report')) return 'artifacts';
+  if (name.includes('setting') || name.includes('config')) return 'settings';
+  return 'misc';
+}
 
-  // All tools land in a single "all" bucket since we don't carry category
-  // metadata through the registry. The UI still renders them filterably.
-  const tools_by_category: Record<string, Array<{ name: string; description: string; permission: string }>> = {
-    all: toolNames.map(name => ({
-      name,
-      description: AI_POWERED_TOOLS.includes(name)
-        ? 'AI-powered tool (uses Kie.ai or Anthropic)'
-        : 'Registered MCP tool',
-      permission: AI_POWERED_TOOLS.includes(name) ? 'write' : 'read',
-    })),
-  };
+function listAllTools(): unknown {
+  const registered = new Set(getRegisteredToolNames());
+  const stats = HANDLER_STATS.handlersByModule as Record<string, number>;
+
+  // T4.1: Every documented tool ships with description + inputSchema from
+  // tool-definitions.ts. We merge that with the runtime registry so the UI
+  // knows which tools actually have handlers registered vs. documented-only.
+  const docsWithHandlers = TOOLS.filter(t => registered.has(t.name));
+
+  const tools_by_category: Record<string, Array<{ name: string; description: string; permission: string; inputSchema?: unknown }>> = {};
+  for (const t of docsWithHandlers) {
+    const category = categorize(t.name);
+    if (!tools_by_category[category]) tools_by_category[category] = [];
+    tools_by_category[category].push({
+      name: t.name,
+      description: t.description,
+      permission: AI_POWERED_TOOLS.includes(t.name) ? 'write' : 'read',
+      inputSchema: t.inputSchema,
+    });
+  }
+
+  // Include any registered handlers that aren't in the docs file as a
+  // fallback bucket — so nothing disappears if someone adds a tool without
+  // documenting it yet.
+  const undocumented: typeof tools_by_category[string] = [];
+  for (const name of registered) {
+    if (!TOOL_METADATA_BY_NAME[name]) {
+      undocumented.push({
+        name,
+        description: 'Undocumented tool (add an entry in tool-definitions.ts)',
+        permission: AI_POWERED_TOOLS.includes(name) ? 'write' : 'read',
+      });
+    }
+  }
+  if (undocumented.length) tools_by_category['undocumented'] = undocumented;
 
   return {
     success: true,
-    total: toolNames.length,
-    categories: ['all', ...categories],
+    total: docsWithHandlers.length + undocumented.length,
+    documented: docsWithHandlers.length,
+    undocumented: undocumented.length,
+    categories: Object.keys(tools_by_category).sort(),
     tools_by_category,
     ai_tools: AI_POWERED_TOOLS.filter(t => hasHandler(t)),
+    modules: stats,
   };
 }
 
@@ -162,20 +218,27 @@ export async function registerMcpJsonRpcAdapter(fastify: FastifyInstance): Promi
 
     try {
       if (body.method === 'tools/list') {
-        // Return the tool-list envelope the MCP spec expects.
-        const toolNames = getRegisteredToolNames();
-        return reply.send({
-          jsonrpc: '2.0',
-          id,
-          result: {
-            tools: toolNames.map(name => ({
-              name,
-              description: AI_POWERED_TOOLS.includes(name)
-                ? 'AI-powered tool'
-                : 'MCP tool',
-            })),
-          },
-        });
+        // Return the tool-list envelope the MCP spec expects — with full
+        // description + inputSchema so Claude Code CLI (and any MCP client)
+        // sees actual parameter documentation, not synthesized placeholders.
+        const registered = new Set(getRegisteredToolNames());
+        const tools = TOOLS
+          .filter(t => registered.has(t.name))
+          .map(t => ({
+            name: t.name,
+            description: t.description,
+            inputSchema: t.inputSchema,
+          }));
+        return reply.send({ jsonrpc: '2.0', id, result: { tools } });
+      }
+
+      // get_tool_info — richer metadata for a single tool
+      if (body.method === 'tools/describe') {
+        const name = body.params?.name;
+        if (!name) return reply.send(err(id, -32602, 'Missing name'));
+        const meta = getToolMetadata(name);
+        if (!meta) return reply.send(err(id, -32601, `Unknown tool: ${name}`));
+        return reply.send(ok(id, meta));
       }
 
       if (body.method === 'tools/call') {
