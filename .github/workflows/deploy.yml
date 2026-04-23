@@ -110,8 +110,13 @@ jobs:
             # --no-cache ensures source changes are always picked up (BuildKit layer cache
             # can serve stale builds when only source files change but Dockerfile doesn't)
             # Worker uses same Dockerfile as backend but runs node dist/worker.js
-            docker compose -f docker-compose.yml -f docker-compose.deploy.yml build --no-cache backend worker frontend
-            docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate backend worker frontend
+            # T4.7: mcp-server container hosts the dedicated SSE MCP endpoint
+            # that Claude Code CLI and other external MCP clients connect to.
+            # Previously absent from the deploy list, so the qa-guardian-mcp
+            # service never came up in prod — nginx proxy returned 404 because
+            # the upstream hostname didn't exist on qa-network.
+            docker compose -f docker-compose.yml -f docker-compose.deploy.yml build --no-cache backend worker frontend mcp-server
+            docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate backend worker frontend mcp-server
 
             # Wait for backend to be ready (start_period is 60s in Dockerfile HEALTHCHECK)
             echo "Waiting for backend to start..."
