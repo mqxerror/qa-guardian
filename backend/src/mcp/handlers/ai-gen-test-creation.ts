@@ -12,6 +12,12 @@
 import { ToolHandler } from './types.js';
 import { aiRouter } from '../../services/providers/ai-router.js';
 import { modelSelector } from '../../services/providers/model-selector.js';
+// P2b: DOM-grounded Plan→Codegen pipeline (replaces single-shot prompting
+// when a target URL is available).
+import { runGenerationPipeline } from '../../services/ai-test-generation-pipeline.js';
+import { createLogger } from '../../services/logger.js';
+
+const pipelineLog = createLogger('ai-gen-test-creation:pipeline');
 
 /**
  * Feature #1757: Extract URL from description text
@@ -417,7 +423,57 @@ export const generateTest: ToolHandler = async (args, context) => {
     let fallbackReason: string | undefined;
     let latencyMs = 0;
 
+    // P2b: Try the DOM-grounded Plan→Codegen pipeline first when AI is available.
+    // If the pipeline succeeds, its result populates all output variables and we
+    // skip the legacy single-shot path. If recon fails, or either AI turn fails,
+    // we fall through to the single-shot logic (and eventually the template
+    // fallback). This means we never regress below the old behavior.
+    let pipelineHandled = false;
     if (useRealAi && aiAvailable) {
+      try {
+        const pipeline = await runGenerationPipeline({ description, targetUrl });
+        if (pipeline.success && pipeline.code) {
+          testName = pipeline.plan?.name || 'Generated Test';
+          testCode = pipeline.code;
+          testSteps = pipeline.steps || [];
+          // Use risks as variation suggestions — they're forward-looking test ideas.
+          suggestedVariations = (pipeline.plan?.risks && pipeline.plan.risks.length > 0)
+            ? pipeline.plan.risks.slice(0, 3)
+            : ['Test with invalid data', 'Test error paths', 'Test on mobile viewport'];
+          confidenceScore = pipeline.confidenceScore ?? 0.7;
+          aiProvider = pipeline.aiMeta.provider;
+          aiModel = pipeline.aiMeta.model;
+          inputTokens = pipeline.aiMeta.inputTokens;
+          outputTokens = pipeline.aiMeta.outputTokens;
+          usedRealAi = true;
+          usedFallback = pipeline.aiMeta.usedFallback;
+          fallbackReason = pipeline.aiMeta.fallbackReason;
+          latencyMs = pipeline.aiMeta.latencyMs;
+          pipelineHandled = true;
+          pipelineLog.info({
+            turns: pipeline.aiMeta.turns,
+            provider: aiProvider,
+            latencyMs,
+            confidence: confidenceScore,
+          }, 'Pipeline generated test');
+        } else {
+          // Pipeline ran but couldn't complete — capture the reason and fall
+          // through to single-shot, which may still work without DOM context.
+          pipelineLog.warn({
+            failedAt: pipeline.failedAt,
+            error: pipeline.error,
+          }, 'Pipeline incomplete — falling back to single-shot');
+          aiFailureReason = `Pipeline ${pipeline.failedAt ?? 'unknown'} step failed: ${pipeline.error ?? 'unknown'}`;
+        }
+      } catch (pipErr) {
+        // Pipeline crashed unexpectedly — fall through gracefully.
+        const reason = pipErr instanceof Error ? pipErr.message : String(pipErr);
+        pipelineLog.error({ err: reason }, 'Pipeline threw — falling back to single-shot');
+        aiFailureReason = `Pipeline error: ${reason}`;
+      }
+    }
+
+    if (useRealAi && aiAvailable && !pipelineHandled) {
       try {
         const systemPrompt = `You are an expert Playwright test engineer. Generate a complete, ready-to-run Playwright test.
 
