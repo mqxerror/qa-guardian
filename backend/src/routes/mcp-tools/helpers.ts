@@ -181,9 +181,20 @@ export function ensureAIInitialized(): AIInitResult {
  */
 export function createHandlerContext(request: FastifyRequest): HandlerContext {
   const apiUrl = process.env.QA_GUARDIAN_API_URL || 'http://localhost:3001';
-  const apiKey = request.headers['x-api-key'] as string | undefined;
-  // Also check for JWT token in Authorization header
+  // Incoming API key can be in either the X-API-Key header OR as a Bearer
+  // token in the Authorization header. Both are valid — external MCP clients
+  // like Claude Code CLI typically send `Authorization: Bearer qg_...`
+  // because the MCP spec treats auth as opaque bearer tokens.
+  const apiKeyFromHeader = request.headers['x-api-key'] as string | undefined;
   const authHeader = request.headers['authorization'] as string | undefined;
+  const bearerToken = authHeader?.startsWith('Bearer ')
+    ? authHeader.substring(7)
+    : undefined;
+  // QA Guardian API keys are prefixed `qg_`. Treat such bearer tokens as
+  // API keys so the downstream auth middleware takes the api-key path
+  // (which validates via DB hash) instead of JWT verify (which will fail).
+  const apiKey = apiKeyFromHeader
+    ?? (bearerToken?.startsWith('qg_') ? bearerToken : undefined);
 
   return {
     callApi: async (endpoint: string, options?: { method?: string; body?: Record<string, unknown> }) => {
@@ -195,7 +206,9 @@ export function createHandlerContext(request: FastifyRequest): HandlerContext {
         method,
         headers: {
           'Content-Type': 'application/json',
-          // Forward authentication - prefer API key, fallback to JWT
+          // Forward authentication — prefer API key (sent via X-API-Key so
+          // the middleware's api-key path takes precedence). JWT tokens
+          // (non-qg_ bearers) fall through to Authorization header.
           ...(apiKey ? { 'X-API-Key': apiKey } : {}),
           ...(authHeader && !apiKey ? { 'Authorization': authHeader } : {}),
         },
