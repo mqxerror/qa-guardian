@@ -352,7 +352,7 @@ export function MCPToolsCatalogSection() {
 
     const fetchTools = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_MCP_URL || ''}/mcp/message`, {
+        const response = await fetch(`/api/v1/mcp-rpc`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method: 'tools/call', params: { name: 'list_all_tools', arguments: { include_descriptions: true, include_permissions: true } } }),

@@ -28,7 +28,7 @@ export function MCPAnalyticsPage() {
  setFetchError(null);
  try {
  // Try to fetch from MCP server's validate_api_key which includes usage stats
- const response = await fetch(`${import.meta.env.VITE_MCP_URL || ''}/mcp/message`, {
+ const response = await fetch(`/api/v1/mcp-rpc`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify({

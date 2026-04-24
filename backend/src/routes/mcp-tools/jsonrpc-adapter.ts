@@ -27,7 +27,7 @@
  * or { jsonrpc, id, error: { code, message } }
  */
 
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import {
   executeHandler,
   getRegisteredToolNames,
@@ -205,8 +205,10 @@ function getHelp(args: Record<string, unknown>): unknown {
 // Adapter route
 // =============================================================================
 
-export async function registerMcpJsonRpcAdapter(fastify: FastifyInstance): Promise<void> {
-  fastify.post<{ Body: JsonRpcRequest }>('/mcp/message', async (request, reply) => {
+async function jsonRpcHandler(
+  request: FastifyRequest<{ Body: JsonRpcRequest }>,
+  reply: FastifyReply,
+): Promise<void> {
     const body = request.body || ({} as JsonRpcRequest);
     const id = body.id ?? null;
 
@@ -261,8 +263,21 @@ export async function registerMcpJsonRpcAdapter(fastify: FastifyInstance): Promi
 
       return reply.send(err(id, -32601, `Method not supported: ${body.method}`));
     } catch (e) {
-      logger.error('[mcp/message] handler threw', e);
+      logger.error('[mcp-rpc] handler threw', e);
       return reply.send(err(id, -32603, e instanceof Error ? e.message : 'Internal error'));
     }
-  });
+}
+
+export async function registerMcpJsonRpcAdapter(fastify: FastifyInstance): Promise<void> {
+  // PRIMARY PATH: /api/v1/mcp-rpc
+  // Mounted under /api/* which has an explicit Traefik PathPrefix(/api) rule
+  // routing to this backend. Safe from Dokploy's service-name auto-discovery.
+  fastify.post<{ Body: JsonRpcRequest }>('/api/v1/mcp-rpc', jsonRpcHandler);
+
+  // LEGACY ALIAS: /mcp/message
+  // Traefik service-name auto-discovery currently intercepts /mcp/* and routes
+  // it to the mcp-server container in prod, so this alias is effectively dead
+  // code there. Retained for local dev (where Traefik isn't in the path) and
+  // in case the auto-discovery is fixed/removed later.
+  fastify.post<{ Body: JsonRpcRequest }>('/mcp/message', jsonRpcHandler);
 }
