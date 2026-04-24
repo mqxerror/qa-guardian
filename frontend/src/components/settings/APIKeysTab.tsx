@@ -306,7 +306,7 @@ export function APIKeysTab() {
 function ClaudeCodeConnectionSnippet() {
   const [copied, setCopied] = useState<'cli' | 'json' | null>(null);
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://qa.pixelcraftedmedia.com';
-  const sseUrl = `${origin}/mcp-server/sse`;
+  const sseUrl = `${origin}/claude-mcp/sse`;
 
   const cliCmd = `claude mcp add qa-guardian \\
   --transport sse \\
