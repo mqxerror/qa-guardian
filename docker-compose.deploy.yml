@@ -43,6 +43,28 @@ services:
     networks:
       qa-network: {}
 
+  # T4.7 (fix): mcp-server hosts SSE at /mcp-server/sse for Claude Code CLI
+  # and other MCP clients. Dokploy was auto-discovering this container and
+  # routing /mcp-server/* to it with the prefix INTACT — mcp-server's own
+  # path matcher (/sse, /message, /health) never matched. Explicit Traefik
+  # labels override the auto-discovery: route here, strip the prefix first.
+  mcp-server:
+    networks:
+      qa-network: {}
+      dokploy-network: {}
+    labels:
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.enable=true"
+      # Strip the /mcp-server prefix before forwarding to the container
+      - "traefik.http.middlewares.mcp-server-strip.stripprefix.prefixes=/mcp-server"
+      # Host + path rule. Priority 15 so it beats the frontend catch-all (priority 1).
+      - "traefik.http.routers.qa-guardian-mcp.rule=Host(`qa.pixelcraftedmedia.com`) && PathPrefix(`/mcp-server`)"
+      - "traefik.http.routers.qa-guardian-mcp.entrypoints=websecure"
+      - "traefik.http.routers.qa-guardian-mcp.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.qa-guardian-mcp.priority=15"
+      - "traefik.http.routers.qa-guardian-mcp.middlewares=mcp-server-strip"
+      - "traefik.http.services.qa-guardian-mcp.loadbalancer.server.port=3002"
+
   frontend:
     # Override networks: keep qa-network + add dokploy-network (for Traefik)
     networks:
