@@ -266,7 +266,11 @@ services:
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
       # Feature #156: Limit Node.js heap
       - NODE_OPTIONS=--max-old-space-size=768
-    command: ["npx", "tsx", "src/mcp/index.ts"]
+    # Use the compiled JS entry point. The backend Dockerfile's runtime stage
+    # is multi-stage: it copies only /app/dist (compiled) — src/ is NOT in the
+    # image. Running `tsx src/mcp/index.ts` would try to load source that
+    # doesn't exist and the container crashes on boot.
+    command: ["node", "dist/mcp/index.js"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
       interval: 30s

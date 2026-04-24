@@ -234,25 +234,40 @@ export function APIKeysTab() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Scopes</label>
-                <div className="space-y-2">
-                  {['read', 'write', 'execute', 'admin'].map(scope => (
-                    <label key={scope} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={newKeyScopes.includes(scope)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setNewKeyScopes([...newKeyScopes, scope]);
-                          } else {
-                            setNewKeyScopes(newKeyScopes.filter(s => s !== scope));
-                          }
-                        }}
-                        className="rounded border-border"
-                      />
-                      <span className="text-sm text-foreground capitalize">{scope}</span>
-                    </label>
-                  ))}
+                <label className="block text-sm font-medium text-foreground mb-2">Scopes</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'read', label: 'Read', hint: 'View projects, suites, results' },
+                    { id: 'write', label: 'Write', hint: 'Create + edit tests, suites' },
+                    { id: 'execute', label: 'Execute', hint: 'Trigger test runs' },
+                    { id: 'admin', label: 'Admin', hint: 'Manage org, users, keys' },
+                  ].map(({ id: scope, label, hint }) => {
+                    const checked = newKeyScopes.includes(scope);
+                    return (
+                      <label
+                        key={scope}
+                        className={`flex items-start gap-2 p-3 rounded-md border cursor-pointer transition-colors ${
+                          checked
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:bg-muted/50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            if (e.target.checked) setNewKeyScopes([...newKeyScopes, scope]);
+                            else setNewKeyScopes(newKeyScopes.filter(s => s !== scope));
+                          }}
+                          className="mt-0.5 h-4 w-4 rounded border-border accent-primary cursor-pointer"
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-foreground">{label}</span>
+                          <span className="text-xs text-muted-foreground">{hint}</span>
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
               {createError && <p className="text-sm text-destructive">{createError}</p>}
@@ -341,7 +356,7 @@ function ClaudeCodeConnectionSnippet() {
             {copied === 'cli' ? '✓ Copied' : 'Copy'}
           </button>
         </div>
-        <pre className="bg-background border border-border rounded-md p-3 text-xs font-mono overflow-x-auto">
+        <pre className="bg-muted border border-border rounded-md p-3 text-xs font-mono overflow-x-auto text-foreground">
 {cliCmd}
         </pre>
       </div>
@@ -356,7 +371,7 @@ function ClaudeCodeConnectionSnippet() {
             {copied === 'json' ? '✓ Copied' : 'Copy'}
           </button>
         </div>
-        <pre className="bg-background border border-border rounded-md p-3 text-xs font-mono overflow-x-auto">
+        <pre className="bg-muted border border-border rounded-md p-3 text-xs font-mono overflow-x-auto text-foreground">
 {jsonSnippet}
         </pre>
       </div>
