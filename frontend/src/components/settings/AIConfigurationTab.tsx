@@ -20,7 +20,12 @@ import { Eye, EyeOff, Loader2, CheckCircle2, XCircle, Trash2 } from 'lucide-reac
 // -------------------------------------------------------------
 // T1.5: Types matching /api/v1/ai/providers response
 // -------------------------------------------------------------
-interface SupportedProvider { name: string; label: string; defaultModel?: string }
+interface SupportedProvider {
+  name: string;
+  label: string;
+  defaultModel?: string;
+  availableModels?: Array<{ id: string; label: string; tier: string }>;
+}
 interface ProviderConfig {
   provider: string;
   apiKeyMasked: string;
@@ -636,13 +641,28 @@ function ProviderCard({
           </div>
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Default Model (optional)</label>
-            <input
-              type="text"
-              value={modelInput}
-              onChange={(e) => setModelInput(e.target.value)}
-              placeholder={supported.defaultModel}
-              className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm"
-            />
+            {supported.availableModels && supported.availableModels.length > 0 ? (
+              <select
+                value={modelInput}
+                onChange={(e) => setModelInput(e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm"
+              >
+                <option value="">— Use provider default ({supported.defaultModel}) —</option>
+                {supported.availableModels.map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={modelInput}
+                onChange={(e) => setModelInput(e.target.value)}
+                placeholder={supported.defaultModel}
+                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm"
+              />
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button

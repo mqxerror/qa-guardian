@@ -91,12 +91,47 @@ export async function bootstrapProviderConfigs(): Promise<void> {
 }
 
 /**
- * Return the list of providers supported by the UI for adding keys.
- * Used by the frontend to build the form without hard-coding provider names.
+ * Return the list of providers supported by the UI for adding keys, plus
+ * the list of models each provider accepts. The frontend renders a model
+ * dropdown so users don't have to memorise the right string.
+ *
+ * Source of truth:
+ *   - Kie.ai's supported model set lives in kie-ai-provider.ts:KIE_SUPPORTED_MODELS.
+ *     Anything not in that set gets mapped to deepseek-chat at request time.
+ *   - Anthropic's catalog is documented in their API docs; we list the ones
+ *     actually used by features in this codebase.
  */
-export function getSupportedProviders(): Array<{ name: ProviderName; label: string; defaultModel?: string }> {
+export function getSupportedProviders(): Array<{
+  name: ProviderName;
+  label: string;
+  defaultModel?: string;
+  availableModels: Array<{ id: string; label: string; tier: 'fast' | 'balanced' | 'powerful' }>;
+}> {
   return [
-    { name: 'kie', label: 'Kie.ai (primary)', defaultModel: 'deepseek-chat' },
-    { name: 'anthropic', label: 'Anthropic (fallback)', defaultModel: 'claude-3-haiku-20240307' },
+    {
+      name: 'kie',
+      label: 'Kie.ai (primary)',
+      defaultModel: 'deepseek-chat',
+      availableModels: [
+        { id: 'deepseek-chat', label: 'DeepSeek Chat (recommended for cost)', tier: 'fast' },
+        { id: 'deepseek-coder', label: 'DeepSeek Coder (codegen-tuned)', tier: 'balanced' },
+        { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner (deeper analysis)', tier: 'powerful' },
+        { id: 'qwen-turbo', label: 'Qwen Turbo (fast Chinese-strong)', tier: 'fast' },
+        { id: 'qwen-plus', label: 'Qwen Plus', tier: 'balanced' },
+        { id: 'gpt-4o-mini', label: 'GPT-4o Mini', tier: 'fast' },
+        { id: 'gpt-4o', label: 'GPT-4o', tier: 'powerful' },
+      ],
+    },
+    {
+      name: 'anthropic',
+      label: 'Anthropic (fallback)',
+      defaultModel: 'claude-3-haiku-20240307',
+      availableModels: [
+        { id: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku (fastest, cheapest)', tier: 'fast' },
+        { id: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet (balanced)', tier: 'balanced' },
+        { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', tier: 'balanced' },
+        { id: 'claude-3-opus-20240229', label: 'Claude 3 Opus (deepest)', tier: 'powerful' },
+      ],
+    },
   ];
 }
