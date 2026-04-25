@@ -18,7 +18,7 @@
  */
 
 import { FastifyInstance, FastifyRequest } from 'fastify';
-import { authenticate, getOrganizationId, type JwtPayload } from '../middleware/auth.js';
+import { authenticate, getOrganizationId, type JwtPayload, type ApiKeyPayload } from '../middleware/auth.js';
 import { sendError } from '../utils/errors.js';
 import { createLogger } from '../services/logger.js';
 import {
@@ -49,17 +49,28 @@ const MIN_KEY_LENGTH = 10;
 const ADMIN_ROLES = new Set<JwtPayload['role']>(['admin', 'owner']);
 
 function getJwtUser(request: FastifyRequest): JwtPayload | null {
-  // authenticate middleware populates request.user with either JwtPayload or
-  // ApiKeyPayload. API-key-auth callers shouldn't rotate provider keys — only
-  // human admins via the UI (JWT) should.
-  const user = request.user as JwtPayload | undefined;
-  if (!user || typeof user !== 'object' || !('role' in user)) return null;
-  return user;
+  const user = request.user as (JwtPayload | ApiKeyPayload) | undefined;
+  if (!user || typeof user !== 'object') return null;
+  // JWT users have `role`; API key users have `type: 'api_key'`.
+  if ('type' in user && user.type === 'api_key') return null;
+  if (!('role' in user)) return null;
+  return user as JwtPayload;
 }
 
+/**
+ * Allow rotation if (a) caller is a JWT admin/owner, OR (b) caller is an
+ * API key with the `admin` scope. API keys with admin scope are a deliberate
+ * design choice — Claude Code CLI users with admin tokens need to be able
+ * to rotate provider credentials without the UI's JWT session.
+ */
 function isAdmin(request: FastifyRequest): boolean {
-  const user = getJwtUser(request);
-  return !!user && ADMIN_ROLES.has(user.role);
+  const jwt = getJwtUser(request);
+  if (jwt && ADMIN_ROLES.has(jwt.role)) return true;
+  const user = request.user as (JwtPayload | ApiKeyPayload) | undefined;
+  if (user && 'type' in user && user.type === 'api_key' && Array.isArray(user.scopes) && user.scopes.includes('admin')) {
+    return true;
+  }
+  return false;
 }
 
 export async function aiProviderConfigRoutes(app: FastifyInstance): Promise<void> {
