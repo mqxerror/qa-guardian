@@ -209,14 +209,22 @@ export async function aiProviderConfigRoutes(app: FastifyInstance): Promise<void
         const result = await provider.healthCheck();
         const latencyMs = Date.now() - started;
         const success = result.status === 'healthy' || result.status === 'degraded';
-        await recordTestResult(orgId, providerName, success,
-          success ? undefined : `healthCheck returned status=${result.status}`);
+        // Surface the underlying provider error (e.g., "Kie.ai is in
+        // maintenance") rather than just "offline" so the user knows whether
+        // it's a config bug or an upstream outage.
+        const detail = (result as { error?: string }).error;
+        const friendly = success
+          ? 'Connection verified'
+          : detail
+            ? `Unhealthy: ${detail}`
+            : `Unhealthy: ${result.status}`;
+        await recordTestResult(orgId, providerName, success, success ? undefined : friendly);
         if (reply.sent) return;
         return {
           success,
           status: result.status,
           latencyMs,
-          message: success ? 'Connection verified' : `Unhealthy: ${result.status}`,
+          message: friendly,
         };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);

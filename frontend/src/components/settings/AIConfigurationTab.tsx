@@ -64,9 +64,20 @@ export function AIConfigurationTab() {
         });
         if (response.ok) {
           const data = await response.json();
+          // The endpoint returns either the new shape (providers.primary.*)
+          // OR a legacy flat shape (kie_available). Handle both so we don't
+          // care which is deployed.
+          const kieFromNew = data.providers?.primary;
+          const anthropicFromNew = data.providers?.fallback;
           setAiStatus({
-            kie: { available: data.kie_available ?? false, model: data.kie_model },
-            anthropic: { available: data.anthropic_available ?? false, model: data.anthropic_model },
+            kie: {
+              available: kieFromNew?.available ?? data.kie_available ?? false,
+              model: kieFromNew?.model ?? data.kie_model,
+            },
+            anthropic: {
+              available: anthropicFromNew?.available ?? data.anthropic_available ?? false,
+              model: anthropicFromNew?.model ?? data.anthropic_model,
+            },
           });
         }
       } catch (err) {
@@ -475,11 +486,24 @@ function ProviderCard({
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  const statusDot = routerInitialized
-    ? <span className="w-2.5 h-2.5 rounded-full bg-success inline-block" />
-    : existing
-      ? <span className="w-2.5 h-2.5 rounded-full bg-warning inline-block" />
-      : <span className="w-2.5 h-2.5 rounded-full bg-destructive inline-block" />;
+  // Derive a tri-state status. "healthy" requires both router-loaded AND a
+  // recent successful test. "degraded" is router-loaded but the last test
+  // failed (key works at boot but provider is currently offline/maintenance).
+  // "missing" is no key saved at all.
+  const lastTestFailed = existing && existing.lastTestSuccess === false;
+  const status: 'healthy' | 'degraded' | 'unverified' | 'missing' =
+    !existing ? 'missing'
+      : lastTestFailed ? 'degraded'
+      : routerInitialized && existing.lastTestSuccess ? 'healthy'
+      : 'unverified';
+
+  const dotColor = {
+    healthy: 'bg-success',
+    degraded: 'bg-warning',
+    unverified: 'bg-muted-foreground',
+    missing: 'bg-destructive',
+  }[status];
+  const statusDot = <span className={`w-2.5 h-2.5 rounded-full inline-block ${dotColor}`} />;
 
   const handleSave = async () => {
     if (!token || keyInput.trim().length < 10) {
@@ -560,13 +584,16 @@ function ProviderCard({
           <div className="flex items-center gap-2">
             {statusDot}
             <h4 className="font-medium text-foreground">{supported.label}</h4>
-            {routerInitialized && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-success/10 text-success">Active</span>
+            {status === 'healthy' && (
+              <span className="text-xs px-1.5 py-0.5 rounded bg-success/10 text-success">Healthy</span>
             )}
-            {existing && !routerInitialized && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-warning/10 text-warning">Saved, not loaded</span>
+            {status === 'degraded' && (
+              <span className="text-xs px-1.5 py-0.5 rounded bg-warning/10 text-warning">Provider unhealthy</span>
             )}
-            {!existing && (
+            {status === 'unverified' && (
+              <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Unverified — click Test</span>
+            )}
+            {status === 'missing' && (
               <span className="text-xs px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">Not configured</span>
             )}
           </div>
