@@ -663,10 +663,14 @@ export class KieAIClient {
 
     const startTime = Date.now();
     try {
-      // Send a minimal request to check API health using haiku for speed
+      // Use deepseek-chat for the health probe — Kie.ai's supported set
+      // (deepseek-chat, deepseek-coder, deepseek-reasoner, qwen-*, gpt-4o*).
+      // Earlier versions used claude-3-haiku which Kie now rejects with
+      // "Operation not found", causing health checks to falsely report
+      // unhealthy when the service was actually fine.
       await this.sendMessage(
         [{ role: 'user', content: 'Hi' }],
-        { model: 'claude-3-haiku-20240307', maxTokens: 10 }
+        { model: 'deepseek-chat', maxTokens: 10 }
       );
 
       const latency = Date.now() - startTime;
