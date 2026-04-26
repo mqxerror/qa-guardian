@@ -37,7 +37,7 @@ const DEFAULT_ORG_ID = '00000000-0000-0000-0000-000000000001';
 // Providers the aiRouter knows how to hot-swap via its public `getProvider()`.
 // Adding gemma / openai here later only requires registering the provider
 // class in ai-router.ts — this service stays the same.
-const HOT_RELOADABLE_PROVIDERS: ProviderName[] = ['kie', 'anthropic'];
+const HOT_RELOADABLE_PROVIDERS: ProviderName[] = ['kie', 'anthropic', 'deepseek'];
 
 /**
  * Reload one provider's key from the DB into the running aiRouter.
@@ -131,6 +131,22 @@ export function getSupportedProviders(): Array<{
         { id: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet (balanced)', tier: 'balanced' },
         { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', tier: 'balanced' },
         { id: 'claude-3-opus-20240229', label: 'Claude 3 Opus (deepest)', tier: 'powerful' },
+      ],
+    },
+    // P1.3: DeepSeek as a third first-class provider. By default the router
+    // sends test_generation + chat + suggestion features here for the cost
+    // win; analysis/explain stay on Anthropic. Per-org override via
+    // model-selector config when we ship that UI.
+    {
+      name: 'deepseek',
+      label: 'DeepSeek (cost-optimized)',
+      defaultModel: 'deepseek-v4-flash',
+      availableModels: [
+        { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash ($0.14/$0.28 per 1M, 1M ctx)', tier: 'fast' },
+        { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro ($1.74/$3.48 per 1M, agentic-strong)', tier: 'powerful' },
+        { id: 'deepseek-coder', label: 'DeepSeek Coder (legacy V3.x)', tier: 'balanced' },
+        { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner (legacy V3.x reasoning)', tier: 'powerful' },
+        { id: 'deepseek-chat', label: 'DeepSeek Chat (legacy V3.x)', tier: 'fast' },
       ],
     },
   ];

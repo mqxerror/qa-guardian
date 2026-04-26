@@ -337,6 +337,9 @@ export async function runGenerationPipeline(options: PipelineOptions): Promise<P
         maxTokens: 1500,
         temperature: 0.2,
         systemPrompt: PLAN_SYSTEM,
+        // P2.3: feature hint enables smart routing — the router picks the
+        // configured provider for test_generation (DeepSeek V4 Pro by default).
+        feature: 'test_generation',
       },
     );
     turns.push('plan');
@@ -376,6 +379,8 @@ export async function runGenerationPipeline(options: PipelineOptions): Promise<P
         maxTokens: 2000,
         temperature: 0.2,
         systemPrompt: CODEGEN_SYSTEM,
+        // P2.3: same feature hint for codegen turn
+        feature: 'test_generation',
       },
     );
     turns.push('codegen');

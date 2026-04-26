@@ -41,6 +41,19 @@ export interface FeatureModelConfig {
   maxTokens?: number;
   /** Override temperature for this feature */
   temperature?: number;
+  /**
+   * P2.1: which provider to route to. The aiRouter honors this as the
+   * preferredProvider hint and falls back through the standard chain on
+   * failure. If unset, the global primary provider is used.
+   *
+   * Tradeoffs we encoded in the defaults:
+   *   - DeepSeek V4 has a 94-96% hallucination rate on AA-Omniscience —
+   *     unsafe for accuracy-critical work (root cause, explanations)
+   *   - DeepSeek V4 is leading open-weights on agentic / structured-output
+   *     tasks — great for our DOM-grounded test generation pipeline
+   *   - DeepSeek doesn't support vision; route screenshot tasks elsewhere
+   */
+  provider?: 'deepseek' | 'anthropic' | 'kie';
 }
 
 /** Model mapping for all features */
@@ -71,9 +84,11 @@ export const AVAILABLE_MODELS = {
     'claude-sonnet-4-20250514',     // Latest balanced
     'claude-3-opus-20240229',       // Most capable
   ],
-  // DeepSeek models via Kie.ai
+  // DeepSeek models — V4 lineup (Apr 2026 release) + legacy V3.x
   deepseek: [
-    'deepseek-chat',                // General chat
+    'deepseek-v4-flash',            // P1.3: V4 Flash — fastest, cheapest
+    'deepseek-v4-pro',              // P1.3: V4 Pro — leading agentic perf
+    'deepseek-chat',                // Legacy V3.x — Kie.ai default
     'deepseek-coder',               // Code-focused
     'deepseek-reasoner',            // Reasoning tasks
   ],
@@ -85,79 +100,115 @@ export const MODEL_TIERS: Record<string, ModelTier> = {
   'claude-3-5-sonnet-20241022': 'balanced',
   'claude-sonnet-4-20250514': 'balanced',
   'claude-3-opus-20240229': 'powerful',
+  'deepseek-v4-flash': 'fast',
+  'deepseek-v4-pro': 'powerful',
   'deepseek-chat': 'fast',
   'deepseek-coder': 'balanced',
   'deepseek-reasoner': 'powerful',
 };
 
-/** Default feature to model mapping (optimized for cost efficiency) */
+/**
+ * Default feature → provider/model mapping (P2.1).
+ *
+ * Routing principles:
+ *   - DeepSeek V4 Flash for cheap, high-volume routine work (chat,
+ *     suggestions, summaries) — $0.14/$0.28 per 1M is hard to beat.
+ *   - DeepSeek V4 Pro for structured codegen with DOM grounding —
+ *     hallucination is bounded by the recon step's element list, so
+ *     V4 Pro's #1-among-open-weights agentic score wins here.
+ *   - Anthropic for accuracy-critical features (root-cause analysis,
+ *     failure explanation, healing). DeepSeek's 94-96% AA-Omniscience
+ *     hallucination rate is too high for "explain the bug" outputs.
+ *   - Anthropic for vision (DeepSeek V4 doesn't accept images).
+ *
+ * The aiRouter automatically falls back through the standard chain if
+ * the preferred provider is unhealthy — so a Kie outage doesn't break
+ * features that nominally route to DeepSeek.
+ */
 export const DEFAULT_FEATURE_MODELS: FeatureModelMapping = {
-  // Fast tier - Haiku for quick, simple tasks
+  // Fast tier — DeepSeek V4 Flash dominates on cost. Hallucination doesn't
+  // bite us here because outputs are short and conversational.
   chat: {
-    model: 'claude-3-haiku-20240307',
-    reason: 'Fast responses for interactive chat',
+    provider: 'deepseek',
+    model: 'deepseek-v4-flash',
+    reason: 'Fast cheap chat responses',
     tier: 'fast',
     maxTokens: 1024,
     temperature: 0.7,
   },
   suggestion: {
-    model: 'claude-3-haiku-20240307',
-    reason: 'Quick autocomplete suggestions',
+    provider: 'deepseek',
+    model: 'deepseek-v4-flash',
+    reason: 'Quick autocomplete — Flash is sub-second',
     tier: 'fast',
     maxTokens: 256,
     temperature: 0.3,
   },
   summarization: {
-    model: 'claude-3-haiku-20240307',
-    reason: 'Cost-effective summarization',
+    provider: 'deepseek',
+    model: 'deepseek-v4-flash',
+    reason: 'Bulk summarization — cheapest tier',
     tier: 'fast',
     maxTokens: 512,
     temperature: 0.3,
   },
 
-  // Balanced tier - Sonnet for medium complexity
+  // Balanced/powerful tier for codegen — DeepSeek V4 Pro leads on agentic
+  // benchmarks (GDPval-AA 1554, #1 open-weights). DOM-grounded pipeline
+  // bounds hallucination to selectors that exist.
   test_generation: {
-    model: 'claude-3-5-sonnet-20241022',
-    reason: 'Quality test code generation',
-    tier: 'balanced',
+    provider: 'deepseek',
+    model: 'deepseek-v4-pro',
+    reason: 'Best agentic open-weights model; DOM-grounding bounds hallucination',
+    tier: 'powerful',
     maxTokens: 4096,
     temperature: 0.2,
   },
   healing: {
+    // Healing modifies code to fix tests — accuracy matters more than raw
+    // generation quality. Anthropic Sonnet stays here.
+    provider: 'anthropic',
     model: 'claude-3-5-sonnet-20241022',
-    reason: 'Accurate test repairs',
+    reason: 'Test repairs require precision; Anthropic has lower hallucination',
     tier: 'balanced',
     maxTokens: 2048,
     temperature: 0.1,
   },
   documentation: {
-    model: 'claude-3-5-sonnet-20241022',
-    reason: 'Quality documentation',
+    provider: 'deepseek',
+    model: 'deepseek-v4-pro',
+    reason: 'Quality docs at fraction of Sonnet cost',
     tier: 'balanced',
     maxTokens: 4096,
     temperature: 0.4,
   },
   explanation: {
+    // Explaining test failures — high accuracy required (the user trusts
+    // this output). Anthropic for now.
+    provider: 'anthropic',
     model: 'claude-3-5-sonnet-20241022',
-    reason: 'Clear explanations',
+    reason: 'User-facing explanations need low hallucination',
     tier: 'balanced',
     maxTokens: 2048,
     temperature: 0.5,
   },
 
-  // Powerful tier - Opus for complex tasks
+  // Powerful tier — root cause analysis. Stays on Anthropic for accuracy.
   analysis: {
+    provider: 'anthropic',
     model: 'claude-3-opus-20240229',
-    reason: 'Deep code analysis and root cause detection',
+    reason: 'Root cause analysis — deepest reasoning, lowest hallucination',
     tier: 'powerful',
     maxTokens: 4096,
     temperature: 0.1,
   },
 
-  // Default fallback
+  // Default fallback — V4 Flash. If something needs higher tier, the
+  // calling handler should declare its feature explicitly.
   default: {
-    model: 'claude-3-haiku-20240307',
-    reason: 'Default to cheapest model',
+    provider: 'deepseek',
+    model: 'deepseek-v4-flash',
+    reason: 'Default to cheapest reasonable tier',
     tier: 'fast',
     maxTokens: 2048,
     temperature: 0.5,

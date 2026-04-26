@@ -95,6 +95,19 @@ export interface AISendMessageOptions {
   stopSequences?: string[];
   /** Feature #477: Context for usage tracking and billing */
   usageContext?: AIUsageContext;
+  /**
+   * P2.1/P2.2: Smart routing — caller hints what kind of work this is and
+   * the router picks the best provider/model for it. Falls back through
+   * the standard primary→fallback chain if the preferred provider is down.
+   * Examples: 'test_generation', 'chat', 'analysis', 'vision'
+   */
+  feature?: string;
+  /**
+   * Override the routing entirely — pin this single call to a specific
+   * provider. Mostly for diagnostic / dashboard work; smart routing via
+   * `feature` is the recommended path.
+   */
+  preferredProvider?: ProviderName;
 }
 
 /**
@@ -389,7 +402,7 @@ export interface AIProviderError extends Error {
 // =============================================================================
 
 /** Available provider names */
-export type ProviderName = 'anthropic' | 'kie' | 'openai';
+export type ProviderName = 'anthropic' | 'kie' | 'openai' | 'deepseek';
 
 /**
  * Configuration for the AI provider router.

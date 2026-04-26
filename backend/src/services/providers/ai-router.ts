@@ -25,7 +25,9 @@ import type {
 
 import { KieAIProvider } from './kie-ai-provider.js';
 import { AnthropicProvider } from './anthropic-provider.js';
+import { DeepSeekProvider } from './deepseek-provider.js';
 import { CircuitBreaker } from './circuit-breaker.js';
+import { modelSelector } from './model-selector.js';
 // Feature #449: Use structured logger instead of console.*
 import { createLogger } from '../logger.js';
 
@@ -212,6 +214,7 @@ export class AIRouter implements IAIProvider {
   private costTracking = {
     kie: { requests: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 },
     anthropic: { requests: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 },
+    deepseek: { requests: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 },
   };
 
   constructor(config: Partial<AIRouterConfig> = {}) {
@@ -227,10 +230,15 @@ export class AIRouter implements IAIProvider {
     // Initialize providers
     this.providers.set('kie', new KieAIProvider());
     this.providers.set('anthropic', new AnthropicProvider());
+    // P1.2: register DeepSeek as a third provider so smart routing
+    // (P2.1) can target deepseek-v4-flash / deepseek-v4-pro for tasks
+    // where their price/perf is best.
+    this.providers.set('deepseek', new DeepSeekProvider());
 
     // Initialize circuit breakers for each provider
     this.circuitBreakers.set('kie', new CircuitBreaker('kie'));
     this.circuitBreakers.set('anthropic', new CircuitBreaker('anthropic'));
+    this.circuitBreakers.set('deepseek', new CircuitBreaker('deepseek'));
   }
 
   /**
@@ -252,6 +260,21 @@ export class AIRouter implements IAIProvider {
    */
   private getPrimaryProvider(): IAIProvider | undefined {
     return this.providers.get(this.config.primary);
+  }
+
+  /**
+   * P2.1/P2.2: Resolve which provider to prefer for this call.
+   * Priority order:
+   *   1. options.preferredProvider — explicit override (debug/dashboard)
+   *   2. options.feature → modelSelector lookup → provider hint
+   *   3. undefined (use global primary)
+   *
+   */
+  private resolvePreferredProvider(options: AISendMessageOptions): ProviderName | undefined {
+    if (options.preferredProvider) return options.preferredProvider;
+    if (!options.feature) return undefined;
+    const cfg = modelSelector.getModelForFeature(options.feature);
+    return cfg.provider;
   }
 
   /**
@@ -289,11 +312,16 @@ export class AIRouter implements IAIProvider {
   }
 
   /**
-   * Try to execute with primary provider, failover to fallback if needed
+   * Try to execute with primary provider, failover to fallback if needed.
+   * P2.2: optionally accepts a preferredProvider — when set, that provider
+   * is tried FIRST; on failure we cascade through the standard primary →
+   * fallback chain. This is what the smart per-feature routing uses to
+   * say "send test_generation to deepseek-v4-pro, not the global primary."
    */
   private async tryWithFallback<T>(
     operation: (provider: IAIProvider) => Promise<T>,
-    operationName: string
+    operationName: string,
+    preferredProvider?: ProviderName,
   ): Promise<{ result: T; usedFallback: boolean; fallbackReason?: string; actualProvider: ProviderName }> {
     this.stats.totalRequests++;
 
@@ -301,7 +329,7 @@ export class AIRouter implements IAIProvider {
     this.inFlightRequests++;
 
     try {
-      return await this.executeWithFallback(operation, operationName);
+      return await this.executeWithFallback(operation, operationName, preferredProvider);
     } finally {
       this.inFlightRequests--;
     }
@@ -312,8 +340,38 @@ export class AIRouter implements IAIProvider {
    */
   private async executeWithFallback<T>(
     operation: (provider: IAIProvider) => Promise<T>,
-    operationName: string
+    operationName: string,
+    preferredProvider?: ProviderName,
   ): Promise<{ result: T; usedFallback: boolean; fallbackReason?: string; actualProvider: ProviderName }> {
+    // P2.2: When a preferred provider is supplied (per-call override from
+    // smart routing), try it first. If it's offline or fails on a retryable
+    // error, we fall through to the standard primary → fallback chain.
+    if (preferredProvider && preferredProvider !== this.config.primary) {
+      const preferred = this.providers.get(preferredProvider);
+      if (preferred?.isInitialized()) {
+        try {
+          const result = await operation(preferred);
+          this.stats.primarySuccesses++;
+          return { result, usedFallback: false, actualProvider: preferredProvider };
+        } catch (error) {
+          const check = shouldFailover(error);
+          if (check.should) {
+            this.logFailover(
+              `Preferred provider ${preferredProvider} failed: ${check.reason}`,
+              check.errorType,
+              error instanceof Error ? error.message : String(error),
+            );
+            // Fall through to standard primary→fallback chain
+          } else {
+            // Non-retryable error from preferred — surface it; don't cascade
+            this.stats.totalFailures++;
+            throw error;
+          }
+        }
+      }
+      // If preferred isn't initialized, just fall through silently
+    }
+
     const primary = this.getPrimaryProvider();
     const fallback = this.getFallbackProvider();
 
@@ -402,8 +460,13 @@ export class AIRouter implements IAIProvider {
   reinitializeFromEnv(): boolean {
     const kieKey = process.env.KIE_API_KEY;
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
-    log.info({ kiePresent: !!kieKey, anthropicPresent: !!anthropicKey }, 'Reinitializing from env');
+    log.info({
+      kiePresent: !!kieKey,
+      anthropicPresent: !!anthropicKey,
+      deepseekPresent: !!deepseekKey,
+    }, 'Reinitializing from env');
 
     let anyInitialized = false;
 
@@ -427,6 +490,16 @@ export class AIRouter implements IAIProvider {
       }
     }
 
+    // P1.2: Reinitialize DeepSeek provider
+    const deepseekProvider = this.providers.get('deepseek');
+    if (deepseekProvider && deepseekKey) {
+      deepseekProvider.initialize(deepseekKey);
+      if (deepseekProvider.isInitialized()) {
+        log.info('DeepSeek provider initialized successfully');
+        anyInitialized = true;
+      }
+    }
+
     return anyInitialized;
   }
 
@@ -445,15 +518,25 @@ export class AIRouter implements IAIProvider {
   private trackCost(provider: ProviderName, model: string, inputTokens: number, outputTokens: number): void {
     if (!this.config.costTracking) return;
 
-    // Calculate cost based on provider pricing
-    const pricing = provider === 'kie' ? KIE_PRICING : ANTHROPIC_PRICING;
-    // Default pricing if model not found (claude-3-haiku rates)
+    // Per-provider pricing tables. DeepSeek prices live alongside the
+    // V4 lineup; everything else falls back to its provider's table.
+    const DEEPSEEK_PRICING: Record<string, { input: number; output: number }> = {
+      'deepseek-v4-pro': { input: 1.74, output: 3.48 },
+      'deepseek-v4-flash': { input: 0.14, output: 0.28 },
+      'deepseek-chat': { input: 0.14, output: 0.28 },
+      'deepseek-coder': { input: 0.14, output: 0.28 },
+      'deepseek-reasoner': { input: 0.55, output: 2.19 },
+    };
+    const pricing = provider === 'kie'
+      ? KIE_PRICING
+      : provider === 'deepseek'
+        ? DEEPSEEK_PRICING
+        : ANTHROPIC_PRICING;
     const defaultPricing = { input: 0.25, output: 1.25 };
     const modelPricing = pricing[model] ?? pricing['claude-3-haiku-20240307'] ?? defaultPricing;
 
     const costUsd = (inputTokens * modelPricing.input + outputTokens * modelPricing.output) / 1_000_000;
 
-    // Update tracking for the specific provider
     if (provider === 'kie') {
       this.costTracking.kie.requests++;
       this.costTracking.kie.inputTokens += inputTokens;
@@ -464,21 +547,32 @@ export class AIRouter implements IAIProvider {
       this.costTracking.anthropic.inputTokens += inputTokens;
       this.costTracking.anthropic.outputTokens += outputTokens;
       this.costTracking.anthropic.costUsd += costUsd;
+    } else if (provider === 'deepseek') {
+      this.costTracking.deepseek.requests++;
+      this.costTracking.deepseek.inputTokens += inputTokens;
+      this.costTracking.deepseek.outputTokens += outputTokens;
+      this.costTracking.deepseek.costUsd += costUsd;
     }
   }
 
   /**
-   * Send a message with automatic failover
+   * Send a message with automatic failover.
+   * P2.1/P2.2: smart routing — when options.feature is set we look up the
+   * configured provider for that feature (e.g. test_generation → deepseek)
+   * and pass it as the preferredProvider hint. Direct preferredProvider
+   * overrides feature-based routing.
    */
   async sendMessage(
     messages: AIMessage[],
     options: AISendMessageOptions = {}
   ): Promise<RoutedAIResponse> {
     const startTime = Date.now();
+    const preferred = this.resolvePreferredProvider(options);
 
     const { result, usedFallback, fallbackReason, actualProvider } = await this.tryWithFallback(
       (provider) => provider.sendMessage(messages, options),
-      'sendMessage'
+      'sendMessage',
+      preferred,
     );
 
     // Track cost for the provider that handled the request
@@ -502,10 +596,12 @@ export class AIRouter implements IAIProvider {
     callbacks: StreamCallbacks = {}
   ): Promise<RoutedAIResponse> {
     const startTime = Date.now();
+    const preferred = this.resolvePreferredProvider(options);
 
     const { result, usedFallback, fallbackReason, actualProvider } = await this.tryWithFallback(
       (provider) => provider.sendMessageStream(messages, options, callbacks),
-      'sendMessageStream'
+      'sendMessageStream',
+      preferred,
     );
 
     // Track cost for the provider that handled the request
@@ -997,6 +1093,7 @@ export class AIRouter implements IAIProvider {
     this.costTracking = {
       kie: { requests: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 },
       anthropic: { requests: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 },
+      deepseek: { requests: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 },
     };
   }
 }

@@ -39,7 +39,8 @@ import type { ProviderName } from '../services/providers/types.js';
 const log = createLogger('routes:ai-provider-configs');
 
 // Providers the UI is allowed to write keys for (validated at route entry).
-const SUPPORTED_PROVIDERS = new Set<ProviderName>(['kie', 'anthropic']);
+// P1.3: DeepSeek joined as a first-class provider.
+const SUPPORTED_PROVIDERS = new Set<ProviderName>(['kie', 'anthropic', 'deepseek']);
 
 // Minimum key length sanity check — real keys are 20-200 chars typically.
 // Blocks obviously-bad input ("test", "xxx") without being too strict.

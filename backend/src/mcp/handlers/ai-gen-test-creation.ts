@@ -508,6 +508,9 @@ Generate the complete test code.`;
             maxTokens: modelConfig.maxTokens || 2048,
             temperature: modelConfig.temperature || 0.3,
             systemPrompt,
+            // P2.3: even the legacy single-shot generator routes via
+            // smart-routing now, so it benefits from the cost optimization.
+            feature: 'test_generation',
           }
         );
 
