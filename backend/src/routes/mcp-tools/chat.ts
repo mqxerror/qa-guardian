@@ -43,7 +43,7 @@ export async function registerChatRoutes(fastify: FastifyInstance) {
     const startTime = Date.now();
 
     try {
-      const { message, context = {}, complexity = 'complex', model } = request.body;
+      const { message, context = {}, complexity = 'complex', model, provider } = request.body;
 
       // Feature #2074: User-specified model takes precedence
       // Feature #1941: Fallback to complexity-based model routing
@@ -108,13 +108,23 @@ export async function registerChatRoutes(fastify: FastifyInstance) {
         logger.info(`Tool execution turn ${turnCount}/${MAX_TOOL_TURNS}`);
 
         // Call the AI router with complexity-based model selection (Feature #1941)
+        // P2.3: honor `provider` from request body. Without this, the chat
+        // handler always routed to the global primary (Kie → Anthropic on
+        // failover) regardless of the user's task preference. Symptom: a
+        // chat call with provider='deepseek' still hit Anthropic and 400'd
+        // when Anthropic's credit was exhausted.
+        // 'auto' / undefined falls through to feature-based smart routing.
         const aiResponse = await aiRouter.sendMessage(
           conversationMessages,
           {
             systemPrompt,
             temperature: 0.7,
             maxTokens: 4000,
-            model: selectedModel,  // Feature #1941: Use complexity-based model
+            model: selectedModel,
+            preferredProvider: (provider && provider !== 'auto')
+              ? (provider as 'kie' | 'anthropic' | 'deepseek')
+              : undefined,
+            feature: provider === 'auto' || !provider ? 'chat' : undefined,
           }
         );
 
