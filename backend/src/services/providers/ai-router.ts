@@ -99,6 +99,7 @@ export interface CostSavings {
   byProvider: {
     kie: { requests: number; inputTokens: number; outputTokens: number; costUsd: number };
     anthropic: { requests: number; inputTokens: number; outputTokens: number; costUsd: number };
+    deepseek: { requests: number; inputTokens: number; outputTokens: number; costUsd: number };
   };
 }
 
@@ -1082,6 +1083,7 @@ export class AIRouter implements IAIProvider {
       byProvider: {
         kie: { ...this.costTracking.kie },
         anthropic: { ...this.costTracking.anthropic },
+        deepseek: { ...this.costTracking.deepseek },
       },
     };
   }
