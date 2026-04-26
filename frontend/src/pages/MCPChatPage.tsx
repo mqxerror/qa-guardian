@@ -461,7 +461,11 @@ Just type naturally and I'll help you manage your QA workflows!`,
      ]}
      actions={
        <div className="flex items-center gap-4">
-         {/* AI Status Indicator */}
+         {/* AI Status Indicator — reads provider/model from the active
+              chat task preference so the chip always agrees with the
+              dropdown to its right. Was previously hard-coded to the
+              global primary which made "AI: Kie.ai claude-opus" appear
+              even when the user had selected DeepSeek V4 Pro. */}
          <div className="flex items-center gap-2">
            <div className={`w-2 h-2 rounded-full ${
              aiStatus?.ready ? 'bg-success' : 'bg-destructive'
@@ -469,17 +473,18 @@ Just type naturally and I'll help you manage your QA workflows!`,
            <span className="text-xs text-muted-foreground">
              {aiStatus?.ready ? (
                <span className="text-success">
-                 AI: {aiStatus.providers.primary.available ? aiStatus.providers.primary.name : aiStatus.providers.fallback.name}
+                 AI: {(() => {
+                   const m = chatPreference.model;
+                   if (m === 'auto') return aiStatus.providers.primary.available ? aiStatus.providers.primary.name : aiStatus.providers.fallback.name;
+                   if (m?.startsWith('deepseek')) return 'DeepSeek';
+                   if (m?.startsWith('claude')) return 'Anthropic';
+                   return 'Auto';
+                 })()}
                </span>
              ) : (
                <span className="text-destructive">AI Offline</span>
              )}
            </span>
-           {aiStatus?.providers.primary.model && (
-             <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary">
-               {aiStatus.providers.primary.model.split('-').slice(0, 2).join('-')}
-             </span>
-           )}
          </div>
          <span className="text-xs text-muted-foreground">|</span>
          {/* Feature #2074: Model Selector */}

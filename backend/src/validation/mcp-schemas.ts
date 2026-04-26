@@ -34,7 +34,11 @@ export const mcpChatBodySchema = z.object({
     })).optional(),
   }).optional(),
   complexity: z.enum(['simple', 'complex']).default('complex'),
-  provider: z.enum(['kie', 'anthropic', 'auto']).optional(),
+  // P1.2: 'deepseek' is now a first-class provider. Without it in this
+  // enum, every chat request that pinned to DeepSeek (the user's chat
+  // model preference) was 400'd at validation time before the handler
+  // even saw it. Symptom: '/list-projects' returned 'API error: 400'.
+  provider: z.enum(['kie', 'anthropic', 'deepseek', 'auto']).optional(),
   model: z.string().max(100).optional(),
 });
 
