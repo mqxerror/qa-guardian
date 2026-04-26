@@ -239,6 +239,7 @@ export async function aiUsageRoutes(app: FastifyInstance) {
       const stats = aiRouter.getRouterStats();
       const kieCb = aiRouter.getCircuitBreaker('kie');
       const anthropicCb = aiRouter.getCircuitBreaker('anthropic');
+      const deepseekCb = aiRouter.getCircuitBreaker('deepseek');
       const costs = aiRouter.getCostSavings();
       const switches = aiRouter.getProviderSwitchHistory().slice(-10);
 
@@ -261,6 +262,12 @@ export async function aiUsageRoutes(app: FastifyInstance) {
           anthropic: {
             initialized: aiRouter.isProviderAvailable('anthropic'),
             circuitBreaker: anthropicCb ? anthropicCb.getState() : null,
+          },
+          // P1.2: third provider in the routing diagnostics so the dashboard
+          // shows DeepSeek's circuit state alongside the other two.
+          deepseek: {
+            initialized: aiRouter.isProviderAvailable('deepseek'),
+            circuitBreaker: deepseekCb ? deepseekCb.getState() : null,
           },
         },
         stats: {
