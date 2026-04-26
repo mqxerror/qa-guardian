@@ -34,6 +34,9 @@ const EXTENDED_TIMEOUT_PATHS: { pattern: RegExp; timeout: number }[] = [
   { pattern: /\/api\/v1\/mcp\/chat/, timeout: 2 * 60 * 1000 }, // 2 minutes
   // MCP execute (AI test generation + tool execution)
   { pattern: /\/api\/v1\/mcp\/execute/, timeout: 2 * 60 * 1000 }, // 2 minutes
+  // MCP JSON-RPC adapter — runs the same handlers as /mcp/execute
+  // (test generation pipeline can take 30-60s for Plan→Codegen)
+  { pattern: /\/api\/v1\/mcp-rpc/, timeout: 2 * 60 * 1000 }, // 2 minutes
   // Test run execution
   { pattern: /\/api\/v1\/runs\/start/, timeout: 3 * 60 * 1000 }, // 3 minutes
   // Feature #184: Flakiness trend analytics can be slow on large datasets
