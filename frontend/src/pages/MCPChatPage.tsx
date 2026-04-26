@@ -229,6 +229,51 @@ Just type naturally and I'll help you manage your QA workflows!`,
  };
  };
 
+ // P2.4: Direct MCP tool call — bypasses the AI chat handler. Used for
+ // parameter-less slash commands (/list-projects, /list-suites, etc.)
+ // where there's no natural-language interpretation needed. Returns the
+ // tool's raw JSON result.
+ const callMcpToolDirect = async (toolName: string, args: Record<string, unknown>): Promise<unknown> => {
+   const res = await fetch('/api/v1/mcp-rpc', {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+     body: JSON.stringify({
+       jsonrpc: '2.0',
+       id: Date.now(),
+       method: 'tools/call',
+       params: { name: toolName, arguments: args },
+     }),
+   });
+   if (!res.ok) throw new Error(`HTTP ${res.status}`);
+   const body = await res.json();
+   if (body.error) throw new Error(body.error.message || 'tool error');
+   const text = body.result?.content?.[0]?.text;
+   if (typeof text === 'string') {
+     try { return JSON.parse(text); } catch { return text; }
+   }
+   return body.result;
+ };
+
+ // Format direct tool results as readable chat messages. Tool-specific
+ // formatters keep common cases (project list, suite list) short.
+ const formatToolResultForChat = (toolName: string, result: unknown): string => {
+   const r = result as Record<string, unknown>;
+   if (toolName === 'list_projects' && Array.isArray(r?.projects)) {
+     const projects = r.projects as Array<{ id: string; name: string; base_url?: string | null; description?: string }>;
+     if (projects.length === 0) return 'No projects yet. Create one with `/create-test [name] [url]` or via the Projects page.';
+     return `**${projects.length} project${projects.length === 1 ? '' : 's'}:**\n\n` +
+       projects.map(p => `- **${p.name}**${p.base_url ? ` (${p.base_url})` : ''}\n  \`${p.id}\`${p.description ? ` — ${p.description}` : ''}`).join('\n');
+   }
+   if (toolName === 'list_test_suites' && Array.isArray(r?.suites)) {
+     const suites = r.suites as Array<{ id: string; name: string; project_id: string }>;
+     if (suites.length === 0) return 'No test suites in this project yet.';
+     return `**${suites.length} test suite${suites.length === 1 ? '' : 's'}:**\n\n` +
+       suites.map(s => `- **${s.name}** \`${s.id}\``).join('\n');
+   }
+   // Generic fallback: pretty-print JSON
+   return '```json\n' + JSON.stringify(result, null, 2) + '\n```';
+ };
+
  // Legacy local responses for non-AI queries (status checks, help, etc.)
  const getLocalResponse = (userMessage: string): { content: string; toolCalled?: string; toolResult?: string; isCommand?: boolean; aiMetadata?: MCPChatMessage['aiMetadata']; actions?: QuickAction[] } | null => {
  const lowerMessage = userMessage.toLowerCase();
@@ -276,6 +321,34 @@ Just type naturally and I'll help you manage your QA workflows!`,
  // Feature #1692/#1701: Check for slash commands and format them for the AI
  const slashCommand = parseSlashCommand(userMessage.content);
  let messageToSend = userMessage.content;
+
+ // P2.4: parameter-less slash commands skip the AI entirely and call
+ // the MCP tool directly. ~500ms vs 5-10s, free of LLM tokens,
+ // immune to whichever provider is configured/healthy.
+ if (slashCommand && slashCommand.isValid) {
+   const cmdDef = slashCommandRegistry.get(slashCommand.command);
+   const hasNoArgs = !cmdDef?.parameters || cmdDef.parameters.length === 0;
+   if (cmdDef?.toolMapping && hasNoArgs) {
+     try {
+       const directResult = await callMcpToolDirect(cmdDef.toolMapping, {});
+       const formatted = formatToolResultForChat(cmdDef.toolMapping, directResult);
+       setMessages(prev => [...prev, {
+         id: `msg_${Date.now()}_response`,
+         role: 'assistant',
+         content: formatted,
+         timestamp: new Date(),
+         toolCalled: cmdDef.toolMapping,
+         toolResult: JSON.stringify(directResult),
+         isCommand: true,
+         aiMetadata: { used_real_ai: false, provider: 'direct', model: 'mcp-rpc' },
+       }]);
+       return;
+     } catch (err) {
+       // Fall through to AI path so user still gets some response
+       console.error('Direct tool call failed, falling through to AI:', err);
+     }
+   }
+ }
 
  if (slashCommand && slashCommand.isValid && slashCommand.formattedPrompt) {
  // Format the slash command as a structured prompt for the AI
