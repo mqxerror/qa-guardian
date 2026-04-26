@@ -45,15 +45,24 @@ export async function registerChatRoutes(fastify: FastifyInstance) {
     try {
       const { message, context = {}, complexity = 'complex', model, provider } = request.body;
 
-      // Feature #2074: User-specified model takes precedence
-      // Feature #1941: Fallback to complexity-based model routing
+      // Feature #2074: User-specified model takes precedence.
+      // Feature #1941: Fallback to complexity-based model routing.
+      // P2.3 fix: when neither an explicit model nor a non-claude provider is
+      // pinned, defer model selection to the router's per-feature smart
+      // routing (modelSelector). Hardcoding a Claude model here forces it
+      // through to whichever provider the router picks — and DeepSeek would
+      // reject `claude-sonnet-4-20250514` with 'unknown model', cascading
+      // to Anthropic and failing on credit balance.
       const modelByComplexity = {
         simple: 'claude-3-haiku-20240307',
-        complex: 'claude-sonnet-4-20250514',  // Claude Sonnet 4 for complex analysis
+        complex: 'claude-sonnet-4-20250514',
       };
-      // If user specified a model (from preferences), use that; otherwise use complexity-based selection
-      const selectedModel = model || modelByComplexity[complexity];
-      logger.info(`User model: ${model || 'auto'}, Complexity: ${complexity}, Selected model: ${selectedModel}`);
+      // selectedModel is undefined when no explicit model AND no Claude-only
+      // provider. Router then uses the feature's mapped model (e.g.
+      // deepseek-v4-flash for 'chat' when DeepSeek is configured).
+      const selectedModel = model
+        || (provider === 'anthropic' || provider === 'kie' ? modelByComplexity[complexity] : undefined);
+      logger.info(`User model: ${model || 'auto'}, provider: ${provider || 'auto'}, Complexity: ${complexity}, Selected model: ${selectedModel || '(via smart routing)'}`);
 
       if (!message) {
         return sendError(reply, 400, 'BAD_REQUEST', 'Missing required parameter: message');
@@ -305,7 +314,7 @@ export async function registerChatRoutes(fastify: FastifyInstance) {
       // Feature #1941: Calculate estimated cost based on model used
       const inputTokens = lastAiResponse.inputTokens || 0;
       const outputTokens = lastAiResponse.outputTokens || 0;
-      const modelUsed = lastAiResponse.model || selectedModel;
+      const modelUsed = lastAiResponse.model || selectedModel || 'unknown';
 
       // Cost rates per million tokens (approximate)
       const isHaiku = modelUsed.includes('haiku');
