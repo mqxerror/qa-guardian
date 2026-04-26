@@ -9,7 +9,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 // Available AI providers
-export type AIProvider = 'kie' | 'anthropic' | 'auto';
+export type AIProvider = 'kie' | 'anthropic' | 'deepseek' | 'auto';
 
 // Available models per provider
 export type AIModel =
@@ -18,7 +18,12 @@ export type AIModel =
   | 'claude-3-5-sonnet-20241022'
   | 'claude-3-haiku-20240307'
   | 'claude-3-opus-20240229'
-  // DeepSeek models (Kie.ai only)
+  // DeepSeek V4 lineup (direct via DeepSeek provider, ~half the cost of Sonnet
+  // for V4 Pro and ~1/20 for V4 Flash). V4 Pro is #1 open-weights on agentic
+  // benchmarks; V4 Flash is the cheapest reasonable tier we offer.
+  | 'deepseek-v4-pro'
+  | 'deepseek-v4-flash'
+  // Legacy DeepSeek V3.x (still available via Kie.ai aggregator)
   | 'deepseek-chat'
   | 'deepseek-coder'
   | 'deepseek-reasoner'
@@ -87,6 +92,13 @@ export const PROVIDERS: ProviderInfo[] = [
     costIndicator: 'high',
     speedIndicator: 'medium',
   },
+  {
+    id: 'deepseek',
+    name: 'DeepSeek (Direct)',
+    description: 'V4 Pro/Flash directly. Cheapest tier; V4 Pro is best for agentic codegen.',
+    costIndicator: 'low',
+    speedIndicator: 'fast',
+  },
 ];
 
 // Model metadata
@@ -137,9 +149,27 @@ export const MODELS: ModelInfo[] = [
     speedIndicator: 'slow',
   },
   {
+    id: 'deepseek-v4-pro',
+    name: 'DeepSeek V4 Pro',
+    description: '#1 open-weights agentic model. Recommended for test generation. ~half cost of Sonnet.',
+    capabilities: ['Code generation', 'Agentic tasks', 'Reasoning', 'Tool use'],
+    providers: ['deepseek'],
+    costIndicator: 'medium',
+    speedIndicator: 'medium',
+  },
+  {
+    id: 'deepseek-v4-flash',
+    name: 'DeepSeek V4 Flash',
+    description: 'Fastest, cheapest. $0.14/$0.28 per 1M tokens. Great for chat/summaries.',
+    capabilities: ['Chat', 'Summarization', 'Quick suggestions'],
+    providers: ['deepseek'],
+    costIndicator: 'low',
+    speedIndicator: 'fast',
+  },
+  {
     id: 'deepseek-chat',
-    name: 'DeepSeek Chat',
-    description: 'Excellent for conversational tasks. Very cost-effective.',
+    name: 'DeepSeek Chat (V3.x)',
+    description: 'Legacy DeepSeek via Kie.ai aggregator.',
     capabilities: ['Chat', 'General assistance'],
     providers: ['kie'],
     costIndicator: 'low',
@@ -147,8 +177,8 @@ export const MODELS: ModelInfo[] = [
   },
   {
     id: 'deepseek-coder',
-    name: 'DeepSeek Coder',
-    description: 'Specialized for code generation and analysis.',
+    name: 'DeepSeek Coder (V3.x)',
+    description: 'Legacy code-focused model via Kie.ai.',
     capabilities: ['Code generation', 'Code analysis', 'Debugging'],
     providers: ['kie'],
     costIndicator: 'low',
@@ -156,8 +186,8 @@ export const MODELS: ModelInfo[] = [
   },
   {
     id: 'deepseek-reasoner',
-    name: 'DeepSeek Reasoner',
-    description: 'Specialized for complex reasoning tasks.',
+    name: 'DeepSeek Reasoner (V3.x)',
+    description: 'Legacy reasoning model via Kie.ai.',
     capabilities: ['Complex reasoning', 'Step-by-step analysis'],
     providers: ['kie'],
     costIndicator: 'medium',
