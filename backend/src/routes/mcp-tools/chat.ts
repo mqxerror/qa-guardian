@@ -33,8 +33,12 @@ export async function registerChatRoutes(fastify: FastifyInstance) {
       };
       // Feature #1941: Complexity-based model routing
       complexity?: 'simple' | 'complex';
-      // Feature #2074: User-selected provider/model preferences
-      provider?: 'kie' | 'anthropic' | 'auto';
+      // Feature #2074: User-selected provider/model preferences.
+      // P1.2: 'deepseek' added — was previously a TS-only narrower type
+      // than the Zod schema, but more importantly the runtime body parser
+      // type-coerced unknown provider values which was confusing the
+      // routing logic downstream. Now matches the Zod enum exactly.
+      provider?: 'kie' | 'anthropic' | 'deepseek' | 'auto';
       model?: string;
     };
   }>('/chat', {
